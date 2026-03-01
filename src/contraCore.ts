@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const BeatsSchema = z.number().int();
+export type Beats = z.infer<typeof BeatsSchema>;
+
 export const HandSchema = z.enum(['left', 'right']);
 export type Hand = z.infer<typeof HandSchema>;
 export function otherHand(hand: Hand): Hand {
@@ -102,9 +105,9 @@ export function resolveRelationship(id: DancerId, relationship: Relationship): D
  *
  * The slightly convoluted shadow-handling is necessary to make the relationships symmetric.
 */
-export const FoilRelationshipSchema = z.object({ base: FoilBaseRelationshipSchema, offset: z.number().int() });
+export const FoilRelationshipSchema = z.object({ base: FoilBaseRelationshipSchema, offset: DancerOffsetSchema });
 export type FoilRelationship = z.infer<typeof FoilRelationshipSchema>;
 
 /** A relationship between two dancers. */
-export const RelationshipSchema = z.object({ base: BaseRelationshipSchema, offset: z.number().int() });
+export const RelationshipSchema = z.object({ base: BaseRelationshipSchema, offset: DancerOffsetSchema });
 export type Relationship = z.infer<typeof RelationshipSchema>;

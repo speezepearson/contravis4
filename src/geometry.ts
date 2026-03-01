@@ -17,3 +17,8 @@ export function ccwRadsBetween(a: Vector, b: Vector): number {
   if (diff < -Math.PI) diff += 2 * Math.PI;
   return diff;
 }
+
+/** Lerp between two facing vectors via the short arc. */
+export function lerpFacing(a: Vector, b: Vector, progressFrac: number): Vector {
+  return a.rotateByRadians(ccwRadsBetween(a, b) * progressFrac);
+}

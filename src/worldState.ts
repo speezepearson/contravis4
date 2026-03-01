@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { NORTH, VectorSchema } from './geometry';
-import { type DancerId, type ProtoId, parseDancerId, makeProtoId, ProtoIdSchema, HandSchema, ALL_PROTO_IDS, RelationshipSchema, type Relationship, type Hand, resolveRelationship, projectDancerIdToProtoId } from './contraCore';
+import { type DancerId, type ProtoId, parseDancerId, makeProtoId, ProtoIdSchema, HandSchema, ALL_PROTO_IDS, RelationshipSchema, type Relationship, type Hand, resolveRelationship, projectDancerIdToProtoId, BeatsSchema } from './contraCore';
 
 export const DancerStateSchema = z.object({
   protoId: ProtoIdSchema,
@@ -24,9 +24,8 @@ export function getDancerState(id: DancerId, protos: Record<ProtoId, DancerState
 }
 
 export const WorldStateSchema = z.object({
-  beat: z.number(),
+  beat: BeatsSchema,
   protos: z.record(ProtoIdSchema, DancerStateSchema),
-  annotation: z.string().optional(),
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;
 
