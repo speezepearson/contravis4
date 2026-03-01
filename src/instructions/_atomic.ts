@@ -5,7 +5,7 @@ import { californiaTwirlAnimator, CaliforniaTwirlInstructionSchema } from './cal
 import { dropHandsAnimator, DropHandsInstructionSchema } from './dropHands';
 import { swingAnimator, SwingInstructionSchema } from './swing';
 import { takeHandsAnimator, TakeHandsInstructionSchema } from './takeHands';
-import { type InstructionAnimator, type Animation, lerpStates } from './_base';
+import { type InstructionAnimator, type ContraAnimation, lerpStates } from './_base';
 import type { ProtoId } from '../contraCore';
 import type { WorldState } from '../worldState';
 
@@ -35,7 +35,7 @@ export const atomicInstructionAnimators: {[K in AtomicInstruction['type']]: Inst
  * keyframe interval for a given beat `t` and delegates to the instruction's `animate`
  * (or falls back to `lerpStates`).
  */
-export function chainAtomicInstructions(init: WorldState, who: Set<ProtoId>, instrs: AtomicInstruction[]): {final: WorldState, animation: Animation} {
+export function chainAtomicInstructions(init: WorldState, who: Set<ProtoId>, instrs: AtomicInstruction[]): {final: WorldState, animation: ContraAnimation} {
   const keyframes: Array<WorldState> = [init];
 
   for (const instr of instrs) {

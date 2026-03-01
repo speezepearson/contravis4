@@ -19,7 +19,7 @@ export const boxTheGnatAnimator: InstructionAnimator<BoxTheGnatInstruction> = {
 
         draft.protos[id].pos = theirPos;
         draft.protos[id].facing = myPos.subtract(theirPos).normalize();
-        if (id < them) connectHands(draft, id, 'right', instr.relationship, 'right');
+        connectHands(draft, id, 'right', instr.relationship, 'right');
       }
     });
   },

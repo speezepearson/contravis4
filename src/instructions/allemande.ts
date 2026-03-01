@@ -33,7 +33,7 @@ export const allemandeAnimator: InstructionAnimator<AllemandeInstruction> = {
 
         draft.protos[id].pos = myFinalPos;
         draft.protos[id].facing = myFinalPos.subtract(center).normalize().rotateByDegrees(90 * (instr.handedness === 'left' ? 1 : -1));
-        if (id < them) connectHands(draft, id, instr.handedness, instr.relationship, instr.handedness);
+        connectHands(draft, id, instr.handedness, instr.relationship, instr.handedness);
       }
     });
   },

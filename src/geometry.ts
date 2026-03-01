@@ -22,3 +22,15 @@ export function ccwRadsBetween(a: Vector, b: Vector): number {
 export function lerpFacing(a: Vector, b: Vector, progressFrac: number): Vector {
   return a.rotateByRadians(ccwRadsBetween(a, b) * progressFrac);
 }
+
+export function ellipsePosition(
+  a: Vector,
+  b: Vector,
+  semiMinorCw: number,
+  phi: number,
+): Vector {
+  const center = a.add(b).divide(2);
+  return center
+    .add(a.subtract(center).normalize().multiply(Math.cos(phi)))
+    .add(a.subtract(center).normalize().multiply(Math.sin(phi) * -semiMinorCw).rotateByDegrees(90))
+}

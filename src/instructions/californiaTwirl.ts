@@ -25,7 +25,7 @@ export const californiaTwirlAnimator: InstructionAnimator<CaliforniaTwirlInstruc
 
         draft.protos[id].pos = theirPos;
         draft.protos[id].facing = myPos.subtract(theirPos).normalize().rotateByDegrees(90 * (myRole === 'lark' ? 1 : -1));
-        if (id < them) connectHands(draft, id, twirlHand, myHands[twirlHand][0], otherHand(twirlHand));
+        connectHands(draft, id, twirlHand, myHands[twirlHand][0], otherHand(twirlHand));
       }
     });
   },

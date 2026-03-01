@@ -42,7 +42,8 @@ export function resolveRelativeDirection(dir: RelativeDirection, d: DancerState,
 }
 
 /** A continuous function from beat time to world state, used for rendering intermediate frames. */
-export type Animation = (t: Beats) => WorldState;
+export type ContraAnimation = (t: Beats) => WorldState;
+
 /** Default animation fallback: linearly interpolates position and facing between two keyframes. */
 export function lerpStates(init: WorldState, final: WorldState, t: Beats): WorldState {
   return produce(init, (draft) => {
@@ -68,7 +69,7 @@ export function lerpStates(init: WorldState, final: WorldState, t: Beats): World
  */
 export type InstructionAnimator<Instr> = {
   final: (state: WorldState, who: Set<ProtoId>, instr: Instr) => WorldState;
-  animate?: (init: WorldState, who: Set<ProtoId>, instr: Instr) => Animation;
+  animate?: (init: WorldState, who: Set<ProtoId>, instr: Instr) => ContraAnimation;
 }
 
 // TODO: nothing actually uses this yet, but that doesn't feel right. Figure out what should use this.

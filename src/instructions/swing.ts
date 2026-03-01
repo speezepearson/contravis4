@@ -28,7 +28,7 @@ export const swingAnimator: InstructionAnimator<SwingInstruction> = {
 
         draft.protos[id].pos = myFinalPos;
         draft.protos[id].facing = myFinalFacing;
-        if (id < them) connectHands(draft, id, myRole === 'lark' ? 'right' : 'left', instr.relationship, myRole === 'lark' ? 'left' : 'right');
+        connectHands(draft, id, myRole === 'lark' ? 'right' : 'left', instr.relationship, myRole === 'lark' ? 'left' : 'right');
       }
     });
   },

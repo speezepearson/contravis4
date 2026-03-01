@@ -29,13 +29,14 @@ export const WorldStateSchema = z.object({
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;
 
+/** Connects two hands of two dancers. Throws an error if the hands are already in use, unless they are already paired with each other. */
 export function connectHands(state: WorldState, id: ProtoId, hand: Hand, relationship: Relationship, theirHand: Hand): void {
   const holding = state.protos[id].hands[hand];
-  if (holding) throw new Error(`Dancer ${id}'s ${hand} hand is already connected`);
+  if (holding && !(holding[0] === relationship && holding[1] === theirHand)) throw new Error(`Dancer ${id}'s ${hand} hand is already connected`);
 
   const otherProto = projectDancerIdToProtoId(resolveRelationship(id, relationship));
   const otherHolding = state.protos[otherProto].hands[theirHand];
-  if (otherHolding) throw new Error(`Dancer ${otherProto}'s ${theirHand} hand is already connected`);
+  if (otherHolding && !(otherHolding[0] === relationship && otherHolding[1] === hand)) throw new Error(`Dancer ${otherProto}'s ${theirHand} hand is already connected`);
 
   state.protos[id].hands[hand] = [relationship, theirHand];
   state.protos[otherProto].hands[theirHand] = [relationship, hand];
@@ -53,7 +54,7 @@ export function disconnectHands(state: WorldState, id: ProtoId, hand: Hand): voi
   state.protos[otherProto].hands[holding[1]] = undefined;
 }
 
-export function buildProtoStatesRecord(f: (id: ProtoId) => Pick<DancerState, 'pos'|'facing'|'hands'>): Record<ProtoId, DancerState> {
+export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
   return {
     up_lark_0: { protoId: 'up_lark_0', ...f('up_lark_0') },
     up_robin_0: { protoId: 'up_robin_0', ...f('up_robin_0') },

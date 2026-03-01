@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { InstructionIdSchema, type Animation, type InstructionAnimator } from './_base';
+import { InstructionIdSchema, type ContraAnimation, type InstructionAnimator } from './_base';
 import { type Beats, LARK_PROTO_IDS, ROBIN_PROTO_IDS, UP_PROTO_IDS, DOWN_PROTO_IDS, type ProtoId } from '../contraCore';
 import { assertNever } from '../utils';
 import type { WorldState } from '../worldState';
@@ -51,7 +51,7 @@ export const splitAnimator: InstructionAnimator<Split> = {
     }
   },
 
-  animate(init: WorldState, who: Set<ProtoId>, instr: Split): Animation {
+  animate(init: WorldState, who: Set<ProtoId>, instr: Split): ContraAnimation {
     switch (instr.by) {
       case 'role':  {
         const larks = chainAtomicInstructions(init, new Set(LARK_PROTO_IDS.filter((id) => who.has(id))), instr.larks);
