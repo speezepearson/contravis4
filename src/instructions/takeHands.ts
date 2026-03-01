@@ -19,7 +19,7 @@ export function resolveInsideHand(dancer: DancerState, target: DancerState): Han
   return cross < 0 ? 'right' : 'left';
 }
 
-export const TakeHandsInstructionSchema = z.object({ ...instructionBaseSchemaFields, type: z.literal('take_hands'), relationship: RelationshipSchema, hand: TakeHandSchema });
+export const TakeHandsInstructionSchema = z.object({ ...instructionBaseSchemaFields, type: z.literal('take_hands'), beats: z.literal(0), relationship: RelationshipSchema, hand: TakeHandSchema });
 export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
 
 export const takeHandsAnimator: InstructionAnimator<TakeHandsInstruction> = {

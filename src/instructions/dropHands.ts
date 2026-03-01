@@ -5,7 +5,7 @@ import type { ProtoId } from '../contraCore';
 import { assertNever } from '../utils';
 import { produce } from 'immer';
 
-export const DropHandsInstructionSchema = z.object({ ...instructionBaseSchemaFields, type: z.literal('drop_hands'), which: z.enum(['both', 'left', 'right', 'partner', 'shadow', 'neighbor']) });
+export const DropHandsInstructionSchema = z.object({ ...instructionBaseSchemaFields, type: z.literal('drop_hands'), beats: z.literal(0), which: z.enum(['both', 'left', 'right', 'partner', 'shadow', 'neighbor']) });
 export type DropHandsInstruction = z.infer<typeof DropHandsInstructionSchema>;
 
 export const dropHandsAnimator: InstructionAnimator<DropHandsInstruction> = {
