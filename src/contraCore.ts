@@ -25,6 +25,10 @@ export const ProtoIdSchema = z.enum(['up_lark_0', 'up_robin_0', 'down_lark_0', '
 export type ProtoId = z.infer<typeof ProtoIdSchema>;
 
 export const ALL_PROTO_IDS = ['up_lark_0', 'up_robin_0', 'down_lark_0', 'down_robin_0'] as const;
+export const LARK_PROTO_IDS = ['up_lark_0', 'down_lark_0'] as const;
+export const ROBIN_PROTO_IDS = ['up_robin_0', 'down_robin_0'] as const;
+export const UP_PROTO_IDS = ['up_lark_0', 'up_robin_0'] as const;
+export const DOWN_PROTO_IDS = ['down_lark_0', 'down_robin_0'] as const;
 
 export const DancerIdSchema = z.templateLiteral([ProgressionDirSchema, '_', RoleSchema, '_', DancerOffsetSchema]);
 export type DancerId = z.infer<typeof DancerIdSchema>;
