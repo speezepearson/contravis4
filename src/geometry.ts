@@ -18,8 +18,8 @@ export function ccwRadsBetween(a: Vector, b: Vector): number {
   const thetaA = Math.atan2(a.y, a.x);
   const thetaB = Math.atan2(b.y, b.x);
   let diff = thetaB - thetaA;
-  if (diff > Math.PI) diff -= TWO_PI;
-  if (diff < -Math.PI) diff += TWO_PI;
+  if (diff > PI) diff -= TWO_PI;
+  if (diff < -PI) diff += TWO_PI;
   return diff;
 }
 
@@ -61,7 +61,7 @@ export function revolve(
     "radians" in how
       ? how.radians
       : "degrees" in how
-        ? (how.degrees / 180) * Math.PI
+        ? (how.degrees / 180) * PI
         : "rotations" in how
           ? 360 * how.rotations
           : assertNever(how);

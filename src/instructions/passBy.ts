@@ -6,7 +6,7 @@ import {
   RelationshipSchema,
   resolveRelationship,
 } from "../contraCore";
-import { ellipsePosition } from "../geometry";
+import { ellipsePosition, PI } from "../geometry";
 import { buildProtoRecord, getDancerState } from "../worldState";
 import { type InstructionAnimator, instructionBaseSchemaFields } from "./_base";
 
@@ -41,7 +41,7 @@ export const passByAnimator: InstructionAnimator<PassByInstruction> = (
             arc.start,
             arc.end,
             0.25,
-            Math.PI * progressFrac,
+            PI * progressFrac,
           );
           draft[id].facing = arc.end.subtract(arc.start).normalize();
         }

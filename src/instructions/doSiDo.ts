@@ -2,7 +2,7 @@ import { produce } from "immer";
 import { z } from "zod";
 
 import { RelationshipSchema, resolveRelationship } from "../contraCore";
-import { ellipsePosition } from "../geometry";
+import { ellipsePosition, TWO_PI } from "../geometry";
 import { getDancerState } from "../worldState";
 import { type Animator, instructionBaseSchemaFields } from "./_base";
 
@@ -30,7 +30,7 @@ export const doSiDoAnimator =
               myPos,
               theirPos,
               0.25,
-              2 * Math.PI * instr.rotations * progressFrac,
+              TWO_PI * instr.rotations * progressFrac,
             );
           }
         });

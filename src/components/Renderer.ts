@@ -6,6 +6,7 @@ import {
   type ProtoId,
   resolveRelationship,
 } from "../contraCore";
+import { PI } from "../geometry";
 import type { DancerState, WorldState } from "../worldState";
 import { getDancerState } from "../worldState";
 
@@ -300,7 +301,7 @@ export class Renderer {
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -335,7 +336,7 @@ export class Renderer {
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, PI * 2);
     ctx.fill();
     ctx.stroke();
 

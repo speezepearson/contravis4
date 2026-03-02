@@ -7,7 +7,7 @@ import {
   parseProtoId,
   resolveRelationship,
 } from "../contraCore";
-import { ellipsePosition, getDir, lerpFacing } from "../geometry";
+import { ellipsePosition, getDir, lerpFacing, PI } from "../geometry";
 import { buildProtoRecord, connectHands, getDancerState } from "../worldState";
 import { type Animator, instructionBaseSchemaFields } from "./_base";
 
@@ -61,7 +61,7 @@ export const californiaTwirlAnimator =
               plan.start,
               plan.end,
               0.25,
-              Math.PI * progressFrac,
+              PI * progressFrac,
             );
             draft[id].facing = lerpFacing(
               init[id].facing,

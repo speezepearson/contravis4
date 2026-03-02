@@ -2,7 +2,7 @@ import { produce } from "immer";
 import { z } from "zod";
 
 import { FoilRelationshipSchema, resolveRelationship } from "../contraCore";
-import { ellipsePosition, getDir, lerpFacing } from "../geometry";
+import { ellipsePosition, getDir, lerpFacing, PI } from "../geometry";
 import { buildProtoRecord, connectHands, getDancerState } from "../worldState";
 import { type Animator, instructionBaseSchemaFields } from "./_base";
 
@@ -35,7 +35,7 @@ export const boxTheGnatAnimator =
               arc.start,
               arc.end,
               0.25,
-              Math.PI * progressFrac,
+              PI * progressFrac,
             );
             draft[id].facing = lerpFacing(
               init[id].facing,

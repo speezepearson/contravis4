@@ -16,7 +16,7 @@ import {
   RelationshipSchema,
   resolveRelationship,
 } from "../contraCore";
-import { EAST, NORTH, SOUTH, WEST } from "../geometry";
+import { EAST, NORTH, PI, SOUTH, WEST } from "../geometry";
 import { assertNever } from "../utils";
 import {
   type DancerState,
@@ -202,7 +202,7 @@ export function findDancerOnSide(
   side: DirectionalRelationship,
   dancers: Record<ProtoId, DancerState>,
 ): { id: DancerId; rel: Relationship } | null {
-  const BIAS = (0.777 * Math.PI) / 2; // ~70°, bias towards "in front"
+  const BIAS = (0.777 * PI) / 2; // ~70°, bias towards "in front"
   const lark = parseDancerId(id).role === "lark";
   const angleOffset =
     side === "on_right"

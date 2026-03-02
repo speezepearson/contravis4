@@ -5,7 +5,7 @@ import type { Vector } from "vecti";
 
 import { ALL_PROTO_IDS, type Hand, type ProtoId } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
-import { EAST, NORTH, SOUTH, WEST } from "../src/geometry";
+import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
 import {
   DanceSchema,
   type Instruction,
@@ -146,7 +146,7 @@ function formatFacing(v: Vector): string {
       return label;
     }
   }
-  const deg = (Math.atan2(v.y, v.x) * 180) / Math.PI;
+  const deg = (Math.atan2(v.y, v.x) * 180) / PI;
   return `${deg.toFixed(0)}°`;
 }
 

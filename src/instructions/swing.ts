@@ -78,9 +78,7 @@ export const swingAnimator =
       };
 
       const numSwingRadians =
-        -2 *
-          Math.PI *
-          Math.floor(instr.beats / APPROX_BEATS_PER_SWING_ROTATION) +
+        -TWO_PI * Math.floor(instr.beats / APPROX_BEATS_PER_SWING_ROTATION) +
         ccwRadsBetween(
           isLark(id) ? postApproach.facing : postApproach.facing.multiply(-1),
           finalFacing,

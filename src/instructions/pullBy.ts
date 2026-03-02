@@ -6,7 +6,7 @@ import {
   RelationshipSchema,
   resolveRelationship,
 } from "../contraCore";
-import { ellipsePosition } from "../geometry";
+import { ellipsePosition, PI } from "../geometry";
 import {
   buildProtoRecord,
   connectHands,
@@ -46,7 +46,7 @@ export const pullByAnimator =
               arc.start,
               arc.end,
               semiMinorCw,
-              Math.PI * progressFrac,
+              PI * progressFrac,
             );
             draft[id].facing = arc.end.subtract(arc.start).normalize();
             if (progressFrac < 0.5) {
