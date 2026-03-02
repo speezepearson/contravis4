@@ -1,0 +1,47 @@
+import { InstructionSchema } from "../../instructions/index";
+import type { AtomicInstruction } from "../../instructions/_atomic";
+import type { SubFormProps } from "../fieldUtils";
+import { FULL_FOIL_RELATIONSHIP_OPTIONS } from "../fieldUtils";
+import { RelationshipDropdown } from "../RelationshipDropdown";
+import { DirectionDropdown } from "../DirectionDropdown";
+
+export function SwingFields({
+  instruction,
+  onChange,
+  onInvalid,
+}: SubFormProps & {
+  instruction: Extract<AtomicInstruction, { type: "swing" }>;
+}) {
+  const { id } = instruction;
+
+  function tryCommit(overrides: Record<string, unknown>) {
+    const raw = {
+      id,
+      type: "swing",
+      beats: instruction.beats,
+      relationship: instruction.relationship,
+      endFacing: instruction.endFacing,
+      ...overrides,
+    };
+    const result = InstructionSchema.safeParse(raw);
+    if (result.success) onChange(result.data);
+    else onInvalid?.();
+  }
+
+  return (
+    <>
+      {"your "}
+      <RelationshipDropdown
+        options={FULL_FOIL_RELATIONSHIP_OPTIONS}
+        value={instruction.relationship}
+        onChange={(rel) => tryCommit({ relationship: rel })}
+      />
+      {" \u2192 "}
+      <DirectionDropdown
+        value={instruction.endFacing}
+        onChange={(f) => tryCommit({ endFacing: f })}
+        onInvalid={onInvalid}
+      />
+    </>
+  );
+}

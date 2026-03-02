@@ -5,25 +5,36 @@ import {
   californiaTwirlAnimator,
   CaliforniaTwirlInstructionSchema,
 } from "./californiaTwirl";
+import { doSiDoAnimator, DoSiDoInstructionSchema } from "./doSiDo";
 import { dropHandsAnimator, DropHandsInstructionSchema } from "./dropHands";
+import {
+  formShortWavesAnimator,
+  FormShortWavesInstructionSchema,
+} from "./formShortWaves";
+import {
+  giveAndTakeIntoSwingAnimator,
+  GiveAndTakeIntoSwingInstructionSchema,
+} from "./giveAndTakeIntoSwing";
+import { pullByAnimator, PullByInstructionSchema } from "./pullBy";
+import { stepAnimator, StepInstructionSchema } from "./step";
 import { swingAnimator, SwingInstructionSchema } from "./swing";
 import { takeHandsAnimator, TakeHandsInstructionSchema } from "./takeHands";
 import { type InstructionAnimator, type ContraAnimation } from "./_base";
 import type { ProtoId } from "../contraCore";
 import type { WorldState } from "../worldState";
 import { balanceAnimator, BalanceInstructionSchema } from "./balance";
-import {
-  formShortWavesAnimator,
-  FormShortWavesInstructionSchema,
-} from "./formShortWaves";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
   BalanceInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
+  DoSiDoInstructionSchema,
   DropHandsInstructionSchema,
   FormShortWavesInstructionSchema,
+  GiveAndTakeIntoSwingInstructionSchema,
+  PullByInstructionSchema,
+  StepInstructionSchema,
   SwingInstructionSchema,
   TakeHandsInstructionSchema,
 ]);
@@ -39,8 +50,12 @@ export const atomicInstructionAnimators: {
   balance: balanceAnimator,
   box_the_gnat: boxTheGnatAnimator,
   california_twirl: californiaTwirlAnimator,
+  do_si_do: doSiDoAnimator,
   drop_hands: dropHandsAnimator,
   form_short_waves: formShortWavesAnimator,
+  give_and_take_into_swing: giveAndTakeIntoSwingAnimator,
+  pull_by: pullByAnimator,
+  step: stepAnimator,
   take_hands: takeHandsAnimator,
   swing: swingAnimator,
 };
