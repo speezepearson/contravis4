@@ -18,21 +18,19 @@ export const balanceAnimator: InstructionAnimator<BalanceInstruction> = {
 
   animate(state: WorldState, who: Set<ProtoId>, instr: BalanceInstruction): ContraAnimation {
     const halfBeats = instr.beats/2;
-    return (t: Beats) => {
-      return produce(state, (draft) => {
-        draft.beat += t;
-        for (const id of who) {
-          const them = resolveRelationship(id, instr.relationship);
-          const myPos = getDancerState(id, draft.protos).pos;
-          const theirPos = getDancerState(them, draft.protos).pos;
-          const balanceTo = myPos.multiply(2).add(theirPos).divide(3);
-          if (t < halfBeats) {
-            draft.protos[id].pos = lerpVectors(myPos, balanceTo, t/halfBeats);
-          } else {
-            draft.protos[id].pos = lerpVectors(balanceTo, myPos, (t-halfBeats)/halfBeats);
-          }
+    return (t: Beats) => produce(state, (draft) => {
+      draft.beat += t;
+      for (const id of who) {
+        const them = resolveRelationship(id, instr.relationship);
+        const myPos = getDancerState(id, draft.protos).pos;
+        const theirPos = getDancerState(them, draft.protos).pos;
+        const balanceTo = myPos.multiply(2).add(theirPos).divide(3);
+        if (t < halfBeats) {
+          draft.protos[id].pos = lerpVectors(myPos, balanceTo, t/halfBeats);
+        } else {
+          draft.protos[id].pos = lerpVectors(balanceTo, myPos, (t-halfBeats)/halfBeats);
         }
-      });
-    }
-  }
+      }
+    });
+  },
 }

@@ -1,15 +1,7 @@
 import { z } from 'zod';
-import { takeHandsAnimator } from './takeHands';
-import { dropHandsAnimator } from './dropHands';
-import { allemandeAnimator } from './allemande';
-import { swingAnimator } from './swing';
-import { boxTheGnatAnimator } from './boxTheGnat';
-import { californiaTwirlAnimator } from './californiaTwirl';
-import type { WorldState } from '../worldState';
-import { type Beats, type ProtoId } from '../contraCore';
-import { assertNever } from '../utils';
+import { type Beats } from '../contraCore';
 import { AtomicInstructionSchema } from './_atomic';
-import { getSplitDuration, splitAnimator, SplitSchema } from './split';
+import { getSplitDuration, SplitSchema } from './split';
 
 export { InstructionIdSchema, type InstructionId, type RelativeDirection, RelativeDirectionSchema } from './_base';
 

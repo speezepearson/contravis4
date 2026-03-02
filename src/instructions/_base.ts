@@ -61,20 +61,6 @@ export function lerpStates(init: WorldState, final: WorldState, t: Beats): World
   });
 }
 
-export function revolveDancer(d: DancerState, how: ({around: Vector} | {aroundMidpointWith: Vector}) & ({radians: number} | {degrees: number} | {rotations: number})): void {
-  const center =
-    'around' in how ? how.around :
-    'aroundMidpointWith' in how ? how.aroundMidpointWith.add(d.pos).divide(2) :
-    assertNever(how);
-  const radians =
-    'radians' in how ? how.radians :
-    'degrees' in how ? how.degrees / 180 * Math.PI :
-    'rotations' in how ? 360 * how.rotations :
-    assertNever(how);
-  d.pos = center.add(d.pos.subtract(center).rotateByRadians(radians));
-  d.facing = d.facing.rotateByRadians(radians);
-}
-
 /**
  * The two-phase interface every instruction implements.
  * - `final` computes the end state and advances `beat` by `instr.beats`.
