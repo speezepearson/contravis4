@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { averageFrames, shiftFrameByProgression } from "./averageFrames";
+import { exportGif } from "./exportGif";
 import CommandPane from "./components/CommandPane";
 import { decodeRelationship } from "./components/fieldUtils";
 import { RelationshipHighlightContext } from "./components/RelationshipHighlightContext";
@@ -138,6 +139,7 @@ export default function App() {
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [smoothness, setSmoothness] = useState(1);
+  const [exporting, setExporting] = useState(false);
 
   // Persist dance to localStorage whenever it changes
   useEffect(() => {
@@ -285,6 +287,39 @@ export default function App() {
     cancelAnimationFrame(highlightRelRafRef.current);
     highlightRelRafRef.current = requestAnimationFrame(() => drawRef.current());
   }, []);
+
+  const downloadGif = useCallback(() => {
+    if (!animation) return;
+    setExporting(true);
+    // Yield to let the UI show the "Exporting..." state before blocking
+    setTimeout(() => {
+      const w = 400;
+      const h = 600;
+      const offscreen = document.createElement("canvas");
+      offscreen.width = w;
+      offscreen.height = h;
+      const offCtx = offscreen.getContext("2d")!;
+
+      const gifBytes = exportGif(animation, offCtx, {
+        width: w,
+        height: h,
+        bpm,
+        smoothness,
+        inferredProgression,
+      });
+
+      const blob = new Blob([gifBytes.buffer as ArrayBuffer], {
+        type: "image/gif",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dance.gif";
+      a.click();
+      URL.revokeObjectURL(url);
+      setExporting(false);
+    }, 50);
+  }, [animation, bpm, smoothness, inferredProgression]);
 
   // Redraw when animation or preview change
   useEffect(() => {
@@ -477,6 +512,11 @@ export default function App() {
           onChange={(e) => setSmoothness(Number(e.target.value))}
         />
       </div>
+      <div className="controls">
+        <button onClick={downloadGif} disabled={exporting || !animation}>
+          {exporting ? "Exporting..." : "Download GIF"}
+        </button>
+      </div>
       <div className="legend">
         <div className="legend-item">
           <span className="legend-dot" style={{ background: "#4a90d9" }} /> Lark
@@ -570,6 +610,9 @@ export default function App() {
               onChange={(e) => setSmoothness(Number(e.target.value))}
             />
           </div>
+          <button onClick={downloadGif} disabled={exporting || !animation}>
+            {exporting ? "..." : "GIF"}
+          </button>
           <button className="drawer-toggle" onClick={() => setDrawerOpen(true)}>
             {"\u25B2 Edit Instructions"}
           </button>
