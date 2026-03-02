@@ -1,11 +1,10 @@
 import { z } from 'zod';
-import { FoilRelationshipSchema, parseProtoId, resolveRelationship, type Beats, type ProtoId } from '../contraCore';
-import { instructionBaseSchemaFields, type InstructionAnimator, RelativeDirectionSchema, resolveRelativeDirection, type ContraAnimation } from './_base';
+import { FoilRelationshipSchema, parseProtoId, resolveRelationship, type Beats } from '../contraCore';
+import { instructionBaseSchemaFields, type InstructionAnimator, RelativeDirectionSchema, resolveRelativeDirection } from './_base';
 import { produce } from 'immer';
-import { getDancerState, connectHands, type WorldState, buildProtoRecord } from '../worldState';
+import { getDancerState, buildProtoRecord, connectHands } from '../worldState';
 import { lerpVectors } from '../utils';
 import { ccwRadsBetween, getDir, lerpFacing, revolve } from '../geometry';
-import type { Vector } from 'vecti';
 
 export const SwingInstructionSchema = z.object({ ...instructionBaseSchemaFields, type: z.literal('swing'), relationship: FoilRelationshipSchema, endFacing: RelativeDirectionSchema });
 export type SwingInstruction = z.infer<typeof SwingInstructionSchema>;
@@ -16,25 +15,11 @@ const FINAL_SEPARATION = 1;
 const ORBIT_RADIUS = 0.2;
 const APPROX_BEATS_PER_SWING_ROTATION = 4;
 
-type Plan = {
-  approachBeats: Beats;
-  swingBeats: Beats;
-  disengageBeats: Beats;
-  perProto: Record<ProtoId, {
-    final: {pos: Vector; facing: Vector};
-    center: Vector;
-    postApproach: {pos: Vector; facing: Vector};
-    postSwing: {pos: Vector; facing: Vector};
-    numSwingRadians: number;
-  }>;
-}
-
-function makePlan(init: WorldState, instr: SwingInstruction): Plan {
-  return {
-    approachBeats: APPROACH_BEATS,
-    swingBeats: instr.beats - APPROACH_BEATS - DISENGAGE_BEATS,
-    disengageBeats: DISENGAGE_BEATS,
-    perProto: buildProtoRecord((id) => {
+export const swingAnimator: InstructionAnimator<SwingInstruction> = (init, who, instr) => {
+    const approachBeats = APPROACH_BEATS;
+    const swingBeats = instr.beats - APPROACH_BEATS - DISENGAGE_BEATS;
+    const disengageBeats = DISENGAGE_BEATS;
+    const plans = buildProtoRecord((id) => {
       const isLark = parseProtoId(id).role === 'lark';
       const finalFacing = resolveRelativeDirection(instr.endFacing, getDancerState(id, init.protos), id, init.protos);
 
@@ -69,42 +54,28 @@ function makePlan(init: WorldState, instr: SwingInstruction): Plan {
         postSwing,
         numSwingRadians,
       };
-    }),
-  };
-}
-
-export const swingAnimator: InstructionAnimator<SwingInstruction> = {
-  final(state: WorldState, who: Set<ProtoId>, instr: SwingInstruction): WorldState {
-    const plan = makePlan(state, instr);
-    return produce(state, (draft) => {
-      draft.beat += instr.beats;
-      for (const id of who) {
-        draft.protos[id].pos = plan.perProto[id].final.pos;
-        draft.protos[id].facing = plan.perProto[id].final.facing;
-        connectHands(draft, id, parseProtoId(id).role === 'lark' ? 'right' : 'left', instr.relationship, parseProtoId(id).role === 'lark' ? 'left' : 'right');
-      }
     });
-  },
-
-  animate(state: WorldState, who: Set<ProtoId>, instr: SwingInstruction): ContraAnimation {
-    const plan = makePlan(state, instr);
-    return (t: Beats) => produce(state, (draft) => {
-      draft.beat += t;
-      for (const id of who) {
-        if (t < plan.approachBeats) {
-          const progressFrac = t / plan.approachBeats;
-          draft.protos[id].pos = lerpVectors(plan.perProto[id].postApproach.pos, plan.perProto[id].postSwing.pos, progressFrac);
-          draft.protos[id].facing = lerpFacing(state.protos[id].facing, plan.perProto[id].postApproach.facing, progressFrac);
-        } else if (t < instr.beats - plan.disengageBeats) {
-          const progressFrac = (t - plan.approachBeats) / (plan.swingBeats);
-          draft.protos[id].pos = revolve(plan.perProto[id].postApproach.pos, {around: plan.perProto[id].center, radians: plan.perProto[id].numSwingRadians * progressFrac});
-          draft.protos[id].facing = plan.perProto[id].postApproach.facing.rotateByRadians(-plan.perProto[id].numSwingRadians * progressFrac);
-        } else {
-          const progressFrac = (t - (instr.beats - plan.disengageBeats)) / plan.disengageBeats;
-          draft.protos[id].pos = lerpVectors(plan.perProto[id].postSwing.pos, plan.perProto[id].final.pos, progressFrac);
-          draft.protos[id].facing = lerpFacing(plan.perProto[id].postSwing.facing, plan.perProto[id].final.facing, progressFrac);
-        }
+  
+  return (t) => produce(init, (draft) => {
+    draft.beat += t;
+    for (const id of who) {
+      if (t < approachBeats) {
+        const progressFrac = t / approachBeats;
+        draft.protos[id].pos = lerpVectors(plans[id].postApproach.pos, plans[id].postSwing.pos, progressFrac);
+        draft.protos[id].facing = lerpFacing(init.protos[id].facing, plans[id].postApproach.facing, progressFrac);
+      } else if (t < instr.beats - disengageBeats) {
+        const progressFrac = (t - approachBeats) / (swingBeats);
+        draft.protos[id].pos = revolve(plans[id].postApproach.pos, {around: plans[id].center, radians: plans[id].numSwingRadians * progressFrac});
+        draft.protos[id].facing = plans[id].postApproach.facing.rotateByRadians(-plans[id].numSwingRadians * progressFrac);
+        const isLark = parseProtoId(id).role === 'lark';
+        connectHands(draft, id, isLark ? 'right' : 'left', instr.relationship, isLark ? 'left' : 'right');
+      } else {
+        const progressFrac = (t - (instr.beats - disengageBeats)) / disengageBeats;
+        draft.protos[id].pos = lerpVectors(plans[id].postSwing.pos, plans[id].final.pos, progressFrac);
+        draft.protos[id].facing = lerpFacing(plans[id].postSwing.facing, plans[id].final.facing, progressFrac);
+        const isLark = parseProtoId(id).role === 'lark';
+        connectHands(draft, id, isLark ? 'right' : 'left', instr.relationship, isLark ? 'left' : 'right');
       }
-    });
-  },
-}
+    }
+  });
+};

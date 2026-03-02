@@ -5,8 +5,8 @@ import { californiaTwirlAnimator, CaliforniaTwirlInstructionSchema } from './cal
 import { dropHandsAnimator, DropHandsInstructionSchema } from './dropHands';
 import { swingAnimator, SwingInstructionSchema } from './swing';
 import { takeHandsAnimator, TakeHandsInstructionSchema } from './takeHands';
-import { type InstructionAnimator, type ContraAnimation, lerpStates } from './_base';
-import type { ProtoId } from '../contraCore';
+import { type InstructionAnimator, type ContraAnimation } from './_base';
+import type { Beats, ProtoId } from '../contraCore';
 import type { WorldState } from '../worldState';
 import { balanceAnimator, BalanceInstructionSchema } from './balance';
 import { formShortWavesAnimator, FormShortWavesInstructionSchema } from './formShortWaves';
@@ -41,35 +41,24 @@ export const atomicInstructionAnimators: {[K in AtomicInstruction['type']]: Inst
  * keyframe interval for a given beat `t` and delegates to the instruction's `animate`
  * (or falls back to `lerpStates`).
  */
-export function chainAtomicInstructions(init: WorldState, who: Set<ProtoId>, instrs: AtomicInstruction[]): {final: WorldState, animation: ContraAnimation} {
-  const keyframes: Array<WorldState> = [init];
+export function chainAtomicInstructions(init: WorldState, who: Set<ProtoId>, instrs: AtomicInstruction[]): ContraAnimation {
+  if (instrs.length === 0) return () => init;
+  const segments: Array<{startAt: Beats, endAt: Beats, animation: ContraAnimation}> = [];
 
   for (const instr of instrs) {
     const animator = atomicInstructionAnimators[instr.type] as InstructionAnimator<typeof instr>;
-    keyframes.push(animator.final(keyframes[keyframes.length - 1], who, instr));
+    const startAt = segments.length === 0 ? 0 : segments[segments.length - 1].endAt;
+    const endAt = startAt + instr.beats;
+    segments.push({startAt, endAt, animation: animator(init, who, instr)});
   }
 
-  return {
-    final: keyframes[keyframes.length - 1],
-    animation(t) {
-      for (let i=0; i<instrs.length; i++) {
-        const initKf = keyframes[i];
-        const finalKf = keyframes[i+1];
-        if (t < initKf.beat || t > finalKf.beat) continue;
-        if (t === initKf.beat) return initKf;
-        if (t === finalKf.beat) return finalKf;
-
-        const instr = instrs[i];
-        const animator = atomicInstructionAnimators[instr.type] as InstructionAnimator<typeof instr>;
-        const elapsed = t - initKf.beat;
-
-        if (animator.animate) {
-          return animator.animate(initKf, who, instr)(elapsed);
-        } else {
-          return lerpStates(initKf, finalKf, elapsed);
-        }
-      }
-      throw new Error(`time ${t} is out of range for this animation`)
+  return (t) => {
+    for (const segment of segments) {
+      if (t < segment.startAt || t > segment.endAt) continue;
+      if (t === segment.startAt) return segment.animation(t);
+      if (t === segment.endAt) return segment.animation(t);
+      return segment.animation(t);
     }
+    throw new Error(`time ${t} is out of range for this animation`)
   };
 }

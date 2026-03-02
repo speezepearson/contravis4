@@ -67,10 +67,7 @@ export function lerpStates(init: WorldState, final: WorldState, t: Beats): World
  * - `animate` (optional) produces a continuous Animation for rendering
  *   intermediate frames. When absent, consumers fall back to `lerpStates`.
  */
-export type InstructionAnimator<Instr> = {
-  final: (state: WorldState, who: Set<ProtoId>, instr: Instr) => WorldState;
-  animate?: (init: WorldState, who: Set<ProtoId>, instr: Instr) => ContraAnimation;
-}
+export type InstructionAnimator<Instr> = (init: WorldState, who: Set<ProtoId>, instr: Instr) => ContraAnimation;
 
 export const DirectionalRelationshipSchema = z.enum(['on_left', 'on_right', 'in_front', 'larks_left_robins_right', 'larks_right_robins_left']);
 export type DirectionalRelationship = z.infer<typeof DirectionalRelationshipSchema>;
