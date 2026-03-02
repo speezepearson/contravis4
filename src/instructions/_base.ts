@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ALL_PROTO_IDS, BeatsSchema, parseDancerId, RelationshipSchema, resolveRelationship, type Beats, type ProtoId } from '../contraCore';
+import { ALL_PROTO_IDS, BeatsSchema, getRelationship, parseDancerId, protoIdToDancerId, RelationshipSchema, resolveRelationship, type Beats, type DancerId, type ProtoId, type Relationship } from '../contraCore';
 import type { Vector } from 'vecti';
 import { NORTH, SOUTH, EAST, WEST, lerpFacing } from '../geometry';
 import { assertNever, lerpVectors } from '../utils';
@@ -86,6 +86,66 @@ export type InstructionAnimator<Instr> = {
   animate?: (init: WorldState, who: Set<ProtoId>, instr: Instr) => ContraAnimation;
 }
 
-// TODO: nothing actually uses this yet, but that doesn't feel right. Figure out what should use this.
 export const DirectionalRelationshipSchema = z.enum(['on_left', 'on_right', 'in_front', 'larks_left_robins_right', 'larks_right_robins_left']);
 export type DirectionalRelationship = z.infer<typeof DirectionalRelationshipSchema>;
+
+export function findDancerInDirection(
+  protos: Record<ProtoId, DancerState>,
+  id: ProtoId,
+  dir: Vector,
+): {id: DancerId, rel: Relationship} | null {
+  dir = dir.normalize();
+  const pos = protos[id].pos;
+
+  let bestScore = Infinity;
+  let bestTarget: {id: DancerId, rel:Relationship} | null = null;
+
+  for (const otherId of ALL_PROTO_IDS) {
+    if (otherId === id) continue;
+    const dyBase = protos[otherId].pos.y - pos.y;
+    const oBest = Math.round(-dyBase / 2);
+    for (let o = oBest - 2; o <= oBest + 2; o++) {
+      const targetId = protoIdToDancerId(otherId, o);
+      const target = getDancerState(targetId, protos);
+      const disp = target.pos.subtract(pos);
+      const r = disp.length();
+      if (r > 1.2 || r < 1e-9) continue;
+
+      const cosTheta = dir.dot(disp) / r;
+      if (cosTheta < 0) continue;
+      const cos2Theta = 2 * cosTheta * cosTheta - 1;
+      if (cos2Theta < 0.01) continue;
+
+      const score = r / cos2Theta;
+      if (score < bestScore) {
+        bestScore = score;
+        const rel = getRelationship(id, targetId);
+        if (!rel) throw new Error(`Programming error: somehow found a dancer ${dir.toString()} of ${id} with no relationship to them`);
+        bestTarget = {id: targetId, rel};
+      }
+    }
+  }
+
+  return bestTarget;
+}
+
+/** Find the dancer best described by "the person on your [side]", if any. */
+export function findDancerOnSide(
+  id: ProtoId,
+  side: DirectionalRelationship,
+  dancers: Record<ProtoId, DancerState>,
+): {id: DancerId, rel: Relationship} | null {
+  const BIAS = 0.777 * Math.PI / 2; // ~70°, bias towards "in front"
+  const lark = parseDancerId(id).role === 'lark';
+  const angleOffset =
+    side === 'on_right' ? -BIAS :
+    side === 'on_left' ? BIAS :
+    side === 'in_front' ? 0 :
+    side === 'larks_left_robins_right' ? (lark ? BIAS : -BIAS) :
+    side === 'larks_right_robins_left' ? (lark ? -BIAS : BIAS) :
+    assertNever(side);
+  const d = dancers[id];
+  const heading = d.facing.rotateByRadians(angleOffset);
+
+  return findDancerInDirection(dancers, id, heading);
+}
