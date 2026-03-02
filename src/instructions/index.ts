@@ -1,14 +1,15 @@
+import { Vector } from "vecti";
 import { z } from "zod";
+
 import { type Beats } from "../contraCore";
+import { EAST, NORTH, SOUTH, WEST } from "../geometry";
+import type { WorldState } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
 import { getSplitDuration, SplitSchema } from "./split";
-import type { WorldState } from "../worldState";
-import { Vector } from "vecti";
-import { EAST, NORTH, SOUTH, WEST } from "../geometry";
 
 export {
-  InstructionIdSchema,
   type InstructionId,
+  InstructionIdSchema,
   type RelativeDirection,
   RelativeDirectionSchema,
 } from "./_base";
@@ -67,61 +68,55 @@ export type InitFormation = z.infer<typeof InitFormationSchema>;
 
 export const initFormationStates: Record<InitFormation, WorldState> = {
   improper: {
-    beat: 0,
-    protos: {
-      up_lark_0: {
-        protoId: "up_lark_0",
-        pos: new Vector(-0.5, -0.5),
-        facing: NORTH,
-        hands: {},
-      },
-      up_robin_0: {
-        protoId: "up_robin_0",
-        pos: new Vector(0.5, -0.5),
-        facing: NORTH,
-        hands: {},
-      },
-      down_lark_0: {
-        protoId: "down_lark_0",
-        pos: new Vector(0.5, 0.5),
-        facing: SOUTH,
-        hands: {},
-      },
-      down_robin_0: {
-        protoId: "down_robin_0",
-        pos: new Vector(-0.5, 0.5),
-        facing: SOUTH,
-        hands: {},
-      },
+    up_lark_0: {
+      protoId: "up_lark_0",
+      pos: new Vector(-0.5, -0.5),
+      facing: NORTH,
+      hands: {},
+    },
+    up_robin_0: {
+      protoId: "up_robin_0",
+      pos: new Vector(0.5, -0.5),
+      facing: NORTH,
+      hands: {},
+    },
+    down_lark_0: {
+      protoId: "down_lark_0",
+      pos: new Vector(0.5, 0.5),
+      facing: SOUTH,
+      hands: {},
+    },
+    down_robin_0: {
+      protoId: "down_robin_0",
+      pos: new Vector(-0.5, 0.5),
+      facing: SOUTH,
+      hands: {},
     },
   },
   beckett: {
-    beat: 0,
-    protos: {
-      up_lark_0: {
-        protoId: "up_lark_0",
-        pos: new Vector(-0.5, 0.5),
-        facing: EAST,
-        hands: {},
-      },
-      up_robin_0: {
-        protoId: "up_robin_0",
-        pos: new Vector(-0.5, -0.5),
-        facing: EAST,
-        hands: {},
-      },
-      down_lark_0: {
-        protoId: "down_lark_0",
-        pos: new Vector(0.5, -0.5),
-        facing: WEST,
-        hands: {},
-      },
-      down_robin_0: {
-        protoId: "down_robin_0",
-        pos: new Vector(0.5, 0.5),
-        facing: WEST,
-        hands: {},
-      },
+    up_lark_0: {
+      protoId: "up_lark_0",
+      pos: new Vector(-0.5, 0.5),
+      facing: EAST,
+      hands: {},
+    },
+    up_robin_0: {
+      protoId: "up_robin_0",
+      pos: new Vector(-0.5, -0.5),
+      facing: EAST,
+      hands: {},
+    },
+    down_lark_0: {
+      protoId: "down_lark_0",
+      pos: new Vector(0.5, -0.5),
+      facing: WEST,
+      hands: {},
+    },
+    down_robin_0: {
+      protoId: "down_robin_0",
+      pos: new Vector(0.5, 0.5),
+      facing: WEST,
+      hands: {},
     },
   },
 };

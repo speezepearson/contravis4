@@ -1,5 +1,6 @@
-import { z } from "zod";
 import { Vector } from "vecti";
+import { z } from "zod";
+
 import { assertNever } from "./utils";
 
 export const VectorSchema = z.instanceof(Vector);

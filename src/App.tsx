@@ -1,33 +1,34 @@
-import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { Renderer } from "./components/Renderer";
-import {
-  generateDanceAnimation,
-  findInstructionStartBeat,
-  splitLists,
-} from "./generate";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import CommandPane from "./components/CommandPane";
-import type {
-  Instruction,
-  InitFormation,
-  InstructionId,
-} from "./instructions/index";
-import {
-  InstructionSchema,
-  DanceSchema,
-  instructionDuration,
-  danceLength,
-  initFormationStates,
-} from "./instructions/index";
+import { decodeRelationship } from "./components/fieldUtils";
+import { RelationshipHighlightContext } from "./components/RelationshipHighlightContext";
+import { Renderer } from "./components/Renderer";
 import {
   ALL_PROTO_IDS,
   BaseRelationshipSchema,
   resolveRelationship,
 } from "./contraCore";
-import { decodeRelationship } from "./components/fieldUtils";
-import { RelationshipHighlightContext } from "./components/RelationshipHighlightContext";
-import { getDancerState } from "./worldState";
-import type { Dance } from "./instructions/index";
+import {
+  findInstructionStartBeat,
+  generateDanceAnimation,
+  splitLists,
+} from "./generate";
 import { formatDanceParseError } from "./generate";
+import type {
+  InitFormation,
+  Instruction,
+  InstructionId,
+} from "./instructions/index";
+import type { Dance } from "./instructions/index";
+import {
+  danceLength,
+  DanceSchema,
+  instructionDuration,
+  InstructionSchema,
+} from "./instructions/index";
+import { isLocalStorageAvailable } from "./utils";
+import { getDancerState } from "./worldState";
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 
@@ -35,13 +36,8 @@ function loadDanceFromLocalStorage():
   | { dance: Dance }
   | { error: string }
   | null {
-  let raw: string | null;
-  try {
-    raw = localStorage.getItem(LOCALSTORAGE_KEY);
-  } catch {
-    // SWALLOW_EXCEPTION: localStorage may be unavailable in private browsing
-    return null;
-  }
+  if (!isLocalStorageAvailable()) return null;
+  const raw = localStorage.getItem(LOCALSTORAGE_KEY);
   if (raw === null) return null;
 
   let parsed: unknown;
@@ -146,12 +142,9 @@ export default function App() {
 
   // Persist dance to localStorage whenever it changes
   useEffect(() => {
-    try {
-      const dance = { initFormation, progression, instructions };
-      localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
-    } catch {
-      // SWALLOW_EXCEPTION: quota exceeded or private browsing - silently ignore
-    }
+    if (!isLocalStorageAvailable()) return;
+    const dance = { initFormation, progression, instructions };
+    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
   }, [instructions, initFormation, progression]);
 
   const [hoveredInstructionId, setHoveredInstructionId] =
@@ -162,6 +155,11 @@ export default function App() {
     [instructions, initFormation],
   );
   const DANCE_LENGTH = useMemo(() => danceLength(instructions), [instructions]);
+  useEffect(() => {
+    if (generateError) {
+      console.error(generateError);
+    }
+  }, [generateError]);
 
   // Compute preview frames when hovering over an instruction
   const previewFrames = useMemo(() => {
@@ -200,42 +198,35 @@ export default function App() {
     if (t > animation.dur) t = animation.dur;
     if (t < 0) t = 0;
 
-    try {
-      const frame = animation.getFrame(t);
-      renderer.drawFrame(frame, -progression / DANCE_LENGTH);
+    const frame = animation.getFrame(t);
+    renderer.drawFrame(t, frame, -progression / DANCE_LENGTH);
 
-      // Draw relationship highlight lines
-      const highlightedRel = highlightedRelRef.current;
-      if (highlightedRel) {
-        const decoded = decodeRelationship(highlightedRel);
-        const base = BaseRelationshipSchema.safeParse(decoded.base);
-        if (base.success) {
-          const rel = { base: base.data, offset: decoded.offset };
-          const lines: Array<{
-            fromX: number;
-            fromY: number;
-            toX: number;
-            toY: number;
-          }> = [];
-          for (const id of ALL_PROTO_IDS) {
-            const targetId = resolveRelationship(id, rel);
-            const from = frame.protos[id];
-            const to = getDancerState(targetId, frame.protos);
-            lines.push({
-              fromX: from.pos.x,
-              fromY: from.pos.y,
-              toX: to.pos.x,
-              toY: to.pos.y,
-            });
-          }
-          renderer.drawRelationshipLines(lines);
+    // Draw relationship highlight lines
+    const highlightedRel = highlightedRelRef.current;
+    if (highlightedRel) {
+      const decoded = decodeRelationship(highlightedRel);
+      const base = BaseRelationshipSchema.safeParse(decoded.base);
+      if (base.success) {
+        const rel = { base: base.data, offset: decoded.offset };
+        const lines: Array<{
+          fromX: number;
+          fromY: number;
+          toX: number;
+          toY: number;
+        }> = [];
+        for (const id of ALL_PROTO_IDS) {
+          const targetId = resolveRelationship(id, rel);
+          const from = frame[id];
+          const to = getDancerState(targetId, frame);
+          lines.push({
+            fromX: from.pos.x,
+            fromY: from.pos.y,
+            toX: to.pos.x,
+            toY: to.pos.y,
+          });
         }
+        renderer.drawRelationshipLines(lines);
       }
-    } catch {
-      // SWALLOW_EXCEPTION: animation may fail for out-of-range beats; just draw nothing extra
-      // Render just the init formation as fallback
-      const initState = initFormationStates[initFormation];
-      renderer.drawFrame(initState, 0);
     }
 
     // Draw preview keyframes overlay
@@ -243,7 +234,7 @@ export default function App() {
       renderer.drawPreviewKeyframes(previewFrames);
     }
     setBeat(beatRef.current);
-  }, [animation, DANCE_LENGTH, progression, previewFrames, initFormation]);
+  }, [animation, DANCE_LENGTH, progression, previewFrames]);
 
   // Keep drawRef in sync so stable callbacks can always call the latest draw
   useEffect(() => {

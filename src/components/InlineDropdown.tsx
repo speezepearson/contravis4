@@ -1,14 +1,15 @@
+import * as Popover from "@radix-ui/react-popover";
 import {
-  useState,
-  useRef,
-  useImperativeHandle,
   forwardRef,
   useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
 } from "react";
-import * as Popover from "@radix-ui/react-popover";
-import SearchableDropdown from "./SearchableDropdown";
-import type { SearchableDropdownHandle } from "./SearchableDropdown";
+
 import { useInstructionEdit } from "./InstructionEditContext";
+import type { SearchableDropdownHandle } from "./SearchableDropdown";
+import SearchableDropdown from "./SearchableDropdown";
 
 export interface InlineDropdownHandle {
   focus: () => void;

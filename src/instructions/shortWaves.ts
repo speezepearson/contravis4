@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { instructionBaseSchemaFields } from "./_base";
 
 export const ShortWavesInstructionSchema = z.object({

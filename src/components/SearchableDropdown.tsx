@@ -1,11 +1,12 @@
+import "./SearchableDropdown.css";
+
 import {
-  useState,
-  useRef,
+  forwardRef,
   useEffect,
   useImperativeHandle,
-  forwardRef,
+  useRef,
+  useState,
 } from "react";
-import "./SearchableDropdown.css";
 
 export interface SearchableDropdownHandle {
   focus: () => void;

@@ -1,20 +1,21 @@
 import { z } from "zod";
-import { NORTH, VectorSchema } from "./geometry";
+
 import {
-  type DancerId,
-  type ProtoId,
-  parseDancerId,
-  makeProtoId,
-  ProtoIdSchema,
-  HandSchema,
   ALL_PROTO_IDS,
-  RelationshipSchema,
-  type Relationship,
+  type DancerId,
   type Hand,
-  resolveRelationship,
+  HandSchema,
+  makeProtoId,
+  parseDancerId,
   projectDancerIdToProtoId,
-  BeatsSchema,
+  type ProtoId,
+  ProtoIdSchema,
+  type Relationship,
+  RelationshipSchema,
+  resolveRelationship,
 } from "./contraCore";
+import { NORTH, VectorSchema } from "./geometry";
+import { isEqual } from "./utils";
 
 export const DancerStateSchema = z.object({
   protoId: ProtoIdSchema,
@@ -40,10 +41,7 @@ export function getDancerState(
   return { ...proto, pos: proto.pos.add(NORTH.multiply(offset * 2)) };
 }
 
-export const WorldStateSchema = z.object({
-  beat: BeatsSchema,
-  protos: z.record(ProtoIdSchema, DancerStateSchema),
-});
+export const WorldStateSchema = z.record(ProtoIdSchema, DancerStateSchema);
 export type WorldState = z.infer<typeof WorldStateSchema>;
 
 /** Connects two hands of two dancers. Throws an error if the hands are already in use, unless they are already paired with each other. */
@@ -54,24 +52,25 @@ export function connectHands(
   relationship: Relationship,
   theirHand: Hand,
 ): void {
-  const holding = state.protos[id].hands[hand];
-  if (holding && !(holding[0] === relationship && holding[1] === theirHand))
+  const holding = state[id].hands[hand];
+  if (holding) {
+    if (isEqual(holding, [relationship, theirHand])) return;
     throw new Error(`Dancer ${id}'s ${hand} hand is already connected`);
+  }
 
   const otherProto = projectDancerIdToProtoId(
     resolveRelationship(id, relationship),
   );
-  const otherHolding = state.protos[otherProto].hands[theirHand];
-  if (
-    otherHolding &&
-    !(otherHolding[0] === relationship && otherHolding[1] === hand)
-  )
+  const otherHolding = state[otherProto].hands[theirHand];
+  if (otherHolding) {
+    if (isEqual(otherHolding, [relationship, hand])) return;
     throw new Error(
       `Dancer ${otherProto}'s ${theirHand} hand is already connected`,
     );
+  }
 
-  state.protos[id].hands[hand] = [relationship, theirHand];
-  state.protos[otherProto].hands[theirHand] = [relationship, hand];
+  state[id].hands[hand] = [relationship, theirHand];
+  state[otherProto].hands[theirHand] = [relationship, hand];
 }
 
 export function disconnectHands(
@@ -79,24 +78,21 @@ export function disconnectHands(
   id: ProtoId,
   hand: Hand,
 ): void {
-  const holding = state.protos[id].hands[hand];
+  const holding = state[id].hands[hand];
   if (!holding) throw new Error(`Dancer ${id}'s ${hand} hand is not connected`);
+  const [relationship, theirHand] = holding;
 
-  const otherProto = projectDancerIdToProtoId(
-    resolveRelationship(id, holding[0]),
+  const them = projectDancerIdToProtoId(
+    resolveRelationship(id, relationship),
   );
-  const otherHolding = state.protos[otherProto].hands[holding[1]];
-  if (
-    !otherHolding ||
-    otherHolding[0] !== holding[0] ||
-    otherHolding[1] !== hand
-  )
+  const otherHolding = state[them].hands[theirHand];
+  if (!(otherHolding && isEqual(otherHolding, [relationship, hand])))
     throw new Error(
-      `somehow got asymmetric hands state: ${JSON.stringify(state.protos)}`,
+      `somehow got asymmetric hands state: ${JSON.stringify(state)}`,
     );
 
-  state.protos[id].hands[hand] = undefined;
-  state.protos[otherProto].hands[holding[1]] = undefined;
+  state[id].hands[hand] = undefined;
+  state[them].hands[theirHand] = undefined;
 }
 
 export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {

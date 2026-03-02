@@ -1,26 +1,32 @@
 import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import {
+  type AtomicInstruction,
+  makeAtomicInstructionAnimator,
+} from "./instructions/_atomic";
+import {
   chainAnimations,
   type ContraAnimation,
   type InstructionId,
 } from "./instructions/_base";
 import {
-  animateAtomicInstruction,
-  type AtomicInstruction,
-} from "./instructions/_atomic";
-import { splitAnimator, type Split } from "./instructions/split";
-import {
-  type Instruction,
   type InitFormation,
-  instructionDuration,
   initFormationStates,
+  type Instruction,
+  instructionDuration,
 } from "./instructions/index";
-import type { WorldState } from "./worldState";
+import { type Split, splitAnimator } from "./instructions/split";
 import { assertNever } from "./utils";
+import type { WorldState } from "./worldState";
 
-export interface GenerateError {
-  instructionId: InstructionId;
-  message: string;
+export class GenerateError extends Error {
+  public instructionId: InstructionId;
+  public message: string;
+  constructor(instructionId: InstructionId, message: string, cause?: Error) {
+    super(message);
+    this.instructionId = instructionId;
+    this.message = message;
+    this.cause = cause;
+  }
 }
 
 export interface GenerateResult {
@@ -34,12 +40,11 @@ function animateInstruction(
   instr: Instruction,
 ): ContraAnimation {
   if (instr.type === "split") {
-    return splitAnimator(init, new Set<ProtoId>(ALL_PROTO_IDS), instr);
+    return splitAnimator(instr)(init, new Set<ProtoId>(ALL_PROTO_IDS));
   }
-  return animateAtomicInstruction(
+  return makeAtomicInstructionAnimator(instr)(
     init,
     new Set<ProtoId>(ALL_PROTO_IDS),
-    instr,
   );
 }
 
@@ -66,10 +71,7 @@ export function generateDanceAnimation(
       const partial = segments.length > 0 ? chainAnimations(segments) : null;
       return {
         animation: partial,
-        error: {
-          instructionId: instr.id,
-          message: e instanceof Error ? e.message : String(e),
-        },
+        error: new GenerateError(instr.id, e instanceof Error ? e.message : String(e), e instanceof Error ? e : undefined),
       };
     }
   }

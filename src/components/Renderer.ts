@@ -1,12 +1,13 @@
-import type { DancerState, WorldState } from "../worldState";
-import { getDancerState } from "../worldState";
+import type { Vector } from "vecti";
+
+import type { Beats, Hand } from "../contraCore";
 import {
   ALL_PROTO_IDS,
-  resolveRelationship,
   type ProtoId,
+  resolveRelationship,
 } from "../contraCore";
-import type { Hand } from "../contraCore";
-import type { Vector } from "vecti";
+import type { DancerState, WorldState } from "../worldState";
+import { getDancerState } from "../worldState";
 
 const COLORS: Record<ProtoId, { fill: string; stroke: string; label: string }> =
   {
@@ -94,11 +95,11 @@ export class Renderer {
     return [cx, cy];
   }
 
-  drawFrame(frame: WorldState, progressionRate: number) {
+  drawFrame(t: Beats, frame: WorldState, progressionRate: number) {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    this.cameraY = progressionRate * frame.beat;
+    this.cameraY = progressionRate * t;
 
     const viewYMin = this.cameraY - this.yRange / 2;
     const viewYMax = this.cameraY + this.yRange / 2;
@@ -142,7 +143,7 @@ export class Renderer {
     // Hand connections
     ctx.strokeStyle = "#666";
     ctx.lineWidth = 2;
-    const connections = extractHandConnections(frame.protos);
+    const connections = extractHandConnections(frame);
     for (const conn of connections) {
       this.drawHandsForAllCopies(conn.a, conn.ha, conn.b, conn.hb);
     }
@@ -152,7 +153,7 @@ export class Renderer {
     const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
     for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
       for (const id of ALL_PROTO_IDS) {
-        const d = frame.protos[id];
+        const d = frame[id];
         this.drawDancer(
           id,
           d.pos.x,
@@ -165,7 +166,7 @@ export class Renderer {
 
     // Update and draw trails
     for (const id of ALL_PROTO_IDS) {
-      const d = frame.protos[id];
+      const d = frame[id];
       if (!this.trails[id]) this.trails[id] = [];
       this.trails[id]!.push({ x: d.pos.x, y: d.pos.y });
       if (this.trails[id]!.length > this.trailLength) this.trails[id]!.shift();
@@ -268,7 +269,7 @@ export class Renderer {
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
       for (let i = 0; i < frames.length; i++) {
-        const d = frames[i].protos[id];
+        const d = frames[i][id];
         const [cx, cy] = this.worldToCanvas(d.pos.x, d.pos.y);
         if (i === 0) ctx.moveTo(cx, cy);
         else ctx.lineTo(cx, cy);
@@ -279,7 +280,7 @@ export class Renderer {
 
     const last = frames[frames.length - 1];
     for (const id of ALL_PROTO_IDS) {
-      const d = last.protos[id];
+      const d = last[id];
       this.drawGhostDancer(id, d.pos.x, d.pos.y, d.facing);
     }
 

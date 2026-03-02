@@ -1,11 +1,12 @@
-import { InstructionSchema } from "../../instructions/index";
-import type { Instruction } from "../../instructions/index";
 import { z } from "zod";
-import type { SubFormProps } from "../fieldUtils";
-import { SPLIT_BY_OPTIONS, SPLIT_BY_LABELS } from "../fieldUtils";
-import { InlineDropdown } from "../InlineDropdown";
+
 import { splitLists, splitWithLists } from "../../generate";
+import type { Instruction } from "../../instructions/index";
+import { InstructionSchema } from "../../instructions/index";
 import type { Split } from "../../instructions/split";
+import type { SubFormProps } from "../fieldUtils";
+import { SPLIT_BY_LABELS, SPLIT_BY_OPTIONS } from "../fieldUtils";
+import { InlineDropdown } from "../InlineDropdown";
 
 export function SplitFields({
   instruction,

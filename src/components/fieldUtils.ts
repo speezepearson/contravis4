@@ -1,16 +1,16 @@
-import {
-  InstructionSchema,
-  type Instruction,
-  type RelativeDirection,
-  RelativeDirectionSchema,
-  type InstructionId,
-} from "../instructions/index";
-import { InstructionIdSchema } from "../instructions/_base";
 import type {
   BaseRelationship,
   FoilBaseRelationship,
   Role,
 } from "../contraCore";
+import { InstructionIdSchema } from "../instructions/_base";
+import {
+  type Instruction,
+  type InstructionId,
+  InstructionSchema,
+  type RelativeDirection,
+  RelativeDirectionSchema,
+} from "../instructions/index";
 
 /** Props for inline field components. */
 export interface SubFormProps {

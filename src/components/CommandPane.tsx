@@ -1,68 +1,68 @@
-import {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  useCallback,
-  Fragment,
-  memo,
-} from "react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-  DragOverlay,
-} from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
   arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  InstructionSchema,
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { z } from "zod";
+
+import type { ProtoId } from "../contraCore";
+import type { GenerateError } from "../generate";
+import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
+import {
+  type AtomicInstruction,
+  AtomicInstructionSchema,
+} from "../instructions/_atomic";
+import type { ContraAnimation } from "../instructions/_base";
+import { InstructionIdSchema } from "../instructions/_base";
+import type {
+  InitFormation,
+  Instruction,
+  InstructionId,
+} from "../instructions/index";
+import {
   DanceSchema,
   InitFormationSchema,
   instructionDuration,
+  InstructionSchema,
 } from "../instructions/index";
-import type {
-  Instruction,
-  InitFormation,
-  InstructionId,
-} from "../instructions/index";
-import { InstructionIdSchema } from "../instructions/_base";
-import {
-  AtomicInstructionSchema,
-  type AtomicInstruction,
-} from "../instructions/_atomic";
 import type { Split } from "../instructions/split";
-import type { GenerateError } from "../generate";
-import { splitLists, splitWithLists, formatDanceParseError } from "../generate";
-import type { ContraAnimation } from "../instructions/_base";
-import type { ProtoId } from "../contraCore";
-import type { DancerState } from "../worldState";
-import { z } from "zod";
 import { assertNever } from "../utils";
-import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
-import { InstructionEditContext } from "./InstructionEditContext";
-import { InlineDropdown } from "./InlineDropdown";
-import type { InlineDropdownHandle } from "./InlineDropdown";
-import { InlineNumber } from "./InlineNumber";
-
-import { TakeHandsFields } from "./fields/TakeHandsFields";
-import { DropHandsFields } from "./fields/DropHandsFields";
+import type { DancerState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
-import { SwingFields } from "./fields/SwingFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
+import { DropHandsFields } from "./fields/DropHandsFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { SplitFields } from "./fields/SplitFields";
+import { SwingFields } from "./fields/SwingFields";
+import { TakeHandsFields } from "./fields/TakeHandsFields";
+import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
+import type { InlineDropdownHandle } from "./InlineDropdown";
+import { InlineDropdown } from "./InlineDropdown";
+import { InlineNumber } from "./InlineNumber";
+import { InstructionEditContext } from "./InstructionEditContext";
 
 type ActionOptionType = AtomicInstruction["type"] | "split";
 
@@ -600,7 +600,7 @@ export default memo(function CommandPane({
     for (const instr of instructions) {
       try {
         const frame = animation.getFrame(beat);
-        result.set(instr.id, frame.protos);
+        result.set(instr.id, frame);
       } catch {
         // SWALLOW_EXCEPTION: animation may not cover all beats if there was a generate error; we just skip those instructions
       }
@@ -610,7 +610,7 @@ export default memo(function CommandPane({
         for (const sub of listA) {
           try {
             const frame = animation.getFrame(b);
-            result.set(sub.id, frame.protos);
+            result.set(sub.id, frame);
           } catch {
             // SWALLOW_EXCEPTION: same as above
           }
@@ -620,7 +620,7 @@ export default memo(function CommandPane({
         for (const sub of listB) {
           try {
             const frame = animation.getFrame(b);
-            result.set(sub.id, frame.protos);
+            result.set(sub.id, frame);
           } catch {
             // SWALLOW_EXCEPTION: same as above
           }

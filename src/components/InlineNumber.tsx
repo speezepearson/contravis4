@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
 import * as Popover from "@radix-ui/react-popover";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import { useInstructionEdit } from "./InstructionEditContext";
 
 interface Props {

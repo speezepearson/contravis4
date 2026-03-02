@@ -1,5 +1,5 @@
-import { InstructionSchema } from "../../instructions/index";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { InstructionSchema } from "../../instructions/index";
 import type { SubFormProps } from "../fieldUtils";
 import { FULL_RELATIONSHIP_OPTIONS } from "../fieldUtils";
 import { RelationshipDropdown } from "../RelationshipDropdown";

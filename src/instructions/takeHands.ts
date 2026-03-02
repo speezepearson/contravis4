@@ -1,13 +1,14 @@
+import { produce } from "immer";
 import { z } from "zod";
+
 import {
+  type Hand,
   RelationshipSchema,
   resolveRelationship,
-  type Hand,
 } from "../contraCore";
-import { instructionBaseSchemaFields, type InstructionAnimator } from "./_base";
-import { type DancerState, connectHands, getDancerState } from "../worldState";
 import { assertNever } from "../utils";
-import { produce } from "immer";
+import { connectHands, type DancerState, getDancerState } from "../worldState";
+import { type Animator, instructionBaseSchemaFields } from "./_base";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
 export type TakeHand = z.infer<typeof TakeHandSchema>;
@@ -37,38 +38,35 @@ export const TakeHandsInstructionSchema = z.object({
 });
 export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
 
-export const takeHandsAnimator: InstructionAnimator<TakeHandsInstruction> = (
-  init,
-  who,
-  instr,
-) => {
-  return {
-    dur: instr.beats,
-    getFrame(t) {
-      return produce(init, (draft) => {
-        draft.beat += t;
-        for (const id of who) {
-          switch (instr.hand) {
-            case "left":
-              connectHands(draft, id, "left", instr.relationship, "right");
-              break;
-            case "right":
-              connectHands(draft, id, "right", instr.relationship, "left");
-              break;
-            case "inside": {
-              const them = getDancerState(
-                resolveRelationship(id, instr.relationship),
-                draft.protos,
-              );
-              const ourHand = resolveInsideHand(draft.protos[id], them);
-              connectHands(draft, id, ourHand, instr.relationship, ourHand);
-              break;
+export const takeHandsAnimator =
+  (instr: TakeHandsInstruction): Animator =>
+  (init, who) => {
+    return {
+      dur: instr.beats,
+      getFrame(_t) {
+        return produce(init, (draft) => {
+          for (const id of who) {
+            switch (instr.hand) {
+              case "left":
+                connectHands(draft, id, "left", instr.relationship, "left");
+                break;
+              case "right":
+                connectHands(draft, id, "right", instr.relationship, "right");
+                break;
+              case "inside": {
+                const them = getDancerState(
+                  resolveRelationship(id, instr.relationship),
+                  draft,
+                );
+                const ourHand = resolveInsideHand(draft[id], them);
+                connectHands(draft, id, ourHand, instr.relationship, ourHand);
+                break;
+              }
+              default:
+                assertNever(instr.hand);
             }
-            default:
-              assertNever(instr.hand);
           }
-        }
-      });
-    },
+        });
+      },
+    };
   };
-};

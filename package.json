@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "eslint -f ./eslint-formatter-relative.js .",
+    "lint:fix": "eslint --fix -f ./eslint-formatter-relative.js .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@radix-ui/react-popover": "^1.1.15",
     "immer": "^11.1.4",
+    "lodash": "^4.17.23",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "vecti": "^3.1.5",
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/lodash": "^4.17.24",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -30,6 +33,8 @@
     "eslint": "^9.39.3",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^16.5.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.3",

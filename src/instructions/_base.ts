@@ -1,28 +1,28 @@
+import type { Vector } from "vecti";
 import { z } from "zod";
+
 import {
   ALL_PROTO_IDS,
+  type Beats,
   BeatsSchema,
+  type DancerId,
   getRelationship,
   parseDancerId,
   parseProtoId,
   projectDancerIdToProtoId,
+  type ProtoId,
   protoIdToDancerId,
+  type Relationship,
   RelationshipSchema,
   resolveRelationship,
-  type Beats,
-  type DancerId,
-  type ProtoId,
-  type Relationship,
 } from "../contraCore";
-import type { Vector } from "vecti";
-import { NORTH, SOUTH, EAST, WEST, lerpFacing } from "../geometry";
-import { assertNever, lerpVectors } from "../utils";
+import { EAST, NORTH, SOUTH, WEST } from "../geometry";
+import { assertNever } from "../utils";
 import {
-  getDancerState,
   type DancerState,
+  getDancerState,
   type WorldState,
 } from "../worldState";
-import { produce } from "immer";
 
 export const InstructionIdSchema = z.string().uuid();
 export type InstructionId = z.infer<typeof InstructionIdSchema>;
@@ -93,39 +93,29 @@ export function resolveRelativeDirection(
   return there.subtract(d.pos).normalize();
 }
 
+export type Animator = (init: WorldState, who: Set<ProtoId>) => ContraAnimation;
+export function chainAnimators(animators: Animator[]): Animator {
+  return (init, who) => {
+    const animations: ContraAnimation[] = [];
+    for (const animator of animators) {
+      const lastAnimation = animations[animations.length - 1];
+      animations.push(
+        animator(
+          lastAnimation ? lastAnimation.getFrame(lastAnimation.dur) : init,
+          who,
+        ),
+      );
+    }
+    return chainAnimations(animations);
+  };
+}
+
 /** A continuous function from beat time to world state, used for rendering intermediate frames. */
 export type ContraAnimation = {
   dur: Beats;
   getFrame: (t: Beats) => WorldState;
 };
 
-/** Default animation fallback: linearly interpolates position and facing between two keyframes. */
-export function lerpStates(
-  init: WorldState,
-  final: WorldState,
-  t: Beats,
-): WorldState {
-  return produce(init, (draft) => {
-    draft.beat = t;
-    for (const proto of ALL_PROTO_IDS) {
-      const initProto = init.protos[proto];
-      const finalProto = final.protos[proto];
-      const progressFrac = (t - init.beat) / (final.beat - init.beat);
-      draft.protos[proto] = {
-        ...initProto,
-        pos: lerpVectors(initProto.pos, finalProto.pos, progressFrac),
-        facing: lerpFacing(initProto.facing, finalProto.facing, progressFrac),
-      };
-    }
-  });
-}
-
-/**
- * The two-phase interface every instruction implements.
- * - `final` computes the end state and advances `beat` by `instr.beats`.
- * - `animate` (optional) produces a continuous Animation for rendering
- *   intermediate frames. When absent, consumers fall back to `lerpStates`.
- */
 export type InstructionAnimator<Instr> = (
   init: WorldState,
   who: Set<ProtoId>,

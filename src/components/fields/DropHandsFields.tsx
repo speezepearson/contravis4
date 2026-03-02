@@ -1,7 +1,7 @@
-import { InstructionSchema } from "../../instructions/index";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { InstructionSchema } from "../../instructions/index";
 import type { SubFormProps } from "../fieldUtils";
-import { DROP_WHICH_OPTIONS, DROP_WHICH_LABELS } from "../fieldUtils";
+import { DROP_WHICH_LABELS, DROP_WHICH_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
 
 export function DropHandsFields({

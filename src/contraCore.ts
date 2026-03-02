@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { assertNever } from "./utils";
 
 export const BeatsSchema = z.number().int();

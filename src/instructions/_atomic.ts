@@ -1,5 +1,8 @@
 import { z } from "zod";
+
+import { type Animator } from "./_base";
 import { allemandeAnimator, AllemandeInstructionSchema } from "./allemande";
+import { balanceAnimator, BalanceInstructionSchema } from "./balance";
 import { boxTheGnatAnimator, BoxTheGnatInstructionSchema } from "./boxTheGnat";
 import {
   californiaTwirlAnimator,
@@ -19,10 +22,6 @@ import { pullByAnimator, PullByInstructionSchema } from "./pullBy";
 import { stepAnimator, StepInstructionSchema } from "./step";
 import { swingAnimator, SwingInstructionSchema } from "./swing";
 import { takeHandsAnimator, TakeHandsInstructionSchema } from "./takeHands";
-import { type InstructionAnimator, type ContraAnimation } from "./_base";
-import type { ProtoId } from "../contraCore";
-import type { WorldState } from "../worldState";
-import { balanceAnimator, BalanceInstructionSchema } from "./balance";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
@@ -42,9 +41,9 @@ export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
 /** Registry mapping each atomic instruction type to its animator. */
 export const atomicInstructionAnimators: {
-  [K in AtomicInstruction["type"]]: InstructionAnimator<
-    Extract<AtomicInstruction, { type: K }>
-  >;
+  [K in AtomicInstruction["type"]]: (
+    instr: Extract<AtomicInstruction, { type: K }>,
+  ) => Animator;
 } = {
   allemande: allemandeAnimator,
   balance: balanceAnimator,
@@ -59,13 +58,11 @@ export const atomicInstructionAnimators: {
   take_hands: takeHandsAnimator,
   swing: swingAnimator,
 };
-export function animateAtomicInstruction(
-  init: WorldState,
-  who: Set<ProtoId>,
+export function makeAtomicInstructionAnimator(
   instr: AtomicInstruction,
-): ContraAnimation {
-  const animator = atomicInstructionAnimators[
-    instr.type
-  ] as InstructionAnimator<typeof instr>;
-  return animator(init, who, instr);
+): Animator {
+  const makeAnimator = atomicInstructionAnimators[instr.type] as (
+    _: typeof instr,
+  ) => Animator;
+  return makeAnimator(instr);
 }

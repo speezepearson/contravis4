@@ -1,6 +1,6 @@
-import { InlineDropdown } from "./InlineDropdown";
-import { parseDirection, directionToText, DIR_OPTIONS } from "./fieldUtils";
 import type { RelativeDirection } from "../instructions/index";
+import { DIR_OPTIONS, directionToText, parseDirection } from "./fieldUtils";
+import { InlineDropdown } from "./InlineDropdown";
 
 export function DirectionDropdown({
   value,

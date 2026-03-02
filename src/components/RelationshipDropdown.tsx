@@ -1,10 +1,11 @@
 import { useContext, useMemo } from "react";
-import { InlineDropdown } from "./InlineDropdown";
-import { decodeRelationship, relationshipOptionLabel } from "./fieldUtils";
-import { RelationshipHighlightContext } from "./RelationshipHighlightContext";
-import { useInstructionEdit } from "./InstructionEditContext";
+
 import { BaseRelationshipSchema, resolveRelationship } from "../contraCore";
 import { getDancerState } from "../worldState";
+import { decodeRelationship, relationshipOptionLabel } from "./fieldUtils";
+import { InlineDropdown } from "./InlineDropdown";
+import { useInstructionEdit } from "./InstructionEditContext";
+import { RelationshipHighlightContext } from "./RelationshipHighlightContext";
 
 function relationshipTiebreakRank(base: string, offset: number): number {
   if (base === "partner" && offset === 0) return 0;

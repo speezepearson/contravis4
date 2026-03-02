@@ -1,11 +1,11 @@
-import { InstructionSchema } from "../../instructions/index";
+import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { InstructionSchema } from "../../instructions/index";
 import type { SubFormProps } from "../fieldUtils";
 import { FULL_RELATIONSHIP_OPTIONS, HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
 import { InlineNumber } from "../InlineNumber";
 import { RelationshipDropdown } from "../RelationshipDropdown";
-import { HandSchema } from "../../contraCore";
 
 export function AllemandeFields({
   instruction,

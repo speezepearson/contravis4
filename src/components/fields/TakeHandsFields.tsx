@@ -1,10 +1,10 @@
-import { InstructionSchema } from "../../instructions/index";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { InstructionSchema } from "../../instructions/index";
+import { TakeHandSchema } from "../../instructions/takeHands";
 import type { SubFormProps } from "../fieldUtils";
 import { FULL_RELATIONSHIP_OPTIONS, TAKE_HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
 import { RelationshipDropdown } from "../RelationshipDropdown";
-import { TakeHandSchema } from "../../instructions/takeHands";
 
 export function TakeHandsFields({
   instruction,
