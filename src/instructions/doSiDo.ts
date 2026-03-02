@@ -24,16 +24,13 @@ export const doSiDoAnimator =
           const progressFrac = _t / instr.beats;
           for (const id of who) {
             const them = resolveRelationship(id, instr.relationship);
-            const myPos = getDancerState(id, draft).pos;
-            const theirPos = getDancerState(them, draft).pos;
+            const myPos = getDancerState(id, init).pos;
+            const theirPos = getDancerState(them, init).pos;
             draft[id].pos = ellipsePosition(
               myPos,
               theirPos,
-              0.5,
-              2 * Math.PI * instr.rotations,
-            );
-            draft[id].facing = draft[id].facing.rotateByDegrees(
-              360 * Math.floor(instr.beats / 3) * progressFrac,
+              0.25,
+              2 * Math.PI * instr.rotations * progressFrac,
             );
           }
         });

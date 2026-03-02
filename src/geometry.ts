@@ -32,13 +32,11 @@ export function ellipsePosition(
   phi: number,
 ): Vector {
   const center = a.add(b).divide(2);
+  const semiMajor = a.subtract(center);
+  const semiMinorDir = semiMajor.normalize().rotateByDegrees(90);
   return center
-    .add(getDir({ from: center, to: a }).multiply(Math.cos(phi)))
-    .add(
-      getDir({ from: center, to: a })
-        .multiply(Math.sin(phi) * -semiMinorCw)
-        .rotateByDegrees(90),
-    );
+    .add(semiMajor.multiply(Math.cos(phi)))
+    .add(semiMinorDir.multiply(Math.sin(phi) * -semiMinorCw));
 }
 
 export function getDir({ from, to }: { from: Vector; to: Vector }): Vector {

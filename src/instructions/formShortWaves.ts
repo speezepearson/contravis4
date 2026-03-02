@@ -35,7 +35,7 @@ export const formShortWavesAnimator =
             (a, b) => init[a].pos.x - init[b].pos.x,
           );
           if (
-            parseProtoId(protosWestToEast[1]).role ===
+            parseProtoId(protosWestToEast[1]).role !==
             parseProtoId(protosWestToEast[2]).role
           ) {
             throw new Error(

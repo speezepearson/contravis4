@@ -60,7 +60,7 @@ export const californiaTwirlAnimator =
             draft[id].pos = ellipsePosition(
               plan.start,
               plan.end,
-              1 / 2,
+              0.25,
               Math.PI * progressFrac,
             );
             draft[id].facing = lerpFacing(

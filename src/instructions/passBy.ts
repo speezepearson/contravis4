@@ -40,7 +40,7 @@ export const passByAnimator: InstructionAnimator<PassByInstruction> = (
           draft[id].pos = ellipsePosition(
             arc.start,
             arc.end,
-            1 / 2,
+            0.25,
             Math.PI * progressFrac,
           );
           draft[id].facing = arc.end.subtract(arc.start).normalize();

@@ -21,7 +21,7 @@ export type PullByInstruction = z.infer<typeof PullByInstructionSchema>;
 export const pullByAnimator =
   (instr: PullByInstruction): Animator =>
   (init, who) => {
-    const semiMinorCw = (1 / 2) * { left: -1, right: 1 }[instr.hand];
+    const semiMinorCw = 0.25 * { left: -1, right: 1 }[instr.hand];
     const plans = buildProtoRecord((id) => {
       const them = resolveRelationship(id, instr.relationship);
       return {
