@@ -53,9 +53,9 @@ const SearchableDropdown = forwardRef<SearchableDropdownHandle, Props>(
     const query = (selectOnly ? searchText : value).toLowerCase();
     const filtered = query
       ? options.filter((opt) =>
-          new RegExp(
-            "\\b" + query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          ).test(labelOf(opt).toLowerCase()),
+          new RegExp("\\b" + query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(
+            labelOf(opt).toLowerCase(),
+          ),
         )
       : options;
 
@@ -126,8 +126,7 @@ const SearchableDropdown = forwardRef<SearchableDropdownHandle, Props>(
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         if (filtered.length === 0) return;
-        const newIdx =
-          (highlightIndex - 1 + filtered.length) % filtered.length;
+        const newIdx = (highlightIndex - 1 + filtered.length) % filtered.length;
         setHighlightIndex(newIdx);
         onHighlight?.(filtered[newIdx]);
       } else if (e.key === "Enter" || e.key === "Tab") {
@@ -167,7 +166,11 @@ const SearchableDropdown = forwardRef<SearchableDropdownHandle, Props>(
     }
 
     return (
-      <div className="searchable-dropdown" ref={containerRef} onBlur={handleBlur}>
+      <div
+        className="searchable-dropdown"
+        ref={containerRef}
+        onBlur={handleBlur}
+      >
         <input
           ref={inputRef}
           type="text"

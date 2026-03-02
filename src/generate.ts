@@ -63,8 +63,7 @@ export function generateDanceAnimation(
       // Advance currentState to the end of this animation
       currentState = anim.getFrame(anim.dur);
     } catch (e) {
-      const partial =
-        segments.length > 0 ? chainAnimations(segments) : null;
+      const partial = segments.length > 0 ? chainAnimations(segments) : null;
       return {
         animation: partial,
         error: {
@@ -129,7 +128,9 @@ export function splitWithLists(
   by: Split["by"],
   listA: AtomicInstruction[],
   listB: AtomicInstruction[],
-): { by: "role"; larks: AtomicInstruction[]; robins: AtomicInstruction[] } | { by: "direction"; ups: AtomicInstruction[]; downs: AtomicInstruction[] } {
+):
+  | { by: "role"; larks: AtomicInstruction[]; robins: AtomicInstruction[] }
+  | { by: "direction"; ups: AtomicInstruction[]; downs: AtomicInstruction[] } {
   switch (by) {
     case "role":
       return { by: "role", larks: listA, robins: listB };

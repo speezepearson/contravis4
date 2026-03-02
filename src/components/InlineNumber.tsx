@@ -51,7 +51,11 @@ export function InlineNumber({
     (e: React.PointerEvent) => {
       if (open) return;
       e.preventDefault();
-      dragRef.current = { x: e.clientX, value: Number(value) || 0, moved: false };
+      dragRef.current = {
+        x: e.clientX,
+        value: Number(value) || 0,
+        moved: false,
+      };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
     [open, value],

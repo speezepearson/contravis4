@@ -38,8 +38,7 @@ export function AllemandeFields({
         value={instruction.handedness}
         onChange={(v) => tryCommit({ handedness: HandSchema.parse(v) })}
         getLabel={(v) => v}
-      />
-      {" "}
+      />{" "}
       <InlineNumber
         value={String(instruction.rotations)}
         onTextChange={(v) => tryCommit({ rotations: Number(v) })}

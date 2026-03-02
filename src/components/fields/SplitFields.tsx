@@ -27,9 +27,7 @@ export function SplitFields({
       <InlineDropdown
         options={SPLIT_BY_OPTIONS}
         value={instruction.by}
-        onChange={(v) =>
-          tryCommit(z.enum(["role", "direction"]).parse(v))
-        }
+        onChange={(v) => tryCommit(z.enum(["role", "direction"]).parse(v))}
         getLabel={(v) => SPLIT_BY_LABELS[v] ?? v}
       />
     </>

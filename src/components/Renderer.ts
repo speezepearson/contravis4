@@ -1,15 +1,20 @@
 import type { DancerState, WorldState } from "../worldState";
 import { getDancerState } from "../worldState";
-import { ALL_PROTO_IDS, resolveRelationship, type ProtoId } from "../contraCore";
+import {
+  ALL_PROTO_IDS,
+  resolveRelationship,
+  type ProtoId,
+} from "../contraCore";
 import type { Hand } from "../contraCore";
 import type { Vector } from "vecti";
 
-const COLORS: Record<ProtoId, { fill: string; stroke: string; label: string }> = {
-  up_lark_0: { fill: "#4a90d9", stroke: "#6ab0ff", label: "UL" },
-  up_robin_0: { fill: "#d94a4a", stroke: "#ff6a6a", label: "UR" },
-  down_lark_0: { fill: "#2a60a9", stroke: "#4a80c9", label: "DL" },
-  down_robin_0: { fill: "#a92a2a", stroke: "#c94a4a", label: "DR" },
-};
+const COLORS: Record<ProtoId, { fill: string; stroke: string; label: string }> =
+  {
+    up_lark_0: { fill: "#4a90d9", stroke: "#6ab0ff", label: "UL" },
+    up_robin_0: { fill: "#d94a4a", stroke: "#ff6a6a", label: "UR" },
+    down_lark_0: { fill: "#2a60a9", stroke: "#4a80c9", label: "DL" },
+    down_robin_0: { fill: "#a92a2a", stroke: "#c94a4a", label: "DR" },
+  };
 
 const MARGIN = 40;
 const PX_PER_METER = 103;
@@ -18,7 +23,12 @@ const PX_PER_METER = 103;
 function extractHandConnections(
   protos: Record<ProtoId, DancerState>,
 ): Array<{ a: DancerState; ha: Hand; b: DancerState; hb: Hand }> {
-  const connections: Array<{ a: DancerState; ha: Hand; b: DancerState; hb: Hand }> = [];
+  const connections: Array<{
+    a: DancerState;
+    ha: Hand;
+    b: DancerState;
+    hb: Hand;
+  }> = [];
   const seen = new Set<string>();
 
   for (const id of ALL_PROTO_IDS) {
@@ -276,12 +286,7 @@ export class Renderer {
     ctx.globalAlpha = 1.0;
   }
 
-  private drawGhostDancer(
-    id: ProtoId,
-    x: number,
-    y: number,
-    facing: Vector,
-  ) {
+  private drawGhostDancer(id: ProtoId, x: number, y: number, facing: Vector) {
     const color = COLORS[id];
     if (!color) return;
     const ctx = this.ctx;

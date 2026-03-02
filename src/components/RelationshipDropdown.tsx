@@ -35,11 +35,17 @@ export function RelationshipDropdown({
       const baseB = BaseRelationshipSchema.safeParse(relB.base);
       if (!baseA.success || !baseB.success) return 0;
       const targetA = getDancerState(
-        resolveRelationship("up_lark_0", { base: baseA.data, offset: relA.offset }),
+        resolveRelationship("up_lark_0", {
+          base: baseA.data,
+          offset: relA.offset,
+        }),
         dancerStates,
       );
       const targetB = getDancerState(
-        resolveRelationship("up_lark_0", { base: baseB.data, offset: relB.offset }),
+        resolveRelationship("up_lark_0", {
+          base: baseB.data,
+          offset: relB.offset,
+        }),
         dancerStates,
       );
       const distA = larkState.pos.subtract(targetA.pos).length();

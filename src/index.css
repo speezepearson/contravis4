@@ -1,6 +1,12 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   overflow: hidden;
 }
@@ -8,7 +14,7 @@ html, body, #root {
 body {
   background: #1a1a2e;
   color: #e0e0e0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
 }
 
 .app-layout {
@@ -81,9 +87,17 @@ button {
   cursor: pointer;
   font-size: 14px;
 }
-button:hover { background: #3a3a5a; }
-button.active { background: #4a4a7a; border-color: #6a6aaa; }
-button:disabled { opacity: 0.4; cursor: default; }
+button:hover {
+  background: #3a3a5a;
+}
+button.active {
+  background: #4a4a7a;
+  border-color: #6a6aaa;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 input[type="range"] {
   width: 100%;
@@ -100,7 +114,11 @@ input[type="range"] {
   white-space: nowrap;
 }
 
-.speed-display { font-size: 0.9em; color: #888; white-space: nowrap; }
+.speed-display {
+  font-size: 0.9em;
+  color: #888;
+  white-space: nowrap;
+}
 
 .legend {
   margin-top: 6px;
@@ -210,8 +228,14 @@ input[type="range"] {
 }
 
 @keyframes popover-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .popover-content .searchable-dropdown {
@@ -335,8 +359,12 @@ input[type="range"] {
   font-size: 12px;
   flex-shrink: 0;
 }
-.drag-handle:hover { color: #aaa; }
-.drag-handle:active { cursor: grabbing; }
+.drag-handle:hover {
+  color: #aaa;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
 
 /* Selection checkbox */
 

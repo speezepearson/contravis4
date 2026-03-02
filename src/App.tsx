@@ -6,7 +6,11 @@ import {
   splitLists,
 } from "./generate";
 import CommandPane from "./components/CommandPane";
-import type { Instruction, InitFormation, InstructionId } from "./instructions/index";
+import type {
+  Instruction,
+  InitFormation,
+  InstructionId,
+} from "./instructions/index";
 import {
   InstructionSchema,
   DanceSchema,
@@ -27,7 +31,10 @@ import { formatDanceParseError } from "./generate";
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 
-function loadDanceFromLocalStorage(): { dance: Dance } | { error: string } | null {
+function loadDanceFromLocalStorage():
+  | { dance: Dance }
+  | { error: string }
+  | null {
   let raw: string | null;
   try {
     raw = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -120,23 +127,20 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
   const [beat, setBeat] = useState(0);
-  const [instructions, setInstructions] = useState<Instruction[]>(
-    () =>
-      initialLoadResult && "dance" in initialLoadResult
-        ? initialLoadResult.dance.instructions
-        : [],
+  const [instructions, setInstructions] = useState<Instruction[]>(() =>
+    initialLoadResult && "dance" in initialLoadResult
+      ? initialLoadResult.dance.instructions
+      : [],
   );
-  const [initFormation, setInitFormation] = useState<InitFormation>(
-    () =>
-      initialLoadResult && "dance" in initialLoadResult
-        ? initialLoadResult.dance.initFormation
-        : "improper",
+  const [initFormation, setInitFormation] = useState<InitFormation>(() =>
+    initialLoadResult && "dance" in initialLoadResult
+      ? initialLoadResult.dance.initFormation
+      : "improper",
   );
-  const [progression, setProgression] = useState(
-    () =>
-      initialLoadResult && "dance" in initialLoadResult
-        ? initialLoadResult.dance.progression
-        : 1,
+  const [progression, setProgression] = useState(() =>
+    initialLoadResult && "dance" in initialLoadResult
+      ? initialLoadResult.dance.progression
+      : 1,
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -157,10 +161,7 @@ export default function App() {
     () => generateDanceAnimation(instructions, initFormation),
     [instructions, initFormation],
   );
-  const DANCE_LENGTH = useMemo(
-    () => danceLength(instructions),
-    [instructions],
-  );
+  const DANCE_LENGTH = useMemo(() => danceLength(instructions), [instructions]);
 
   // Compute preview frames when hovering over an instruction
   const previewFrames = useMemo(() => {
@@ -249,16 +250,11 @@ export default function App() {
     drawRef.current = draw;
   });
 
-  const setHighlightedRelationship = useCallback(
-    (encoded: string | null) => {
-      highlightedRelRef.current = encoded;
-      cancelAnimationFrame(highlightRelRafRef.current);
-      highlightRelRafRef.current = requestAnimationFrame(() =>
-        drawRef.current(),
-      );
-    },
-    [],
-  );
+  const setHighlightedRelationship = useCallback((encoded: string | null) => {
+    highlightedRelRef.current = encoded;
+    cancelAnimationFrame(highlightRelRafRef.current);
+    highlightRelRafRef.current = requestAnimationFrame(() => drawRef.current());
+  }, []);
 
   // Redraw when animation or preview change
   useEffect(() => {
@@ -320,9 +316,7 @@ export default function App() {
       }
 
       drawRef.current();
-      rafRef.current = requestAnimationFrame((ts) =>
-        animateRef.current!(ts),
-      );
+      rafRef.current = requestAnimationFrame((ts) => animateRef.current!(ts));
     };
   });
 
@@ -330,9 +324,7 @@ export default function App() {
   useEffect(() => {
     if (playing) {
       lastTimestampRef.current = null;
-      rafRef.current = requestAnimationFrame((ts) =>
-        animateRef.current!(ts),
-      );
+      rafRef.current = requestAnimationFrame((ts) => animateRef.current!(ts));
     } else {
       cancelAnimationFrame(rafRef.current);
     }
@@ -368,8 +360,7 @@ export default function App() {
     const handler = (e: KeyboardEvent) => {
       const tag =
         e.target instanceof HTMLElement ? e.target.tagName : undefined;
-      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA")
-        return;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
         togglePlay();
@@ -387,12 +378,9 @@ export default function App() {
     return () => document.removeEventListener("keydown", handler);
   }, [togglePlay, stepFwd, stepBack]);
 
-  const handleHoverInstruction = useCallback(
-    (id: InstructionId | null) => {
-      setHoveredInstructionId(id);
-    },
-    [],
-  );
+  const handleHoverInstruction = useCallback((id: InstructionId | null) => {
+    setHoveredInstructionId(id);
+  }, []);
 
   const handleEditInstruction = useCallback(
     (id: InstructionId) => {
@@ -450,17 +438,10 @@ export default function App() {
       </div>
       <div className="legend">
         <div className="legend-item">
-          <span
-            className="legend-dot"
-            style={{ background: "#4a90d9" }}
-          />{" "}
-          Lark
+          <span className="legend-dot" style={{ background: "#4a90d9" }} /> Lark
         </div>
         <div className="legend-item">
-          <span
-            className="legend-dot"
-            style={{ background: "#d94a4a" }}
-          />{" "}
+          <span className="legend-dot" style={{ background: "#d94a4a" }} />{" "}
           Robin
         </div>
         <div className="legend-item">
@@ -489,19 +470,13 @@ export default function App() {
   };
 
   return (
-    <RelationshipHighlightContext.Provider
-      value={setHighlightedRelationship}
-    >
+    <RelationshipHighlightContext.Provider value={setHighlightedRelationship}>
       <div className="app-layout">
         {localStorageError && (
           <div className="localstorage-error">
-            <strong>
-              Could not load saved dance from localStorage:
-            </strong>
+            <strong>Could not load saved dance from localStorage:</strong>
             <pre>{localStorageError}</pre>
-            <button onClick={() => setLocalStorageError(null)}>
-              Dismiss
-            </button>
+            <button onClick={() => setLocalStorageError(null)}>Dismiss</button>
           </div>
         )}
         <div className="vis-column">
@@ -515,9 +490,7 @@ export default function App() {
           <div className="sidebar-instructions">
             <CommandPane {...commandPaneProps} />
           </div>
-          <div className="sidebar-controls">
-            {desktopControlsBlock}
-          </div>
+          <div className="sidebar-controls">{desktopControlsBlock}</div>
         </div>
 
         {/* Mobile: compact controls bar */}
@@ -545,10 +518,7 @@ export default function App() {
               onChange={(e) => setBpm(Number(e.target.value))}
             />
           </div>
-          <button
-            className="drawer-toggle"
-            onClick={() => setDrawerOpen(true)}
-          >
+          <button className="drawer-toggle" onClick={() => setDrawerOpen(true)}>
             {"\u25B2 Edit Instructions"}
           </button>
         </div>

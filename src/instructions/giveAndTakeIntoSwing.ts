@@ -50,9 +50,9 @@ export const giveAndTakeIntoSwingAnimator: InstructionAnimator<
       .divide(2);
 
     const finalCoM = drawer.pos.add(
-      (drawer.pos.x < 0 ? EAST : WEST).multiply(0.5).rotateByDegrees(
-        90 * (instr.drawerRole === "robin" ? 1 : -1),
-      ),
+      (drawer.pos.x < 0 ? EAST : WEST)
+        .multiply(0.5)
+        .rotateByDegrees(90 * (instr.drawerRole === "robin" ? 1 : -1)),
     );
 
     return {

@@ -36,14 +36,13 @@ import type {
   InstructionId,
 } from "../instructions/index";
 import { InstructionIdSchema } from "../instructions/_base";
-import { AtomicInstructionSchema, type AtomicInstruction } from "../instructions/_atomic";
+import {
+  AtomicInstructionSchema,
+  type AtomicInstruction,
+} from "../instructions/_atomic";
 import type { Split } from "../instructions/split";
 import type { GenerateError } from "../generate";
-import {
-  splitLists,
-  splitWithLists,
-  formatDanceParseError,
-} from "../generate";
+import { splitLists, splitWithLists, formatDanceParseError } from "../generate";
 import type { ContraAnimation } from "../instructions/_base";
 import type { ProtoId } from "../contraCore";
 import type { DancerState } from "../worldState";
@@ -135,10 +134,7 @@ function findInstructionById(
   return null;
 }
 
-function instructionContainsId(
-  instr: Instruction,
-  id: InstructionId,
-): boolean {
+function instructionContainsId(instr: Instruction, id: InstructionId): boolean {
   if (instr.id === id) return true;
   if (instr.type === "split") {
     const [listA, listB] = splitLists(instr);
@@ -180,11 +176,10 @@ function removeFromTree(
         removed = InstructionSchema.parse(listB[bIdx]);
         return InstructionSchema.parse({
           ...i,
-          ...splitWithLists(
-            i.by,
-            listA,
-            [...listB.slice(0, bIdx), ...listB.slice(bIdx + 1)],
-          ),
+          ...splitWithLists(i.by, listA, [
+            ...listB.slice(0, bIdx),
+            ...listB.slice(bIdx + 1),
+          ]),
         });
       }
     }
@@ -268,10 +263,7 @@ function replaceInTree(
     if (i.id === id) return replacement;
     if (i.type === "split") {
       const [listA, listB] = splitLists(i);
-      if (
-        !listA.some((s) => s.id === id) &&
-        !listB.some((s) => s.id === id)
-      )
+      if (!listA.some((s) => s.id === id) && !listB.some((s) => s.id === id))
         return i;
       return InstructionSchema.parse({
         ...i,
@@ -447,9 +439,7 @@ function BeatGutter({
 }) {
   const hasBeat =
     instruction.type !== "split" && doesRequireBeatsInput(instruction.type);
-  const currentBeats = hasBeat
-    ? (instruction as AtomicInstruction).beats
-    : 0;
+  const currentBeats = hasBeat ? (instruction as AtomicInstruction).beats : 0;
 
   if (!hasBeat) return <span className="beat-gutter" />;
 
@@ -527,40 +517,24 @@ function InlineForm({
       {(() => {
         switch (instruction.type) {
           case "take_hands":
-            return (
-              <TakeHandsFields {...common} instruction={instruction} />
-            );
+            return <TakeHandsFields {...common} instruction={instruction} />;
           case "drop_hands":
-            return (
-              <DropHandsFields {...common} instruction={instruction} />
-            );
+            return <DropHandsFields {...common} instruction={instruction} />;
           case "allemande":
-            return (
-              <AllemandeFields {...common} instruction={instruction} />
-            );
+            return <AllemandeFields {...common} instruction={instruction} />;
           case "balance":
-            return (
-              <BalanceFields {...common} instruction={instruction} />
-            );
+            return <BalanceFields {...common} instruction={instruction} />;
           case "swing":
             return <SwingFields {...common} instruction={instruction} />;
           case "box_the_gnat":
-            return (
-              <BoxTheGnatFields {...common} instruction={instruction} />
-            );
+            return <BoxTheGnatFields {...common} instruction={instruction} />;
           case "california_twirl":
             return (
-              <CaliforniaTwirlFields
-                {...common}
-                instruction={instruction}
-              />
+              <CaliforniaTwirlFields {...common} instruction={instruction} />
             );
           case "form_short_waves":
             return (
-              <FormShortWavesFields
-                {...common}
-                instruction={instruction}
-              />
+              <FormShortWavesFields {...common} instruction={instruction} />
             );
           case "do_si_do":
           case "pull_by":
@@ -591,26 +565,18 @@ export default memo(function CommandPane({
   onEditInstruction,
   onSkipToInstruction,
 }: Props) {
-  const [newlyAddedId, setNewlyAddedId] = useState<InstructionId | null>(
-    null,
-  );
+  const [newlyAddedId, setNewlyAddedId] = useState<InstructionId | null>(null);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [pasteFeedback, setPasteFeedback] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<InstructionId>>(
-    new Set(),
-  );
-  const [activeDragId, setActiveDragId] = useState<InstructionId | null>(
-    null,
-  );
+  const [selectedIds, setSelectedIds] = useState<Set<InstructionId>>(new Set());
+  const [activeDragId, setActiveDragId] = useState<InstructionId | null>(null);
   const lastClickedIdRef = useRef<InstructionId | null>(null);
   const lastClickWasSelectRef = useRef(true);
 
   const prevInstructionsRef = useRef(instructions);
   useEffect(() => {
     if (prevInstructionsRef.current !== instructions) {
-      const prevIds = new Set(
-        flatInstructionIds(prevInstructionsRef.current),
-      );
+      const prevIds = new Set(flatInstructionIds(prevInstructionsRef.current));
       const curIds = new Set(flatInstructionIds(instructions));
       const overlap = [...prevIds].filter((id) => curIds.has(id)).length;
       if (overlap < prevIds.size * 0.5 && prevIds.size > 0) {
@@ -752,8 +718,7 @@ export default memo(function CommandPane({
       .parse(over.data.current?.sortable?.containerId);
     const destContainer = overSortableContainer ?? String(over.id);
     const draggedId = InstructionIdSchema.parse(active.id);
-    const isMultiDrag =
-      selectedIds.has(draggedId) && selectedIds.size > 1;
+    const isMultiDrag = selectedIds.has(draggedId) && selectedIds.size > 1;
 
     if (active.id === over.id && !isMultiDrag) return;
 
@@ -775,14 +740,10 @@ export default memo(function CommandPane({
       const firstSelectedOrigIdx = instructions.findIndex((i) =>
         selectedTopIds.has(i.id),
       );
-      const overOrigIdx = instructions.findIndex(
-        (i) => i.id === over.id,
-      );
+      const overOrigIdx = instructions.findIndex((i) => i.id === over.id);
       const draggingForward = firstSelectedOrigIdx < overOrigIdx;
       const insertIdx =
-        overIdx !== -1
-          ? overIdx + (draggingForward ? 1 : 0)
-          : remaining.length;
+        overIdx !== -1 ? overIdx + (draggingForward ? 1 : 0) : remaining.length;
       const newInstructions = [
         ...remaining.slice(0, insertIdx),
         ...movedItems,
@@ -811,8 +772,7 @@ export default memo(function CommandPane({
     if (!draggedInstr) return;
 
     const destParsed = parseContainerId(destContainer);
-    if (destParsed.type === "split" && draggedInstr.type === "split")
-      return;
+    if (destParsed.type === "split" && draggedInstr.type === "split") return;
     if (
       destParsed.type === "split" &&
       instructionContainsId(draggedInstr, destParsed.splitId)
@@ -828,11 +788,9 @@ export default memo(function CommandPane({
       const overIdx = destItems
         ? destItems.findIndex((i) => i.id === over.id)
         : -1;
-      insertIdx =
-        overIdx !== -1 ? overIdx : (destItems?.length ?? 0);
+      insertIdx = overIdx !== -1 ? overIdx : (destItems?.length ?? 0);
     } else {
-      insertIdx =
-        getContainerItems(treeWithout, destContainer)?.length ?? 0;
+      insertIdx = getContainerItems(treeWithout, destContainer)?.length ?? 0;
     }
 
     setInstructions(
@@ -961,9 +919,7 @@ export default memo(function CommandPane({
         <InlineDropdown
           options={InitFormationSchema.options}
           value={initFormation}
-          onChange={(v) =>
-            setInitFormation(InitFormationSchema.parse(v))
-          }
+          onChange={(v) => setInitFormation(InitFormationSchema.parse(v))}
           getLabel={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
         />
         <label> Progression: </label>
@@ -1024,9 +980,7 @@ export default memo(function CommandPane({
         </div>
 
         <div className="json-io">
-          <button onClick={copyJson}>
-            {copyFeedback || "Copy JSON"}
-          </button>
+          <button onClick={copyJson}>{copyFeedback || "Copy JSON"}</button>
           <textarea
             value=""
             onChange={() => {}}
@@ -1038,26 +992,20 @@ export default memo(function CommandPane({
             placeholder="Paste JSON here to load"
             rows={3}
           />
-          {pasteFeedback && (
-            <div className="paste-error">{pasteFeedback}</div>
-          )}
+          {pasteFeedback && <div className="paste-error">{pasteFeedback}</div>}
         </div>
         {activeDragId &&
           selectedIds.has(activeDragId) &&
           selectedIds.size > 1 && (
             <DragOverlay>
-              <div className="drag-overlay-badge">
-                {selectedIds.size} items
-              </div>
+              <div className="drag-overlay-badge">{selectedIds.size} items</div>
             </DragOverlay>
           )}
       </DndContext>
     </div>
   );
 
-  function renderSplitBody(
-    split: Extract<Instruction, { type: "split" }>,
-  ) {
+  function renderSplitBody(split: Extract<Instruction, { type: "split" }>) {
     const [splitListA, splitListB] = splitLists(split);
     return (
       <div className="split-body">
