@@ -1,6 +1,6 @@
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { InstructionSchema } from "../../instructions/index";
-import { DirectionDropdown } from "../DirectionDropdown";
+import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { FULL_FOIL_RELATIONSHIP_OPTIONS } from "../fieldUtils";
 import { RelationshipDropdown } from "../RelationshipDropdown";
@@ -37,7 +37,7 @@ export function SwingFields({
         onChange={(rel) => tryCommit({ relationship: rel })}
       />
       {" \u2192 "}
-      <DirectionDropdown
+      <CardinalDirectionDropdown
         value={instruction.endFacing}
         onChange={(f) => tryCommit({ endFacing: f })}
         onInvalid={onInvalid}

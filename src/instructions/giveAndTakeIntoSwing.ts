@@ -12,10 +12,10 @@ import { lerpVectors } from "../utils";
 import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   type Animator,
+  CardinalDirectionSchema,
   chainAnimations,
   type ContraAnimation,
   instructionBaseSchemaFields,
-  RelativeDirectionSchema,
 } from "./_base";
 import { swingAnimator } from "./swing";
 
@@ -24,7 +24,7 @@ export const GiveAndTakeIntoSwingInstructionSchema = z.object({
   type: z.literal("give_and_take_into_swing"),
   relationship: FoilRelationshipSchema,
   drawerRole: RoleSchema,
-  endFacing: RelativeDirectionSchema,
+  endFacing: CardinalDirectionSchema,
 });
 export type GiveAndTakeIntoSwingInstruction = z.infer<
   typeof GiveAndTakeIntoSwingInstructionSchema

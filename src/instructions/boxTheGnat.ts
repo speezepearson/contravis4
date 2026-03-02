@@ -37,7 +37,11 @@ export const boxTheGnatAnimator =
               0.25,
               Math.PI * progressFrac,
             );
-            draft[id].facing = lerpFacing(init[id].facing, getDir({from: arc.end, to: arc.start}), progressFrac);
+            draft[id].facing = lerpFacing(
+              init[id].facing,
+              getDir({ from: arc.end, to: arc.start }),
+              progressFrac,
+            );
             connectHands(draft, id, "right", instr.relationship, "right");
           }
         });

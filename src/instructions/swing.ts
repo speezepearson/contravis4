@@ -3,24 +3,30 @@ import { z } from "zod";
 
 import {
   FoilRelationshipSchema,
+  isLark,
   parseProtoId,
   resolveRelationship,
 } from "../contraCore";
 import { ccwRadsBetween, getDir, lerpFacing, revolve } from "../geometry";
-import { lerpVectors } from "../utils";
-import { buildProtoRecord, connectHands, getDancerState } from "../worldState";
+import { avgPos, lerpVectors } from "../utils";
+import {
+  buildProtoRecord,
+  connectHands,
+  disconnectHands,
+  getDancerState,
+} from "../worldState";
 import {
   type Animator,
+  CardinalDirectionSchema,
+  getCardinalBearing,
   instructionBaseSchemaFields,
-  RelativeDirectionSchema,
-  resolveRelativeDirection,
 } from "./_base";
 
 export const SwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("swing"),
   relationship: FoilRelationshipSchema,
-  endFacing: RelativeDirectionSchema,
+  endFacing: CardinalDirectionSchema,
 });
 export type SwingInstruction = z.infer<typeof SwingInstructionSchema>;
 
@@ -36,31 +42,33 @@ export const swingAnimator =
     const approachBeats = APPROACH_BEATS;
     const swingBeats = instr.beats - APPROACH_BEATS - DISENGAGE_BEATS;
     const disengageBeats = DISENGAGE_BEATS;
-    const plans = buildProtoRecord((id) => {
-      const isLark = parseProtoId(id).role === "lark";
-      const finalFacing = resolveRelativeDirection(instr.endFacing, id, init);
 
-      const myPos = getDancerState(id, init).pos;
-      const theirPos = getDancerState(
-        resolveRelationship(id, instr.relationship),
-        init,
-      ).pos;
-      const center = myPos.add(theirPos).divide(2);
+    const pairs = buildProtoRecord((id) => {
+      const me = getDancerState(id, init);
+      const themId = resolveRelationship(id, instr.relationship);
+      const them = getDancerState(themId, init);
+      const center = avgPos(me.pos, them.pos);
+      return { me, themId, them, center };
+    });
+
+    const plans = buildProtoRecord((id) => {
+      const { me, center } = pairs[id];
+      const finalFacing = getCardinalBearing(instr.endFacing, center); // using `center` instead of `me.pos` because in e.g. a give and take one dancer might be near the center
 
       const final = {
         facing: finalFacing,
         pos: center.add(
           finalFacing
             .multiply(FINAL_SEPARATION / 2)
-            .rotateByDegrees(90 * (isLark ? 1 : -1)),
+            .rotateByDegrees(90 * (isLark(id) ? 1 : -1)),
         ),
       };
 
       const postApproach = {
         pos: center.add(
-          getDir({ from: center, to: myPos }).multiply(ORBIT_RADIUS),
+          getDir({ from: center, to: me.pos }).multiply(ORBIT_RADIUS),
         ),
-        facing: getDir({ from: myPos, to: center }),
+        facing: getDir({ from: me.pos, to: center }),
       };
 
       const numSwingRadians =
@@ -68,7 +76,7 @@ export const swingAnimator =
           Math.PI *
           Math.floor(instr.beats / APPROX_BEATS_PER_SWING_ROTATION) +
         ccwRadsBetween(
-          isLark ? postApproach.facing : postApproach.facing.multiply(-1),
+          isLark(id) ? postApproach.facing : postApproach.facing.multiply(-1),
           finalFacing,
         );
 
@@ -93,12 +101,13 @@ export const swingAnimator =
       dur: instr.beats,
       getFrame(t) {
         return produce(init, (draft) => {
+          for (const id of who) disconnectHands(draft, id);
           for (const id of who) {
             if (t < approachBeats) {
               const progressFrac = t / approachBeats;
               draft[id].pos = lerpVectors(
+                init[id].pos,
                 plans[id].postApproach.pos,
-                plans[id].postSwing.pos,
                 progressFrac,
               );
               draft[id].facing = lerpFacing(
@@ -113,7 +122,7 @@ export const swingAnimator =
                 radians: plans[id].numSwingRadians * progressFrac,
               });
               draft[id].facing = plans[id].postApproach.facing.rotateByRadians(
-                -plans[id].numSwingRadians * progressFrac,
+                plans[id].numSwingRadians * progressFrac,
               );
               const isLark = parseProtoId(id).role === "lark";
               connectHands(

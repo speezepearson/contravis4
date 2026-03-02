@@ -32,15 +32,32 @@ export const instructionBaseSchemaFields = {
   beats: BeatsSchema,
 };
 
+export const CardinalDirectionSchema = z.enum(["up", "down", "across", "out"]);
+export type CardinalDirection = z.infer<typeof CardinalDirectionSchema>;
+export function getCardinalBearing(
+  dir: CardinalDirection,
+  pos: Vector,
+): Vector {
+  switch (dir) {
+    case "up":
+      return NORTH;
+    case "down":
+      return SOUTH;
+    case "across":
+      return pos.x < 0 ? EAST : WEST;
+    case "out":
+      return pos.x < 0 ? WEST : EAST;
+    default:
+      assertNever(dir);
+  }
+}
+
 // Direction relative to a dancer: a named direction or a relationship
 export const RelativeDirectionSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("direction"),
     value: z.enum([
-      "up",
-      "down",
-      "across",
-      "out",
+      ...CardinalDirectionSchema.options,
       "progression",
       "forward",
       "back",

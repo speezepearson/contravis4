@@ -31,3 +31,7 @@ export function lerpVectors(
 export function isEqual<T>(a: T, b: T): boolean {
   return _.isEqual(a, b);
 }
+
+export function avgPos(...vs: Vector[]): Vector {
+  return vs.reduce((acc, v) => acc.add(v), new Vector(0, 0)).divide(vs.length);
+}

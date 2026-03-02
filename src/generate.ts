@@ -71,7 +71,11 @@ export function generateDanceAnimation(
       const partial = segments.length > 0 ? chainAnimations(segments) : null;
       return {
         animation: partial,
-        error: new GenerateError(instr.id, e instanceof Error ? e.message : String(e), e instanceof Error ? e : undefined),
+        error: new GenerateError(
+          instr.id,
+          e instanceof Error ? e.message : String(e),
+          e instanceof Error ? e : undefined,
+        ),
       };
     }
   }

@@ -1,6 +1,7 @@
 import { produce } from "immer";
 import { z } from "zod";
 
+import { ALL_HANDS } from "../contraCore";
 import { assertNever } from "../utils";
 import { disconnectHands } from "../worldState";
 import { type Animator, instructionBaseSchemaFields } from "./_base";
@@ -28,18 +29,20 @@ export const dropHandsAnimator =
               disconnectHands(draft, id, "right");
               break;
             case "both":
-              if (draft[id].hands.left) disconnectHands(draft, id, "left");
-              if (draft[id].hands.right) disconnectHands(draft, id, "right");
+              disconnectHands(draft, id);
               break;
             case "partner":
             case "shadow":
             case "neighbor": {
               const actualDropRelationship =
                 instr.which === "shadow" ? "partner" : instr.which;
-              if (draft[id].hands.left?.[0].base === actualDropRelationship)
-                disconnectHands(draft, id, "left");
-              if (draft[id].hands.right?.[0].base === actualDropRelationship)
-                disconnectHands(draft, id, "right");
+              for (const hand of ALL_HANDS) {
+                if (
+                  draft[id].hands[hand]?.[0].base === actualDropRelationship
+                ) {
+                  disconnectHands(draft, id, hand);
+                }
+              }
               break;
             }
             default:

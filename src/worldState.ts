@@ -76,15 +76,19 @@ export function connectHands(
 export function disconnectHands(
   state: WorldState,
   id: ProtoId,
-  hand: Hand,
+  hand?: Hand,
 ): void {
+  if (hand == null) {
+    if (state[id].hands.left) disconnectHands(state, id, "left");
+    if (state[id].hands.right) disconnectHands(state, id, "right");
+    return;
+  }
+
   const holding = state[id].hands[hand];
   if (!holding) throw new Error(`Dancer ${id}'s ${hand} hand is not connected`);
   const [relationship, theirHand] = holding;
 
-  const them = projectDancerIdToProtoId(
-    resolveRelationship(id, relationship),
-  );
+  const them = projectDancerIdToProtoId(resolveRelationship(id, relationship));
   const otherHolding = state[them].hands[theirHand];
   if (!(otherHolding && isEqual(otherHolding, [relationship, hand])))
     throw new Error(

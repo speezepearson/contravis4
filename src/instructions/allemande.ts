@@ -6,7 +6,7 @@ import {
   RelationshipSchema,
   resolveRelationship,
 } from "../contraCore";
-import { ellipsePosition, revolve } from "../geometry";
+import { ellipsePosition, getDir, lerpFacing, revolve } from "../geometry";
 import { connectHands, getDancerState } from "../worldState";
 import {
   type Animator,
@@ -23,16 +23,15 @@ export const AllemandeInstructionSchema = z.object({
 });
 export type AllemandeInstruction = z.infer<typeof AllemandeInstructionSchema>;
 
-const ALLEMANDE_RADIUS = 1 / 2;
-const FRAC_ELLIPTICAL_ARC_TO_START = 1 / 4;
+const ALLEMANDE_RADIUS = 0.25;
+const APPROACH_ELLIPSE_RADIANS = Math.PI / 2;
 
 export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
   const rotationSign = instr.handedness === "left" ? 1 : -1;
   const approachBeats = Math.min(1, instr.beats / 4);
   const circlingBeats = instr.beats - approachBeats;
   const numAllemandeRadians =
-    (2 * Math.PI * instr.rotations - FRAC_ELLIPTICAL_ARC_TO_START) *
-    rotationSign;
+    (2 * Math.PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
   return chainAnimators([
     (init, who) => ({
@@ -49,9 +48,30 @@ export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
             draft[id].pos = ellipsePosition(
               start,
               counterpartStart,
-              ALLEMANDE_RADIUS * rotationSign,
-              FRAC_ELLIPTICAL_ARC_TO_START * progressFrac,
+              -ALLEMANDE_RADIUS * rotationSign,
+              APPROACH_ELLIPSE_RADIANS * progressFrac,
             );
+            draft[id].facing = lerpFacing(
+              init[id].facing,
+              getDir({ from: start, to: counterpartStart }),
+              progressFrac,
+            );
+          }
+          for (const id of who) {
+            const me = getDancerState(id, init);
+            const them = getDancerState(
+              resolveRelationship(id, instr.relationship),
+              init,
+            );
+            if (me.pos.subtract(them.pos).length() < 1) {
+              connectHands(
+                draft,
+                id,
+                instr.handedness,
+                instr.relationship,
+                instr.handedness,
+              );
+            }
           }
         });
       },

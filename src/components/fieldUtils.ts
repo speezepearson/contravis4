@@ -3,7 +3,10 @@ import type {
   FoilBaseRelationship,
   Role,
 } from "../contraCore";
-import { InstructionIdSchema } from "../instructions/_base";
+import {
+  type CardinalDirection,
+  InstructionIdSchema,
+} from "../instructions/_base";
 import {
   type Instruction,
   type InstructionId,
@@ -159,6 +162,10 @@ export function parseDirection(text: string): RelativeDirection | null {
 export function directionToText(dir: RelativeDirection): string {
   if (dir.kind === "direction") return dir.value;
   return dir.value.base;
+}
+
+export function cardinalDirectionToText(dir: CardinalDirection): string {
+  return dir;
 }
 
 export const DIR_OPTIONS = [

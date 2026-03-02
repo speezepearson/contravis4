@@ -94,10 +94,7 @@
       "beats": 8,
       "type": "swing",
       "relationship": {"base": "partner", "offset": 0},
-      "endFacing": {
-        "kind": "direction",
-        "value": "across"
-      }
+      "endFacing": "across"
     },
     {
       "id": "b1000000-0000-4000-a000-000000000001",
@@ -105,10 +102,7 @@
       "type": "give_and_take_into_swing",
       "relationship": {"base": "neighbor", "offset": 0},
       "drawerRole": "lark",
-      "endFacing": {
-        "kind": "direction",
-        "value": "across"
-      }
+      "endFacing": "across"
     },
     {
       "id": "b2000000-0000-4000-a000-000000000001",

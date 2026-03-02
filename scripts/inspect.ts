@@ -4,8 +4,8 @@ import { parseArgs } from "node:util";
 import type { Vector } from "vecti";
 
 import { ALL_PROTO_IDS, type Hand, type ProtoId } from "../src/contraCore";
-import { EAST, NORTH, SOUTH, WEST } from "../src/geometry";
 import { generateDanceAnimation } from "../src/generate";
+import { EAST, NORTH, SOUTH, WEST } from "../src/geometry";
 import {
   DanceSchema,
   type Instruction,

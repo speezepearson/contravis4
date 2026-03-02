@@ -7,7 +7,12 @@ import {
   resolveRelationship,
 } from "../contraCore";
 import { ellipsePosition } from "../geometry";
-import { buildProtoRecord, connectHands, getDancerState } from "../worldState";
+import {
+  buildProtoRecord,
+  connectHands,
+  disconnectHands,
+  getDancerState,
+} from "../worldState";
 import { type Animator, instructionBaseSchemaFields } from "./_base";
 
 export const PullByInstructionSchema = z.object({
@@ -44,7 +49,7 @@ export const pullByAnimator =
               Math.PI * progressFrac,
             );
             draft[id].facing = arc.end.subtract(arc.start).normalize();
-            if (progressFrac < 0.5)
+            if (progressFrac < 0.5) {
               connectHands(
                 draft,
                 id,
@@ -52,6 +57,9 @@ export const pullByAnimator =
                 instr.relationship,
                 instr.hand,
               );
+            } else {
+              disconnectHands(draft, id);
+            }
           }
         });
       },

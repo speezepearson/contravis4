@@ -7,6 +7,7 @@ export type Beats = z.infer<typeof BeatsSchema>;
 
 export const HandSchema = z.enum(["left", "right"]);
 export type Hand = z.infer<typeof HandSchema>;
+export const ALL_HANDS: Hand[] = ["left", "right"] as const;
 export function otherHand(hand: Hand): Hand {
   return hand === "left" ? "right" : "left";
 }
@@ -95,6 +96,12 @@ export function parseDancerId(id: DancerId): {
 }
 export function parseProtoId(id: ProtoId): { dir: ProgressionDir; role: Role } {
   return parseDancerId(id);
+}
+export function getRole(id: DancerId): Role {
+  return parseDancerId(id).role;
+}
+export function isLark(id: DancerId): boolean {
+  return getRole(id) === "lark";
 }
 
 export function protoIdToDancerId(
