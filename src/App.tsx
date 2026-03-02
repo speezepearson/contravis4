@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { averageFrames, shiftFrameByProgression } from "./averageFrames";
-import { exportGif } from "./exportGif";
 import CommandPane from "./components/CommandPane";
 import { decodeRelationship } from "./components/fieldUtils";
 import { RelationshipHighlightContext } from "./components/RelationshipHighlightContext";
@@ -11,6 +10,7 @@ import {
   BaseRelationshipSchema,
   resolveRelationship,
 } from "./contraCore";
+import { exportGif } from "./exportGif";
 import {
   findInstructionStartBeat,
   generateDanceAnimation,

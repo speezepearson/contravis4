@@ -76,13 +76,9 @@ function sampleFrame(
       (sampleT < 0 || sampleT > dur)
     ) {
       const wraps =
-        sampleT < 0
-          ? Math.ceil(-sampleT / dur)
-          : -Math.floor(sampleT / dur);
+        sampleT < 0 ? Math.ceil(-sampleT / dur) : -Math.floor(sampleT / dur);
       const wrappedT = sampleT + wraps * dur;
-      const rawFrame = animation.getFrame(
-        Math.max(0, Math.min(dur, wrappedT)),
-      );
+      const rawFrame = animation.getFrame(Math.max(0, Math.min(dur, wrappedT)));
       frames.push(
         shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
       );
