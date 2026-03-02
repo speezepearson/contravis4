@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { Vector } from 'vecti';
-import { assertNever } from './utils';
+import { z } from "zod";
+import { Vector } from "vecti";
+import { assertNever } from "./utils";
 
 export const VectorSchema = z.instanceof(Vector);
 
@@ -32,23 +32,36 @@ export function ellipsePosition(
 ): Vector {
   const center = a.add(b).divide(2);
   return center
-    .add(getDir({from: center, to: a}).multiply(Math.cos(phi)))
-    .add(getDir({from: center, to: a}).multiply(Math.sin(phi) * -semiMinorCw).rotateByDegrees(90))
+    .add(getDir({ from: center, to: a }).multiply(Math.cos(phi)))
+    .add(
+      getDir({ from: center, to: a })
+        .multiply(Math.sin(phi) * -semiMinorCw)
+        .rotateByDegrees(90),
+    );
 }
 
-export function getDir({from, to}: {from: Vector, to: Vector}): Vector {
+export function getDir({ from, to }: { from: Vector; to: Vector }): Vector {
   return to.subtract(from).normalize();
-} 
+}
 
-export function revolve(x: Vector, how: ({around: Vector} | {aroundMidpointWith: Vector}) & ({radians: number} | {degrees: number} | {rotations: number})): Vector {
+export function revolve(
+  x: Vector,
+  how: ({ around: Vector } | { aroundMidpointWith: Vector }) &
+    ({ radians: number } | { degrees: number } | { rotations: number }),
+): Vector {
   const center =
-    'around' in how ? how.around :
-    'aroundMidpointWith' in how ? how.aroundMidpointWith.add(x).divide(2) :
-    assertNever(how);
+    "around" in how
+      ? how.around
+      : "aroundMidpointWith" in how
+        ? how.aroundMidpointWith.add(x).divide(2)
+        : assertNever(how);
   const radians =
-    'radians' in how ? how.radians :
-    'degrees' in how ? how.degrees / 180 * Math.PI :
-    'rotations' in how ? 360 * how.rotations :
-    assertNever(how);
+    "radians" in how
+      ? how.radians
+      : "degrees" in how
+        ? (how.degrees / 180) * Math.PI
+        : "rotations" in how
+          ? 360 * how.rotations
+          : assertNever(how);
   return center.add(x.subtract(center).rotateByRadians(radians));
 }
