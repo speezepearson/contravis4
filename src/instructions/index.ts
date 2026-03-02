@@ -47,20 +47,3 @@ export const DanceSchema = z.object({
   instructions: z.array(InstructionSchema),
 });
 export type Dance = z.infer<typeof DanceSchema>;
-
-export function executeInstruction(state: WorldState, who: Set<ProtoId>, instr: Instruction): WorldState {
-  switch (instr.type) {
-    case 'allemande': return allemandeAnimator.final(state, who, instr);
-    case 'box_the_gnat': return boxTheGnatAnimator.final(state, who, instr);
-    case 'california_twirl': return californiaTwirlAnimator.final(state, who, instr);
-    case 'drop_hands': return dropHandsAnimator.final(state, who, instr);
-    case 'take_hands': return takeHandsAnimator.final(state, who, instr);
-    case 'swing': return swingAnimator.final(state, who, instr);
-    case 'split': return splitAnimator.final(state, who, instr);
-    default: assertNever(instr);
-  }
-}
-
-export function executeInstructions(state: WorldState, who: Set<ProtoId>, instructions: Instruction[]): WorldState {
-  return instructions.reduce((s, i) => executeInstruction(s, who, i), state);
-}
