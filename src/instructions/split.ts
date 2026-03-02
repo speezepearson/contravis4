@@ -51,8 +51,11 @@ export const splitAnimator =
         return {
           dur: Math.max(larks.dur, robins.dur),
           getFrame(t) {
-            const larksKf = larks.getFrame(t);
-            const robinsKf = robins.getFrame(t);
+            // Each side may have a different duration. When one side finishes
+            // early, those dancers hold their final positions while the other
+            // side continues, so we clamp t to each side's duration.
+            const larksKf = larks.getFrame(Math.min(t, larks.dur));
+            const robinsKf = robins.getFrame(Math.min(t, robins.dur));
             return {
               up_lark_0: larksKf["up_lark_0"],
               up_robin_0: robinsKf["up_robin_0"],
@@ -72,8 +75,11 @@ export const splitAnimator =
         return {
           dur: Math.max(ups.dur, downs.dur),
           getFrame(t) {
-            const upsKf = ups.getFrame(t);
-            const downsKf = downs.getFrame(t);
+            // Each side may have a different duration. When one side finishes
+            // early, those dancers hold their final positions while the other
+            // side continues, so we clamp t to each side's duration.
+            const upsKf = ups.getFrame(Math.min(t, ups.dur));
+            const downsKf = downs.getFrame(Math.min(t, downs.dur));
             return {
               up_lark_0: upsKf["up_lark_0"],
               up_robin_0: upsKf["up_robin_0"],

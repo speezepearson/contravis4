@@ -96,6 +96,9 @@ export function resolveRelativeDirection(
 export type Animator = (init: WorldState, who: Set<ProtoId>) => ContraAnimation;
 export function chainAnimators(animators: Animator[]): Animator {
   return (init, who) => {
+    if (animators.length === 0) {
+      return { dur: 0, getFrame: () => init };
+    }
     const animations: ContraAnimation[] = [];
     for (const animator of animators) {
       const lastAnimation = animations[animations.length - 1];
@@ -207,6 +210,9 @@ export function findDancerOnSide(
 }
 
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
+  if (segments.length === 0) {
+    throw new Error("chainAnimations requires at least one segment");
+  }
   return {
     dur: segments.reduce((acc, segment) => acc + segment.dur, 0),
     getFrame(t) {
