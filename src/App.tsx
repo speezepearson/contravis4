@@ -28,7 +28,8 @@ import {
   InstructionSchema,
 } from "./instructions/index";
 import { isLocalStorageAvailable } from "./utils";
-import { getDancerState } from "./worldState";
+import { getDancerState, type WorldState } from "./worldState";
+import { averageFrames } from "./averageFrames";
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 
@@ -139,6 +140,7 @@ export default function App() {
       : 1,
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [smoothness, setSmoothness] = useState(1);
 
   // Persist dance to localStorage whenever it changes
   useEffect(() => {
@@ -171,8 +173,8 @@ export default function App() {
     const dur = instructionDuration(instr);
     if (dur <= 0) return [];
 
-    // Sample the animation at regular intervals during this instruction
-    const SAMPLE_COUNT = 12;
+    // Sample the animation every quarter-beat during this instruction
+    const SAMPLE_COUNT = Math.max(1, Math.round(dur * 4));
     const frames = [];
     for (let i = 0; i <= SAMPLE_COUNT; i++) {
       const t = startBeat + (dur * i) / SAMPLE_COUNT;
@@ -198,7 +200,19 @@ export default function App() {
     if (t > animation.dur) t = animation.dur;
     if (t < 0) t = 0;
 
-    const frame = animation.getFrame(t);
+    let frame: WorldState;
+    if (smoothness > 0) {
+      const N = 10;
+      const frames: WorldState[] = [];
+      for (let i = 0; i < N; i++) {
+        const sampleT = t + smoothness * ((i / (N - 1)) - 0.5);
+        const clampedT = Math.max(0, Math.min(animation.dur, sampleT));
+        frames.push(animation.getFrame(clampedT));
+      }
+      frame = averageFrames(frames);
+    } else {
+      frame = animation.getFrame(t);
+    }
     renderer.drawFrame(t, frame, -progression / DANCE_LENGTH);
 
     // Draw relationship highlight lines
@@ -234,7 +248,7 @@ export default function App() {
       renderer.drawPreviewKeyframes(previewFrames);
     }
     setBeat(beatRef.current);
-  }, [animation, DANCE_LENGTH, progression, previewFrames]);
+  }, [animation, DANCE_LENGTH, progression, previewFrames, smoothness]);
 
   // Keep drawRef in sync so stable callbacks can always call the latest draw
   useEffect(() => {
@@ -427,6 +441,17 @@ export default function App() {
           onChange={(e) => setBpm(Number(e.target.value))}
         />
       </div>
+      <div className="controls">
+        <span className="speed-display">Smooth {smoothness.toFixed(1)}</span>
+        <input
+          type="range"
+          min={0}
+          max={2}
+          step={0.1}
+          value={smoothness}
+          onChange={(e) => setSmoothness(Number(e.target.value))}
+        />
+      </div>
       <div className="legend">
         <div className="legend-item">
           <span className="legend-dot" style={{ background: "#4a90d9" }} /> Lark
@@ -507,6 +532,17 @@ export default function App() {
               max={120}
               value={bpm}
               onChange={(e) => setBpm(Number(e.target.value))}
+            />
+          </div>
+          <div className="controls">
+            <span className="speed-display">Smooth {smoothness.toFixed(1)}</span>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.1}
+              value={smoothness}
+              onChange={(e) => setSmoothness(Number(e.target.value))}
             />
           </div>
           <button className="drawer-toggle" onClick={() => setDrawerOpen(true)}>
