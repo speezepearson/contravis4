@@ -121,13 +121,10 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
   },
 };
 
-export const ProgressionSchema = z.number().int();
-
 export const DanceSchema = z.object({
   name: z.string().optional(),
   author: z.string().optional(),
   initFormation: InitFormationSchema,
-  progression: ProgressionSchema,
   instructions: z.array(InstructionSchema),
 });
 export type Dance = z.infer<typeof DanceSchema>;

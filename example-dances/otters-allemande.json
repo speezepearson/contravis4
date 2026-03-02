@@ -1,14 +1,14 @@
 {
-  "name": "Otter's Allemande",
-  "author": "Ramya Rajan",
   "initFormation": "improper",
-  "progression": 1,
   "instructions": [
     {
       "id": "a1000000-0000-4000-a000-000000000001",
       "beats": 0,
       "type": "take_hands",
-      "relationship": {"base": "neighbor", "offset": 0},
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      },
       "hand": "right"
     },
     {
@@ -24,7 +24,10 @@
       "id": "a1000000-0000-4000-a000-000000000003",
       "beats": 4,
       "type": "box_the_gnat",
-      "relationship": {"base": "neighbor", "offset": 0}
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      }
     },
     {
       "id": "a1000000-0000-4000-a000-000000000004",
@@ -36,7 +39,10 @@
       "id": "a1000000-0000-4000-a000-000000000005",
       "beats": 8,
       "type": "do_si_do",
-      "relationship": {"base": "neighbor", "offset": 0},
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      },
       "rotations": 1.25
     },
     {
@@ -63,7 +69,10 @@
       "id": "a2000000-0000-4000-a000-000000000003",
       "beats": 2,
       "type": "allemande",
-      "relationship": {"base": "neighbor", "offset": 0},
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      },
       "handedness": "right",
       "rotations": 0.5
     },
@@ -83,7 +92,10 @@
           "id": "a2000000-0000-4000-a000-000000000005",
           "beats": 2,
           "type": "allemande",
-          "relationship": {"base": "opposite", "offset": 0},
+          "relationship": {
+            "base": "opposite",
+            "offset": 0
+          },
           "handedness": "left",
           "rotations": 0.5
         }
@@ -93,22 +105,37 @@
       "id": "a2000000-0000-4000-a000-000000000006",
       "beats": 8,
       "type": "swing",
-      "relationship": {"base": "partner", "offset": 0},
+      "relationship": {
+        "base": "partner",
+        "offset": 0
+      },
       "endFacing": "across"
     },
     {
       "id": "b1000000-0000-4000-a000-000000000001",
       "beats": 16,
       "type": "give_and_take_into_swing",
-      "relationship": {"base": "neighbor", "offset": 0},
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      },
       "drawerRole": "lark",
       "endFacing": "across"
+    },
+    {
+      "id": "96843f7a-73dc-475b-8dd3-f2967f1e7ff4",
+      "beats": 0,
+      "type": "drop_hands",
+      "which": "both"
     },
     {
       "id": "b2000000-0000-4000-a000-000000000001",
       "beats": 0,
       "type": "take_hands",
-      "relationship": {"base": "partner", "offset": 0},
+      "relationship": {
+        "base": "partner",
+        "offset": 0
+      },
       "hand": "right"
     },
     {
@@ -124,24 +151,27 @@
       "id": "b2000000-0000-4000-a000-000000000003",
       "beats": 2,
       "type": "pull_by",
-      "relationship": {"base": "partner", "offset": 0},
+      "relationship": {
+        "base": "partner",
+        "offset": 0
+      },
       "hand": "right"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000004",
-      "beats": 0,
-      "type": "drop_hands",
-      "which": "right"
     },
     {
       "id": "b2000000-0000-4000-a000-000000000005",
       "beats": 0,
       "type": "step",
-      "direction": { "kind": "direction", "value": "forward" },
+      "direction": {
+        "kind": "direction",
+        "value": "forward"
+      },
       "distance": 0,
       "facing": {
         "kind": "relationship",
-        "value": {"base": "neighbor", "offset": 0}
+        "value": {
+          "base": "neighbor",
+          "offset": 0
+        }
       },
       "facingOffset": 0
     },
@@ -149,24 +179,27 @@
       "id": "b2000000-0000-4000-a000-000000000006",
       "beats": 2,
       "type": "pull_by",
-      "relationship": {"base": "neighbor", "offset": 0},
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      },
       "hand": "left"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000007",
-      "beats": 0,
-      "type": "drop_hands",
-      "which": "left"
     },
     {
       "id": "b2000000-0000-4000-a000-000000000008",
       "beats": 0,
       "type": "step",
-      "direction": { "kind": "direction", "value": "forward" },
+      "direction": {
+        "kind": "direction",
+        "value": "forward"
+      },
       "distance": 0,
       "facing": {
         "kind": "relationship",
-        "value": {"base": "partner", "offset": 0}
+        "value": {
+          "base": "partner",
+          "offset": 0
+        }
       },
       "facingOffset": 0
     },
@@ -174,7 +207,10 @@
       "id": "b2000000-0000-4000-a000-000000000009",
       "beats": 0,
       "type": "take_hands",
-      "relationship": {"base": "partner", "offset": 0},
+      "relationship": {
+        "base": "partner",
+        "offset": 0
+      },
       "hand": "right"
     },
     {
@@ -190,24 +226,27 @@
       "id": "b2000000-0000-4000-a000-00000000000b",
       "beats": 2,
       "type": "pull_by",
-      "relationship": {"base": "partner", "offset": 0},
+      "relationship": {
+        "base": "partner",
+        "offset": 0
+      },
       "hand": "right"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-00000000000c",
-      "beats": 0,
-      "type": "drop_hands",
-      "which": "right"
     },
     {
       "id": "b2000000-0000-4000-a000-00000000000d",
       "beats": 0,
       "type": "step",
-      "direction": { "kind": "direction", "value": "forward" },
+      "direction": {
+        "kind": "direction",
+        "value": "forward"
+      },
       "distance": 0,
       "facing": {
         "kind": "relationship",
-        "value": {"base": "neighbor", "offset": 0}
+        "value": {
+          "base": "neighbor",
+          "offset": 0
+        }
       },
       "facingOffset": 0
     },
@@ -215,7 +254,10 @@
       "id": "b2000000-0000-4000-a000-00000000000e",
       "beats": 2,
       "type": "pull_by",
-      "relationship": {"base": "neighbor", "offset": 0},
+      "relationship": {
+        "base": "neighbor",
+        "offset": 0
+      },
       "hand": "left"
     }
   ]

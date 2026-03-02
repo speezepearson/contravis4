@@ -1,6 +1,6 @@
 import { Vector } from "vecti";
 
-import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
+import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "./contraCore";
 import type { DancerState, WorldState } from "./worldState";
 
 export function averageFrames(frames: WorldState[]): WorldState {
@@ -27,10 +27,31 @@ export function averageFrames(frames: WorldState[]): WorldState {
     result[id] = {
       protoId: id,
       pos: new Vector(posX / n, posY / n),
-      facing: facingLen > 0 ? avgFacing.normalize() : frames[Math.floor(n / 2)][id].facing,
+      facing:
+        facingLen > 0
+          ? avgFacing.normalize()
+          : frames[Math.floor(n / 2)][id].facing,
       hands: frames[Math.floor(n / 2)][id].hands,
     };
   }
 
+  return result;
+}
+
+/** Shift every dancer by `n` meters in their progression direction (NORTH for up, SOUTH for down). */
+export function shiftFrameByProgression(
+  frame: WorldState,
+  n: number,
+): WorldState {
+  const result = {} as Record<ProtoId, DancerState>;
+  for (const id of ALL_PROTO_IDS) {
+    const { dir } = parseProtoId(id);
+    const dy = dir === "up" ? n : -n;
+    const dancer = frame[id];
+    result[id] = {
+      ...dancer,
+      pos: new Vector(dancer.pos.x, dancer.pos.y + dy),
+    };
+  }
   return result;
 }

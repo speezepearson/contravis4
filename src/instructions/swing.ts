@@ -7,7 +7,13 @@ import {
   parseProtoId,
   resolveRelationship,
 } from "../contraCore";
-import { ccwRadsBetween, getDir, lerpFacing, revolve } from "../geometry";
+import {
+  ccwRadsBetween,
+  getDir,
+  lerpFacing,
+  revolve,
+  TWO_PI,
+} from "../geometry";
 import { avgPos, lerpVectors } from "../utils";
 import {
   buildProtoRecord,
@@ -140,10 +146,14 @@ export const swingAnimator =
                 plans[id].final.pos,
                 progressFrac,
               );
-              draft[id].facing = lerpFacing(
-                plans[id].postSwing.facing,
-                plans[id].final.facing,
-                progressFrac,
+              draft[id].facing = plans[id].postSwing.facing.rotateByRadians(
+                ((ccwRadsBetween(
+                  plans[id].postSwing.facing,
+                  plans[id].final.facing,
+                ) -
+                  TWO_PI) %
+                  TWO_PI) *
+                  progressFrac,
               );
               const isLark = parseProtoId(id).role === "lark";
               connectHands(

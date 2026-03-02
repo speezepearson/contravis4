@@ -362,8 +362,6 @@ interface Props {
   setInstructions: (instructions: Instruction[]) => void;
   initFormation: InitFormation;
   setInitFormation: (formation: InitFormation) => void;
-  progression: number;
-  setProgression: (progression: number) => void;
   activeId: InstructionId | null;
   generateError: GenerateError | null;
   animation: ContraAnimation | null;
@@ -556,8 +554,6 @@ export default memo(function CommandPane({
   setInstructions,
   initFormation,
   setInitFormation,
-  progression,
-  setProgression,
   activeId,
   generateError,
   animation,
@@ -799,7 +795,7 @@ export default memo(function CommandPane({
   }
 
   function copyJson() {
-    const dance = { initFormation, progression, instructions };
+    const dance = { initFormation, instructions };
     navigator.clipboard.writeText(JSON.stringify(dance, null, 2));
     setCopyFeedback("Copied!");
     setTimeout(() => setCopyFeedback(""), 1500);
@@ -827,7 +823,6 @@ export default memo(function CommandPane({
     const parsed = result.data;
     setPasteFeedback("");
     setInitFormation(parsed.initFormation);
-    setProgression(parsed.progression);
     setInstructions(parsed.instructions);
   }
 
@@ -921,16 +916,6 @@ export default memo(function CommandPane({
           value={initFormation}
           onChange={(v) => setInitFormation(InitFormationSchema.parse(v))}
           getLabel={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
-        />
-        <label> Progression: </label>
-        <InlineNumber
-          value={String(progression)}
-          onTextChange={(v) => {
-            const n = parseInt(v);
-            if (!isNaN(n)) setProgression(n);
-          }}
-          onDrag={(n) => setProgression(n)}
-          step={1}
         />
       </div>
 

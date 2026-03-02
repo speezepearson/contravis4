@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { averageFrames, shiftFrameByProgression } from "./averageFrames";
 import CommandPane from "./components/CommandPane";
 import { decodeRelationship } from "./components/fieldUtils";
 import { RelationshipHighlightContext } from "./components/RelationshipHighlightContext";
@@ -15,6 +16,7 @@ import {
   splitLists,
 } from "./generate";
 import { formatDanceParseError } from "./generate";
+import { inferProgression } from "./inferProgression";
 import type {
   InitFormation,
   Instruction,
@@ -27,9 +29,9 @@ import {
   instructionDuration,
   InstructionSchema,
 } from "./instructions/index";
+import { initFormationStates } from "./instructions/index";
 import { isLocalStorageAvailable } from "./utils";
 import { getDancerState, type WorldState } from "./worldState";
-import { averageFrames } from "./averageFrames";
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 
@@ -134,20 +136,15 @@ export default function App() {
       ? initialLoadResult.dance.initFormation
       : "improper",
   );
-  const [progression, setProgression] = useState(() =>
-    initialLoadResult && "dance" in initialLoadResult
-      ? initialLoadResult.dance.progression
-      : 1,
-  );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [smoothness, setSmoothness] = useState(1);
 
   // Persist dance to localStorage whenever it changes
   useEffect(() => {
     if (!isLocalStorageAvailable()) return;
-    const dance = { initFormation, progression, instructions };
+    const dance = { initFormation, instructions };
     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
-  }, [instructions, initFormation, progression]);
+  }, [instructions, initFormation]);
 
   const [hoveredInstructionId, setHoveredInstructionId] =
     useState<InstructionId | null>(null);
@@ -157,6 +154,13 @@ export default function App() {
     [instructions, initFormation],
   );
   const DANCE_LENGTH = useMemo(() => danceLength(instructions), [instructions]);
+  const inferredProgression = useMemo(
+    () =>
+      animation
+        ? inferProgression(animation, initFormationStates[initFormation])
+        : null,
+    [animation, initFormation],
+  );
   useEffect(() => {
     if (generateError) {
       console.error(generateError);
@@ -203,17 +207,38 @@ export default function App() {
     let frame: WorldState;
     if (smoothness > 0) {
       const N = 10;
+      const dur = animation.dur;
       const frames: WorldState[] = [];
       for (let i = 0; i < N; i++) {
-        const sampleT = t + smoothness * ((i / (N - 1)) - 0.5);
-        const clampedT = Math.max(0, Math.min(animation.dur, sampleT));
-        frames.push(animation.getFrame(clampedT));
+        const sampleT = t + smoothness * (i / (N - 1) - 0.5);
+        if (
+          inferredProgression !== null &&
+          dur > 0 &&
+          (sampleT < 0 || sampleT > dur)
+        ) {
+          // Wrap around with progression offset
+          const wraps =
+            sampleT < 0
+              ? Math.ceil(-sampleT / dur)
+              : -Math.floor(sampleT / dur);
+          const wrappedT = sampleT + wraps * dur;
+          const rawFrame = animation.getFrame(
+            Math.max(0, Math.min(dur, wrappedT)),
+          );
+          frames.push(
+            shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
+          );
+        } else {
+          const clampedT = Math.max(0, Math.min(dur, sampleT));
+          frames.push(animation.getFrame(clampedT));
+        }
       }
       frame = averageFrames(frames);
     } else {
       frame = animation.getFrame(t);
     }
-    renderer.drawFrame(t, frame, -progression / DANCE_LENGTH);
+    const progressionForCamera = inferredProgression ?? 0;
+    renderer.drawFrame(t, frame, -progressionForCamera / DANCE_LENGTH);
 
     // Draw relationship highlight lines
     const highlightedRel = highlightedRelRef.current;
@@ -248,7 +273,7 @@ export default function App() {
       renderer.drawPreviewKeyframes(previewFrames);
     }
     setBeat(beatRef.current);
-  }, [animation, DANCE_LENGTH, progression, previewFrames, smoothness]);
+  }, [animation, DANCE_LENGTH, inferredProgression, previewFrames, smoothness]);
 
   // Keep drawRef in sync so stable callbacks can always call the latest draw
   useEffect(() => {
@@ -475,8 +500,6 @@ export default function App() {
     setInstructions,
     initFormation,
     setInitFormation,
-    progression,
-    setProgression,
     activeId: activeInstructionId(instructions, beat),
     generateError,
     animation,
@@ -535,7 +558,9 @@ export default function App() {
             />
           </div>
           <div className="controls">
-            <span className="speed-display">Smooth {smoothness.toFixed(1)}</span>
+            <span className="speed-display">
+              Smooth {smoothness.toFixed(1)}
+            </span>
             <input
               type="range"
               min={0}
