@@ -199,6 +199,7 @@ export default function App() {
   const highlightRelRafRef = useRef(0);
 
   const draw = useCallback(() => {
+    console.log("draw");
     const renderer = rendererRef.current;
     if (!renderer || !animation) return;
 
@@ -281,6 +282,10 @@ export default function App() {
   useEffect(() => {
     drawRef.current = draw;
   });
+
+  useEffect(() => {
+    drawRef.current();
+  }, [animation, smoothness]);
 
   const setHighlightedRelationship = useCallback((encoded: string | null) => {
     highlightedRelRef.current = encoded;
@@ -400,16 +405,6 @@ export default function App() {
     setPlaying((prev) => !prev);
   }, []);
 
-  const stepFwd = useCallback(() => {
-    beatRef.current = Math.min(beatRef.current + 0.25, DANCE_LENGTH);
-    drawRef.current();
-  }, [DANCE_LENGTH]);
-
-  const stepBack = useCallback(() => {
-    beatRef.current = Math.max(beatRef.current - 0.25, 0);
-    drawRef.current();
-  }, []);
-
   const scrub = useCallback(
     (val: number) => {
       const pct = val / 1000;
@@ -430,18 +425,10 @@ export default function App() {
         e.preventDefault();
         togglePlay();
       }
-      if (e.code === "ArrowRight") {
-        e.preventDefault();
-        stepFwd();
-      }
-      if (e.code === "ArrowLeft") {
-        e.preventDefault();
-        stepBack();
-      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [togglePlay, stepFwd, stepBack]);
+  }, [togglePlay]);
 
   const handleHoverInstruction = useCallback((id: InstructionId | null) => {
     setHoveredInstructionId(id);
@@ -480,8 +467,6 @@ export default function App() {
         <button onClick={togglePlay}>
           {playing ? "\u23F8 Pause" : "\u25B6 Play"}
         </button>
-        <button onClick={stepBack}>{"\u25C0 Step"}</button>
-        <button onClick={stepFwd}>{"Step \u25B6"}</button>
         <input
           type="range"
           min={0}

@@ -53,9 +53,14 @@ import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
+import { DoSiDoFields } from "./fields/DoSiDoFields";
 import { DropHandsFields } from "./fields/DropHandsFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
+import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
+import { PassByFields } from "./fields/PassByFields";
+import { PullByFields } from "./fields/PullByFields";
 import { SplitFields } from "./fields/SplitFields";
+import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
@@ -64,7 +69,7 @@ import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
 
-type ActionOptionType = AtomicInstruction["type"] | "split";
+export type ActionOptionType = AtomicInstruction["type"] | "split";
 
 const ACTION_OPTIONS: ActionOptionType[] = [
   "take_hands",
@@ -72,6 +77,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "allemande",
   "do_si_do",
   "pull_by",
+  "pass_by",
   "step",
   "swing",
   "give_and_take_into_swing",
@@ -86,6 +92,7 @@ const ACTION_LABELS: Record<string, string> = {
   drop_hands: "drop hands",
   allemande: "allemande",
   do_si_do: "do si do",
+  pass_by: "pass by",
   pull_by: "pull by",
   step: "step",
   swing: "swing",
@@ -415,6 +422,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "do_si_do":
     case "give_and_take_into_swing":
     case "pull_by":
+    case "pass_by":
     case "step":
     case "swing":
     case "california_twirl":
@@ -485,7 +493,7 @@ function InlineForm({
     ? ACTION_OPTIONS
     : ACTION_OPTIONS.filter((o) => o !== "split");
 
-  function handleActionChange(newAction: string) {
+  function handleActionChange(newAction: ActionOptionType) {
     if (newAction !== instruction.type) {
       onChange(makeDefaultInstruction(newAction, instruction.id));
       setValid(true);
@@ -509,7 +517,7 @@ function InlineForm({
         ref={actionRef}
         options={actionOptions}
         value={instruction.type}
-        onChange={handleActionChange}
+        onChange={(v) => handleActionChange(v as ActionOptionType)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
       />
       {(() => {
@@ -535,10 +543,20 @@ function InlineForm({
               <FormShortWavesFields {...common} instruction={instruction} />
             );
           case "do_si_do":
+            return <DoSiDoFields {...common} instruction={instruction} />;
           case "pull_by":
+            return <PullByFields {...common} instruction={instruction} />;
+          case "pass_by":
+            return <PassByFields {...common} instruction={instruction} />;
           case "step":
+            return <StepFields {...common} instruction={instruction} />;
           case "give_and_take_into_swing":
-            return null;
+            return (
+              <GiveAndTakeIntoSwingFields
+                {...common}
+                instruction={instruction}
+              />
+            );
           case "split":
             return <SplitFields {...common} instruction={instruction} />;
           default:

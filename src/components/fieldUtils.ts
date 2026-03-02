@@ -14,6 +14,8 @@ import {
   type RelativeDirection,
   RelativeDirectionSchema,
 } from "../instructions/index";
+import { assertNever } from "../utils";
+import type { ActionOptionType } from "./CommandPane";
 
 /** Props for inline field components. */
 export interface SubFormProps {
@@ -23,7 +25,7 @@ export interface SubFormProps {
 
 /** Create a default instruction for a given type. */
 export function makeDefaultInstruction(
-  type: string,
+  type: ActionOptionType,
   id: InstructionId,
 ): Instruction {
   switch (type) {
@@ -93,6 +95,14 @@ export function makeDefaultInstruction(
         relationship: { base: "neighbor", offset: 0 },
         rotations: 1,
       });
+    case "pass_by":
+      return InstructionSchema.parse({
+        id,
+        type: "pass_by",
+        beats: 2,
+        relationship: { base: "neighbor", offset: 0 },
+        hand: "right",
+      });
     case "pull_by":
       return InstructionSchema.parse({
         id,
@@ -129,13 +139,7 @@ export function makeDefaultInstruction(
         robins: [],
       });
     default:
-      // DEFAULT_VALUE: For unknown types, default to balance — this handles future action types not yet in the switch
-      return InstructionSchema.parse({
-        id,
-        type: "balance",
-        beats: 4,
-        relationship: { base: "neighbor", offset: 0 },
-      });
+      assertNever(type);
   }
 }
 

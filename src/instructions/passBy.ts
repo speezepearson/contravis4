@@ -7,8 +7,8 @@ import {
   resolveRelationship,
 } from "../contraCore";
 import { ellipsePosition, PI } from "../geometry";
-import { buildProtoRecord, getDancerState } from "../worldState";
-import { type InstructionAnimator, instructionBaseSchemaFields } from "./_base";
+import { disconnectHands, getDancerState } from "../worldState";
+import { type Animator, instructionBaseSchemaFields } from "./_base";
 
 export const PassByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,34 +18,28 @@ export const PassByInstructionSchema = z.object({
 });
 export type PassByInstruction = z.infer<typeof PassByInstructionSchema>;
 
-export const passByAnimator: InstructionAnimator<PassByInstruction> = (
-  init,
-  who,
-  instr,
-) => {
-  const plans = buildProtoRecord((id) => {
-    const them = resolveRelationship(id, instr.relationship);
-    return {
-      start: getDancerState(id, init).pos,
-      end: getDancerState(them, init).pos,
-    };
-  });
-  return {
+export const passByAnimator =
+  (instr: PassByInstruction): Animator =>
+  (init, who) => ({
     dur: instr.beats,
     getFrame(t) {
       return produce(init, (draft) => {
         const progressFrac = t / instr.beats;
         for (const id of who) {
-          const arc = plans[id];
+          disconnectHands(draft, id);
+          const me = getDancerState(id, init);
+          const them = getDancerState(
+            resolveRelationship(id, instr.relationship),
+            init,
+          );
           draft[id].pos = ellipsePosition(
-            arc.start,
-            arc.end,
+            me.pos,
+            them.pos,
             0.25,
             PI * progressFrac,
           );
-          draft[id].facing = arc.end.subtract(arc.start).normalize();
+          draft[id].facing = them.pos.subtract(me.pos).normalize();
         }
       });
     },
-  };
-};
+  });

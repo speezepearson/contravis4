@@ -18,6 +18,7 @@ import {
   giveAndTakeIntoSwingAnimator,
   GiveAndTakeIntoSwingInstructionSchema,
 } from "./giveAndTakeIntoSwing";
+import { passByAnimator, PassByInstructionSchema } from "./passBy";
 import { pullByAnimator, PullByInstructionSchema } from "./pullBy";
 import { stepAnimator, StepInstructionSchema } from "./step";
 import { swingAnimator, SwingInstructionSchema } from "./swing";
@@ -32,6 +33,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   DropHandsInstructionSchema,
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
+  PassByInstructionSchema,
   PullByInstructionSchema,
   StepInstructionSchema,
   SwingInstructionSchema,
@@ -53,6 +55,7 @@ export const atomicInstructionAnimators: {
   drop_hands: dropHandsAnimator,
   form_short_waves: formShortWavesAnimator,
   give_and_take_into_swing: giveAndTakeIntoSwingAnimator,
+  pass_by: passByAnimator,
   pull_by: pullByAnimator,
   step: stepAnimator,
   take_hands: takeHandsAnimator,
