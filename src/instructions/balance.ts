@@ -1,14 +1,18 @@
 import { z } from "zod";
 
-import { RelationshipSchema, resolveRelationship } from "../contraCore";
+import { must } from "../utils";
 import { getDancerState } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+} from "./_base";
 import { linearTo, type SegmentAnimator } from "./_segment";
 
 export const BalanceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("balance"),
-  relationship: RelationshipSchema,
+  cid: CalledIdentifierSchema,
 });
 export type BalanceInstruction = z.infer<typeof BalanceInstructionSchema>;
 
@@ -20,7 +24,7 @@ export const balanceSegments =
       {
         dur: halfBeats,
         position: linearTo((id, segInit) => {
-          const them = resolveRelationship(id, instr.relationship);
+          const them = must(resolveCalledIdentifier(id, instr.cid, segInit));
           const theirPos = getDancerState(them, segInit).pos;
           return segInit[id].pos.multiply(2).add(theirPos).divide(3);
         }),

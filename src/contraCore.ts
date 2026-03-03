@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { assertNever } from "./utils";
+import { NORTH } from "./geometry";
+import type { DancerState } from "./worldState";
 
 export const BeatsSchema = z.number().int();
 export type Beats = z.infer<typeof BeatsSchema>;
@@ -102,6 +103,9 @@ export function parseProtoId(id: ProtoId): { dir: ProgressionDir; role: Role } {
 export function getRole(id: DancerId): Role {
   return parseDancerId(id).role;
 }
+export function getOffset(id: DancerId): DancerOffset {
+  return parseDancerId(id).offset;
+}
 export function isLark(id: DancerId): boolean {
   return getRole(id) === "lark";
 }
@@ -115,104 +119,32 @@ export function protoIdToDancerId(
 export function projectDancerIdToProtoId(id: DancerId): ProtoId {
   return makeProtoId({ ...parseDancerId(id) });
 }
-
-// Who they interact with (only for actions that involve a partner)
-export const FoilBaseRelationshipSchema = z.enum(["partner", "neighbor"]);
-export type FoilBaseRelationship = z.infer<typeof FoilBaseRelationshipSchema>;
-
-export const BaseRelationshipSchema = z.enum([
-  ...FoilBaseRelationshipSchema.options,
-  "opposite",
-]);
-export type BaseRelationship = z.infer<typeof BaseRelationshipSchema>;
-
-/** Resolve a relationship from a specific dancer's perspective.
- *  Returns the DancerId of the target, which may be in an different hands-four.
- */
-export function resolveRelationship(
+export function addOffsetToId(
   id: DancerId,
-  relationship: Relationship,
+  deltaOffset: DancerOffset,
 ): DancerId {
   const { dir, role, offset } = parseDancerId(id);
-  const offsetDelta = (dir === "up" ? 1 : -1) * relationship.offset;
-  switch (relationship.base) {
-    case "neighbor":
-      return makeDancerId({
-        dir: otherDir(dir),
-        role: otherRole(role),
-        offset: offset + offsetDelta,
-      });
-    case "opposite":
-      return makeDancerId({
-        dir: otherDir(dir),
-        role: role,
-        offset: offset + offsetDelta,
-      });
-    case "partner":
-      return makeDancerId({
-        dir,
-        role: otherRole(role),
-        offset: offset + offsetDelta * (role === "robin" ? 1 : -1),
-      });
-  }
+  return makeDancerId({ dir, role, offset: offset + deltaOffset });
 }
-
-export function getRelationship(
-  a: DancerId,
-  b: DancerId,
-): Relationship | undefined {
-  const pa = parseDancerId(a);
-  const pb = parseDancerId(b);
-  const result: Relationship | undefined = (() => {
-    const aProgDeltaOffsetToB =
-      (pa.dir === "up" ? 1 : -1) * (pb.offset - pa.offset);
-    if (pa.dir === pb.dir && pa.role === pb.role) {
-      return undefined;
-    } else if (pa.dir === pb.dir && pa.role !== pb.role) {
-      return {
-        base: "partner",
-        offset: (pa.role === "lark" ? -1 : 1) * aProgDeltaOffsetToB,
-      };
-    } else if (pa.dir !== pb.dir && pa.role === pb.role) {
-      return { base: "opposite", offset: aProgDeltaOffsetToB };
-    } else if (pa.dir !== pb.dir && pa.role !== pb.role) {
-      return { base: "neighbor", offset: aProgDeltaOffsetToB };
-    }
-    assertNever({ pa, pb } as never);
-  })();
-
-  if (result === undefined) return undefined;
-  const resolvedA = resolveRelationship(a, result);
-  if (!(resolvedA === b))
-    throw new Error(
-      `Programming error: computed wrong relationship for ${a} and ${b}: ${result.base}${result.offset} of ${a} is actually ${resolvedA}`,
-    );
-  return result;
+export function addOffsetToDancer(
+  state: DancerState,
+  deltaOffset: DancerOffset,
+): DancerState {
+  return {
+    protoId: state.protoId,
+    pos: state.pos.add(NORTH.multiply(deltaOffset * 2)),
+    facing: state.facing,
+    hands: new Map(
+      [...state.hands].map(([hand, { theirId, theirHand }]) => [
+        hand,
+        { theirId: addOffsetToId(theirId, deltaOffset), theirHand },
+      ]),
+    ),
+    labels: new Map(
+      [...state.labels].map(([label, theirId]) => [
+        label,
+        addOffsetToId(theirId, deltaOffset),
+      ]),
+    ),
+  };
 }
-
-/** A relationship between two dancers of opposite roles.
- * Examples:
- *
- *   `{base: 'neighbor', offset: 0}` means "current neighbor"
- *   `{base: 'neighbor', offset: -1}` means "prev neighbor"
- *   `{base: 'neighbor', offset: 2}` means "next next neighbor"
- *
- *   `{base: 'opposite', offset: n}` means "the partner of `{base: 'neighbor', offset: n}`"
- *
- *   `{base: 'partner', offset: 0}` means "partner"
- *   `{base: 'partner', offset: n}` means "your shadow in the hands-four n [L: ahead of you | R: behind you]"
- *
- * The slightly convoluted shadow-handling is necessary to make the relationships symmetric.
- */
-export const FoilRelationshipSchema = z.object({
-  base: FoilBaseRelationshipSchema,
-  offset: DancerOffsetSchema,
-});
-export type FoilRelationship = z.infer<typeof FoilRelationshipSchema>;
-
-/** A relationship between two dancers. */
-export const RelationshipSchema = z.object({
-  base: BaseRelationshipSchema,
-  offset: DancerOffsetSchema,
-});
-export type Relationship = z.infer<typeof RelationshipSchema>;

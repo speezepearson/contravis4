@@ -7,6 +7,10 @@ import {
   useState,
 } from "react";
 
+import {
+  type CalledIdentifier,
+  CalledIdentifierSchema,
+} from "../instructions/_base";
 import { useInstructionEdit } from "./InstructionEditContext";
 import type { SearchableDropdownHandle } from "./SearchableDropdown";
 import SearchableDropdown from "./SearchableDropdown";
@@ -21,7 +25,7 @@ interface Props {
   onChange: (value: string) => void;
   placeholder?: string;
   getLabel?: (value: string) => string;
-  onHighlight?: (value: string | null) => void;
+  onHighlight?: (cid: CalledIdentifier | null) => void;
 }
 
 export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
@@ -90,7 +94,10 @@ export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
               placeholder={placeholder}
               selectOnly
               getLabel={getLabel}
-              onHighlight={onHighlight}
+              onHighlight={(v) => {
+                const cid = CalledIdentifierSchema.safeParse(v);
+                if (cid.success) onHighlight?.(cid.data);
+              }}
             />
           </Popover.Content>
         </Popover.Portal>

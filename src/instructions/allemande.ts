@@ -1,13 +1,14 @@
 import { z } from "zod";
 
-import {
-  HandSchema,
-  RelationshipSchema,
-  resolveRelationship,
-} from "../contraCore";
+import { HandSchema } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
+import { must } from "../utils";
 import { connectHands, getDancerState } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+} from "./_base";
 import {
   arc,
   lerpFacingTo,
@@ -19,7 +20,7 @@ import {
 export const AllemandeInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("allemande"),
-  relationship: RelationshipSchema,
+  cid: CalledIdentifierSchema,
   handedness: HandSchema,
   rotations: z.number(),
 });
@@ -41,10 +42,8 @@ export const allemandeSegments = (
     const closeEnoughForHands = new Set<string>();
     for (const id of who) {
       const me = getDancerState(id, init);
-      const them = getDancerState(
-        resolveRelationship(id, instr.relationship),
-        init,
-      );
+      const themId = must(resolveCalledIdentifier(id, instr.cid, init));
+      const them = getDancerState(themId, init);
       if (me.pos.subtract(them.pos).length() < 1) {
         closeEnoughForHands.add(id);
       }
@@ -53,12 +52,12 @@ export const allemandeSegments = (
     return [
       {
         dur: approachBeats,
-        position: arc(instr.relationship, {
+        position: arc(instr.cid, {
           semiMinor: -ALLEMANDE_RADIUS * rotationSign,
           phi: APPROACH_ELLIPSE_RADIANS,
         }),
         facing: lerpFacingTo((id, segInit) => {
-          const them = resolveRelationship(id, instr.relationship);
+          const them = must(resolveCalledIdentifier(id, instr.cid, segInit));
           return getDir({
             from: segInit[id].pos,
             to: getDancerState(them, segInit).pos,
@@ -70,7 +69,7 @@ export const allemandeSegments = (
               draft,
               id,
               instr.handedness,
-              instr.relationship,
+              must(resolveCalledIdentifier(id, instr.cid, draft)),
               instr.handedness,
             );
           }
@@ -78,14 +77,14 @@ export const allemandeSegments = (
       },
       {
         dur: circlingBeats,
-        position: orbit(instr.relationship, { radians: numAllemandeRadians }),
+        position: orbit(instr.cid, { radians: numAllemandeRadians }),
         facing: rotateFacingBy(() => numAllemandeRadians),
         hands: (id, _frac, draft) => {
           connectHands(
             draft,
             id,
             instr.handedness,
-            instr.relationship,
+            must(resolveCalledIdentifier(id, instr.cid, draft)),
             instr.handedness,
           );
         },

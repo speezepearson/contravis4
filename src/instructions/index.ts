@@ -7,12 +7,7 @@ import type { WorldState } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
 import { getSplitDuration, SplitSchema } from "./split";
 
-export {
-  type InstructionId,
-  InstructionIdSchema,
-  type RelativeDirection,
-  RelativeDirectionSchema,
-} from "./_base";
+export { type InstructionId, InstructionIdSchema } from "./_base";
 
 export const ActionTypeSchema = z.enum([
   "take_hands",
@@ -72,25 +67,41 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
       protoId: "up_lark_0",
       pos: new Vector(-0.5, -0.5),
       facing: NORTH,
-      hands: {},
+      hands: new Map(), // TODO: it sure would be nice to know this was readonly
+      labels: new Map([
+        ["partner", "up_robin_0"],
+        ["neighbor", "down_robin_0"],
+      ]),
     },
     up_robin_0: {
       protoId: "up_robin_0",
       pos: new Vector(0.5, -0.5),
       facing: NORTH,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "up_lark_0"],
+        ["neighbor", "down_lark_0"],
+      ]),
     },
     down_lark_0: {
       protoId: "down_lark_0",
       pos: new Vector(0.5, 0.5),
       facing: SOUTH,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "down_robin_0"],
+        ["neighbor", "up_robin_0"],
+      ]),
     },
     down_robin_0: {
       protoId: "down_robin_0",
       pos: new Vector(-0.5, 0.5),
       facing: SOUTH,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "down_lark_0"],
+        ["neighbor", "up_lark_0"],
+      ]),
     },
   },
   beckett: {
@@ -98,25 +109,41 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
       protoId: "up_lark_0",
       pos: new Vector(-0.5, 0.5),
       facing: EAST,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "up_robin_0"],
+        ["neighbor", "down_robin_0"],
+      ]),
     },
     up_robin_0: {
       protoId: "up_robin_0",
       pos: new Vector(-0.5, -0.5),
       facing: EAST,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "up_lark_0"],
+        ["neighbor", "down_lark_0"],
+      ]),
     },
     down_lark_0: {
       protoId: "down_lark_0",
       pos: new Vector(0.5, -0.5),
       facing: WEST,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "down_robin_0"],
+        ["neighbor", "up_robin_0"],
+      ]),
     },
     down_robin_0: {
       protoId: "down_robin_0",
       pos: new Vector(0.5, 0.5),
       facing: WEST,
-      hands: {},
+      hands: new Map(),
+      labels: new Map([
+        ["partner", "down_lark_0"],
+        ["neighbor", "up_lark_0"],
+      ]),
     },
   },
 };

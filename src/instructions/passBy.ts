@@ -1,19 +1,20 @@
 import { z } from "zod";
 
-import {
-  HandSchema,
-  RelationshipSchema,
-  resolveRelationship,
-} from "../contraCore";
+import { HandSchema } from "../contraCore";
 import { PI } from "../geometry";
+import { must } from "../utils";
 import { getDancerState } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+} from "./_base";
 import { arc, disconnect, type SegmentAnimator } from "./_segment";
 
 export const PassByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("pass_by"),
-  relationship: RelationshipSchema,
+  cid: CalledIdentifierSchema,
   hand: HandSchema,
 });
 export type PassByInstruction = z.infer<typeof PassByInstructionSchema>;
@@ -23,9 +24,9 @@ export const passBySegments =
   () => [
     {
       dur: instr.beats,
-      position: arc(instr.relationship, { semiMinor: 0.25, phi: PI }),
+      position: arc(instr.cid, { semiMinor: 0.25, phi: PI }),
       facing: (id, _frac, segInit) => {
-        const them = resolveRelationship(id, instr.relationship);
+        const them = must(resolveCalledIdentifier(id, instr.cid, segInit));
         return getDancerState(them, segInit)
           .pos.subtract(segInit[id].pos)
           .normalize();

@@ -1,10 +1,11 @@
 import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { CalledIdentifierSchema } from "../../instructions/_base";
 import { InstructionSchema } from "../../instructions/index";
+import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { FULL_RELATIONSHIP_OPTIONS, HAND_OPTIONS } from "../fieldUtils";
+import { HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
-import { RelationshipDropdown } from "../RelationshipDropdown";
 
 export function PullByFields({
   instruction,
@@ -20,7 +21,7 @@ export function PullByFields({
       id,
       type: "pull_by",
       beats: instruction.beats,
-      relationship: instruction.relationship,
+      cid: instruction.cid,
       hand: instruction.hand,
       ...overrides,
     };
@@ -38,10 +39,10 @@ export function PullByFields({
         getLabel={(v) => v}
       />
       {" with your "}
-      <RelationshipDropdown
-        options={FULL_RELATIONSHIP_OPTIONS}
-        value={instruction.relationship}
-        onChange={(rel) => tryCommit({ relationship: rel })}
+      <CalledIdentifierDropdown
+        options={CalledIdentifierSchema.options}
+        value={instruction.cid}
+        onChange={(cid) => tryCommit({ cid })}
       />
     </>
   );

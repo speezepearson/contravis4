@@ -1,16 +1,21 @@
 import { z } from "zod";
 
 import { ALL_HANDS } from "../contraCore";
-import { assertNever } from "../utils";
+import { must } from "../utils";
 import { disconnectHands } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import {
+  type CalledIdentifier,
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+} from "./_base";
 import { type SegmentAnimator } from "./_segment";
 
 export const DropHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("drop_hands"),
   beats: z.literal(0),
-  which: z.enum(["both", "left", "right", "partner", "shadow", "neighbor"]),
+  which: z.enum(["both", "left", "right", ...CalledIdentifierSchema.options]),
 });
 export type DropHandsInstruction = z.infer<typeof DropHandsInstructionSchema>;
 
@@ -30,20 +35,18 @@ export const dropHandsSegments =
           case "both":
             disconnectHands(draft, id);
             break;
-          case "partner":
-          case "shadow":
-          case "neighbor": {
-            const actualDropRelationship =
-              instr.which === "shadow" ? "partner" : instr.which;
+          default: {
+            instr.which satisfies CalledIdentifier;
+            const theirId = must(
+              resolveCalledIdentifier(id, instr.which, draft),
+            );
             for (const hand of ALL_HANDS) {
-              if (draft[id].hands[hand]?.[0].base === actualDropRelationship) {
+              if (draft[id].hands.get(hand)?.theirId === theirId) {
                 disconnectHands(draft, id, hand);
               }
             }
             break;
           }
-          default:
-            assertNever(instr.which);
         }
       },
     },

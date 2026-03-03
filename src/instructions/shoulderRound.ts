@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { FoilRelationshipSchema, HandSchema } from "../contraCore";
-import { instructionBaseSchemaFields } from "./_base";
+import { HandSchema } from "../contraCore";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 
 export const ShoulderRoundInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("shoulder_round"),
-  relationship: FoilRelationshipSchema,
+  cid: CalledIdentifierSchema,
   handedness: HandSchema,
   endFacing: z.enum([
     "larks_up_robins_down",

@@ -1,9 +1,9 @@
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { CalledIdentifierSchema } from "../../instructions/_base";
 import { InstructionSchema } from "../../instructions/index";
+import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { FULL_RELATIONSHIP_OPTIONS } from "../fieldUtils";
 import { InlineNumber } from "../InlineNumber";
-import { RelationshipDropdown } from "../RelationshipDropdown";
 
 export function DoSiDoFields({
   instruction,
@@ -19,7 +19,7 @@ export function DoSiDoFields({
       id,
       type: "do_si_do",
       beats: instruction.beats,
-      relationship: instruction.relationship,
+      cid: instruction.cid,
       rotations: instruction.rotations,
       ...overrides,
     };
@@ -38,10 +38,10 @@ export function DoSiDoFields({
         suffix="x"
       />
       {" with your "}
-      <RelationshipDropdown
-        options={FULL_RELATIONSHIP_OPTIONS}
-        value={instruction.relationship}
-        onChange={(rel) => tryCommit({ relationship: rel })}
+      <CalledIdentifierDropdown
+        options={CalledIdentifierSchema.options}
+        value={instruction.cid}
+        onChange={(cid) => tryCommit({ cid })}
       />
     </>
   );

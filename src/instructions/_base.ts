@@ -2,25 +2,22 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import {
-  type BaseRelationship,
-  BaseRelationshipSchema,
+  ALL_PROTO_IDS,
   type Beats,
   BeatsSchema,
   type DancerId,
-  FoilBaseRelationshipSchema,
-  parseDancerId,
-  parseProtoId,
-  projectDancerIdToProtoId,
+  getRole,
+  isLark,
   type ProtoId,
-  type Relationship,
-  RelationshipSchema,
-  resolveRelationship,
+  protoIdToDancerId,
 } from "../contraCore";
-import { EAST, NORTH, PI, SOUTH, WEST } from "../geometry";
+import { EAST, NORTH, SOUTH, WEST } from "../geometry";
 import { assertNever } from "../utils";
 import {
+  CalledLabelSchema,
   type DancerState,
   getDancerState,
+  resolveCalledLabel,
   type WorldState,
 } from "../worldState";
 
@@ -50,64 +47,6 @@ export function getCardinalBearing(
     default:
       assertNever(dir);
   }
-}
-
-// Direction relative to a dancer: a named direction or a relationship
-export const RelativeDirectionSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("direction"),
-    value: z.enum([
-      ...CardinalDirectionSchema.options,
-      "progression",
-      "forward",
-      "back",
-      "right",
-      "left",
-    ]),
-  }),
-  z.object({ kind: z.literal("relationship"), value: RelationshipSchema }),
-]);
-export type RelativeDirection = z.infer<typeof RelativeDirectionSchema>;
-
-/** Resolve a RelativeDirection to a unit heading vector for a specific dancer. */
-export function resolveRelativeDirection(
-  dir: RelativeDirection,
-  id: DancerId,
-  protos: Record<ProtoId, DancerState>,
-): Vector {
-  id = projectDancerIdToProtoId(id);
-  const d = getDancerState(id, protos);
-  if (dir.kind === "direction") {
-    const v = dir.value;
-    switch (v) {
-      case "up":
-        return NORTH;
-      case "down":
-        return SOUTH;
-      case "across":
-        return d.pos.x < 0 ? EAST : WEST;
-      case "out":
-        return d.pos.x < 0 ? WEST : EAST;
-      case "progression":
-        return { up: NORTH, down: SOUTH }[parseProtoId(d.protoId).dir];
-      case "forward":
-        return d.facing;
-      case "back":
-        return d.facing.multiply(-1);
-      case "right":
-        return d.facing.rotateByDegrees(-90);
-      case "left":
-        return d.facing.rotateByDegrees(90);
-      default:
-        return assertNever(v);
-    }
-  }
-  // relationship: toward the matched other dancer
-  const there = getDancerState(
-    resolveRelationship(d.protoId, dir.value),
-    protos,
-  ).pos;
-  return there.subtract(d.pos).normalize();
 }
 
 export type Animator = (init: WorldState, who: Set<ProtoId>) => ContraAnimation;
@@ -142,47 +81,101 @@ export type InstructionAnimator<Instr> = (
   instr: Instr,
 ) => ContraAnimation;
 
-export const DirectionalRelationshipSchema = z.enum([
-  "on_left",
+export const CalledDirectionSchema = z.enum([
   "on_right",
+  "on_left",
   "in_front",
+  "behind",
+  "left_diagonal",
+  "right_diagonal",
   "larks_left_robins_right",
   "larks_right_robins_left",
+  "across",
+  "out",
+  "up",
+  "down",
+  // TODO: or, "towards your [label]"
 ]);
-export type DirectionalRelationship = z.infer<
-  typeof DirectionalRelationshipSchema
->;
+export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
+export function isCalledDirection(
+  cid: CalledIdentifier,
+): cid is CalledDirection {
+  return CalledDirectionSchema.safeParse(cid).success;
+}
+export function resolveCalledDirection(
+  dir: CalledDirection,
+  id: ProtoId,
+  protos: Record<ProtoId, DancerState>,
+): Vector {
+  switch (dir) {
+    case "on_right":
+      return protos[id].facing.rotateByDegrees(-90);
+    case "on_left":
+      return protos[id].facing.rotateByDegrees(90);
+    case "in_front":
+      return protos[id].facing;
+    case "behind":
+      return protos[id].facing.multiply(-1);
+    case "left_diagonal":
+      return protos[id].facing.rotateByDegrees(45);
+    case "right_diagonal":
+      return protos[id].facing.rotateByDegrees(-45);
+    case "larks_left_robins_right":
+      return protos[id].facing.rotateByDegrees(45 * (isLark(id) ? 1 : -1));
+    case "larks_right_robins_left":
+      return protos[id].facing.rotateByDegrees(-45 * (isLark(id) ? 1 : -1));
+    case "across":
+      return protos[id].pos.x < 0 ? EAST : WEST;
+    case "out":
+      return protos[id].pos.x < 0 ? WEST : EAST;
+    case "up":
+      return NORTH;
+    case "down":
+      return SOUTH;
+    default:
+      assertNever(dir);
+  }
+}
+
+export const CalledIdentifierSchema = z.enum([
+  ...CalledLabelSchema.options,
+  ...CalledDirectionSchema.options,
+]);
+export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
+export function resolveCalledIdentifier(
+  id: ProtoId,
+  cid: CalledIdentifier,
+  protos: Record<ProtoId, DancerState>,
+): DancerId | null {
+  if (isCalledDirection(cid)) {
+    return findDancerInCalledDirection(id, cid, protos);
+  }
+  return resolveCalledLabel(cid, id, protos);
+}
 
 export function findDancerInDirection(
   protos: Record<ProtoId, DancerState>,
   id: ProtoId,
   dir: Vector,
   { roles }: { roles?: "same" | "different" } = {},
-): { id: DancerId; rel: Relationship } | null {
+): DancerId | null {
   dir = dir.normalize();
   const pos = protos[id].pos;
 
   let bestScore = Infinity;
-  let bestTarget: { id: DancerId; rel: Relationship } | null = null;
+  let bestTarget: DancerId | null = null;
 
-  const baseRels: BaseRelationship[] = !roles
-    ? BaseRelationshipSchema.options
-    : roles === "same"
-      ? ["opposite"]
-      : roles === "different"
-        ? FoilBaseRelationshipSchema.options
-        : assertNever(roles);
+  for (const otherProtoId of ALL_PROTO_IDS) {
+    if (otherProtoId === id) continue;
+    if (roles === "same" && getRole(otherProtoId) !== getRole(id)) continue;
+    if (roles === "different" && getRole(otherProtoId) === getRole(id))
+      continue;
 
-  for (const baseRel of baseRels) {
-    const dyBase =
-      getDancerState(
-        resolveRelationship(id, { base: baseRel, offset: 0 }),
-        protos,
-      ).pos.y - pos.y;
+    const otherProto = protos[otherProtoId];
+    const dyBase = otherProto.pos.y - pos.y;
     const oBest = Math.round(-dyBase / 2);
-    const rel = { base: baseRel, offset: oBest };
     for (let o = oBest - 2; o <= oBest + 2; o++) {
-      const targetId = resolveRelationship(id, rel);
+      const targetId = protoIdToDancerId(otherProtoId, o);
       const target = getDancerState(targetId, protos);
       const disp = target.pos.subtract(pos);
       const r = disp.length();
@@ -196,7 +189,7 @@ export function findDancerInDirection(
       const score = r / cos2Theta;
       if (score < bestScore) {
         bestScore = score;
-        bestTarget = { id: targetId, rel };
+        bestTarget = targetId;
       }
     }
   }
@@ -204,35 +197,15 @@ export function findDancerInDirection(
   return bestTarget;
 }
 
-/** Find the dancer best described by "the person on your [side]", if any. */
-export function findDancerOnSide(
+/** Find the dancer best described by "the person to your [...]", if any. */
+export function findDancerInCalledDirection(
   id: ProtoId,
-  side: DirectionalRelationship,
+  side: CalledDirection,
   dancers: Record<ProtoId, DancerState>,
   { roles }: { roles?: "same" | "different" } = {},
-): { id: DancerId; rel: Relationship } | null {
-  const BIAS = (0.777 * PI) / 2; // ~70°, bias towards "in front"
-  const lark = parseDancerId(id).role === "lark";
-  const angleOffset =
-    side === "on_right"
-      ? -BIAS
-      : side === "on_left"
-        ? BIAS
-        : side === "in_front"
-          ? 0
-          : side === "larks_left_robins_right"
-            ? lark
-              ? BIAS
-              : -BIAS
-            : side === "larks_right_robins_left"
-              ? lark
-                ? -BIAS
-                : BIAS
-              : assertNever(side);
-  const d = dancers[id];
-  const heading = d.facing.rotateByRadians(angleOffset);
-
-  return findDancerInDirection(dancers, id, heading, { roles });
+): DancerId | null {
+  const dir = resolveCalledDirection(side, id, dancers);
+  return findDancerInDirection(dancers, id, dir, { roles });
 }
 
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {

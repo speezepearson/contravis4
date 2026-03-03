@@ -1,11 +1,7 @@
 import type { Vector } from "vecti";
 
 import type { Beats, Hand } from "../contraCore";
-import {
-  ALL_PROTO_IDS,
-  type ProtoId,
-  resolveRelationship,
-} from "../contraCore";
+import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { PI } from "../geometry";
 import type { DancerState, WorldState } from "../worldState";
 import { getDancerState } from "../worldState";
@@ -36,14 +32,13 @@ function extractHandConnections(
   for (const id of ALL_PROTO_IDS) {
     const dancer = protos[id];
     for (const hand of ["left", "right"] as Hand[]) {
-      const holding = dancer.hands[hand];
+      const holding = dancer.hands.get(hand);
       if (!holding) continue;
-      const [relationship, theirHand] = holding;
-      const targetId = resolveRelationship(id, relationship);
-      const targetState = getDancerState(targetId, protos);
+      const { theirId, theirHand } = holding;
+      const targetState = getDancerState(theirId, protos);
 
       // Dedup: use sorted key
-      const key = [id, hand, targetId, theirHand].sort().join("|");
+      const key = [id, hand, theirId, theirHand].sort().join("|");
       if (seen.has(key)) continue;
       seen.add(key);
 

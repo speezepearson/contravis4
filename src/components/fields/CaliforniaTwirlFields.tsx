@@ -1,8 +1,8 @@
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { CalledIdentifierSchema } from "../../instructions/_base";
 import { InstructionSchema } from "../../instructions/index";
+import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { FULL_FOIL_RELATIONSHIP_OPTIONS } from "../fieldUtils";
-import { RelationshipDropdown } from "../RelationshipDropdown";
 
 export function CaliforniaTwirlFields({
   instruction,
@@ -18,7 +18,7 @@ export function CaliforniaTwirlFields({
       id,
       type: "california_twirl",
       beats: instruction.beats,
-      relationship: instruction.relationship,
+      cid: instruction.cid,
       ...overrides,
     };
     const result = InstructionSchema.safeParse(raw);
@@ -29,10 +29,10 @@ export function CaliforniaTwirlFields({
   return (
     <>
       {"with your "}
-      <RelationshipDropdown
-        options={FULL_FOIL_RELATIONSHIP_OPTIONS}
-        value={instruction.relationship}
-        onChange={(rel) => tryCommit({ relationship: rel })}
+      <CalledIdentifierDropdown
+        options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
+        value={instruction.cid}
+        onChange={(cid) => tryCommit({ cid })}
       />
     </>
   );

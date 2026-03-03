@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-import {
-  FoilRelationshipSchema,
-  isLark,
-  type ProtoId,
-  resolveRelationship,
-} from "../contraCore";
+import { isLark, type ProtoId } from "../contraCore";
 import {
   ccwRadsBetween,
   getDir,
@@ -13,16 +8,18 @@ import {
   revolve,
   TWO_PI,
 } from "../geometry";
-import { avgPos, lerpVectors } from "../utils";
+import { avgPos, lerpVectors, must } from "../utils";
 import {
   buildProtoRecord,
   getDancerState,
   type WorldState,
 } from "../worldState";
 import {
+  CalledIdentifierSchema,
   CardinalDirectionSchema,
   getCardinalBearing,
   instructionBaseSchemaFields,
+  resolveCalledIdentifier,
 } from "./_base";
 import {
   disconnect,
@@ -34,7 +31,7 @@ import {
 export const SwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("swing"),
-  relationship: FoilRelationshipSchema,
+  cid: CalledIdentifierSchema,
   endFacing: CardinalDirectionSchema,
 });
 export type SwingInstruction = z.infer<typeof SwingInstructionSchema>;
@@ -54,7 +51,7 @@ export function makeSwingSegments(
 
   const pairs = buildProtoRecord((id) => {
     const me = getDancerState(id, init);
-    const themId = resolveRelationship(id, instr.relationship);
+    const themId = must(resolveCalledIdentifier(id, instr.cid, init));
     const them = getDancerState(themId, init);
     const center = avgPos(me.pos, them.pos);
     return { me, themId, them, center };
@@ -105,8 +102,8 @@ export function makeSwingSegments(
   });
 
   const swingHands = holdByRole({
-    lark: ["right", instr.relationship, "left"],
-    robin: ["left", instr.relationship, "right"],
+    lark: ["right", instr.cid, "left"],
+    robin: ["left", instr.cid, "right"],
   });
 
   return [

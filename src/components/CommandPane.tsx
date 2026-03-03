@@ -59,6 +59,7 @@ import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
 import { PassByFields } from "./fields/PassByFields";
 import { PullByFields } from "./fields/PullByFields";
+import { RelabelFields } from "./fields/RelabelFields";
 import { SplitFields } from "./fields/SplitFields";
 import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
@@ -78,6 +79,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "do_si_do",
   "pull_by",
   "pass_by",
+  "relabel",
   "step",
   "swing",
   "give_and_take_into_swing",
@@ -94,6 +96,7 @@ const ACTION_LABELS: Record<string, string> = {
   do_si_do: "do si do",
   pass_by: "pass by",
   pull_by: "pull by",
+  relabel: "relabel",
   step: "step",
   swing: "swing",
   give_and_take_into_swing: "give & take into swing",
@@ -430,6 +433,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "take_hands":
     case "drop_hands":
     case "form_short_waves":
+    case "relabel":
       return false;
     default:
       return assertNever(type);
@@ -548,6 +552,8 @@ function InlineForm({
             return <PullByFields {...common} instruction={instruction} />;
           case "pass_by":
             return <PassByFields {...common} instruction={instruction} />;
+          case "relabel":
+            return <RelabelFields {...common} instruction={instruction} />;
           case "step":
             return <StepFields {...common} instruction={instruction} />;
           case "give_and_take_into_swing":
@@ -824,6 +830,7 @@ export default memo(function CommandPane({
     try {
       raw = JSON.parse(text);
     } catch (e) {
+      console.error(e);
       setPasteFeedback(
         `Invalid JSON: ${e instanceof SyntaxError ? e.message : String(e)}`,
       );
@@ -832,6 +839,7 @@ export default memo(function CommandPane({
     }
     const result = DanceSchema.safeParse(raw);
     if (!result.success) {
+      console.error(result.error);
       setPasteFeedback(
         `Invalid dance:\n${formatDanceParseError(result.error, raw)}`,
       );

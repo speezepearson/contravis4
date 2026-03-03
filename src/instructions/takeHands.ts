@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-import {
-  type Hand,
-  RelationshipSchema,
-  resolveRelationship,
-} from "../contraCore";
-import { assertNever } from "../utils";
+import { type Hand } from "../contraCore";
+import { assertNever, must } from "../utils";
 import { connectHands, type DancerState, getDancerState } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+} from "./_base";
 import { type SegmentAnimator } from "./_segment";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
@@ -33,7 +33,7 @@ export const TakeHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("take_hands"),
   beats: z.literal(0),
-  relationship: RelationshipSchema,
+  cid: CalledIdentifierSchema,
   hand: TakeHandSchema,
 });
 export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
@@ -44,20 +44,18 @@ export const takeHandsSegments =
     {
       dur: 0,
       hands: (id, _frac, draft) => {
+        const otherId = must(resolveCalledIdentifier(id, instr.cid, draft));
+        const other = getDancerState(otherId, draft);
         switch (instr.hand) {
           case "left":
-            connectHands(draft, id, "left", instr.relationship, "left");
+            connectHands(draft, id, "left", otherId, "left");
             break;
           case "right":
-            connectHands(draft, id, "right", instr.relationship, "right");
+            connectHands(draft, id, "right", otherId, "right");
             break;
           case "inside": {
-            const them = getDancerState(
-              resolveRelationship(id, instr.relationship),
-              draft,
-            );
-            const ourHand = resolveInsideHand(draft[id], them);
-            connectHands(draft, id, ourHand, instr.relationship, ourHand);
+            const ourHand = resolveInsideHand(draft[id], other);
+            connectHands(draft, id, ourHand, otherId, ourHand);
             break;
           }
           default:

@@ -1,26 +1,26 @@
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
 import { InstructionSchema } from "../../instructions/index";
+import { BasicLabelDropdown } from "../BasicLabelDropdown";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
-import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
 
-export function SwingFields({
+export function RelabelFields({
   instruction,
   onChange,
   onInvalid,
 }: SubFormProps & {
-  instruction: Extract<AtomicInstruction, { type: "swing" }>;
+  instruction: Extract<AtomicInstruction, { type: "relabel" }>;
 }) {
   const { id } = instruction;
 
   function tryCommit(overrides: Record<string, unknown>) {
     const raw = {
       id,
-      type: "swing",
-      beats: instruction.beats,
+      beats: 0,
+      type: "relabel",
+      label: instruction.label,
       cid: instruction.cid,
-      endFacing: instruction.endFacing,
       ...overrides,
     };
     const result = InstructionSchema.safeParse(raw);
@@ -30,17 +30,16 @@ export function SwingFields({
 
   return (
     <>
-      {"your "}
+      {": "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
+        options={CalledIdentifierSchema.options}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />
-      {" \u2192 "}
-      <CardinalDirectionDropdown
-        value={instruction.endFacing}
-        onChange={(f) => tryCommit({ endFacing: f })}
-        onInvalid={onInvalid}
+      {" is your "}
+      <BasicLabelDropdown
+        value={instruction.label}
+        onChange={(label) => tryCommit({ label })}
       />
     </>
   );

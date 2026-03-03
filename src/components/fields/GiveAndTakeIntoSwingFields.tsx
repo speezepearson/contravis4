@@ -1,11 +1,12 @@
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { CalledIdentifierSchema } from "../../instructions/_base";
 import { InstructionSchema } from "../../instructions/index";
+import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { FULL_FOIL_RELATIONSHIP_OPTIONS, ROLE_OPTIONS } from "../fieldUtils";
+import { ROLE_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
-import { RelationshipDropdown } from "../RelationshipDropdown";
 
 export function GiveAndTakeIntoSwingFields({
   instruction,
@@ -21,7 +22,7 @@ export function GiveAndTakeIntoSwingFields({
       id,
       type: "give_and_take_into_swing",
       beats: instruction.beats,
-      relationship: instruction.relationship,
+      cid: instruction.cid,
       role: instruction.drawerRole,
       endFacing: instruction.endFacing,
       ...overrides,
@@ -40,10 +41,10 @@ export function GiveAndTakeIntoSwingFields({
         getLabel={(v) => v + "s"}
       />
       {" draw your "}
-      <RelationshipDropdown
-        options={FULL_FOIL_RELATIONSHIP_OPTIONS}
-        value={instruction.relationship}
-        onChange={(rel) => tryCommit({ relationship: rel })}
+      <CalledIdentifierDropdown
+        options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
+        value={instruction.cid}
+        onChange={(cid) => tryCommit({ cid })}
       />
       {" across and swing, end facing "}
       <CardinalDirectionDropdown

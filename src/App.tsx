@@ -2,14 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { averageFrames, shiftFrameByProgression } from "./averageFrames";
 import CommandPane from "./components/CommandPane";
-import { decodeRelationship } from "./components/fieldUtils";
-import { RelationshipHighlightContext } from "./components/RelationshipHighlightContext";
+import { CalledIdentifierHighlightContext } from "./components/RelationshipHighlightContext";
 import { Renderer } from "./components/Renderer";
-import {
-  ALL_PROTO_IDS,
-  BaseRelationshipSchema,
-  resolveRelationship,
-} from "./contraCore";
+import { ALL_PROTO_IDS } from "./contraCore";
 import { exportGif } from "./exportGif";
 import {
   findInstructionStartBeat,
@@ -18,6 +13,10 @@ import {
 } from "./generate";
 import { formatDanceParseError } from "./generate";
 import { inferProgression } from "./inferProgression";
+import {
+  type CalledIdentifier,
+  resolveCalledIdentifier,
+} from "./instructions/_base";
 import type {
   InitFormation,
   Instruction,
@@ -195,7 +194,7 @@ export default function App() {
   }, [hoveredInstructionId, instructions, animation]);
 
   // Relationship highlight: ref-based to avoid re-renders on fast mouse movements
-  const highlightedRelRef = useRef<string | null>(null);
+  const highlightedRelRef = useRef<CalledIdentifier | null>(null);
   const highlightRelRafRef = useRef(0);
 
   const draw = useCallback(() => {
@@ -245,29 +244,25 @@ export default function App() {
     // Draw relationship highlight lines
     const highlightedRel = highlightedRelRef.current;
     if (highlightedRel) {
-      const decoded = decodeRelationship(highlightedRel);
-      const base = BaseRelationshipSchema.safeParse(decoded.base);
-      if (base.success) {
-        const rel = { base: base.data, offset: decoded.offset };
-        const lines: Array<{
-          fromX: number;
-          fromY: number;
-          toX: number;
-          toY: number;
-        }> = [];
-        for (const id of ALL_PROTO_IDS) {
-          const targetId = resolveRelationship(id, rel);
-          const from = frame[id];
-          const to = getDancerState(targetId, frame);
-          lines.push({
-            fromX: from.pos.x,
-            fromY: from.pos.y,
-            toX: to.pos.x,
-            toY: to.pos.y,
-          });
-        }
-        renderer.drawRelationshipLines(lines);
+      const lines: Array<{
+        fromX: number;
+        fromY: number;
+        toX: number;
+        toY: number;
+      }> = [];
+      for (const id of ALL_PROTO_IDS) {
+        const targetId = resolveCalledIdentifier(id, highlightedRel, frame);
+        if (!targetId) continue;
+        const from = frame[id];
+        const to = getDancerState(targetId, frame);
+        lines.push({
+          fromX: from.pos.x,
+          fromY: from.pos.y,
+          toX: to.pos.x,
+          toY: to.pos.y,
+        });
       }
+      renderer.drawRelationshipLines(lines);
     }
 
     // Draw preview keyframes overlay
@@ -286,11 +281,16 @@ export default function App() {
     drawRef.current();
   }, [animation, smoothness]);
 
-  const setHighlightedRelationship = useCallback((encoded: string | null) => {
-    highlightedRelRef.current = encoded;
-    cancelAnimationFrame(highlightRelRafRef.current);
-    highlightRelRafRef.current = requestAnimationFrame(() => drawRef.current());
-  }, []);
+  const setHighlightedRelationship = useCallback(
+    (cid: CalledIdentifier | null) => {
+      highlightedRelRef.current = cid;
+      cancelAnimationFrame(highlightRelRafRef.current);
+      highlightRelRafRef.current = requestAnimationFrame(() =>
+        drawRef.current(),
+      );
+    },
+    [],
+  );
 
   const downloadGif = useCallback(() => {
     if (!animation) return;
@@ -533,7 +533,9 @@ export default function App() {
   };
 
   return (
-    <RelationshipHighlightContext.Provider value={setHighlightedRelationship}>
+    <CalledIdentifierHighlightContext.Provider
+      value={setHighlightedRelationship}
+    >
       <div className="app-layout">
         {localStorageError && (
           <div className="localstorage-error">
@@ -615,6 +617,6 @@ export default function App() {
           </div>
         )}
       </div>
-    </RelationshipHighlightContext.Provider>
+    </CalledIdentifierHighlightContext.Provider>
   );
 }

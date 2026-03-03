@@ -1,21 +1,26 @@
 import { produce } from "immer";
 import type { Vector } from "vecti";
 
-import type { Beats, Hand, ProtoId, Relationship } from "../contraCore";
-import { isLark, resolveRelationship } from "../contraCore";
+import type { Beats, Hand, ProtoId } from "../contraCore";
+import { isLark } from "../contraCore";
 import {
   ellipsePosition,
   lerpFacing as lerpFacingVec,
   revolve,
 } from "../geometry";
-import { lerpVectors } from "../utils";
+import { lerpVectors, must } from "../utils";
 import {
   connectHands,
   disconnectHands,
   getDancerState,
   type WorldState,
 } from "../worldState";
-import type { Animator, ContraAnimation } from "./_base";
+import {
+  type Animator,
+  type CalledIdentifier,
+  type ContraAnimation,
+  resolveCalledIdentifier,
+} from "./_base";
 
 /** Produces segments for an instruction. The primary interface for atomic instructions. */
 export type SegmentAnimator = (
@@ -37,6 +42,9 @@ export type FacingFn = (
   segInit: WorldState,
 ) => Vector;
 
+/** Per-dancer labels function: mutates draft state for labels. */
+export type LabelsFn = (id: ProtoId, frac: number, draft: WorldState) => void;
+
 /** Per-dancer hands function: mutates draft state for hand connections. */
 export type HandsFn = (id: ProtoId, frac: number, draft: WorldState) => void;
 
@@ -46,6 +54,7 @@ export type Segment = {
   position?: PositionFn; // omit = stay at segInit position
   facing?: FacingFn; // omit = keep segInit facing
   hands?: HandsFn; // omit = leave hands unchanged
+  labels?: LabelsFn; // omit = leave labels unchanged
 };
 
 // ── Core ────────────────────────────────────────────────────────────────
@@ -66,6 +75,7 @@ export function evaluateSegmentEnd(
     }
     for (const id of who) {
       if (segment.hands) segment.hands(id, 1, draft);
+      if (segment.labels) segment.labels(id, 1, draft);
     }
   });
 }
@@ -109,6 +119,7 @@ export function makeAnimation(
           }
           for (const id of who) {
             if (seg.hands) seg.hands(id, frac, draft);
+            if (seg.labels) seg.labels(id, frac, draft);
           }
         });
       }
@@ -157,30 +168,26 @@ export function addPositionDrift(
 
 /** Elliptical arc from dancer's position to their partner's position. */
 export function arc(
-  relationship: Relationship,
+  cid: CalledIdentifier,
   opts: { semiMinor: number; phi: number },
 ): PositionFn {
   return (id, frac, segInit) => {
+    const themId = must(resolveCalledIdentifier(id, cid, segInit));
     const start = segInit[id].pos;
-    const end = getDancerState(
-      resolveRelationship(id, relationship),
-      segInit,
-    ).pos;
+    const end = getDancerState(themId, segInit).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
   };
 }
 
 /** Orbit around midpoint with partner. */
 export function orbit(
-  relationship: Relationship,
+  cid: CalledIdentifier,
   opts: { radians: number },
 ): PositionFn {
   return (id, frac, segInit) => {
     const myPos = segInit[id].pos;
-    const theirPos = getDancerState(
-      resolveRelationship(id, relationship),
-      segInit,
-    ).pos;
+    const themId = must(resolveCalledIdentifier(id, cid, segInit));
+    const theirPos = getDancerState(themId, segInit).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
   };
@@ -218,22 +225,24 @@ export function rotateFacingBy(radiansFn: (id: ProtoId) => number): FacingFn {
 /** Hold a specific hand connection throughout the segment. */
 export function hold(
   hand: Hand,
-  relationship: Relationship,
+  cid: CalledIdentifier,
   theirHand: Hand,
 ): HandsFn {
   return (id, _frac, draft) => {
-    connectHands(draft, id, hand, relationship, theirHand);
+    const themId = must(resolveCalledIdentifier(id, cid, draft));
+    connectHands(draft, id, hand, themId, theirHand);
   };
 }
 
 /** Hold with role-dependent hand/relationship/theirHand. */
 export function holdByRole(opts: {
-  lark: [Hand, Relationship, Hand];
-  robin: [Hand, Relationship, Hand];
+  lark: [Hand, CalledIdentifier, Hand];
+  robin: [Hand, CalledIdentifier, Hand];
 }): HandsFn {
   return (id, _frac, draft) => {
-    const [hand, relationship, theirHand] = isLark(id) ? opts.lark : opts.robin;
-    connectHands(draft, id, hand, relationship, theirHand);
+    const [hand, cid, theirHand] = isLark(id) ? opts.lark : opts.robin;
+    const themId = must(resolveCalledIdentifier(id, cid, draft));
+    connectHands(draft, id, hand, themId, theirHand);
   };
 }
 
@@ -241,12 +250,13 @@ export function holdByRole(opts: {
 export function holdUntil(
   threshold: number,
   hand: Hand,
-  relationship: Relationship,
+  cid: CalledIdentifier,
   theirHand: Hand,
 ): HandsFn {
   return (id, frac, draft) => {
     if (frac < threshold) {
-      connectHands(draft, id, hand, relationship, theirHand);
+      const themId = must(resolveCalledIdentifier(id, cid, draft));
+      connectHands(draft, id, hand, themId, theirHand);
     } else {
       disconnectHands(draft, id);
     }

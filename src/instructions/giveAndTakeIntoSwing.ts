@@ -1,14 +1,15 @@
 import { z } from "zod";
 
-import {
-  FoilRelationshipSchema,
-  parseProtoId,
-  resolveRelationship,
-  RoleSchema,
-} from "../contraCore";
+import { parseProtoId, RoleSchema } from "../contraCore";
 import { EAST, getDir, WEST } from "../geometry";
+import { must } from "../utils";
 import { buildProtoRecord, getDancerState } from "../worldState";
-import { CardinalDirectionSchema, instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  CardinalDirectionSchema,
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+} from "./_base";
 import {
   addPositionDrift,
   evaluateSegmentEnd,
@@ -21,7 +22,7 @@ import { makeSwingSegments } from "./swing";
 export const GiveAndTakeIntoSwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("give_and_take_into_swing"),
-  relationship: FoilRelationshipSchema,
+  cid: CalledIdentifierSchema,
   drawerRole: RoleSchema,
   endFacing: CardinalDirectionSchema,
 });
@@ -37,7 +38,7 @@ export const giveAndTakeIntoSwingSegments =
 
     const plans = buildProtoRecord((id) => {
       const amDrawer = parseProtoId(id).role === instr.drawerRole;
-      const themId = resolveRelationship(id, instr.relationship);
+      const themId = must(resolveCalledIdentifier(id, instr.cid, init));
       const drawer = getDancerState(amDrawer ? id : themId, init);
       const drawee = getDancerState(amDrawer ? themId : id, init);
 
@@ -84,7 +85,7 @@ export const giveAndTakeIntoSwingSegments =
         type: "swing",
         beats: swingDur,
         endFacing: instr.endFacing,
-        relationship: instr.relationship,
+        cid: instr.cid,
       },
       postApproach,
       who,

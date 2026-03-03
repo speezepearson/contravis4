@@ -4,7 +4,10 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
 import { connectHands } from "../worldState";
-import { findDancerOnSide, instructionBaseSchemaFields } from "./_base";
+import {
+  findDancerInCalledDirection,
+  instructionBaseSchemaFields,
+} from "./_base";
 import { type SegmentAnimator } from "./_segment";
 
 export const FormShortWavesInstructionSchema = z.object({
@@ -58,10 +61,10 @@ export const formShortWavesSegments =
         position: (id) => positions.get(id)!,
         facing: (id) => facings.get(id)!,
         hands: (id, _frac, draft) => {
-          const left = findDancerOnSide(id, "on_left", draft);
-          const right = findDancerOnSide(id, "on_right", draft);
-          if (left) connectHands(draft, id, "left", left.rel, "left");
-          if (right) connectHands(draft, id, "right", right.rel, "right");
+          const left = findDancerInCalledDirection(id, "on_left", draft);
+          const right = findDancerInCalledDirection(id, "on_right", draft);
+          if (left) connectHands(draft, id, "left", left, "left");
+          if (right) connectHands(draft, id, "right", right, "right");
         },
       },
     ];

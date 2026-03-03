@@ -35,3 +35,9 @@ export function isEqual<T>(a: T, b: T): boolean {
 export function avgPos(...vs: Vector[]): Vector {
   return vs.reduce((acc, v) => acc.add(v), new Vector(0, 0)).divide(vs.length);
 }
+
+export function must<T>(x: T | null | undefined): T {
+  if (x === null || x === undefined)
+    throw new Error("Value is null or undefined");
+  return x;
+}
