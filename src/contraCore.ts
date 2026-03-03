@@ -79,20 +79,22 @@ export function makeDancerId({
 }): DancerId {
   return `${dir}_${role}_${offset}`;
 }
-export function parseDancerId(id: DancerId): {
-  dir: ProgressionDir;
-  role: Role;
-  offset: DancerOffset;
-} {
-  const [dirStr, roleStr, offsetStr] = id.split("_");
-  const dir = ProgressionDirSchema.parse(dirStr);
-  const role = RoleSchema.parse(roleStr);
-  const offset = z.coerce.number().pipe(DancerOffsetSchema).parse(offsetStr);
-  return {
-    dir,
-    role,
-    offset,
-  };
+
+type ParsedDancer = { dir: ProgressionDir; role: Role; offset: DancerOffset };
+const _parsedDancers: Partial<Record<DancerId, ParsedDancer>> = {};
+export function parseDancerId(id: DancerId): ParsedDancer {
+  if (!_parsedDancers[id]) {
+    const [dirStr, roleStr, offsetStr] = id.split("_");
+    const dir = ProgressionDirSchema.parse(dirStr);
+    const role = RoleSchema.parse(roleStr);
+    const offset = z.coerce.number().pipe(DancerOffsetSchema).parse(offsetStr);
+    _parsedDancers[id] = Object.freeze({
+      dir,
+      role,
+      offset,
+    });
+  }
+  return _parsedDancers[id];
 }
 export function parseProtoId(id: ProtoId): { dir: ProgressionDir; role: Role } {
   return parseDancerId(id);
