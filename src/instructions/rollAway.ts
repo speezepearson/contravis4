@@ -37,8 +37,9 @@ export const rollAwaySegments =
     const rolleeToRoller: CalledDirection = isRtl ? "on_left" : "on_right";
 
     // Assert & pre-compute partner map: each dancer must have an opposite-role
-    // partner in the expected direction.
+    // partner in the expected direction, and no two rollers may share a rollee.
     const partners = new Map<ProtoId, DancerId>();
+    const claimedRollees = new Map<DancerId, ProtoId>();
     for (const id of who) {
       const isRoller = getRole(id) === instr.roller;
       const dir = isRoller ? rollerToRollee : rolleeToRoller;
@@ -51,6 +52,16 @@ export const rollAwaySegments =
         );
       }
       partners.set(id, found);
+
+      if (isRoller) {
+        const prev = claimedRollees.get(found);
+        if (prev) {
+          throw new Error(
+            `rollers ${prev} and ${id} both resolved to the same rollee ${found}`,
+          );
+        }
+        claimedRollees.set(found, id);
+      }
     }
 
     // Arc direction: rollee goes in front, roller goes behind

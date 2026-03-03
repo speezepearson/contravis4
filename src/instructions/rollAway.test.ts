@@ -1,4 +1,4 @@
-import { enableMapSet } from "immer";
+import { enableMapSet, produce } from "immer";
 import { describe, expect, it } from "vitest";
 import { Vector } from "vecti";
 
@@ -28,36 +28,28 @@ function makeInstr(
 describe("rollAway", () => {
   describe("validation", () => {
     it("throws if a roller can't find an appropriate rollee", () => {
-      const init = {
-        ...initFormationStates.improper,
-        // Move up_robin far away so up_lark has nobody on their right
-        up_robin_0: {
-          ...initFormationStates.improper.up_robin_0,
-          pos: new Vector(-1.5, -0.5),
-        },
-      };
+      const init = produce(initFormationStates.improper, (draft) => {
+        draft.up_robin_0.pos = new Vector(-1.5, -0.5);
+      });
       const instr = makeInstr({ roller: "lark", dir: "rtl" });
       const animator = toAnimator(rollAwaySegments(instr));
-      expect(() => animator(init, allProtos)).toThrow();
+      expect(() => animator(init, allProtos)).toThrow('has no opposite-role dancer');
     });
 
-    it("throws if the rollee isn't facing roughly the same direction as the roller", () => {
-      const init = {
-        ...initFormationStates.improper,
-        // up_lark faces NORTH, flip up_robin to face SOUTH
-        up_robin_0: {
-          ...initFormationStates.improper.up_robin_0,
-          facing: SOUTH,
-        },
-        // down_lark faces SOUTH, flip down_robin to face NORTH
-        down_robin_0: {
-          ...initFormationStates.improper.down_robin_0,
-          facing: NORTH,
-        },
-      };
+    it("throws if two rollers have the same rollee", () => {
+      const init = produce(initFormationStates.improper, (draft) => {
+        draft.up_lark_0.pos = new Vector(0, 0);
+        draft.down_lark_0.pos = new Vector(0, .2);
+        draft.up_robin_0.pos = new Vector(1, 0);
+        draft.down_robin_0.pos = new Vector(1.1, 0);
+        for (const id of allProtos) {
+          draft[id].facing = NORTH;
+        }
+      });
       const instr = makeInstr({ roller: "lark", dir: "rtl" });
-      const animator = toAnimator(rollAwaySegments(instr));
-      expect(() => animator(init, allProtos)).toThrow();
+      expect(() =>
+        rollAwaySegments(instr)(init, allProtos)
+      ).toThrow('both resolved to the same rollee');
     });
   });
 
