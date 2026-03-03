@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { HandSchema } from "../contraCore";
+import { type Beats, HandSchema } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
 import { must } from "../utils";
 import { connectHands, getDancerState } from "../worldState";
@@ -29,25 +29,55 @@ export type AllemandeInstruction = z.infer<typeof AllemandeInstructionSchema>;
 const ALLEMANDE_RADIUS = 0.25;
 const APPROACH_ELLIPSE_RADIANS = PI / 2;
 
+/**
+ * Choose approachBeats so the dancer's speed at the end of the elliptical
+ * approach roughly matches their speed during the circular orbit.
+ *
+ * At the end of the approach, instantaneous speed = (distance/2) * (PI/2) / approachBeats.
+ * During the orbit, speed = ALLEMANDE_RADIUS * |orbitRadians| / circlingBeats.
+ * Setting equal and solving (with circlingBeats = totalBeats - approachBeats):
+ *   approachBeats = approachFactor * totalBeats / (orbitFactor + approachFactor)
+ */
+export function approachBeatsForSpeedMatch(
+  distance: number,
+  totalBeats: Beats,
+  orbitRadians: number,
+): Beats {
+  const approachFactor = distance * (PI / 4);
+  const orbitFactor = ALLEMANDE_RADIUS * Math.abs(orbitRadians);
+  if (approachFactor + orbitFactor === 0) return 0;
+  return (approachFactor * totalBeats) / (orbitFactor + approachFactor);
+}
+
 export const allemandeSegments = (
   instr: AllemandeInstruction,
 ): SegmentAnimator => {
   const rotationSign = instr.handedness === "left" ? 1 : -1;
-  const approachBeats = Math.min(1, instr.beats / 4);
-  const circlingBeats = instr.beats - approachBeats;
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
   return (init, who) => {
+    let totalDistance = 0;
+    let count = 0;
     const closeEnoughForHands = new Set<string>();
     for (const id of who) {
       const me = getDancerState(id, init);
       const themId = must(resolveCalledIdentifier(id, instr.cid, init));
       const them = getDancerState(themId, init);
-      if (me.pos.subtract(them.pos).length() < 1) {
+      const dist = me.pos.subtract(them.pos).length();
+      totalDistance += dist;
+      count++;
+      if (dist < 1) {
         closeEnoughForHands.add(id);
       }
     }
+    const avgDistance = totalDistance / count;
+    const approachBeats = approachBeatsForSpeedMatch(
+      avgDistance,
+      instr.beats,
+      numAllemandeRadians,
+    );
+    const circlingBeats = instr.beats - approachBeats;
 
     return [
       {
