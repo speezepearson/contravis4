@@ -20,7 +20,7 @@ export type PullByInstruction = z.infer<typeof PullByInstructionSchema>;
 
 export const pullBySegments =
   (instr: PullByInstruction): SegmentAnimator =>
-  (init, _who) => {
+  (_init, _who) => {
     const semiMinor = 0.25 * { left: -1, right: 1 }[instr.hand];
     return [
       {
