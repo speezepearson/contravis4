@@ -7,13 +7,13 @@ import {
 } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
 import { connectHands, getDancerState } from "../worldState";
-import { type Animator, instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import {
   arc,
   lerpFacingTo,
-  makeAnimation,
   orbit,
   rotateFacingBy,
+  type SegmentAnimator,
 } from "./_segment";
 
 export const AllemandeInstructionSchema = z.object({
@@ -28,7 +28,9 @@ export type AllemandeInstruction = z.infer<typeof AllemandeInstructionSchema>;
 const ALLEMANDE_RADIUS = 0.25;
 const APPROACH_ELLIPSE_RADIANS = PI / 2;
 
-export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
+export const allemandeSegments = (
+  instr: AllemandeInstruction,
+): SegmentAnimator => {
   const rotationSign = instr.handedness === "left" ? 1 : -1;
   const approachBeats = Math.min(1, instr.beats / 4);
   const circlingBeats = instr.beats - approachBeats;
@@ -48,7 +50,7 @@ export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
       }
     }
 
-    return makeAnimation(init, who, [
+    return [
       {
         dur: approachBeats,
         position: arc(instr.relationship, {
@@ -88,6 +90,6 @@ export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
           );
         },
       },
-    ]);
+    ];
   };
 };

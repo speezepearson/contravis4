@@ -20,7 +20,6 @@ import {
   type WorldState,
 } from "../worldState";
 import {
-  type Animator,
   CardinalDirectionSchema,
   getCardinalBearing,
   instructionBaseSchemaFields,
@@ -28,8 +27,8 @@ import {
 import {
   disconnect,
   holdByRole,
-  makeAnimation,
   type Segment,
+  type SegmentAnimator,
 } from "./_segment";
 
 export const SwingInstructionSchema = z.object({
@@ -148,7 +147,7 @@ export function makeSwingSegments(
   ];
 }
 
-export const swingAnimator =
-  (instr: SwingInstruction): Animator =>
+export const swingSegments =
+  (instr: SwingInstruction): SegmentAnimator =>
   (init, who) =>
-    makeAnimation(init, who, makeSwingSegments(instr, init, who));
+    makeSwingSegments(instr, init, who);

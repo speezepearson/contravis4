@@ -8,17 +8,13 @@ import {
 } from "../contraCore";
 import { EAST, getDir, WEST } from "../geometry";
 import { buildProtoRecord, getDancerState } from "../worldState";
-import {
-  type Animator,
-  CardinalDirectionSchema,
-  instructionBaseSchemaFields,
-} from "./_base";
+import { CardinalDirectionSchema, instructionBaseSchemaFields } from "./_base";
 import {
   addPositionDrift,
   evaluateSegmentEnd,
   lerpFacingTo,
   linearTo,
-  makeAnimation,
+  type SegmentAnimator,
 } from "./_segment";
 import { makeSwingSegments } from "./swing";
 
@@ -33,8 +29,8 @@ export type GiveAndTakeIntoSwingInstruction = z.infer<
   typeof GiveAndTakeIntoSwingInstructionSchema
 >;
 
-export const giveAndTakeIntoSwingAnimator =
-  (instr: GiveAndTakeIntoSwingInstruction): Animator =>
+export const giveAndTakeIntoSwingSegments =
+  (instr: GiveAndTakeIntoSwingInstruction): SegmentAnimator =>
   (init, who) => {
     const approachDur = 1;
     const swingDur = instr.beats - approachDur;
@@ -102,5 +98,5 @@ export const giveAndTakeIntoSwingAnimator =
           .multiply(globalFrac),
     );
 
-    return makeAnimation(init, who, [approachSegment, ...driftedSwingSegments]);
+    return [approachSegment, ...driftedSwingSegments];
   };

@@ -15,7 +15,13 @@ import {
   getDancerState,
   type WorldState,
 } from "../worldState";
-import type { ContraAnimation } from "./_base";
+import type { Animator, ContraAnimation } from "./_base";
+
+/** Produces segments for an instruction. The primary interface for atomic instructions. */
+export type SegmentAnimator = (
+  init: WorldState,
+  who: Set<ProtoId>,
+) => Segment[];
 
 /** Per-dancer position function: given dancer id, progress fraction [0,1], and segment initial state, returns position. */
 export type PositionFn = (
@@ -57,6 +63,8 @@ export function evaluateSegmentEnd(
     for (const id of who) {
       if (segment.position) draft[id].pos = segment.position(id, 1, init);
       if (segment.facing) draft[id].facing = segment.facing(id, 1, init);
+    }
+    for (const id of who) {
       if (segment.hands) segment.hands(id, 1, draft);
     }
   });
@@ -98,6 +106,8 @@ export function makeAnimation(
           for (const id of who) {
             if (seg.position) draft[id].pos = seg.position(id, frac, segInit);
             if (seg.facing) draft[id].facing = seg.facing(id, frac, segInit);
+          }
+          for (const id of who) {
             if (seg.hands) seg.hands(id, frac, draft);
           }
         });
@@ -107,6 +117,11 @@ export function makeAnimation(
       );
     },
   };
+}
+
+/** Wrap a SegmentAnimator into an Animator by rendering segments via makeAnimation. */
+export function toAnimator(segAnimator: SegmentAnimator): Animator {
+  return (init, who) => makeAnimation(init, who, segAnimator(init, who));
 }
 
 /**

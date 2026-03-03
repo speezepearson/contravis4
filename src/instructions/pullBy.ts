@@ -7,8 +7,8 @@ import {
 } from "../contraCore";
 import { PI } from "../geometry";
 import { getDancerState } from "../worldState";
-import { type Animator, instructionBaseSchemaFields } from "./_base";
-import { arc, holdUntil, makeAnimation } from "./_segment";
+import { instructionBaseSchemaFields } from "./_base";
+import { arc, holdUntil, type SegmentAnimator } from "./_segment";
 
 export const PullByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,11 +18,11 @@ export const PullByInstructionSchema = z.object({
 });
 export type PullByInstruction = z.infer<typeof PullByInstructionSchema>;
 
-export const pullByAnimator =
-  (instr: PullByInstruction): Animator =>
-  (init, who) => {
+export const pullBySegments =
+  (instr: PullByInstruction): SegmentAnimator =>
+  (init, _who) => {
     const semiMinor = 0.25 * { left: -1, right: 1 }[instr.hand];
-    return makeAnimation(init, who, [
+    return [
       {
         dur: instr.beats,
         position: arc(instr.relationship, { semiMinor, phi: PI }),
@@ -34,5 +34,5 @@ export const pullByAnimator =
         },
         hands: holdUntil(0.5, instr.hand, instr.relationship, instr.hand),
       },
-    ]);
+    ];
   };

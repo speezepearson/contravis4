@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { RelationshipSchema } from "../contraCore";
 import { TWO_PI } from "../geometry";
-import { type Animator, instructionBaseSchemaFields } from "./_base";
-import { arc, makeAnimation } from "./_segment";
+import { instructionBaseSchemaFields } from "./_base";
+import { arc, type SegmentAnimator } from "./_segment";
 
 export const DoSiDoInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -13,15 +13,14 @@ export const DoSiDoInstructionSchema = z.object({
 });
 export type DoSiDoInstruction = z.infer<typeof DoSiDoInstructionSchema>;
 
-export const doSiDoAnimator =
-  (instr: DoSiDoInstruction): Animator =>
-  (init, who) =>
-    makeAnimation(init, who, [
-      {
-        dur: instr.beats,
-        position: arc(instr.relationship, {
-          semiMinor: 0.25,
-          phi: TWO_PI * instr.rotations,
-        }),
-      },
-    ]);
+export const doSiDoSegments =
+  (instr: DoSiDoInstruction): SegmentAnimator =>
+  () => [
+    {
+      dur: instr.beats,
+      position: arc(instr.relationship, {
+        semiMinor: 0.25,
+        phi: TWO_PI * instr.rotations,
+      }),
+    },
+  ];

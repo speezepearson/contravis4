@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { RelationshipSchema, resolveRelationship } from "../contraCore";
 import { getDancerState } from "../worldState";
-import { type Animator, instructionBaseSchemaFields } from "./_base";
-import { linearTo, makeAnimation } from "./_segment";
+import { instructionBaseSchemaFields } from "./_base";
+import { linearTo, type SegmentAnimator } from "./_segment";
 
 export const BalanceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -12,12 +12,11 @@ export const BalanceInstructionSchema = z.object({
 });
 export type BalanceInstruction = z.infer<typeof BalanceInstructionSchema>;
 
-export const balanceAnimator =
-  (instr: BalanceInstruction): Animator =>
-  (init, who) => {
+export const balanceSegments =
+  (instr: BalanceInstruction): SegmentAnimator =>
+  (init) => {
     const halfBeats = instr.beats / 2;
-
-    return makeAnimation(init, who, [
+    return [
       {
         dur: halfBeats,
         position: linearTo((id, segInit) => {
@@ -30,5 +29,5 @@ export const balanceAnimator =
         dur: halfBeats,
         position: linearTo((id) => init[id].pos),
       },
-    ]);
+    ];
   };
