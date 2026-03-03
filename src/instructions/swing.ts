@@ -8,7 +8,7 @@ import {
   revolve,
   TWO_PI,
 } from "../geometry";
-import { avgPos, lerpVectors, must } from "../utils";
+import { avgPos, lerpVectors } from "../utils";
 import {
   buildProtoRecord,
   getDancerState,
@@ -19,7 +19,7 @@ import {
   CardinalDirectionSchema,
   getCardinalBearing,
   instructionBaseSchemaFields,
-  resolveCalledIdentifier,
+  resolveMatches,
 } from "./_base";
 import {
   disconnect,
@@ -64,16 +64,14 @@ export function makeSwingSegments(
   init: WorldState,
   _who: Set<ProtoId>,
 ): Segment[] {
-  const pairs = buildProtoRecord((id) => {
-    const me = getDancerState(id, init);
-    const themId = must(resolveCalledIdentifier(id, instr.cid, init));
-    const them = getDancerState(themId, init);
-    const center = avgPos(me.pos, them.pos);
-    return { me, themId, them, center };
-  });
+  const matches = resolveMatches(instr.cid, init);
+  const centers = buildProtoRecord((id) =>
+    avgPos(getDancerState(id, init).pos, getDancerState(matches[id], init).pos),
+  );
 
   const plans = buildProtoRecord((id) => {
-    const { me, center } = pairs[id];
+    const me = getDancerState(id, init);
+    const center = centers[id];
     const finalFacing = getCardinalBearing(instr.endFacing, center);
 
     const final = {
@@ -119,8 +117,8 @@ export function makeSwingSegments(
   let totalApproachDist = 0;
   let totalSwingRadians = 0;
   for (const id of ALL_PROTO_IDS) {
-    totalApproachDist += pairs[id].me.pos
-      .subtract(plans[id].postApproach.pos)
+    totalApproachDist += getDancerState(id, init)
+      .pos.subtract(plans[id].postApproach.pos)
       .length();
     totalSwingRadians += Math.abs(plans[id].numSwingRadians);
   }

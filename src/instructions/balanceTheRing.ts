@@ -1,7 +1,11 @@
 import { z } from "zod";
 
-import { instructionBaseSchemaFields } from "./_base";
-import { findRings, ringCenters } from "./_rings";
+import { buildProtoRecord } from "../worldState";
+import {
+  avgDancerPos,
+  instructionBaseSchemaFields,
+  resolveRings,
+} from "./_base";
 import { linearTo, type SegmentAnimator } from "./_segment";
 
 export const BalanceTheRingInstructionSchema = z.object({
@@ -15,8 +19,8 @@ export type BalanceTheRingInstruction = z.infer<
 export const balanceTheRingSegments =
   (instr: BalanceTheRingInstruction): SegmentAnimator =>
   (init) => {
-    const rings = findRings(init);
-    const centers = ringCenters(rings, init);
+    const rings = resolveRings(init);
+    const centers = buildProtoRecord((id) => avgDancerPos(rings[id], init));
 
     const halfBeats = instr.beats / 2;
 

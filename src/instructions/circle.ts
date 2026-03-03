@@ -4,8 +4,11 @@ import { type DancerId, HandSchema } from "../contraCore";
 import { revolve, TWO_PI } from "../geometry";
 import { must } from "../utils";
 import { buildProtoRecord, connectHands } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
-import { findRings, ringCenters } from "./_rings";
+import {
+  avgDancerPos,
+  instructionBaseSchemaFields,
+  resolveRings,
+} from "./_base";
 import {
   evaluateSegmentEnd,
   rotateFacingBy,
@@ -26,8 +29,10 @@ export const circleSegments =
   (init, who) => {
     const ringSegment = makeRingSegment(init);
     const ringState = evaluateSegmentEnd(ringSegment, init, who);
-    const rings = findRings(ringState);
-    const centers = ringCenters(rings, ringState);
+    const rings = resolveRings(ringState);
+    const centers = buildProtoRecord((id) =>
+      avgDancerPos(rings[id], ringState),
+    );
 
     // CW if direction=left, CCW if direction=right
     const orbitRadians =

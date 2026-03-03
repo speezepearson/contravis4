@@ -2,13 +2,12 @@ import { z } from "zod";
 
 import { parseProtoId, RoleSchema } from "../contraCore";
 import { EAST, getDir, WEST } from "../geometry";
-import { must } from "../utils";
 import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
   instructionBaseSchemaFields,
-  resolveCalledIdentifier,
+  resolveMatches,
 } from "./_base";
 import {
   addPositionDrift,
@@ -35,12 +34,12 @@ export const giveAndTakeIntoSwingSegments =
   (init, who) => {
     const approachDur = 1;
     const swingDur = instr.beats - approachDur;
+    const matches = resolveMatches(instr.cid, init, { roles: "different" });
 
     const plans = buildProtoRecord((id) => {
       const amDrawer = parseProtoId(id).role === instr.drawerRole;
-      const themId = must(resolveCalledIdentifier(id, instr.cid, init));
-      const drawer = getDancerState(amDrawer ? id : themId, init);
-      const drawee = getDancerState(amDrawer ? themId : id, init);
+      const drawer = getDancerState(amDrawer ? id : matches[id], init);
+      const drawee = getDancerState(amDrawer ? matches[id] : id, init);
 
       const postApproachDrawerPos = drawer.pos;
       const postApproachDraweePos = drawer.pos.add(drawee.pos).divide(2);

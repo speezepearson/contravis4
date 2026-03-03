@@ -1,13 +1,12 @@
 import { z } from "zod";
 
-import { type Beats, HandSchema } from "../contraCore";
+import { type Beats, HandSchema, type ProtoId } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
-import { must } from "../utils";
 import { connectHands, getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveCalledIdentifier,
+  resolveMatches,
 } from "./_base";
 import {
   arc,
@@ -56,20 +55,16 @@ export const allemandeSegments = (
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  return (init, who) => {
+  return (init) => {
+    const matches = resolveMatches(instr.cid, init);
+
     let totalDistance = 0;
     let count = 0;
-    const closeEnoughForHands = new Set<string>();
-    for (const id of who) {
-      const me = getDancerState(id, init);
-      const themId = must(resolveCalledIdentifier(id, instr.cid, init));
-      const them = getDancerState(themId, init);
-      const dist = me.pos.subtract(them.pos).length();
-      totalDistance += dist;
+    for (const [id, matchId] of Object.entries(matches)) {
+      const me = getDancerState(id as ProtoId, init);
+      const them = getDancerState(matchId, init);
+      totalDistance += me.pos.subtract(them.pos).length();
       count++;
-      if (dist < 1) {
-        closeEnoughForHands.add(id);
-      }
     }
     const avgDistance = totalDistance / count;
     const approachBeats = approachBeatsForSpeedMatch(
@@ -87,19 +82,20 @@ export const allemandeSegments = (
           phi: APPROACH_ELLIPSE_RADIANS,
         }),
         facing: lerpFacingTo((id, segInit) => {
-          const them = must(resolveCalledIdentifier(id, instr.cid, segInit));
           return getDir({
             from: segInit[id].pos,
-            to: getDancerState(them, segInit).pos,
+            to: getDancerState(matches[id], segInit).pos,
           });
         }),
         hands: (id, _frac, draft) => {
-          if (closeEnoughForHands.has(id)) {
+          const me = getDancerState(id, draft);
+          const them = getDancerState(matches[id], draft);
+          if (me.pos.subtract(them.pos).length() < 1) {
             connectHands(
               draft,
               id,
               instr.handedness,
-              must(resolveCalledIdentifier(id, instr.cid, draft)),
+              matches[id],
               instr.handedness,
             );
           }
@@ -114,7 +110,7 @@ export const allemandeSegments = (
             draft,
             id,
             instr.handedness,
-            must(resolveCalledIdentifier(id, instr.cid, draft)),
+            matches[id],
             instr.handedness,
           );
         },

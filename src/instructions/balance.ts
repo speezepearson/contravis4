@@ -1,18 +1,17 @@
 import { z } from "zod";
 
-import { must } from "../utils";
-import { getDancerState } from "../worldState";
+import { buildProtoRecord, getDancerState } from "../worldState";
 import {
-  CalledIdentifierSchema,
+  CalledDirectionSchema,
   instructionBaseSchemaFields,
-  resolveCalledIdentifier,
+  resolveCalledDirection,
 } from "./_base";
 import { linearTo, type SegmentAnimator } from "./_segment";
 
 export const BalanceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("balance"),
-  cid: CalledIdentifierSchema,
+  did: CalledDirectionSchema,
 });
 export type BalanceInstruction = z.infer<typeof BalanceInstructionSchema>;
 
@@ -20,14 +19,16 @@ export const balanceSegments =
   (instr: BalanceInstruction): SegmentAnimator =>
   (init) => {
     const halfBeats = instr.beats / 2;
+    const dirs = buildProtoRecord((id) =>
+      resolveCalledDirection(id, instr.did, init),
+    );
+    const dests = buildProtoRecord((id) =>
+      getDancerState(id, init).pos.add(dirs[id].multiply(0.2)),
+    ); // TODO: would be nice to be able to choose the distance based on how far it is to the person we're balancing with, *if* it's a person
     return [
       {
         dur: halfBeats,
-        position: linearTo((id, segInit) => {
-          const them = must(resolveCalledIdentifier(id, instr.cid, segInit));
-          const theirPos = getDancerState(them, segInit).pos;
-          return segInit[id].pos.multiply(2).add(theirPos).divide(3);
-        }),
+        position: linearTo((id) => dests[id]),
       },
       {
         dur: halfBeats,

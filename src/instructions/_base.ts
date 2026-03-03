@@ -1,4 +1,4 @@
-import type { Vector } from "vecti";
+import { Vector } from "vecti";
 import { z } from "zod";
 
 import {
@@ -13,9 +13,10 @@ import {
   protoIdToDancerId,
 } from "../contraCore";
 import { EAST, getDir, NORTH, SOUTH, WEST } from "../geometry";
-import { assertNever, parses } from "../utils";
+import { assertNever, isNTuple, type NTuple, parses } from "../utils";
 import {
   BasicLabelSchema,
+  buildProtoRecord,
   type DancerState,
   getDancerState,
   resolveBasicLabel,
@@ -90,6 +91,8 @@ const DerivedLabelSchema = z.enum([
   "prev neighbor",
   "prev x2 neighbor",
   "prev x3 neighbor",
+  "in right hand",
+  "in left hand",
 ]);
 
 export const CalledLabelSchema = z.enum([
@@ -141,6 +144,12 @@ export function resolveCalledLabel(
       if (!neighbor) return null;
       return addOffsetToId(neighbor, -3);
     }
+    case "in right hand": {
+      return getDancerState(id, protos).hands.get("right")?.theirId ?? null;
+    }
+    case "in left hand": {
+      return getDancerState(id, protos).hands.get("left")?.theirId ?? null;
+    }
     default:
       assertNever(label);
   }
@@ -170,7 +179,7 @@ export const CalledDirectionSchema = z.enum([
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 export function resolveCalledDirection(
-  id: ProtoId,
+  id: DancerId,
   dir: CalledDirection,
   protos: Record<ProtoId, DancerState>,
 ): Vector {
@@ -182,27 +191,28 @@ export function resolveCalledDirection(
       to: getDancerState(themId, protos).pos,
     });
   }
+  const state = getDancerState(id, protos);
   switch (dir) {
     case "on_right":
-      return protos[id].facing.rotateByDegrees(-90);
+      return state.facing.rotateByDegrees(-90);
     case "on_left":
-      return protos[id].facing.rotateByDegrees(90);
+      return state.facing.rotateByDegrees(90);
     case "in_front":
-      return protos[id].facing;
+      return state.facing;
     case "behind":
-      return protos[id].facing.multiply(-1);
+      return state.facing.multiply(-1);
     case "left_diagonal":
-      return protos[id].facing.rotateByDegrees(45);
+      return state.facing.rotateByDegrees(45);
     case "right_diagonal":
-      return protos[id].facing.rotateByDegrees(-45);
+      return state.facing.rotateByDegrees(-45);
     case "larks_left_robins_right":
-      return protos[id].facing.rotateByDegrees(45 * (isLark(id) ? 1 : -1));
+      return state.facing.rotateByDegrees(45 * (isLark(id) ? 1 : -1));
     case "larks_right_robins_left":
-      return protos[id].facing.rotateByDegrees(-45 * (isLark(id) ? 1 : -1));
+      return state.facing.rotateByDegrees(-45 * (isLark(id) ? 1 : -1));
     case "across":
-      return protos[id].pos.x < 0 ? EAST : WEST;
+      return state.pos.x < 0 ? EAST : WEST;
     case "out":
-      return protos[id].pos.x < 0 ? WEST : EAST;
+      return state.pos.x < 0 ? WEST : EAST;
     case "up":
       return NORTH;
     case "down":
@@ -218,7 +228,7 @@ export const CalledIdentifierSchema = z.enum([
 ]);
 export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 export function resolveCalledIdentifier(
-  id: ProtoId,
+  id: DancerId,
   cid: CalledIdentifier,
   protos: Record<ProtoId, DancerState>,
   { roles }: { roles?: "same" | "different" } = {},
@@ -239,14 +249,75 @@ export function resolveCalledIdentifier(
   return res;
 }
 
+export function getCycle<N extends number>(
+  id: DancerId,
+  cid: CalledIdentifier,
+  protos: Record<ProtoId, DancerState>,
+  { length, roles }: { length: N; roles?: "same" | "different" },
+): NTuple<N, DancerId> {
+  const seen = new Set<DancerId>();
+  const cycle: DancerId[] = [];
+  let current: DancerId = id;
+  while (!seen.has(current)) {
+    if (cycle.length > 10)
+      throw new Error(
+        `"${cid}"-cycle starting at ${id} seems to go on forever`,
+      );
+    seen.add(current);
+    cycle.push(current);
+    const next = resolveCalledIdentifier(current, cid, protos, { roles });
+    if (!next) throw new Error(`${cid} does not form a cycle including ${id}`);
+    current = next;
+  }
+  if (!isNTuple(cycle, length))
+    throw new Error(
+      `"${cid}"-cycle starting at ${id} has length ${cycle.length} instead of ${length}`,
+    );
+  return cycle;
+}
+
+/** Resolves a dancer's "match" for a figure where dancers pair up. */
+export function resolveMatch(
+  id: DancerId,
+  cid: CalledIdentifier,
+  state: WorldState,
+  { roles }: { roles?: "same" | "different" } = {},
+): DancerId {
+  return getCycle(id, cid, state, { length: 2, roles })[1];
+}
+/** Resolves all dancers' "matches" for a figure where dancers pair up. */
+export function resolveMatches(
+  cid: CalledIdentifier,
+  state: WorldState,
+  { roles }: { roles?: "same" | "different" } = {},
+): Record<ProtoId, DancerId> {
+  return buildProtoRecord((id) => resolveMatch(id, cid, state, { roles }));
+}
+
+export function resolveRings(
+  state: WorldState,
+): Record<ProtoId, NTuple<4, DancerId>> {
+  return buildProtoRecord((id) =>
+    getCycle(id, "in right hand", state, { length: 4, roles: "different" }),
+  );
+}
+
+export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
+  let sum = new Vector(0, 0);
+  for (const id of dancers) {
+    sum = sum.add(getDancerState(id, state).pos);
+  }
+  return sum.divide(dancers.length);
+}
+
 export function findDancerInDirection(
   protos: Record<ProtoId, DancerState>,
-  id: ProtoId,
+  id: DancerId,
   dir: Vector,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
   dir = dir.normalize();
-  const pos = protos[id].pos;
+  const pos = getDancerState(id, protos).pos;
 
   let bestScore = Infinity;
   let bestTarget: DancerId | null = null;

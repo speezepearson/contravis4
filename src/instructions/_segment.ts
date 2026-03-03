@@ -20,6 +20,7 @@ import {
   type CalledIdentifier,
   type ContraAnimation,
   resolveCalledIdentifier,
+  resolveMatch,
 } from "./_base";
 
 /** Produces segments for an instruction. The primary interface for atomic instructions. */
@@ -166,27 +167,27 @@ export function addPositionDrift(
 
 // ── Position primitives ─────────────────────────────────────────────────
 
-/** Elliptical arc from dancer's position to their partner's position. */
+/** Elliptical arc from dancer's position to their counterpart's position. */
 export function arc(
   cid: CalledIdentifier,
   opts: { semiMinor: number; phi: number },
 ): PositionFn {
   return (id, frac, segInit) => {
-    const themId = must(resolveCalledIdentifier(id, cid, segInit));
+    const themId = resolveMatch(id, cid, segInit);
     const start = segInit[id].pos;
     const end = getDancerState(themId, segInit).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
   };
 }
 
-/** Orbit around midpoint with partner. */
+/** Orbit around midpoint with counterpart. */
 export function orbit(
   cid: CalledIdentifier,
   opts: { radians: number },
 ): PositionFn {
   return (id, frac, segInit) => {
     const myPos = segInit[id].pos;
-    const themId = must(resolveCalledIdentifier(id, cid, segInit));
+    const themId = resolveMatch(id, cid, segInit);
     const theirPos = getDancerState(themId, segInit).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });

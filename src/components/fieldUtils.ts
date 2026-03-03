@@ -38,7 +38,7 @@ export function makeDefaultInstruction(
           rotations: 1,
         };
       case "balance":
-        return { id, type: "balance", beats: 4, cid: "neighbor" };
+        return { id, type: "balance", beats: 4, did: "neighbor" };
       case "balance_the_ring":
         return { id, type: "balance_the_ring", beats: 4 };
       case "box_the_gnat":
@@ -206,6 +206,10 @@ export function calledDirectionToText(cid: CalledDirection): string {
       return "towards your shadow 5";
     case "shadow 6":
       return "towards your shadow 6";
+    case "in right hand":
+      return "towards the person in your right hand";
+    case "in left hand":
+      return "towards the person in your left hand";
     default:
       assertNever(cid);
   }
@@ -267,6 +271,10 @@ export function calledIdentifierToText(cid: CalledIdentifier): string {
       return "your shadow 5";
     case "shadow 6":
       return "your shadow 6";
+    case "in right hand":
+      return "the person in your right hand";
+    case "in left hand":
+      return "the person in your left hand";
     default:
       assertNever(cid);
   }

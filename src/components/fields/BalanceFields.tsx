@@ -1,6 +1,9 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { CalledDirectionSchema } from "../../instructions/_base";
+import { BalanceInstructionSchema } from "../../instructions/balance";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 
@@ -13,15 +16,16 @@ export function BalanceFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof BalanceInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(BalanceInstructionSchema, {
       id,
       type: "balance",
       beats: instruction.beats,
-      cid: instruction.cid,
+      did: instruction.did,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }
@@ -29,9 +33,9 @@ export function BalanceFields({
   return (
     <>
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
-        value={instruction.cid}
-        onChange={(cid) => tryCommit({ cid })}
+        options={CalledDirectionSchema.options} // TODO: exclude same-role dancers
+        value={instruction.did}
+        onChange={(did) => tryCommit({ did })}
       />
     </>
   );

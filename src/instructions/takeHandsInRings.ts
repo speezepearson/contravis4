@@ -8,8 +8,11 @@ import {
   getDancerState,
   type WorldState,
 } from "../worldState";
-import { instructionBaseSchemaFields, resolveCalledIdentifier } from "./_base";
-import { findRings } from "./_rings";
+import {
+  instructionBaseSchemaFields,
+  resolveCalledIdentifier,
+  resolveRings,
+} from "./_base";
 import {
   evaluateSegmentEnd,
   type Segment,
@@ -76,13 +79,11 @@ export function makeRingSegment(init: WorldState): Segment {
   };
 }
 
-export { findRings } from "./_rings";
-
 export const takeHandsInRingsSegments =
   (_instr: TakeHandsInRingsInstruction): SegmentAnimator =>
   (init, who) => {
     const segment = makeRingSegment(init);
     const endState = evaluateSegmentEnd(segment, init, who);
-    findRings(endState);
+    resolveRings(endState);
     return [segment];
   };

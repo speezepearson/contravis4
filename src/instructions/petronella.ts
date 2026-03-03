@@ -3,8 +3,11 @@ import { z } from "zod";
 import { ccwRadsBetween, getDir, TWO_PI } from "../geometry";
 import { must } from "../utils";
 import { buildProtoRecord, getDancerState } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
-import { findRings, ringCenters } from "./_rings";
+import {
+  avgDancerPos,
+  instructionBaseSchemaFields,
+  resolveRings,
+} from "./_base";
 import {
   disconnect,
   linearTo,
@@ -21,8 +24,8 @@ export type PetronellaInstruction = z.infer<typeof PetronellaInstructionSchema>;
 export const petronellaSegments =
   (instr: PetronellaInstruction): SegmentAnimator =>
   (init) => {
-    const rings = findRings(init);
-    const centers = ringCenters(rings, init);
+    const rings = resolveRings(init);
+    const centers = buildProtoRecord((id) => avgDancerPos(rings[id], init));
 
     const targets = buildProtoRecord((id) => {
       const { theirId } = must(init[id].hands.get("right"));

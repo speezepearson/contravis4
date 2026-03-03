@@ -46,3 +46,27 @@ export function must<T>(x: T | null | undefined): T {
 export function parses<T>(schema: z.ZodSchema<T>, x: unknown): x is T {
   return schema.safeParse(x).success;
 }
+
+type NTupleHelper<
+  N extends number,
+  T,
+  Accum extends T[],
+> = Accum["length"] extends N ? Accum : NTupleHelper<N, T, [...Accum, T]>;
+
+/**
+ * NTuple<3, T> = [T, T, T]
+ */
+export type NTuple<N extends number, T> = NTupleHelper<N, T, []>;
+export function isNTuple<N extends number, T>(
+  x: T[],
+  length: N,
+): x is NTuple<N, T> {
+  return x.length === length;
+}
+
+export function typedSafeParse<Schema extends z.ZodSchema>(
+  schema: Schema,
+  x: z.input<Schema>,
+) {
+  return schema.safeParse(x);
+}
