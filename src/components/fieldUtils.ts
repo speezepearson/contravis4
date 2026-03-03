@@ -156,6 +156,20 @@ export function makeDefaultInstruction(
         beats: 0,
         direction: "across",
       } satisfies Instruction);
+    case "take_hands_in_rings":
+      return InstructionSchema.parse({
+        id,
+        type: "take_hands_in_rings",
+        beats: 0,
+      } satisfies Instruction);
+    case "circle":
+      return InstructionSchema.parse({
+        id,
+        type: "circle",
+        beats: 8,
+        direction: "left",
+        rotations: 1,
+      } satisfies Instruction);
     default:
       assertNever(type);
   }

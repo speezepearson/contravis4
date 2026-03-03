@@ -11,6 +11,7 @@ export { type InstructionId, InstructionIdSchema } from "./_base";
 
 export const ActionTypeSchema = z.enum([
   "take_hands",
+  "take_hands_in_rings",
   "drop_hands",
   "allemande",
   "do_si_do",

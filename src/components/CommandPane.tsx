@@ -53,6 +53,7 @@ import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
+import { CircleFields } from "./fields/CircleFields";
 import { DoSiDoFields } from "./fields/DoSiDoFields";
 import { DropHandsFields } from "./fields/DropHandsFields";
 import { FaceFields } from "./fields/FaceFields";
@@ -66,6 +67,7 @@ import { SplitFields } from "./fields/SplitFields";
 import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
+import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
 import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
 import type { InlineDropdownHandle } from "./InlineDropdown";
 import { InlineDropdown } from "./InlineDropdown";
@@ -76,8 +78,10 @@ export type ActionOptionType = AtomicInstruction["type"] | "split";
 
 const ACTION_OPTIONS: ActionOptionType[] = [
   "take_hands",
+  "take_hands_in_rings",
   "drop_hands",
   "allemande",
+  "circle",
   "do_si_do",
   "pull_by",
   "pass_by",
@@ -95,8 +99,10 @@ const ACTION_OPTIONS: ActionOptionType[] = [
 ];
 const ACTION_LABELS: Record<string, string> = {
   take_hands: "take hands",
+  take_hands_in_rings: "take hands in rings",
   drop_hands: "drop hands",
   allemande: "allemande",
+  circle: "circle",
   do_si_do: "do si do",
   pass_by: "pass by",
   pull_by: "pull by",
@@ -437,7 +443,10 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "california_twirl":
     case "roll_away":
       return true;
+    case "circle":
+      return true;
     case "take_hands":
+    case "take_hands_in_rings":
     case "drop_hands":
     case "form_short_waves":
     case "relabel":
@@ -550,9 +559,15 @@ function InlineForm({
             return (
               <CaliforniaTwirlFields {...common} instruction={instruction} />
             );
+          case "circle":
+            return <CircleFields {...common} instruction={instruction} />;
           case "form_short_waves":
             return (
               <FormShortWavesFields {...common} instruction={instruction} />
+            );
+          case "take_hands_in_rings":
+            return (
+              <TakeHandsInRingsFields {...common} instruction={instruction} />
             );
           case "do_si_do":
             return <DoSiDoFields {...common} instruction={instruction} />;

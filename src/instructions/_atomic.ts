@@ -9,6 +9,7 @@ import {
   CaliforniaTwirlInstructionSchema,
   californiaTwirlSegments,
 } from "./californiaTwirl";
+import { CircleInstructionSchema, circleSegments } from "./circle";
 import { DoSiDoInstructionSchema, doSiDoSegments } from "./doSiDo";
 import { DropHandsInstructionSchema, dropHandsSegments } from "./dropHands";
 import { FaceInstructionSchema, faceSegments } from "./face";
@@ -27,12 +28,17 @@ import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
 import { StepInstructionSchema, stepSegments } from "./step";
 import { SwingInstructionSchema, swingSegments } from "./swing";
 import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
+import {
+  TakeHandsInRingsInstructionSchema,
+  takeHandsInRingsSegments,
+} from "./takeHandsInRings";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
   BalanceInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
+  CircleInstructionSchema,
   DoSiDoInstructionSchema,
   DropHandsInstructionSchema,
   FaceInstructionSchema,
@@ -45,6 +51,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   StepInstructionSchema,
   SwingInstructionSchema,
   TakeHandsInstructionSchema,
+  TakeHandsInRingsInstructionSchema,
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
@@ -58,6 +65,7 @@ export const atomicSegmentAnimators: {
   balance: balanceSegments,
   box_the_gnat: boxTheGnatSegments,
   california_twirl: californiaTwirlSegments,
+  circle: circleSegments,
   do_si_do: doSiDoSegments,
   drop_hands: dropHandsSegments,
   face: faceSegments,
@@ -69,6 +77,7 @@ export const atomicSegmentAnimators: {
   roll_away: rollAwaySegments,
   step: stepSegments,
   take_hands: takeHandsSegments,
+  take_hands_in_rings: takeHandsInRingsSegments,
   swing: swingSegments,
 };
 
