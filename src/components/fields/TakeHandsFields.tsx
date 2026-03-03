@@ -1,7 +1,12 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
-import { TakeHandSchema } from "../../instructions/takeHands";
+import {
+  TakeHandSchema,
+  TakeHandsInstructionSchema,
+} from "../../instructions/takeHands";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { TAKE_HAND_OPTIONS } from "../fieldUtils";
@@ -16,16 +21,17 @@ export function TakeHandsFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof TakeHandsInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(TakeHandsInstructionSchema, {
       id,
       beats: 0,
       type: "take_hands",
       cid: instruction.cid,
       hand: instruction.hand,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

@@ -1,6 +1,9 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { RelabelInstructionSchema } from "../../instructions/relabel";
+import { typedSafeParse } from "../../utils";
 import { BasicLabelDropdown } from "../BasicLabelDropdown";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
@@ -14,16 +17,17 @@ export function RelabelFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof RelabelInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(RelabelInstructionSchema, {
       id,
       beats: 0,
       type: "relabel",
       label: instruction.label,
       cid: instruction.cid,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

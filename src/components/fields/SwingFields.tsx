@@ -1,6 +1,9 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { SwingInstructionSchema } from "../../instructions/swing";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
@@ -14,16 +17,17 @@ export function SwingFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof SwingInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(SwingInstructionSchema, {
       id,
       type: "swing",
       beats: instruction.beats,
       cid: instruction.cid,
       endFacing: instruction.endFacing,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

@@ -1,6 +1,9 @@
+import type z from "zod";
+
 import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { InstructionSchema } from "../../instructions/index";
+import { CircleInstructionSchema } from "../../instructions/circle";
+import { typedSafeParse } from "../../utils";
 import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
@@ -15,16 +18,17 @@ export function CircleFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof CircleInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(CircleInstructionSchema, {
       id,
       type: "circle",
       beats: instruction.beats,
       direction: instruction.direction,
       rotations: instruction.rotations,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

@@ -1,5 +1,11 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { InstructionSchema } from "../../instructions/index";
+import {
+  type DropHandsInstruction,
+  DropHandsInstructionSchema,
+} from "../../instructions/dropHands";
+import { typedSafeParse } from "../../utils";
 import type { SubFormProps } from "../fieldUtils";
 import { DROP_WHICH_LABELS, DROP_WHICH_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
@@ -13,15 +19,16 @@ export function DropHandsFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof DropHandsInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(DropHandsInstructionSchema, {
       id,
       beats: 0,
       type: "drop_hands",
       which: instruction.which,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }
@@ -31,7 +38,9 @@ export function DropHandsFields({
       <InlineDropdown
         options={DROP_WHICH_OPTIONS}
         value={instruction.which}
-        onChange={(v) => tryCommit({ which: v })}
+        onChange={(v) =>
+          tryCommit({ which: v as DropHandsInstruction["which"] })
+        }
         getLabel={(v) => DROP_WHICH_LABELS[v] ?? v}
       />
     </>

@@ -1,6 +1,9 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledDirectionSchema } from "../../instructions/_base";
-import { type Instruction, InstructionSchema } from "../../instructions/index";
+import { FaceInstructionSchema } from "../../instructions/face";
+import { typedSafeParse } from "../../utils";
 import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
 
@@ -13,14 +16,16 @@ export function FaceFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const result = InstructionSchema.safeParse({
+  function tryCommit(
+    overrides: Partial<z.input<typeof FaceInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(FaceInstructionSchema, {
       id,
       type: "face",
       beats: instruction.beats,
       direction: instruction.direction,
       ...overrides,
-    } satisfies Instruction);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

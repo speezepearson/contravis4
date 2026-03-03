@@ -1,7 +1,10 @@
+import type z from "zod";
+
 import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { PassByInstructionSchema } from "../../instructions/passBy";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS } from "../fieldUtils";
@@ -16,16 +19,17 @@ export function PassByFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof PassByInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(PassByInstructionSchema, {
       id,
       type: "pass_by",
       beats: instruction.beats,
       cid: instruction.cid,
       hand: instruction.hand,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

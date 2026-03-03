@@ -1,7 +1,10 @@
+import type z from "zod";
+
 import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { AllemandeInstructionSchema } from "../../instructions/allemande";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS } from "../fieldUtils";
@@ -17,8 +20,10 @@ export function AllemandeFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof AllemandeInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(AllemandeInstructionSchema, {
       id,
       type: "allemande",
       beats: instruction.beats,
@@ -26,8 +31,7 @@ export function AllemandeFields({
       handedness: instruction.handedness,
       rotations: instruction.rotations,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

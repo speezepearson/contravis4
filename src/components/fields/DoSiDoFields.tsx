@@ -1,6 +1,9 @@
+import type z from "zod";
+
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { DoSiDoInstructionSchema } from "../../instructions/doSiDo";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { InlineNumber } from "../InlineNumber";
@@ -14,16 +17,17 @@ export function DoSiDoFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof DoSiDoInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(DoSiDoInstructionSchema, {
       id,
       type: "do_si_do",
       beats: instruction.beats,
       cid: instruction.cid,
       rotations: instruction.rotations,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }

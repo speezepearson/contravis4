@@ -1,7 +1,10 @@
+import type z from "zod";
+
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
-import { InstructionSchema } from "../../instructions/index";
+import { GiveAndTakeIntoSwingInstructionSchema } from "../../instructions/giveAndTakeIntoSwing";
+import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
@@ -17,27 +20,29 @@ export function GiveAndTakeIntoSwingFields({
 }) {
   const { id } = instruction;
 
-  function tryCommit(overrides: Record<string, unknown>) {
-    const raw = {
+  function tryCommit(
+    overrides: Partial<z.input<typeof GiveAndTakeIntoSwingInstructionSchema>>,
+  ) {
+    const result = typedSafeParse(GiveAndTakeIntoSwingInstructionSchema, {
       id,
       type: "give_and_take_into_swing",
       beats: instruction.beats,
       cid: instruction.cid,
-      role: instruction.drawerRole,
+      drawerRole: instruction.drawerRole,
       endFacing: instruction.endFacing,
       ...overrides,
-    };
-    const result = InstructionSchema.safeParse(raw);
+    });
     if (result.success) onChange(result.data);
     else onInvalid?.();
   }
 
   return (
     <>
+      {": "}
       <InlineDropdown
         options={ROLE_OPTIONS}
         value={instruction.drawerRole}
-        onChange={(v) => tryCommit({ role: RoleSchema.parse(v) })}
+        onChange={(v) => tryCommit({ drawerRole: RoleSchema.parse(v) })}
         getLabel={(v) => v + "s"}
       />
       {" draw "}
