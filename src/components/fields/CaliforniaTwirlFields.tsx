@@ -28,7 +28,7 @@ export function CaliforniaTwirlFields({
 
   return (
     <>
-      {"with your "}
+      {"with "}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
         value={instruction.cid}

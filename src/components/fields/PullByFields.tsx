@@ -38,7 +38,7 @@ export function PullByFields({
         onChange={(v) => tryCommit({ hand: HandSchema.parse(v) })}
         getLabel={(v) => v}
       />
-      {" with your "}
+      {" with "}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options}
         value={instruction.cid}

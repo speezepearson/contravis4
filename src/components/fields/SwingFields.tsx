@@ -30,7 +30,6 @@ export function SwingFields({
 
   return (
     <>
-      {"your "}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
         value={instruction.cid}

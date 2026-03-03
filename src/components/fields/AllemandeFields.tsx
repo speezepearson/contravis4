@@ -47,7 +47,7 @@ export function AllemandeFields({
         step={0.25}
         suffix="x"
       />
-      {" with your "}
+      {" with "}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options}
         value={instruction.cid}

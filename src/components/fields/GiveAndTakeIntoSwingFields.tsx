@@ -40,7 +40,7 @@ export function GiveAndTakeIntoSwingFields({
         onChange={(v) => tryCommit({ role: RoleSchema.parse(v) })}
         getLabel={(v) => v + "s"}
       />
-      {" draw your "}
+      {" draw "}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
         value={instruction.cid}

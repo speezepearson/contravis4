@@ -39,7 +39,7 @@ export function RollAwayFields({
         onChange={(v) => tryCommit({ roller: RoleSchema.parse(v) })}
         getLabel={(v) => v + "s"}
       />
-      {" roll away your "}
+      {" roll away "}
       <CalledIdentifierDropdown
         options={[...RolleeSpecSchema.options]}
         value={instruction.rollee}

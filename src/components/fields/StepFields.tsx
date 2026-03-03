@@ -45,6 +45,7 @@ export function StepFields({
         suffix="m"
       />
       {" and face "}
+      {/* TODO: this should be a CalledDirectionDropdown, I think */}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options}
         value={instruction.facing}

@@ -1,5 +1,6 @@
 import type { Role } from "../contraCore";
 import {
+  type CalledIdentifier,
   type CardinalDirection,
   InstructionIdSchema,
 } from "../instructions/_base";
@@ -161,6 +162,67 @@ export function cardinalDirectionToText(dir: CardinalDirection): string {
   return dir;
 }
 
+export function calledIdentifierToText(cid: CalledIdentifier): string {
+  switch (cid) {
+    case "on_right":
+      return "the person on your right";
+    case "on_left":
+      return "the person on your left";
+    case "in_front":
+      return "the person in front of you";
+    case "behind":
+      return "the person behind you";
+    case "left_diagonal":
+      return "the person on your left diagonal";
+    case "right_diagonal":
+      return "the person on your right diagonal";
+    case "larks_left_robins_right":
+      return "the person on your (larks left, robins right)";
+    case "larks_right_robins_left":
+      return "the person on your (larks right, robins left)";
+    case "across":
+      return "the person across from you";
+    case "out":
+      return "the person on the other side of the room";
+    case "up":
+      return "the person above you";
+    case "down":
+      return "the person below you";
+    case "neighbor":
+      return "your neighbor";
+    case "partner":
+      return "your partner";
+    case "shadow":
+      return "your shadow";
+    case "opposite":
+      return "your opposite";
+    case "next neighbor":
+      return "your next neighbor";
+    case "next x2 neighbor":
+      return "your next x2 neighbor";
+    case "next x3 neighbor":
+      return "your next x3 neighbor";
+    case "prev neighbor":
+      return "your prev neighbor";
+    case "prev x2 neighbor":
+      return "your prev x2 neighbor";
+    case "prev x3 neighbor":
+      return "your prev x3 neighbor";
+    case "shadow 2":
+      return "your shadow 2";
+    case "shadow 3":
+      return "your shadow 3";
+    case "shadow 4":
+      return "your shadow 4";
+    case "shadow 5":
+      return "your shadow 5";
+    case "shadow 6":
+      return "your shadow 6";
+    default:
+      assertNever(cid);
+  }
+}
+
 export const DIR_OPTIONS = [
   "up",
   "down",
@@ -175,21 +237,6 @@ export const DIR_OPTIONS = [
   "neighbor",
   "opposite",
 ];
-
-export function encodeRelationship(rel: {
-  base: string;
-  offset: number;
-}): string {
-  return `${rel.base}:${rel.offset}`;
-}
-
-export function decodeRelationship(encoded: string): {
-  base: string;
-  offset: number;
-} {
-  const i = encoded.lastIndexOf(":");
-  return { base: encoded.slice(0, i), offset: parseInt(encoded.slice(i + 1)) };
-}
 
 export const DROP_WHICH_OPTIONS: string[] = [
   "both",

@@ -28,7 +28,6 @@ export function BalanceFields({
 
   return (
     <>
-      {"your "}
       <CalledIdentifierDropdown
         options={CalledIdentifierSchema.options} // TODO: exclude same-role dancers
         value={instruction.cid}

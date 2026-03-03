@@ -36,7 +36,7 @@ export function RelabelFields({
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />
-      {" is your "}
+      {" is your new "}
       <BasicLabelDropdown
         value={instruction.label}
         onChange={(label) => tryCommit({ label })}
