@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  getRole,
   isLark,
   type ProtoId,
   type Relationship,
@@ -28,7 +27,7 @@ export const courtesyTurnSegments =
     const foils = new Map<ProtoId, Relationship>();
     for (const id of who) {
       const side = isLark(id) ? "on_right" : "on_left";
-      const found = findDancerOnSide(id, side, init, { roles: 'different' });
+      const found = findDancerOnSide(id, side, init, { roles: "different" });
       if (!found) {
         throw new Error(
           `${id} has no dancer on their ${isLark(id) ? "right" : "left"} for courtesy turn`,

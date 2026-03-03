@@ -2,17 +2,16 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import {
-  ALL_PROTO_IDS,
+  type BaseRelationship,
+  BaseRelationshipSchema,
   type Beats,
   BeatsSchema,
   type DancerId,
-  getRelationship,
-  getRole,
+  FoilBaseRelationshipSchema,
   parseDancerId,
   parseProtoId,
   projectDancerIdToProtoId,
   type ProtoId,
-  protoIdToDancerId,
   type Relationship,
   RelationshipSchema,
   resolveRelationship,
@@ -158,7 +157,7 @@ export function findDancerInDirection(
   protos: Record<ProtoId, DancerState>,
   id: ProtoId,
   dir: Vector,
-  {roles}: {roles?: 'same' | 'different'} = {},
+  { roles }: { roles?: "same" | "different" } = {},
 ): { id: DancerId; rel: Relationship } | null {
   dir = dir.normalize();
   const pos = protos[id].pos;
@@ -166,16 +165,24 @@ export function findDancerInDirection(
   let bestScore = Infinity;
   let bestTarget: { id: DancerId; rel: Relationship } | null = null;
 
-  for (const otherId of ALL_PROTO_IDS) {
-    if (otherId === id) continue;
-    if (roles) {
-      if (roles === 'same' && getRole(otherId) === getRole(id)) continue;
-      if (roles === 'different' && getRole(otherId) !== getRole(id)) continue;
-    }
-    const dyBase = protos[otherId].pos.y - pos.y;
+  const baseRels: BaseRelationship[] = !roles
+    ? BaseRelationshipSchema.options
+    : roles === "same"
+      ? ["opposite"]
+      : roles === "different"
+        ? FoilBaseRelationshipSchema.options
+        : assertNever(roles);
+
+  for (const baseRel of baseRels) {
+    const dyBase =
+      getDancerState(
+        resolveRelationship(id, { base: baseRel, offset: 0 }),
+        protos,
+      ).pos.y - pos.y;
     const oBest = Math.round(-dyBase / 2);
+    const rel = { base: baseRel, offset: oBest };
     for (let o = oBest - 2; o <= oBest + 2; o++) {
-      const targetId = protoIdToDancerId(otherId, o);
+      const targetId = resolveRelationship(id, rel);
       const target = getDancerState(targetId, protos);
       const disp = target.pos.subtract(pos);
       const r = disp.length();
@@ -189,11 +196,6 @@ export function findDancerInDirection(
       const score = r / cos2Theta;
       if (score < bestScore) {
         bestScore = score;
-        const rel = getRelationship(id, targetId);
-        if (!rel)
-          throw new Error(
-            `Programming error: somehow found a dancer ${dir.toString()} of ${id} with no relationship to them`,
-          );
         bestTarget = { id: targetId, rel };
       }
     }
@@ -207,7 +209,7 @@ export function findDancerOnSide(
   id: ProtoId,
   side: DirectionalRelationship,
   dancers: Record<ProtoId, DancerState>,
-  {roles}: {roles?: 'same' | 'different'} = {},
+  { roles }: { roles?: "same" | "different" } = {},
 ): { id: DancerId; rel: Relationship } | null {
   const BIAS = (0.777 * PI) / 2; // ~70°, bias towards "in front"
   const lark = parseDancerId(id).role === "lark";
