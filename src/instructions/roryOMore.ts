@@ -42,10 +42,8 @@ export const roryOMoreSegments =
         dur: instr.beats,
         position: linearTo((id) => getDancerState(partners[id], init).pos),
         facing: rotateFacingBy(() => rotationRadians),
-      },
-      {
-        dur: 0,
-        hands: (id, _frac, draft) => {
+        hands: (id, frac, draft) => {
+          if (frac < 1) return;
           const partnerId = partners[id];
           const me = draft[id];
           const them = getDancerState(partnerId, draft);
