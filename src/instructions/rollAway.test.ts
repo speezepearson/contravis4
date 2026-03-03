@@ -5,7 +5,7 @@ import { Vector } from "vecti";
 enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
-import { NORTH, SOUTH } from "../geometry";
+import { ccwRadsBetween, NORTH, PI, SOUTH } from "../geometry";
 import { initFormationStates } from "./index";
 import { toAnimator } from "./_segment";
 import { rollAwaySegments, type RollAwayInstruction } from "./rollAway";
@@ -20,7 +20,7 @@ function makeInstr(
     beats: 2,
     type: "roll_away",
     roller: "lark",
-    dir: "rtl",
+    rollee: "on_right",
     ...overrides,
   };
 }
@@ -31,9 +31,9 @@ describe("rollAway", () => {
       const init = produce(initFormationStates.improper, (draft) => {
         draft.up_robin_0.pos = new Vector(-1.5, -0.5);
       });
-      const instr = makeInstr({ roller: "lark", dir: "rtl" });
+      const instr = makeInstr({ roller: "lark", rollee: "on_right" });
       const animator = toAnimator(rollAwaySegments(instr));
-      expect(() => animator(init, allProtos)).toThrow('has no opposite-role dancer');
+      expect(() => animator(init, allProtos)).toThrow('has no opposite-role');
     });
 
     it("throws if two rollers have the same rollee", () => {
@@ -46,16 +46,16 @@ describe("rollAway", () => {
           draft[id].facing = NORTH;
         }
       });
-      const instr = makeInstr({ roller: "lark", dir: "rtl" });
+      const instr = makeInstr({ roller: "lark", rollee: "on_right" });
       expect(() =>
         rollAwaySegments(instr)(init, allProtos)
-      ).toThrow('both resolved to the same rollee');
+      ).toThrow('both grabbed the same rollee');
     });
   });
 
   describe("RTL with roller=lark", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ roller: "lark", dir: "rtl" });
+    const instr = makeInstr({ roller: "lark", rollee: "on_right" });
     const animation = toAnimator(rollAwaySegments(instr))(init, allProtos);
     const final = animation.getFrame(animation.dur);
 
@@ -73,18 +73,22 @@ describe("rollAway", () => {
       expect(final.down_robin_0.pos.y).toBeCloseTo(init.down_lark_0.pos.y);
     });
 
-    it("preserves facing for both roller and rollee", () => {
-      // Roller (lark) facing unchanged
-      expect(final.up_lark_0.facing.x).toBeCloseTo(init.up_lark_0.facing.x);
-      expect(final.up_lark_0.facing.y).toBeCloseTo(init.up_lark_0.facing.y);
-      expect(final.down_lark_0.facing.x).toBeCloseTo(init.down_lark_0.facing.x);
-      expect(final.down_lark_0.facing.y).toBeCloseTo(init.down_lark_0.facing.y);
+    it("all dancers face the same way, within 45deg of original", () => {
+      const MAX_DEVIATION = PI / 4;
 
-      // Rollee (robin) facing unchanged (360° rotation = back to start)
-      expect(final.up_robin_0.facing.x).toBeCloseTo(init.up_robin_0.facing.x);
-      expect(final.up_robin_0.facing.y).toBeCloseTo(init.up_robin_0.facing.y);
-      expect(final.down_robin_0.facing.x).toBeCloseTo(init.down_robin_0.facing.x);
-      expect(final.down_robin_0.facing.y).toBeCloseTo(init.down_robin_0.facing.y);
+      // Up pair should face the same direction
+      const upAngleDiff = Math.abs(ccwRadsBetween(final.up_lark_0.facing, final.up_robin_0.facing));
+      expect(upAngleDiff).toBeLessThan(0.01);
+
+      // Down pair should face the same direction
+      const downAngleDiff = Math.abs(ccwRadsBetween(final.down_lark_0.facing, final.down_robin_0.facing));
+      expect(downAngleDiff).toBeLessThan(0.01);
+
+      // Each dancer's final facing is within 45° of their original
+      for (const id of ALL_PROTO_IDS) {
+        const deviation = Math.abs(ccwRadsBetween(init[id].facing, final[id].facing));
+        expect(deviation, `${id} facing deviated too far`).toBeLessThan(MAX_DEVIATION);
+      }
     });
   });
 });

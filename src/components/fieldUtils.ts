@@ -146,7 +146,7 @@ export function makeDefaultInstruction(
         id,
         type: "roll_away",
         roller: "lark",
-        dir: "rtl",
+        rollee: "on_right",
       });
     default:
       assertNever(type);

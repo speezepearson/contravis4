@@ -1,15 +1,11 @@
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { InstructionSchema } from "../../instructions/index";
+import { RolleeSpecSchema } from "../../instructions/rollAway";
+import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { ROLE_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
-
-const DIR_OPTIONS = ["rtl", "ltr"];
-const DIR_LABELS: Record<string, string> = {
-  rtl: "right to left",
-  ltr: "left to right",
-};
 
 export function RollAwayFields({
   instruction,
@@ -26,7 +22,7 @@ export function RollAwayFields({
       type: "roll_away",
       beats: instruction.beats,
       roller: instruction.roller,
-      dir: instruction.dir,
+      rollee: instruction.rollee,
       ...overrides,
     };
     const result = InstructionSchema.safeParse(raw);
@@ -36,18 +32,18 @@ export function RollAwayFields({
 
   return (
     <>
+      {": "}
       <InlineDropdown
         options={ROLE_OPTIONS}
         value={instruction.roller}
         onChange={(v) => tryCommit({ roller: RoleSchema.parse(v) })}
         getLabel={(v) => v + "s"}
       />
-      {" roll away "}
-      <InlineDropdown
-        options={DIR_OPTIONS}
-        value={instruction.dir}
-        onChange={(v) => tryCommit({ dir: v })}
-        getLabel={(v) => DIR_LABELS[v] ?? v}
+      {" roll away your "}
+      <CalledIdentifierDropdown
+        options={[...RolleeSpecSchema.options]}
+        value={instruction.rollee}
+        onChange={(v) => tryCommit({ rollee: v })}
       />
     </>
   );

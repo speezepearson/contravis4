@@ -9,62 +9,69 @@ import {
   type ProtoId,
   RoleSchema,
 } from "../contraCore";
-import { ellipsePosition, PI, TWO_PI } from "../geometry";
-import { connectHands, getDancerState } from "../worldState";
+import { ccwRadsBetween, ellipsePosition, getDir, lerpFacing, PI, TWO_PI } from "../geometry";
+import { BasicLabelSchema, buildProtoRecord, connectHands, getDancerState } from "../worldState";
 import {
   type CalledDirection,
+  type CalledIdentifier,
   findDancerInCalledDirection,
   InstructionIdSchema,
+  resolveCalledIdentifier,
 } from "./_base";
 import { type SegmentAnimator } from "./_segment";
+
+export const RolleeSpecSchema = z.enum(["on_right", "on_left", ...BasicLabelSchema.options]);
+export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;
+undefined as any as RolleeSpec satisfies CalledIdentifier; // type assertion
 
 export const RollAwayInstructionSchema = z.object({
   id: InstructionIdSchema,
   beats: BeatsSchema.default(2),
   type: z.literal("roll_away"),
   roller: RoleSchema,
-  dir: z.enum(["rtl", "ltr"]),
+  rollee: RolleeSpecSchema,
 });
 export type RollAwayInstruction = z.infer<typeof RollAwayInstructionSchema>;
 
 export const rollAwaySegments =
   (instr: RollAwayInstruction): SegmentAnimator =>
   (init, who) => {
-    const isRtl = instr.dir === "rtl";
-
-    // Direction from roller to rollee, and vice versa (they're side-by-side)
-    const rollerToRollee: CalledDirection = isRtl ? "on_right" : "on_left";
-    const rolleeToRoller: CalledDirection = isRtl ? "on_left" : "on_right";
-
-    // Assert & pre-compute partner map: each dancer must have an opposite-role
-    // partner in the expected direction, and no two rollers may share a rollee.
-    const partners = new Map<ProtoId, DancerId>();
-    const claimedRollees = new Map<DancerId, ProtoId>();
+    // Assert & pre-compute match map: each dancer must have an opposite-role
+    // match in the expected direction, and no two rollers may share a rollee.
+    const rollerToRollee = new Map<ProtoId, DancerId>();
+    const rolleeToRoller = new Map<DancerId, ProtoId>();
     for (const id of who) {
-      const isRoller = getRole(id) === instr.roller;
-      const dir = isRoller ? rollerToRollee : rolleeToRoller;
-      const found = findDancerInCalledDirection(id, dir, init, {
-        roles: "different",
-      });
-      if (!found) {
+      if (getRole(id) !== instr.roller) continue;
+      const rolleeId = resolveCalledIdentifier(id, instr.rollee, init, { roles: "different" });
+      if (!rolleeId) {
         throw new Error(
-          `${id} has no opposite-role dancer on their ${dir} for roll away`,
+          `${id} has no opposite-role ${instr.rollee} to roll away`,
         );
       }
-      partners.set(id, found);
-
-      if (isRoller) {
-        const prev = claimedRollees.get(found);
-        if (prev) {
-          throw new Error(
-            `rollers ${prev} and ${id} both resolved to the same rollee ${found}`,
-          );
-        }
-        claimedRollees.set(found, id);
+      rollerToRollee.set(id, rolleeId);
+      if (rolleeToRoller.has(rolleeId)) {
+        throw new Error(
+          `rollers ${rolleeToRoller.get(rolleeId)} and ${id} both grabbed the same rollee ${rolleeId}`,
+        );
       }
+      rolleeToRoller.set(rolleeId, id);
     }
 
-    // Arc direction: rollee goes in front, roller goes behind
+    const matches = buildProtoRecord((id) => {
+      const res = getRole(id) === instr.roller ? rollerToRollee.get(id) : rolleeToRoller.get(id)
+      if (!res) throw new Error(`dancer ${id} has no match`);
+      return res;
+    });
+
+    const rollerSides = new Set([...rollerToRollee].map(([rollerId, rolleeId]) => {
+      const roller = getDancerState(rollerId, init);
+      const rollee = getDancerState(rolleeId, init);
+      return Math.sign(ccwRadsBetween(roller.facing, getDir({from: roller.pos, to: rollee.pos})));
+    }));
+    if (rollerSides.size !== 1) throw new Error(`rollers have different sides`);
+
+    const isRtl = rollerSides.has(-1);
+
     const semiMinor = isRtl ? -0.25 : 0.25;
 
     // Hands: first half roller holds [rtl: right, ltr: left]
@@ -78,19 +85,21 @@ export const rollAwaySegments =
       {
         dur: instr.beats,
         position: (id, frac, segInit) => {
-          const themId = partners.get(id)!;
+          const themId = matches[id];
           const start = segInit[id].pos;
           const end = getDancerState(themId, segInit).pos;
           return ellipsePosition(start, end, semiMinor, PI * frac);
         },
         facing: (id, frac, segInit) => {
           const isRoller = getRole(id) === instr.roller;
-          if (isRoller) return segInit[id].facing;
-          return segInit[id].facing.rotateByRadians(rolleeRotation * frac);
+          const normal = getDir({from: segInit[id].pos, to: getDancerState(matches[id], segInit).pos}).rotateByDegrees(90 * ((isRoller === isRtl) ? 1 : -1));
+          if (isRoller) return lerpFacing(segInit[id].facing, normal, frac);
+          const totalRads = ccwRadsBetween(segInit[id].facing, normal) + rolleeRotation;
+          return segInit[id].facing.rotateByRadians(totalRads * frac);
         },
         hands: (id, frac, draft) => {
           const isRoller = getRole(id) === instr.roller;
-          const themId = partners.get(id)!;
+          const themId = matches[id];
 
           const firstHalf = frac < 0.5;
           const myHand: Hand = isRoller

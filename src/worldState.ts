@@ -193,10 +193,10 @@ export function disconnectHands(
 
 export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
   return {
-    up_lark_0: { protoId: "up_lark_0", ...f("up_lark_0") },
-    up_robin_0: { protoId: "up_robin_0", ...f("up_robin_0") },
-    down_lark_0: { protoId: "down_lark_0", ...f("down_lark_0") },
-    down_robin_0: { protoId: "down_robin_0", ...f("down_robin_0") },
+    up_lark_0: f("up_lark_0"),
+    up_robin_0: f("up_robin_0"),
+    down_lark_0: f("down_lark_0"),
+    down_robin_0: f("down_robin_0"),
   };
 }
 export function mapProtos(

@@ -146,11 +146,16 @@ export function resolveCalledIdentifier(
   id: ProtoId,
   cid: CalledIdentifier,
   protos: Record<ProtoId, DancerState>,
+  { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
   if (isCalledDirection(cid)) {
-    return findDancerInCalledDirection(id, cid, protos);
+    return findDancerInCalledDirection(id, cid, protos, { roles });
   }
-  return resolveCalledLabel(cid, id, protos);
+  const res = resolveCalledLabel(cid, id, protos);
+  if (!res) return null;
+  if (roles === 'same' && getRole(id) !== getRole(res)) throw new Error(`it's crazy to ask for somebody's ${cid} with the ${roles} role`);
+  if (roles === 'different' && getRole(id) === getRole(res)) throw new Error(`it's crazy to ask for somebody's ${cid} with the ${roles} role`);
+  return res;
 }
 
 export function findDancerInDirection(
