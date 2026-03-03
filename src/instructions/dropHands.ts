@@ -24,7 +24,7 @@ export const dropHandsSegments =
   () => [
     {
       dur: 0,
-      hands: (id, _frac, draft) => {
+      hands: (id, _frac, segInit, draft) => {
         switch (instr.which) {
           case "left":
             disconnectHands(draft, id, "left");
@@ -38,7 +38,7 @@ export const dropHandsSegments =
           default: {
             instr.which satisfies CalledIdentifier;
             const theirId = must(
-              resolveCalledIdentifier(id, instr.which, draft),
+              resolveCalledIdentifier(id, instr.which, segInit),
             );
             for (const hand of ALL_HANDS) {
               if (draft[id].hands.get(hand)?.theirId === theirId) {

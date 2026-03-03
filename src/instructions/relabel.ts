@@ -23,8 +23,8 @@ export const relabelSegments =
   () => [
     {
       dur: 0,
-      labels: (id, _frac, draft) => {
-        const theirId = must(resolveCalledIdentifier(id, instr.cid, draft));
+      labels: (id, _frac, segInit, draft) => {
+        const theirId = must(resolveCalledIdentifier(id, instr.cid, segInit));
         draft[id].labels.set(instr.label, theirId);
       },
     },

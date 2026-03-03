@@ -261,17 +261,25 @@ export function getCycle<N extends number>(
   while (!seen.has(current)) {
     if (cycle.length > 10)
       throw new Error(
-        `"${cid}"-cycle starting at ${id} seems to go on forever`,
+        `"${cid}"-cycle starting at ${id} seems to go on forever: ${cycle.join(", ")}`,
       );
     seen.add(current);
     cycle.push(current);
     const next = resolveCalledIdentifier(current, cid, protos, { roles });
-    if (!next) throw new Error(`${cid} does not form a cycle including ${id}`);
+    if (!next) {
+      throw new Error(
+        `${cid} does not form a cycle including ${id}: ${[...cycle, "null"].join(", ")}`,
+      );
+    }
     current = next;
   }
+  if (current !== id)
+    throw new Error(
+      `"${cid}"-cycle starting at ${id} does not return to ${id}: ${cycle.join(", ")}`,
+    );
   if (!isNTuple(cycle, length))
     throw new Error(
-      `"${cid}"-cycle starting at ${id} has length ${cycle.length} instead of ${length}`,
+      `"${cid}"-cycle starting at ${id} has length ${cycle.length} instead of ${length}: ${cycle.join(", ")}`,
     );
   return cycle;
 }

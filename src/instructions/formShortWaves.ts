@@ -60,9 +60,9 @@ export const formShortWavesSegments =
         dur: 0,
         position: (id) => positions.get(id)!,
         facing: (id) => facings.get(id)!,
-        hands: (id, _frac, draft) => {
-          const left = findDancerInCalledDirection(id, "on_left", draft);
-          const right = findDancerInCalledDirection(id, "on_right", draft);
+        hands: (id, _frac, segInit, draft) => {
+          const left = findDancerInCalledDirection(id, "on_left", segInit);
+          const right = findDancerInCalledDirection(id, "on_right", segInit);
           if (left) connectHands(draft, id, "left", left, "left");
           if (right) connectHands(draft, id, "right", right, "right");
         },

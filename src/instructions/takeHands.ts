@@ -43,9 +43,9 @@ export const takeHandsSegments =
   () => [
     {
       dur: 0,
-      hands: (id, _frac, draft) => {
-        const otherId = must(resolveCalledIdentifier(id, instr.cid, draft));
-        const other = getDancerState(otherId, draft);
+      hands: (id, _frac, segInit, draft) => {
+        const otherId = must(resolveCalledIdentifier(id, instr.cid, segInit));
+        const other = getDancerState(otherId, segInit);
         switch (instr.hand) {
           case "left":
             connectHands(draft, id, "left", otherId, "left");

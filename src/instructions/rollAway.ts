@@ -127,7 +127,7 @@ export const rollAwaySegments =
             ccwRadsBetween(segInit[id].facing, normal) + rolleeRotation;
           return segInit[id].facing.rotateByRadians(totalRads * frac);
         },
-        hands: (id, frac, draft) => {
+        hands: (id, frac, _segInit, draft) => {
           const isRoller = getRole(id) === instr.roller;
           const themId = matches[id];
 

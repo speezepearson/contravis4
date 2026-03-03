@@ -63,17 +63,17 @@ export function makeRingSegment(init: WorldState): Segment {
       });
       return dirToAcross.add(dirToAlong).normalize();
     },
-    hands: (id, _frac, draft) => {
+    hands: (id, _frac, segInit, draft) => {
       const { acrossId, alongId } = targets[id];
 
-      const acrossState = getDancerState(acrossId, draft);
-      const myHandToAcross = resolveInsideHand(draft[id], acrossState);
-      const theirHandFromAcross = resolveInsideHand(acrossState, draft[id]);
+      const acrossState = getDancerState(acrossId, segInit);
+      const myHandToAcross = resolveInsideHand(segInit[id], acrossState);
+      const theirHandFromAcross = resolveInsideHand(acrossState, segInit[id]);
       connectHands(draft, id, myHandToAcross, acrossId, theirHandFromAcross);
 
-      const alongState = getDancerState(alongId, draft);
-      const myHandToAlong = resolveInsideHand(draft[id], alongState);
-      const theirHandFromAlong = resolveInsideHand(alongState, draft[id]);
+      const alongState = getDancerState(alongId, segInit);
+      const myHandToAlong = resolveInsideHand(segInit[id], alongState);
+      const theirHandFromAlong = resolveInsideHand(alongState, segInit[id]);
       connectHands(draft, id, myHandToAlong, alongId, theirHandFromAlong);
     },
   };

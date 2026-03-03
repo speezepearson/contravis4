@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { parseProtoId, RoleSchema } from "../contraCore";
+import { ALL_PROTO_IDS, parseProtoId, RoleSchema } from "../contraCore";
 import { EAST, getDir, WEST } from "../geometry";
 import { buildProtoRecord, getDancerState } from "../worldState";
 import {
@@ -35,6 +35,15 @@ export const giveAndTakeIntoSwingSegments =
     const approachDur = 1;
     const swingDur = instr.beats - approachDur;
     const matches = resolveMatches(instr.cid, init, { roles: "different" });
+    for (const id of ALL_PROTO_IDS) {
+      const me = getDancerState(id, init);
+      const them = getDancerState(matches[id], init);
+      if (me.pos.x < 0 === them.pos.x < 0) {
+        throw new Error(
+          `dancers ${id} and ${matches[id]} are on the same side`,
+        );
+      }
+    }
 
     const plans = buildProtoRecord((id) => {
       const amDrawer = parseProtoId(id).role === instr.drawerRole;
@@ -84,7 +93,7 @@ export const giveAndTakeIntoSwingSegments =
         type: "swing",
         beats: swingDur,
         endFacing: instr.endFacing,
-        cid: instr.cid,
+        cid: instr.cid, // TODO: this isn't right, we need to plumb the original `matches` into this somehow
       },
       postApproach,
       who,

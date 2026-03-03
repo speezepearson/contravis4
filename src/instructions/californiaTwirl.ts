@@ -28,13 +28,14 @@ export const californiaTwirlSegments =
         dur: instr.beats,
         position: arc(instr.cid, { semiMinor: 0.25, phi: PI }),
         facing: lerpFacingTo((id, segInit) => {
+          // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
           const myRole = parseProtoId(id).role;
           return getDir({
             from: segInit[id].pos,
             to: getDancerState(matches[id], segInit).pos,
           }).rotateByDegrees(90 * (myRole === "lark" ? 1 : -1));
         }),
-        hands: (id, _frac, draft) => {
+        hands: (id, _frac, _segInit, draft) => {
           const twirlHand = isLark(id) ? "right" : "left";
           connectHands(draft, id, twirlHand, matches[id], otherHand(twirlHand));
         },

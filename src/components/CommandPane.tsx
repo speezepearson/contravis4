@@ -115,7 +115,7 @@ const ACTION_LABELS: Record<string, string> = {
   drop_hands: "drop hands",
   face: "face",
   form_short_waves: "form short waves",
-  give_and_take_into_swing: "give & take into swing",
+  give_and_take_into_swing: "give & take",
   pass_by: "pass by",
   petronella: "petronella",
   pull_by: "pull by",
@@ -506,7 +506,7 @@ function InlineForm({
         value={instruction.type}
         onChange={(v) => handleActionChange(v as ActionOptionType)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
-      />
+      />{" "}
       {(() => {
         switch (instruction.type) {
           case "allemande":

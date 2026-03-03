@@ -54,7 +54,7 @@ export const circleSegments =
             radians: orbitRadians * frac,
           }),
         facing: rotateFacingBy(() => orbitRadians),
-        hands: (id, _frac, draft) => {
+        hands: (id, _frac, _segInit, draft) => {
           const { right, left } = handConns[id];
           connectHands(
             draft,
