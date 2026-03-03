@@ -69,7 +69,9 @@ export function InlineNumber({
       if (Math.abs(dx) > 3) dragRef.current.moved = true;
       const steps = Math.round(dx / pixelsPerStep);
       const newValue = dragRef.current.value + steps * step;
-      onDrag(Math.round(newValue / step) * step);
+      const snapped = Math.round(newValue / step) * step;
+      const decimals = (step.toString().split(".")[1] ?? "").length;
+      onDrag(parseFloat(snapped.toFixed(decimals)));
     },
     [onDrag, step, pixelsPerStep],
   );
