@@ -4,6 +4,10 @@ import { type Animator } from "./_base";
 import { type SegmentAnimator, toAnimator } from "./_segment";
 import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
 import { BalanceInstructionSchema, balanceSegments } from "./balance";
+import {
+  BalanceTheRingInstructionSchema,
+  balanceTheRingSegments,
+} from "./balanceTheRing";
 import { BoxTheGnatInstructionSchema, boxTheGnatSegments } from "./boxTheGnat";
 import {
   CaliforniaTwirlInstructionSchema,
@@ -22,9 +26,11 @@ import {
   giveAndTakeIntoSwingSegments,
 } from "./giveAndTakeIntoSwing";
 import { PassByInstructionSchema, passBySegments } from "./passBy";
+import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
 import { PullByInstructionSchema, pullBySegments } from "./pullBy";
 import { RelabelInstructionSchema, relabelSegments } from "./relabel";
 import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
+import { RoryOMoreInstructionSchema, roryOMoreSegments } from "./roryOMore";
 import { StepInstructionSchema, stepSegments } from "./step";
 import { SwingInstructionSchema, swingSegments } from "./swing";
 import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
@@ -36,6 +42,7 @@ import {
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
   BalanceInstructionSchema,
+  BalanceTheRingInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
   CircleInstructionSchema,
@@ -45,9 +52,11 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
   PassByInstructionSchema,
+  PetronellaInstructionSchema,
   PullByInstructionSchema,
   RelabelInstructionSchema,
   RollAwayInstructionSchema,
+  RoryOMoreInstructionSchema,
   StepInstructionSchema,
   SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
@@ -63,6 +72,7 @@ export const atomicSegmentAnimators: {
 } = {
   allemande: allemandeSegments,
   balance: balanceSegments,
+  balance_the_ring: balanceTheRingSegments,
   box_the_gnat: boxTheGnatSegments,
   california_twirl: californiaTwirlSegments,
   circle: circleSegments,
@@ -72,9 +82,11 @@ export const atomicSegmentAnimators: {
   form_short_waves: formShortWavesSegments,
   give_and_take_into_swing: giveAndTakeIntoSwingSegments,
   pass_by: passBySegments,
+  petronella: petronellaSegments,
   pull_by: pullBySegments,
   relabel: relabelSegments,
   roll_away: rollAwaySegments,
+  rory_o_more: roryOMoreSegments,
   step: stepSegments,
   swing: swingSegments,
   take_hands_in_rings: takeHandsInRingsSegments,

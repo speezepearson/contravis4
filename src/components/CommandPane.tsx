@@ -51,6 +51,7 @@ import { assertNever } from "../utils";
 import type { DancerState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
+import { BalanceTheRingFields } from "./fields/BalanceTheRingFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
 import { CircleFields } from "./fields/CircleFields";
@@ -60,9 +61,11 @@ import { FaceFields } from "./fields/FaceFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
 import { PassByFields } from "./fields/PassByFields";
+import { PetronellaFields } from "./fields/PetronellaFields";
 import { PullByFields } from "./fields/PullByFields";
 import { RelabelFields } from "./fields/RelabelFields";
 import { RollAwayFields } from "./fields/RollAwayFields";
+import { RoryOMoreFields } from "./fields/RoryOMoreFields";
 import { SplitFields } from "./fields/SplitFields";
 import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
@@ -79,6 +82,7 @@ export type ActionOptionType = Instruction["type"];
 const ACTION_OPTIONS: ActionOptionType[] = [
   "allemande",
   "balance",
+  "balance_the_ring",
   "box_the_gnat",
   "california_twirl",
   "circle",
@@ -88,9 +92,11 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "form_short_waves",
   "give_and_take_into_swing",
   "pass_by",
+  "petronella",
   "pull_by",
   "relabel",
   "roll_away",
+  "rory_o_more",
   "split",
   "step",
   "swing",
@@ -100,6 +106,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
 const ACTION_LABELS: Record<string, string> = {
   allemande: "allemande",
   balance: "balance",
+  balance_the_ring: "balance the ring",
   box_the_gnat: "box the gnat",
   california_twirl: "California twirl",
   circle: "circle",
@@ -109,9 +116,11 @@ const ACTION_LABELS: Record<string, string> = {
   form_short_waves: "form short waves",
   give_and_take_into_swing: "give & take into swing",
   pass_by: "pass by",
+  petronella: "petronella",
   pull_by: "pull by",
   relabel: "relabel",
   roll_away: "roll away",
+  rory_o_more: "Rory O'More",
   split: "split",
   step: "step",
   swing: "swing",
@@ -433,14 +442,17 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
   switch (type) {
     case "allemande":
     case "balance":
+    case "balance_the_ring":
     case "box_the_gnat":
     case "california_twirl":
     case "circle":
     case "do_si_do":
     case "give_and_take_into_swing":
     case "pass_by":
+    case "petronella":
     case "pull_by":
     case "roll_away":
+    case "rory_o_more":
     case "step":
     case "swing":
       return true;
@@ -546,6 +558,10 @@ function InlineForm({
             return <AllemandeFields {...common} instruction={instruction} />;
           case "balance":
             return <BalanceFields {...common} instruction={instruction} />;
+          case "balance_the_ring":
+            return (
+              <BalanceTheRingFields {...common} instruction={instruction} />
+            );
           case "box_the_gnat":
             return <BoxTheGnatFields {...common} instruction={instruction} />;
           case "california_twirl":
@@ -573,12 +589,16 @@ function InlineForm({
             );
           case "pass_by":
             return <PassByFields {...common} instruction={instruction} />;
+          case "petronella":
+            return <PetronellaFields {...common} instruction={instruction} />;
           case "pull_by":
             return <PullByFields {...common} instruction={instruction} />;
           case "relabel":
             return <RelabelFields {...common} instruction={instruction} />;
           case "roll_away":
             return <RollAwayFields {...common} instruction={instruction} />;
+          case "rory_o_more":
+            return <RoryOMoreFields {...common} instruction={instruction} />;
           case "split":
             return <SplitFields {...common} instruction={instruction} />;
           case "step":

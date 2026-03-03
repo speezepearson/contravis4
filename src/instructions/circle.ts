@@ -1,17 +1,17 @@
-import { Vector } from "vecti";
 import { z } from "zod";
 
 import { type DancerId, HandSchema } from "../contraCore";
 import { revolve, TWO_PI } from "../geometry";
 import { must } from "../utils";
-import { buildProtoRecord, connectHands, getDancerState } from "../worldState";
+import { buildProtoRecord, connectHands } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
+import { findRings, ringCenters } from "./_rings";
 import {
   evaluateSegmentEnd,
   rotateFacingBy,
   type SegmentAnimator,
 } from "./_segment";
-import { findRings, makeRingSegment } from "./takeHandsInRings";
+import { makeRingSegment } from "./takeHandsInRings";
 
 export const CircleInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -27,16 +27,7 @@ export const circleSegments =
     const ringSegment = makeRingSegment(init);
     const ringState = evaluateSegmentEnd(ringSegment, init, who);
     const rings = findRings(ringState);
-
-    // Compute ring center for each dancer
-    const ringCenters = buildProtoRecord((id) => {
-      const positions = [...rings[id]].map(
-        (mid) => getDancerState(mid, ringState).pos,
-      );
-      return positions
-        .reduce((sum, p) => sum.add(p), new Vector(0, 0))
-        .divide(positions.length);
-    });
+    const centers = ringCenters(rings, ringState);
 
     // CW if direction=left, CCW if direction=right
     const orbitRadians =
@@ -54,7 +45,7 @@ export const circleSegments =
         dur: instr.beats,
         position: (id, frac, segInit) =>
           revolve(segInit[id].pos, {
-            around: ringCenters[id],
+            around: centers[id],
             radians: orbitRadians * frac,
           }),
         facing: rotateFacingBy(() => orbitRadians),

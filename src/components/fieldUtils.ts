@@ -39,6 +39,8 @@ export function makeDefaultInstruction(
         };
       case "balance":
         return { id, type: "balance", beats: 4, cid: "neighbor" };
+      case "balance_the_ring":
+        return { id, type: "balance_the_ring", beats: 4 };
       case "box_the_gnat":
         return { id, type: "box_the_gnat", beats: 4, cid: "neighbor" };
       case "california_twirl":
@@ -82,6 +84,8 @@ export function makeDefaultInstruction(
           cid: "neighbor",
           hand: "right",
         };
+      case "petronella":
+        return { id, type: "petronella", beats: 4 };
       case "pull_by":
         return {
           id,
@@ -100,6 +104,8 @@ export function makeDefaultInstruction(
         };
       case "roll_away":
         return { id, type: "roll_away", roller: "lark", rollee: "on_right" };
+      case "rory_o_more":
+        return { id, type: "rory_o_more", beats: 4, direction: "right" };
       case "split":
         return { id, type: "split", by: "role", larks: [], robins: [] };
       case "step":

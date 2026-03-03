@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { type DancerId, type ProtoId } from "../contraCore";
 import { getDir } from "../geometry";
 import { must } from "../utils";
 import {
@@ -10,6 +9,7 @@ import {
   type WorldState,
 } from "../worldState";
 import { instructionBaseSchemaFields, resolveCalledIdentifier } from "./_base";
+import { findRings } from "./_rings";
 import {
   evaluateSegmentEnd,
   type Segment,
@@ -76,29 +76,7 @@ export function makeRingSegment(init: WorldState): Segment {
   };
 }
 
-/** Follow right-hand connections to discover each dancer's ring.
- *  Throws if any ring is not exactly 4 dancers. */
-export function findRings(state: WorldState): Record<ProtoId, Set<DancerId>> {
-  return buildProtoRecord((id) => {
-    const { theirId: r } = must(getDancerState(id, state).hands.get("right"));
-    const { theirId: rr } = must(getDancerState(r, state).hands.get("right"));
-    const { theirId: rrr } = must(getDancerState(rr, state).hands.get("right"));
-    const { theirId: rrrr } = must(
-      getDancerState(rrr, state).hands.get("right"),
-    );
-    if (rrrr !== id) {
-      throw new Error(
-        `Ring starting at ${id} does not close after 4 steps (got ${rrrr})`,
-      );
-    }
-    if (new Set([id, r, rr, rrr]).size !== 4) {
-      throw new Error(
-        `Ring starting at ${id} has duplicate members: ${[id, r, rr, rrr].join(", ")}`,
-      );
-    }
-    return new Set<DancerId>([id, r, rr, rrr]);
-  });
-}
+export { findRings } from "./_rings";
 
 export const takeHandsInRingsSegments =
   (_instr: TakeHandsInRingsInstruction): SegmentAnimator =>
