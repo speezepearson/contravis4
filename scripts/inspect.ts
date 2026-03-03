@@ -1,9 +1,15 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
+import { enableMapSet } from "immer";
 import type { Vector } from "vecti";
 
-import { ALL_PROTO_IDS, type Hand, type ProtoId } from "../src/contraCore";
+import {
+  ALL_PROTO_IDS,
+  type DancerId,
+  type Hand,
+  type ProtoId,
+} from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
 import {
@@ -12,6 +18,8 @@ import {
   instructionDuration,
 } from "../src/instructions/index";
 import type { DancerState, WorldState } from "../src/worldState";
+
+enableMapSet();
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
@@ -153,17 +161,15 @@ function formatFacing(v: Vector): string {
 }
 
 function formatHands(
-  hands: Partial<Record<Hand, [{ base: string; offset: number }, Hand]>>,
+  hands: Map<Hand, { theirId: DancerId; theirHand: Hand }>,
 ): string {
   const parts: string[] = [];
   for (const hand of ["left", "right"] as const) {
-    const held = hands[hand];
+    const held = hands.get(hand);
     if (!held) continue;
-    const [rel, theirHand] = held;
     const h = hand === "left" ? "L" : "R";
-    const th = theirHand === "left" ? "L" : "R";
-    const offset = rel.offset === 0 ? "" : `.${rel.offset}`;
-    parts.push(`${h}->${rel.base}${offset}'s ${th}`);
+    const th = held.theirHand === "left" ? "L" : "R";
+    parts.push(`${h}->${held.theirId}'s ${th}`);
   }
   return parts.length > 0 ? `hands: ${parts.join(", ")}` : "";
 }
