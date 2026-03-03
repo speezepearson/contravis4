@@ -1,0 +1,3 @@
+#!/bin/bash
+
+disposables exec -p 5173:5173 npm run dev -- --host
