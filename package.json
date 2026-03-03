@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint -f ./eslint-formatter-relative.js .",
     "lint:fix": "eslint --fix -f ./eslint-formatter-relative.js .",
     "format": "prettier --write . --log-level=warn",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

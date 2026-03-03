@@ -141,6 +141,13 @@ export function makeDefaultInstruction(
         label: "neighbor",
         cid: "in_front",
       } satisfies Instruction);
+    case "roll_away":
+      return InstructionSchema.parse({
+        id,
+        type: "roll_away",
+        roller: "lark",
+        dir: "rtl",
+      });
     default:
       assertNever(type);
   }

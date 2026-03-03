@@ -29,6 +29,7 @@ export const ActionTypeSchema = z.enum([
   "right_left_through",
   "square_through",
   "courtesy_turn",
+  "roll_away",
   "shoulder_round",
   "short_waves",
   "long_waves",
