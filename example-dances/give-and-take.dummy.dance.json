@@ -1,0 +1,54 @@
+{
+  "name": "(dummy) Give and take",
+  "initFormation": "improper",
+  "instructions": [
+    {
+      "id": "6400a287-e028-4359-8987-085228107d73",
+      "beats": 16,
+      "type": "give_and_take_into_swing",
+      "cid": "partner",
+      "drawerRole": "lark",
+      "endFacing": "across"
+    },
+    {
+      "id": "7c903a79-588a-46bf-931d-27b74e92e9f8",
+      "beats": 0,
+      "type": "drop_hands",
+      "which": "both"
+    },
+    {
+      "id": "6230cb73-ac90-46d9-b45d-036ea7dc3b75",
+      "beats": 1,
+      "type": "step",
+      "direction": "neighbor",
+      "distance": 1.1,
+      "facing": "across"
+    },
+    {
+      "id": "8cf1ccbd-2bcd-44d0-a35e-50bb7e9d1224",
+      "beats": 1,
+      "type": "step",
+      "direction": "behind",
+      "distance": 0.5,
+      "facing": "across"
+    },
+    {
+      "id": "8e3b5005-8c9d-4111-bc34-aa75c68b13cf",
+      "beats": 0,
+      "type": "face",
+      "direction": "partner"
+    },
+    {
+      "id": "77aea8c5-e65c-4e24-a89d-33ca6f5c8f20",
+      "beats": 0,
+      "type": "take_hands_in_rings"
+    },
+    {
+      "id": "0f6da775-bea7-4671-b2d8-b98865950c3e",
+      "beats": 8,
+      "type": "circle",
+      "direction": "left",
+      "rotations": 0.75
+    }
+  ]
+}
