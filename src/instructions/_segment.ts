@@ -3,7 +3,11 @@ import type { Vector } from "vecti";
 
 import type { Beats, Hand, ProtoId, Relationship } from "../contraCore";
 import { isLark, resolveRelationship } from "../contraCore";
-import { ellipsePosition, lerpFacing as lerpFacingVec, revolve } from "../geometry";
+import {
+  ellipsePosition,
+  lerpFacing as lerpFacingVec,
+  revolve,
+} from "../geometry";
 import { lerpVectors } from "../utils";
 import {
   connectHands,
@@ -28,11 +32,7 @@ export type FacingFn = (
 ) => Vector;
 
 /** Per-dancer hands function: mutates draft state for hand connections. */
-export type HandsFn = (
-  id: ProtoId,
-  frac: number,
-  draft: WorldState,
-) => void;
+export type HandsFn = (id: ProtoId, frac: number, draft: WorldState) => void;
 
 /** A single phase of an animation. */
 export type Segment = {
@@ -192,9 +192,7 @@ export function lerpFacingTo(
 }
 
 /** Rotate facing by a fixed number of radians over the segment. */
-export function rotateFacingBy(
-  radiansFn: (id: ProtoId) => number,
-): FacingFn {
+export function rotateFacingBy(radiansFn: (id: ProtoId) => number): FacingFn {
   return (id, frac, segInit) => {
     return segInit[id].facing.rotateByRadians(radiansFn(id) * frac);
   };
@@ -219,9 +217,7 @@ export function holdByRole(opts: {
   robin: [Hand, Relationship, Hand];
 }): HandsFn {
   return (id, _frac, draft) => {
-    const [hand, relationship, theirHand] = isLark(id)
-      ? opts.lark
-      : opts.robin;
+    const [hand, relationship, theirHand] = isLark(id) ? opts.lark : opts.robin;
     connectHands(draft, id, hand, relationship, theirHand);
   };
 }

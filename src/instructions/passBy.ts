@@ -27,8 +27,8 @@ export const passByAnimator =
         position: arc(instr.relationship, { semiMinor: 0.25, phi: PI }),
         facing: (id, _frac, segInit) => {
           const them = resolveRelationship(id, instr.relationship);
-          return getDancerState(them, segInit).pos
-            .subtract(segInit[id].pos)
+          return getDancerState(them, segInit)
+            .pos.subtract(segInit[id].pos)
             .normalize();
         },
         hands: disconnect(),

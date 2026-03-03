@@ -28,16 +28,11 @@ export const pullByAnimator =
         position: arc(instr.relationship, { semiMinor, phi: PI }),
         facing: (id, _frac, segInit) => {
           const them = resolveRelationship(id, instr.relationship);
-          return getDancerState(them, segInit).pos
-            .subtract(segInit[id].pos)
+          return getDancerState(them, segInit)
+            .pos.subtract(segInit[id].pos)
             .normalize();
         },
-        hands: holdUntil(
-          0.5,
-          instr.hand,
-          instr.relationship,
-          instr.hand,
-        ),
+        hands: holdUntil(0.5, instr.hand, instr.relationship, instr.hand),
       },
     ]);
   };

@@ -49,7 +49,7 @@ const APPROX_BEATS_PER_SWING_ROTATION = 4;
 export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
-  who: Set<ProtoId>,
+  _who: Set<ProtoId>,
 ): Segment[] {
   const swingBeats = instr.beats - APPROACH_BEATS - DISENGAGE_BEATS;
 
@@ -116,11 +116,7 @@ export function makeSwingSegments(
       position: (id, frac, segInit) =>
         lerpVectors(segInit[id].pos, plans[id].postApproach.pos, frac),
       facing: (id, frac, segInit) =>
-        lerpFacing(
-          segInit[id].facing,
-          plans[id].postApproach.facing,
-          frac,
-        ),
+        lerpFacing(segInit[id].facing, plans[id].postApproach.facing, frac),
       hands: disconnect(),
     },
     {
@@ -142,10 +138,7 @@ export function makeSwingSegments(
         lerpVectors(plans[id].postSwing.pos, plans[id].final.pos, frac),
       facing: (id, frac) =>
         plans[id].postSwing.facing.rotateByRadians(
-          ((ccwRadsBetween(
-            plans[id].postSwing.facing,
-            plans[id].final.facing,
-          ) -
+          ((ccwRadsBetween(plans[id].postSwing.facing, plans[id].final.facing) -
             TWO_PI) %
             TWO_PI) *
             frac,

@@ -94,10 +94,12 @@ export const giveAndTakeIntoSwingAnimator =
       who,
     );
 
-    const driftedSwingSegments = addPositionDrift(swingSegments, (id, globalFrac) =>
-      plans[id].final.com
-        .subtract(plans[id].postApproach.com)
-        .multiply(globalFrac),
+    const driftedSwingSegments = addPositionDrift(
+      swingSegments,
+      (id, globalFrac) =>
+        plans[id].final.com
+          .subtract(plans[id].postApproach.com)
+          .multiply(globalFrac),
     );
 
     return makeAnimation(init, who, [approachSegment, ...driftedSwingSegments]);
