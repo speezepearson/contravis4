@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { isLark, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId } from "../contraCore";
 import {
   ccwRadsBetween,
   getDir,
@@ -36,19 +36,34 @@ export const SwingInstructionSchema = z.object({
 });
 export type SwingInstruction = z.infer<typeof SwingInstructionSchema>;
 
-const APPROACH_BEATS = 1;
 const DISENGAGE_BEATS = 1.5;
 const FINAL_SEPARATION = 1;
 const ORBIT_RADIUS = 0.2;
 const APPROX_BEATS_PER_SWING_ROTATION = 4;
+
+/**
+ * Choose approachBeats so the linear approach speed matches the orbit speed.
+ *
+ * Linear approach speed = approachDistance / approachBeats (constant).
+ * Orbit speed = ORBIT_RADIUS * |swingRadians| / swingBeats.
+ * Setting equal (with swingBeats = availableBeats - approachBeats):
+ *   approachBeats = approachDist * available / (ORBIT_RADIUS * |swingRad| + approachDist)
+ */
+export function swingApproachBeatsForSpeedMatch(
+  approachDistance: number,
+  availableBeats: Beats,
+  swingRadians: number,
+): Beats {
+  const orbitFactor = ORBIT_RADIUS * Math.abs(swingRadians);
+  if (approachDistance + orbitFactor === 0) return 0;
+  return (approachDistance * availableBeats) / (orbitFactor + approachDistance);
+}
 
 export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
   _who: Set<ProtoId>,
 ): Segment[] {
-  const swingBeats = instr.beats - APPROACH_BEATS - DISENGAGE_BEATS;
-
   const pairs = buildProtoRecord((id) => {
     const me = getDancerState(id, init);
     const themId = must(resolveCalledIdentifier(id, instr.cid, init));
@@ -101,6 +116,23 @@ export function makeSwingSegments(
     };
   });
 
+  let totalApproachDist = 0;
+  let totalSwingRadians = 0;
+  for (const id of ALL_PROTO_IDS) {
+    totalApproachDist += pairs[id].me.pos
+      .subtract(plans[id].postApproach.pos)
+      .length();
+    totalSwingRadians += Math.abs(plans[id].numSwingRadians);
+  }
+  const avgApproachDist = totalApproachDist / ALL_PROTO_IDS.length;
+  const avgSwingRadians = totalSwingRadians / ALL_PROTO_IDS.length;
+  const approachBeats = swingApproachBeatsForSpeedMatch(
+    avgApproachDist,
+    instr.beats - DISENGAGE_BEATS,
+    avgSwingRadians,
+  );
+  const swingBeats = instr.beats - approachBeats - DISENGAGE_BEATS;
+
   const swingHands = holdByRole({
     lark: ["right", instr.cid, "left"],
     robin: ["left", instr.cid, "right"],
@@ -108,7 +140,7 @@ export function makeSwingSegments(
 
   return [
     {
-      dur: APPROACH_BEATS,
+      dur: approachBeats,
       position: (id, frac, segInit) =>
         lerpVectors(segInit[id].pos, plans[id].postApproach.pos, frac),
       facing: (id, frac, segInit) =>
