@@ -1,5 +1,6 @@
 import type { Role } from "../contraCore";
 import {
+  type CalledDirection,
   type CalledIdentifier,
   type CardinalDirection,
   InstructionIdSchema,
@@ -111,7 +112,7 @@ export function makeDefaultInstruction(
       return InstructionSchema.parse({
         id,
         type: "step",
-        beats: 0,
+        beats: 1,
         direction: "in_front",
         distance: 0,
         facing: "across",
@@ -148,6 +149,13 @@ export function makeDefaultInstruction(
         roller: "lark",
         rollee: "on_right",
       });
+    case "face":
+      return InstructionSchema.parse({
+        id,
+        type: "face",
+        beats: 0,
+        direction: "across",
+      } satisfies Instruction);
     default:
       assertNever(type);
   }
@@ -159,6 +167,67 @@ export function makeInstructionId(): InstructionId {
 
 export function cardinalDirectionToText(dir: CardinalDirection): string {
   return dir;
+}
+
+export function calledDirectionToText(cid: CalledDirection): string {
+  switch (cid) {
+    case "on_right":
+      return "your right";
+    case "on_left":
+      return "your left";
+    case "in_front":
+      return "forward";
+    case "behind":
+      return "backward";
+    case "left_diagonal":
+      return "left diagonal";
+    case "right_diagonal":
+      return "right diagonal";
+    case "larks_left_robins_right":
+      return "your (larks left, robins right)";
+    case "larks_right_robins_left":
+      return "your (larks right, robins left)";
+    case "across":
+      return "across";
+    case "out":
+      return "out";
+    case "up":
+      return "up";
+    case "down":
+      return "down";
+    case "neighbor":
+      return "towards your neighbor";
+    case "partner":
+      return "towards your partner";
+    case "shadow":
+      return "towards your shadow";
+    case "opposite":
+      return "towards your opposite";
+    case "next neighbor":
+      return "towards your next neighbor";
+    case "next x2 neighbor":
+      return "towards your next x2 neighbor";
+    case "next x3 neighbor":
+      return "towards your next x3 neighbor";
+    case "prev neighbor":
+      return "towards your prev neighbor";
+    case "prev x2 neighbor":
+      return "towards your prev x2 neighbor";
+    case "prev x3 neighbor":
+      return "towards your prev x3 neighbor";
+    case "shadow 2":
+      return "towards your shadow 2";
+    case "shadow 3":
+      return "towards your shadow 3";
+    case "shadow 4":
+      return "towards your shadow 4";
+    case "shadow 5":
+      return "towards your shadow 5";
+    case "shadow 6":
+      return "towards your shadow 6";
+    default:
+      assertNever(cid);
+  }
 }
 
 export function calledIdentifierToText(cid: CalledIdentifier): string {

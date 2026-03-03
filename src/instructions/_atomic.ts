@@ -11,6 +11,7 @@ import {
 } from "./californiaTwirl";
 import { DoSiDoInstructionSchema, doSiDoSegments } from "./doSiDo";
 import { DropHandsInstructionSchema, dropHandsSegments } from "./dropHands";
+import { FaceInstructionSchema, faceSegments } from "./face";
 import {
   FormShortWavesInstructionSchema,
   formShortWavesSegments,
@@ -34,6 +35,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   CaliforniaTwirlInstructionSchema,
   DoSiDoInstructionSchema,
   DropHandsInstructionSchema,
+  FaceInstructionSchema,
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
   PassByInstructionSchema,
@@ -58,6 +60,7 @@ export const atomicSegmentAnimators: {
   california_twirl: californiaTwirlSegments,
   do_si_do: doSiDoSegments,
   drop_hands: dropHandsSegments,
+  face: faceSegments,
   form_short_waves: formShortWavesSegments,
   give_and_take_into_swing: giveAndTakeIntoSwingSegments,
   pass_by: passBySegments,

@@ -14,7 +14,7 @@ import {
   ProtoIdSchema,
 } from "./contraCore";
 import { VectorSchema } from "./geometry";
-import { assertNever, isEqual } from "./utils";
+import { isEqual } from "./utils";
 
 export const BasicLabelSchema = z.enum([
   "partner",
@@ -27,76 +27,13 @@ export const BasicLabelSchema = z.enum([
   "shadow 6",
 ]);
 export type BasicLabel = z.infer<typeof BasicLabelSchema>;
-function isBasicLabel(label: string): label is BasicLabel {
-  return BasicLabelSchema.safeParse(label).success;
-}
-function resolveBasicLabel(
+export function resolveBasicLabel(
   label: BasicLabel,
   id: DancerId,
   protos: Record<ProtoId, DancerState>,
 ): DancerId | null {
   const state = getDancerState(id, protos);
   return state.labels.get(label) ?? null;
-}
-
-export const CalledLabelSchema = z.enum([
-  ...BasicLabelSchema.options,
-  "opposite",
-  "next neighbor",
-  "next x2 neighbor",
-  "next x3 neighbor",
-  "prev neighbor",
-  "prev x2 neighbor",
-  "prev x3 neighbor",
-]);
-export type CalledLabel = z.infer<typeof CalledLabelSchema>;
-export function resolveCalledLabel(
-  label: CalledLabel,
-  id: DancerId,
-  protos: Record<ProtoId, DancerState>,
-): DancerId | null {
-  if (isBasicLabel(label)) {
-    return resolveBasicLabel(label, id, protos);
-  }
-  switch (label) {
-    case "opposite": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return resolveBasicLabel("partner", neighbor, protos);
-    }
-    case "next neighbor": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, 1);
-    }
-    case "next x2 neighbor": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, 2);
-    }
-    case "next x3 neighbor": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, 3);
-    }
-    case "prev neighbor": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, -1);
-    }
-    case "prev x2 neighbor": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, -2);
-    }
-    case "prev x3 neighbor": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, -3);
-    }
-    default:
-      assertNever(label);
-  }
 }
 
 export const DancerStateSchema = z.object({

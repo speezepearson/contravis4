@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { Vector } from "vecti";
+import { z } from "zod";
 
 export function isLocalStorageAvailable(): boolean {
   try {
@@ -40,4 +41,8 @@ export function must<T>(x: T | null | undefined): T {
   if (x === null || x === undefined)
     throw new Error("Value is null or undefined");
   return x;
+}
+
+export function parses<T>(schema: z.ZodSchema<T>, x: unknown): x is T {
+  return schema.safeParse(x).success;
 }

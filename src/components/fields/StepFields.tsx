@@ -1,7 +1,7 @@
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
 import { InstructionSchema } from "../../instructions/index";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
+import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { InlineNumber } from "../InlineNumber";
 
@@ -31,7 +31,7 @@ export function StepFields({
 
   return (
     <>
-      <CalledIdentifierDropdown
+      <CalledDirectionDropdown
         options={CalledIdentifierSchema.options}
         value={instruction.direction}
         onChange={(dir) => tryCommit({ direction: dir })}
@@ -44,8 +44,7 @@ export function StepFields({
         suffix="m"
       />
       {" and face "}
-      {/* TODO: this should be a CalledDirectionDropdown, I think */}
-      <CalledIdentifierDropdown
+      <CalledDirectionDropdown
         options={CalledIdentifierSchema.options}
         value={instruction.facing}
         onChange={(f) => tryCommit({ facing: f })}

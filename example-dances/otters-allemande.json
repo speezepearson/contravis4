@@ -124,7 +124,7 @@
     {
       "id": "b2000000-0000-4000-a000-000000000005",
       "beats": 0,
-      "type": "step",
+      "type": "face",
       "direction": "across",
       "distance": 0,
       "facing": "neighbor",

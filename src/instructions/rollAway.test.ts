@@ -1,14 +1,14 @@
 import { enableMapSet, produce } from "immer";
-import { describe, expect, it } from "vitest";
 import { Vector } from "vecti";
+import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
-import { ccwRadsBetween, NORTH, PI, SOUTH } from "../geometry";
-import { initFormationStates } from "./index";
+import { ccwRadsBetween, NORTH, PI } from "../geometry";
 import { toAnimator } from "./_segment";
-import { rollAwaySegments, type RollAwayInstruction } from "./rollAway";
+import { initFormationStates } from "./index";
+import { type RollAwayInstruction, rollAwaySegments } from "./rollAway";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -33,13 +33,13 @@ describe("rollAway", () => {
       });
       const instr = makeInstr({ roller: "lark", rollee: "on_right" });
       const animator = toAnimator(rollAwaySegments(instr));
-      expect(() => animator(init, allProtos)).toThrow('has no opposite-role');
+      expect(() => animator(init, allProtos)).toThrow("has no opposite-role");
     });
 
     it("throws if two rollers have the same rollee", () => {
       const init = produce(initFormationStates.improper, (draft) => {
         draft.up_lark_0.pos = new Vector(0, 0);
-        draft.down_lark_0.pos = new Vector(0, .2);
+        draft.down_lark_0.pos = new Vector(0, 0.2);
         draft.up_robin_0.pos = new Vector(1, 0);
         draft.down_robin_0.pos = new Vector(1.1, 0);
         for (const id of allProtos) {
@@ -47,9 +47,9 @@ describe("rollAway", () => {
         }
       });
       const instr = makeInstr({ roller: "lark", rollee: "on_right" });
-      expect(() =>
-        rollAwaySegments(instr)(init, allProtos)
-      ).toThrow('both grabbed the same rollee');
+      expect(() => rollAwaySegments(instr)(init, allProtos)).toThrow(
+        "both grabbed the same rollee",
+      );
     });
   });
 
@@ -77,17 +77,25 @@ describe("rollAway", () => {
       const MAX_DEVIATION = PI / 4;
 
       // Up pair should face the same direction
-      const upAngleDiff = Math.abs(ccwRadsBetween(final.up_lark_0.facing, final.up_robin_0.facing));
+      const upAngleDiff = Math.abs(
+        ccwRadsBetween(final.up_lark_0.facing, final.up_robin_0.facing),
+      );
       expect(upAngleDiff).toBeLessThan(0.01);
 
       // Down pair should face the same direction
-      const downAngleDiff = Math.abs(ccwRadsBetween(final.down_lark_0.facing, final.down_robin_0.facing));
+      const downAngleDiff = Math.abs(
+        ccwRadsBetween(final.down_lark_0.facing, final.down_robin_0.facing),
+      );
       expect(downAngleDiff).toBeLessThan(0.01);
 
       // Each dancer's final facing is within 45° of their original
       for (const id of ALL_PROTO_IDS) {
-        const deviation = Math.abs(ccwRadsBetween(init[id].facing, final[id].facing));
-        expect(deviation, `${id} facing deviated too far`).toBeLessThan(MAX_DEVIATION);
+        const deviation = Math.abs(
+          ccwRadsBetween(init[id].facing, final[id].facing),
+        );
+        expect(deviation, `${id} facing deviated too far`).toBeLessThan(
+          MAX_DEVIATION,
+        );
       }
     });
   });

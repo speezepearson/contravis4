@@ -9,20 +9,34 @@ import {
   type ProtoId,
   RoleSchema,
 } from "../contraCore";
-import { ccwRadsBetween, ellipsePosition, getDir, lerpFacing, PI, TWO_PI } from "../geometry";
-import { BasicLabelSchema, buildProtoRecord, connectHands, getDancerState } from "../worldState";
 import {
-  type CalledDirection,
+  ccwRadsBetween,
+  ellipsePosition,
+  getDir,
+  lerpFacing,
+  PI,
+  TWO_PI,
+} from "../geometry";
+import {
+  BasicLabelSchema,
+  buildProtoRecord,
+  connectHands,
+  getDancerState,
+} from "../worldState";
+import {
   type CalledIdentifier,
-  findDancerInCalledDirection,
   InstructionIdSchema,
   resolveCalledIdentifier,
 } from "./_base";
 import { type SegmentAnimator } from "./_segment";
 
-export const RolleeSpecSchema = z.enum(["on_right", "on_left", ...BasicLabelSchema.options]);
+export const RolleeSpecSchema = z.enum([
+  "on_right",
+  "on_left",
+  ...BasicLabelSchema.options,
+]);
 export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;
-undefined as any as RolleeSpec satisfies CalledIdentifier; // type assertion
+undefined as unknown as RolleeSpec satisfies CalledIdentifier; // type assertion
 
 export const RollAwayInstructionSchema = z.object({
   id: InstructionIdSchema,
@@ -42,7 +56,9 @@ export const rollAwaySegments =
     const rolleeToRoller = new Map<DancerId, ProtoId>();
     for (const id of who) {
       if (getRole(id) !== instr.roller) continue;
-      const rolleeId = resolveCalledIdentifier(id, instr.rollee, init, { roles: "different" });
+      const rolleeId = resolveCalledIdentifier(id, instr.rollee, init, {
+        roles: "different",
+      });
       if (!rolleeId) {
         throw new Error(
           `${id} has no opposite-role ${instr.rollee} to roll away`,
@@ -58,16 +74,26 @@ export const rollAwaySegments =
     }
 
     const matches = buildProtoRecord((id) => {
-      const res = getRole(id) === instr.roller ? rollerToRollee.get(id) : rolleeToRoller.get(id)
+      const res =
+        getRole(id) === instr.roller
+          ? rollerToRollee.get(id)
+          : rolleeToRoller.get(id);
       if (!res) throw new Error(`dancer ${id} has no match`);
       return res;
     });
 
-    const rollerSides = new Set([...rollerToRollee].map(([rollerId, rolleeId]) => {
-      const roller = getDancerState(rollerId, init);
-      const rollee = getDancerState(rolleeId, init);
-      return Math.sign(ccwRadsBetween(roller.facing, getDir({from: roller.pos, to: rollee.pos})));
-    }));
+    const rollerSides = new Set(
+      [...rollerToRollee].map(([rollerId, rolleeId]) => {
+        const roller = getDancerState(rollerId, init);
+        const rollee = getDancerState(rolleeId, init);
+        return Math.sign(
+          ccwRadsBetween(
+            roller.facing,
+            getDir({ from: roller.pos, to: rollee.pos }),
+          ),
+        );
+      }),
+    );
     if (rollerSides.size !== 1) throw new Error(`rollers have different sides`);
 
     const isRtl = rollerSides.has(-1);
@@ -92,9 +118,13 @@ export const rollAwaySegments =
         },
         facing: (id, frac, segInit) => {
           const isRoller = getRole(id) === instr.roller;
-          const normal = getDir({from: segInit[id].pos, to: getDancerState(matches[id], segInit).pos}).rotateByDegrees(90 * ((isRoller === isRtl) ? 1 : -1));
+          const normal = getDir({
+            from: segInit[id].pos,
+            to: getDancerState(matches[id], segInit).pos,
+          }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
           if (isRoller) return lerpFacing(segInit[id].facing, normal, frac);
-          const totalRads = ccwRadsBetween(segInit[id].facing, normal) + rolleeRotation;
+          const totalRads =
+            ccwRadsBetween(segInit[id].facing, normal) + rolleeRotation;
           return segInit[id].facing.rotateByRadians(totalRads * frac);
         },
         hands: (id, frac, draft) => {

@@ -2,6 +2,7 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import {
+  addOffsetToId,
   ALL_PROTO_IDS,
   type Beats,
   BeatsSchema,
@@ -11,13 +12,13 @@ import {
   type ProtoId,
   protoIdToDancerId,
 } from "../contraCore";
-import { EAST, NORTH, SOUTH, WEST } from "../geometry";
-import { assertNever } from "../utils";
+import { EAST, getDir, NORTH, SOUTH, WEST } from "../geometry";
+import { assertNever, parses } from "../utils";
 import {
-  CalledLabelSchema,
+  BasicLabelSchema,
   type DancerState,
   getDancerState,
-  resolveCalledLabel,
+  resolveBasicLabel,
   type WorldState,
 } from "../worldState";
 
@@ -81,7 +82,77 @@ export type InstructionAnimator<Instr> = (
   instr: Instr,
 ) => ContraAnimation;
 
-export const CalledDirectionSchema = z.enum([
+const DerivedLabelSchema = z.enum([
+  "opposite",
+  "next neighbor",
+  "next x2 neighbor",
+  "next x3 neighbor",
+  "prev neighbor",
+  "prev x2 neighbor",
+  "prev x3 neighbor",
+]);
+
+export const CalledLabelSchema = z.enum([
+  ...BasicLabelSchema.options,
+  ...DerivedLabelSchema.options,
+]);
+export type CalledLabel = z.infer<typeof CalledLabelSchema>;
+export function resolveCalledLabel(
+  label: CalledLabel,
+  id: DancerId,
+  protos: Record<ProtoId, DancerState>,
+): DancerId | null {
+  if (parses(BasicLabelSchema, label)) {
+    return resolveBasicLabel(label, id, protos);
+  }
+  switch (label) {
+    case "opposite": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return resolveBasicLabel("partner", neighbor, protos);
+    }
+    case "next neighbor": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return addOffsetToId(neighbor, 1);
+    }
+    case "next x2 neighbor": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return addOffsetToId(neighbor, 2);
+    }
+    case "next x3 neighbor": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return addOffsetToId(neighbor, 3);
+    }
+    case "prev neighbor": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return addOffsetToId(neighbor, -1);
+    }
+    case "prev x2 neighbor": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return addOffsetToId(neighbor, -2);
+    }
+    case "prev x3 neighbor": {
+      const neighbor = resolveBasicLabel("neighbor", id, protos);
+      if (!neighbor) return null;
+      return addOffsetToId(neighbor, -3);
+    }
+    default:
+      assertNever(label);
+  }
+}
+
+export const PositionBasedDirectionSchema = z.enum([
+  "across",
+  "out",
+  "up",
+  "down",
+]);
+export const FacingBasedDirectionSchema = z.enum([
   "on_right",
   "on_left",
   "in_front",
@@ -90,23 +161,27 @@ export const CalledDirectionSchema = z.enum([
   "right_diagonal",
   "larks_left_robins_right",
   "larks_right_robins_left",
-  "across",
-  "out",
-  "up",
-  "down",
-  // TODO: or, "towards your [label]"
+]);
+
+export const CalledDirectionSchema = z.enum([
+  ...PositionBasedDirectionSchema.options,
+  ...FacingBasedDirectionSchema.options,
+  ...CalledLabelSchema.options,
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
-export function isCalledDirection(
-  cid: CalledIdentifier,
-): cid is CalledDirection {
-  return CalledDirectionSchema.safeParse(cid).success;
-}
 export function resolveCalledDirection(
-  dir: CalledDirection,
   id: ProtoId,
+  dir: CalledDirection,
   protos: Record<ProtoId, DancerState>,
 ): Vector {
+  if (parses(CalledLabelSchema, dir)) {
+    const themId = resolveCalledLabel(dir, id, protos);
+    if (!themId) throw new Error(`${id} has no ${dir}`);
+    return getDir({
+      from: getDancerState(id, protos).pos,
+      to: getDancerState(themId, protos).pos,
+    });
+  }
   switch (dir) {
     case "on_right":
       return protos[id].facing.rotateByDegrees(-90);
@@ -148,13 +223,19 @@ export function resolveCalledIdentifier(
   protos: Record<ProtoId, DancerState>,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
-  if (isCalledDirection(cid)) {
-    return findDancerInCalledDirection(id, cid, protos, { roles });
-  }
-  const res = resolveCalledLabel(cid, id, protos);
+  if (parses(CalledLabelSchema, cid))
+    return resolveCalledLabel(cid, id, protos);
+  const dir = resolveCalledDirection(id, cid, protos);
+  const res = findDancerInDirection(protos, id, dir, { roles });
   if (!res) return null;
-  if (roles === 'same' && getRole(id) !== getRole(res)) throw new Error(`it's crazy to ask for somebody's ${cid} with the ${roles} role`);
-  if (roles === 'different' && getRole(id) === getRole(res)) throw new Error(`it's crazy to ask for somebody's ${cid} with the ${roles} role`);
+  if (roles === "same" && getRole(id) !== getRole(res))
+    throw new Error(
+      `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
+    );
+  if (roles === "different" && getRole(id) === getRole(res))
+    throw new Error(
+      `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
+    );
   return res;
 }
 
@@ -209,7 +290,7 @@ export function findDancerInCalledDirection(
   dancers: Record<ProtoId, DancerState>,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
-  const dir = resolveCalledDirection(side, id, dancers);
+  const dir = resolveCalledDirection(id, side, dancers);
   return findDancerInDirection(dancers, id, dir, { roles });
 }
 

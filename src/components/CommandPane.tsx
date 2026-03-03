@@ -55,6 +55,7 @@ import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
 import { DoSiDoFields } from "./fields/DoSiDoFields";
 import { DropHandsFields } from "./fields/DropHandsFields";
+import { FaceFields } from "./fields/FaceFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
 import { PassByFields } from "./fields/PassByFields";
@@ -89,6 +90,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "california_twirl",
   "form_short_waves",
   "roll_away",
+  "face",
   "split",
 ];
 const ACTION_LABELS: Record<string, string> = {
@@ -107,6 +109,7 @@ const ACTION_LABELS: Record<string, string> = {
   california_twirl: "California twirl",
   form_short_waves: "form short waves",
   roll_away: "roll away",
+  face: "face",
   split: "split",
 };
 
@@ -438,6 +441,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "drop_hands":
     case "form_short_waves":
     case "relabel":
+    case "face":
       return false;
     default:
       return assertNever(type);
@@ -562,6 +566,8 @@ function InlineForm({
             return <RollAwayFields {...common} instruction={instruction} />;
           case "step":
             return <StepFields {...common} instruction={instruction} />;
+          case "face":
+            return <FaceFields {...common} instruction={instruction} />;
           case "give_and_take_into_swing":
             return (
               <GiveAndTakeIntoSwingFields

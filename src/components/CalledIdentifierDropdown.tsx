@@ -6,10 +6,10 @@ import {
   resolveCalledIdentifier,
 } from "../instructions/_base";
 import { getDancerState } from "../worldState";
+import { calledIdentifierToText } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { CalledIdentifierHighlightContext } from "./RelationshipHighlightContext";
-import { calledIdentifierToText } from "./fieldUtils";
 
 export function CalledIdentifierDropdown({
   options,
