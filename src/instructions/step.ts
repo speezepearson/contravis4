@@ -26,7 +26,6 @@ export const StepInstructionSchema = z.object({
   direction: z.union([CalledDirectionSchema, CalledLabelSchema]),
   distance: z.number(),
   facing: z.union([CalledDirectionSchema, CalledLabelSchema]), // TODO: would be nice to be able to express "the direction towards the the person roughly on your right", which might not be exactly your right
-  facingOffset: z.number(),
 });
 export type StepInstruction = z.infer<typeof StepInstructionSchema>;
 
@@ -58,8 +57,7 @@ export const stepSegments =
         return lerpVectors(startPos, finalPos, frac);
       },
       facing: (id, frac, segInit) => {
-        const dir = getDirToCalledDirOrLabel(id, instr.facing, segInit);
-        const finalFacing = dir.rotateByDegrees(instr.facingOffset);
+        const finalFacing = getDirToCalledDirOrLabel(id, instr.facing, segInit);
         return lerpFacing(segInit[id].facing, finalFacing, frac);
       },
     },

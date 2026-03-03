@@ -22,7 +22,6 @@ export function StepFields({
       direction: instruction.direction,
       distance: instruction.distance,
       facing: instruction.facing,
-      facingOffset: instruction.facingOffset,
       ...overrides,
     };
     const result = InstructionSchema.safeParse(raw);

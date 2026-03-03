@@ -115,7 +115,6 @@ export function makeDefaultInstruction(
         direction: "in_front",
         distance: 0,
         facing: "across",
-        facingOffset: 0,
       } satisfies Instruction);
     case "give_and_take_into_swing":
       return InstructionSchema.parse({
