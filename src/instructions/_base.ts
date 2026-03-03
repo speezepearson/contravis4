@@ -7,6 +7,7 @@ import {
   BeatsSchema,
   type DancerId,
   getRelationship,
+  getRole,
   parseDancerId,
   parseProtoId,
   projectDancerIdToProtoId,
@@ -157,6 +158,7 @@ export function findDancerInDirection(
   protos: Record<ProtoId, DancerState>,
   id: ProtoId,
   dir: Vector,
+  {roles}: {roles?: 'same' | 'different'} = {},
 ): { id: DancerId; rel: Relationship } | null {
   dir = dir.normalize();
   const pos = protos[id].pos;
@@ -166,6 +168,10 @@ export function findDancerInDirection(
 
   for (const otherId of ALL_PROTO_IDS) {
     if (otherId === id) continue;
+    if (roles) {
+      if (roles === 'same' && getRole(otherId) === getRole(id)) continue;
+      if (roles === 'different' && getRole(otherId) !== getRole(id)) continue;
+    }
     const dyBase = protos[otherId].pos.y - pos.y;
     const oBest = Math.round(-dyBase / 2);
     for (let o = oBest - 2; o <= oBest + 2; o++) {
@@ -201,6 +207,7 @@ export function findDancerOnSide(
   id: ProtoId,
   side: DirectionalRelationship,
   dancers: Record<ProtoId, DancerState>,
+  {roles}: {roles?: 'same' | 'different'} = {},
 ): { id: DancerId; rel: Relationship } | null {
   const BIAS = (0.777 * PI) / 2; // ~70°, bias towards "in front"
   const lark = parseDancerId(id).role === "lark";
@@ -223,7 +230,7 @@ export function findDancerOnSide(
   const d = dancers[id];
   const heading = d.facing.rotateByRadians(angleOffset);
 
-  return findDancerInDirection(dancers, id, heading);
+  return findDancerInDirection(dancers, id, heading, { roles });
 }
 
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
