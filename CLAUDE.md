@@ -1,0 +1,1 @@
+- When you're done with a change, `npm run format && npm run lint -- --fix && npm run build`.

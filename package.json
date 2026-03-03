@@ -9,6 +9,7 @@
     "test": "vitest run",
     "lint": "eslint -f ./eslint-formatter-relative.js .",
     "lint:fix": "eslint --fix -f ./eslint-formatter-relative.js .",
+    "format": "prettier --write . --log-level=warn",
     "preview": "vite preview"
   },
   "dependencies": {
