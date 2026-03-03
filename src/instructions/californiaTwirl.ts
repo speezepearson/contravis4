@@ -35,7 +35,7 @@ export const californiaTwirlSegments =
             to: getDancerState(matches[id], segInit).pos,
           }).rotateByDegrees(90 * (myRole === "lark" ? 1 : -1));
         }),
-        hands: (id, _frac, _segInit, draft) => {
+        hands: (id, _frac, draft) => {
           const twirlHand = isLark(id) ? "right" : "left";
           connectHands(draft, id, twirlHand, matches[id], otherHand(twirlHand));
         },

@@ -87,9 +87,9 @@ export const allemandeSegments = (
             to: getDancerState(matches[id], segInit).pos,
           });
         }),
-        hands: (id, _frac, segInit, draft) => {
+        hands: (id, _frac, draft) => {
           const me = getDancerState(id, draft);
-          const them = getDancerState(matches[id], segInit);
+          const them = getDancerState(matches[id], draft);
           if (me.pos.subtract(them.pos).length() < 1) {
             connectHands(
               draft,
@@ -105,7 +105,7 @@ export const allemandeSegments = (
         dur: circlingBeats,
         position: orbit(instr.cid, { radians: numAllemandeRadians }),
         facing: rotateFacingBy(() => numAllemandeRadians),
-        hands: (id, _frac, _segInit, draft) => {
+        hands: (id, _frac, draft) => {
           connectHands(
             draft,
             id,

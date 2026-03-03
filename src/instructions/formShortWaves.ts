@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
-import { connectHands } from "../worldState";
+import { buildProtoRecord, connectHands } from "../worldState";
 import {
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
@@ -55,14 +55,21 @@ export const formShortWavesSegments =
       }
     }
 
+    const onLeft = buildProtoRecord((id) =>
+      findDancerInCalledDirection(id, "on_left", init),
+    );
+    const onRight = buildProtoRecord((id) =>
+      findDancerInCalledDirection(id, "on_right", init),
+    );
+
     return [
       {
         dur: 0,
         position: (id) => positions.get(id)!,
         facing: (id) => facings.get(id)!,
-        hands: (id, _frac, segInit, draft) => {
-          const left = findDancerInCalledDirection(id, "on_left", segInit);
-          const right = findDancerInCalledDirection(id, "on_right", segInit);
+        hands: (id, _frac, draft) => {
+          const left = onLeft[id];
+          const right = onRight[id];
           if (left) connectHands(draft, id, "left", left, "left");
           if (right) connectHands(draft, id, "right", right, "right");
         },

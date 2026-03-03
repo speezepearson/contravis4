@@ -11,6 +11,7 @@ import {
 import { avgPos, lerpVectors } from "../utils";
 import {
   buildProtoRecord,
+  connectHands,
   getDancerState,
   type WorldState,
 } from "../worldState";
@@ -21,12 +22,7 @@ import {
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import {
-  disconnect,
-  holdByRole,
-  type Segment,
-  type SegmentAnimator,
-} from "./_segment";
+import { disconnect, type Segment, type SegmentAnimator } from "./_segment";
 
 export const SwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -131,11 +127,6 @@ export function makeSwingSegments(
   );
   const swingBeats = instr.beats - approachBeats - DISENGAGE_BEATS;
 
-  const swingHands = holdByRole({
-    lark: ["right", instr.cid, "left"],
-    robin: ["left", instr.cid, "right"],
-  });
-
   return [
     {
       dur: approachBeats,
@@ -156,7 +147,14 @@ export function makeSwingSegments(
         plans[id].postApproach.facing.rotateByRadians(
           plans[id].numSwingRadians * frac,
         ),
-      hands: swingHands,
+      hands: (id, _frac, draft) =>
+        connectHands(
+          draft,
+          id,
+          isLark(id) ? "right" : "left",
+          matches[id],
+          isLark(id) ? "left" : "right",
+        ),
     },
     {
       dur: DISENGAGE_BEATS,
@@ -169,7 +167,14 @@ export function makeSwingSegments(
             TWO_PI) *
             frac,
         ),
-      hands: swingHands,
+      hands: (id, _frac, draft) =>
+        connectHands(
+          draft,
+          id,
+          isLark(id) ? "right" : "left",
+          matches[id],
+          isLark(id) ? "left" : "right",
+        ),
     },
   ];
 }

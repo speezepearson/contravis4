@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
 import { TWO_PI } from "../geometry";
-import { buildProtoRecord, connectHands, getDancerState } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { connectHands, getDancerState } from "../worldState";
+import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import {
   disconnect,
   linearTo,
@@ -22,13 +22,12 @@ export type RoryOMoreInstruction = z.infer<typeof RoryOMoreInstructionSchema>;
 export const roryOMoreSegments =
   (instr: RoryOMoreInstruction): SegmentAnimator =>
   (init) => {
-    const partners = buildProtoRecord((id) => {
-      const holding = init[id].hands.get(instr.direction);
-      if (!holding) {
-        throw new Error(`${id} has no one in their ${instr.direction} hand`);
-      }
-      return holding.theirId;
-    });
+    const matches = resolveMatches(
+      ({ left: "in left hand", right: "in right hand" } as const)[
+        instr.direction
+      ],
+      init,
+    );
 
     // CW for right, CCW for left
     const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
@@ -40,16 +39,15 @@ export const roryOMoreSegments =
       },
       {
         dur: instr.beats,
-        position: linearTo((id) => getDancerState(partners[id], init).pos),
+        position: linearTo((id) => getDancerState(matches[id], init).pos),
         facing: rotateFacingBy(() => rotationRadians),
-        hands: (id, frac, segInit, draft) => {
+        hands: (id, frac, draft) => {
           if (frac < 1) return;
-          const partnerId = partners[id];
-          const me = segInit[id];
-          const them = getDancerState(partnerId, segInit);
+          const me = draft[id];
+          const them = getDancerState(matches[id], draft);
           const myHand = resolveInsideHand(me, them);
           const theirHand = resolveInsideHand(them, me);
-          connectHands(draft, id, myHand, partnerId, theirHand);
+          connectHands(draft, id, myHand, matches[id], theirHand);
         },
       },
     ];

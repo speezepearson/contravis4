@@ -31,7 +31,7 @@ export const courtesyTurnSegments =
           return revolve(myPos, { around: center, radians: PI * frac });
         },
         facing: rotateFacingBy(() => PI),
-        hands: (id, _frac, _segInit, draft) => {
+        hands: (id, _frac, draft) => {
           connectHands(draft, id, "left", matches[id], "left");
           connectHands(draft, id, "right", matches[id], "right");
         },

@@ -1,15 +1,14 @@
 import { z } from "zod";
 
 import { ALL_HANDS } from "../contraCore";
-import { must } from "../utils";
 import { disconnectHands } from "../worldState";
 import {
   type CalledIdentifier,
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveCalledIdentifier,
+  resolveMatches,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { disconnect, type SegmentAnimator } from "./_segment";
 
 export const DropHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -21,33 +20,29 @@ export type DropHandsInstruction = z.infer<typeof DropHandsInstructionSchema>;
 
 export const dropHandsSegments =
   (instr: DropHandsInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: 0,
-      hands: (id, _frac, segInit, draft) => {
-        switch (instr.which) {
-          case "left":
-            disconnectHands(draft, id, "left");
-            break;
-          case "right":
-            disconnectHands(draft, id, "right");
-            break;
-          case "both":
-            disconnectHands(draft, id);
-            break;
-          default: {
-            instr.which satisfies CalledIdentifier;
-            const theirId = must(
-              resolveCalledIdentifier(id, instr.which, segInit),
-            );
-            for (const hand of ALL_HANDS) {
-              if (draft[id].hands.get(hand)?.theirId === theirId) {
-                disconnectHands(draft, id, hand);
+  (init) => {
+    switch (instr.which) {
+      case "left":
+        return [{ dur: 0, hands: disconnect("left") }];
+      case "right":
+        return [{ dur: 0, hands: disconnect("right") }];
+      case "both":
+        return [{ dur: 0, hands: disconnect() }];
+      default: {
+        instr.which satisfies CalledIdentifier;
+        const matches = resolveMatches(instr.which, init);
+        return [
+          {
+            dur: 0,
+            hands: (id, _frac, draft) => {
+              for (const hand of ALL_HANDS) {
+                if (draft[id].hands.get(hand)?.theirId === matches[id]) {
+                  disconnectHands(draft, id, hand);
+                }
               }
-            }
-            break;
-          }
-        }
-      },
-    },
-  ];
+            },
+          },
+        ];
+      }
+    }
+  };

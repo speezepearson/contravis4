@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 import { type Hand } from "../contraCore";
-import { assertNever, must } from "../utils";
+import { assertNever } from "../utils";
 import { connectHands, type DancerState, getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveCalledIdentifier,
+  resolveMatches,
 } from "./_base";
 import { type SegmentAnimator } from "./_segment";
 
@@ -40,27 +40,30 @@ export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
 
 export const takeHandsSegments =
   (instr: TakeHandsInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: 0,
-      hands: (id, _frac, segInit, draft) => {
-        const otherId = must(resolveCalledIdentifier(id, instr.cid, segInit));
-        const other = getDancerState(otherId, segInit);
-        switch (instr.hand) {
-          case "left":
-            connectHands(draft, id, "left", otherId, "left");
-            break;
-          case "right":
-            connectHands(draft, id, "right", otherId, "right");
-            break;
-          case "inside": {
-            const ourHand = resolveInsideHand(draft[id], other);
-            connectHands(draft, id, ourHand, otherId, ourHand);
-            break;
+  (init) => {
+    const matches = resolveMatches(instr.cid, init);
+    return [
+      {
+        dur: 0,
+        hands: (id, _frac, draft) => {
+          const otherId = matches[id];
+          const other = getDancerState(otherId, draft);
+          switch (instr.hand) {
+            case "left":
+              connectHands(draft, id, "left", otherId, "left");
+              break;
+            case "right":
+              connectHands(draft, id, "right", otherId, "right");
+              break;
+            case "inside": {
+              const ourHand = resolveInsideHand(draft[id], other);
+              connectHands(draft, id, ourHand, otherId, ourHand);
+              break;
+            }
+            default:
+              assertNever(instr.hand);
           }
-          default:
-            assertNever(instr.hand);
-        }
+        },
       },
-    },
-  ];
+    ];
+  };

@@ -20,11 +20,11 @@ export type RelabelInstruction = z.infer<typeof RelabelInstructionSchema>;
 
 export const relabelSegments =
   (instr: RelabelInstruction): SegmentAnimator =>
-  () => [
+  (init) => [
     {
       dur: 0,
-      labels: (id, _frac, segInit, draft) => {
-        const theirId = must(resolveCalledIdentifier(id, instr.cid, segInit));
+      labels: (id, _frac, draft) => {
+        const theirId = must(resolveCalledIdentifier(id, instr.cid, init));
         draft[id].labels.set(instr.label, theirId);
       },
     },
