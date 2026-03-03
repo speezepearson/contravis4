@@ -43,7 +43,9 @@ const { animation, error } = generateDanceAnimation(
 );
 
 if (error) {
-  console.error(`Generation error at instruction ${error.instructionId}: ${error.message}`);
+  console.error(
+    `Generation error at instruction ${error.instructionId}: ${error.message}`,
+  );
 }
 
 if (!animation) {
