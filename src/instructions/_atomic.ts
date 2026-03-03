@@ -50,8 +50,8 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   RollAwayInstructionSchema,
   StepInstructionSchema,
   SwingInstructionSchema,
-  TakeHandsInstructionSchema,
   TakeHandsInRingsInstructionSchema,
+  TakeHandsInstructionSchema,
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
@@ -76,9 +76,9 @@ export const atomicSegmentAnimators: {
   relabel: relabelSegments,
   roll_away: rollAwaySegments,
   step: stepSegments,
-  take_hands: takeHandsSegments,
-  take_hands_in_rings: takeHandsInRingsSegments,
   swing: swingSegments,
+  take_hands_in_rings: takeHandsInRingsSegments,
+  take_hands: takeHandsSegments,
 };
 
 export function makeAtomicSegmentAnimator(

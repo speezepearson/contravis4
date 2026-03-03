@@ -1,3 +1,5 @@
+import type z from "zod";
+
 import type { Role } from "../contraCore";
 import {
   type CalledDirection,
@@ -24,155 +26,114 @@ export function makeDefaultInstruction(
   type: ActionOptionType,
   id: InstructionId,
 ): Instruction {
-  switch (type) {
-    case "take_hands":
-      return InstructionSchema.parse({
-        id,
-        type: "take_hands",
-        beats: 0,
-        cid: "neighbor",
-        hand: "right",
-      } satisfies Instruction);
-    case "drop_hands":
-      return InstructionSchema.parse({
-        id,
-        type: "drop_hands",
-        beats: 0,
-        which: "both",
-      } satisfies Instruction);
-    case "allemande":
-      return InstructionSchema.parse({
-        id,
-        type: "allemande",
-        beats: 8,
-        cid: "neighbor",
-        handedness: "right",
-        rotations: 1,
-      } satisfies Instruction);
-    case "balance":
-      return InstructionSchema.parse({
-        id,
-        type: "balance",
-        beats: 4,
-        cid: "neighbor",
-      } satisfies Instruction);
-    case "swing":
-      return InstructionSchema.parse({
-        id,
-        type: "swing",
-        beats: 16,
-        cid: "neighbor",
-        endFacing: "across",
-      } satisfies Instruction);
-    case "box_the_gnat":
-      return InstructionSchema.parse({
-        id,
-        type: "box_the_gnat",
-        beats: 4,
-        cid: "neighbor",
-      } satisfies Instruction);
-    case "california_twirl":
-      return InstructionSchema.parse({
-        id,
-        type: "california_twirl",
-        beats: 4,
-        cid: "partner",
-      } satisfies Instruction);
-    case "form_short_waves":
-      return InstructionSchema.parse({
-        id,
-        type: "form_short_waves",
-        beats: 0,
-      } satisfies Instruction);
-    case "do_si_do":
-      return InstructionSchema.parse({
-        id,
-        type: "do_si_do",
-        beats: 8,
-        cid: "neighbor",
-        rotations: 1,
-      } satisfies Instruction);
-    case "pass_by":
-      return InstructionSchema.parse({
-        id,
-        type: "pass_by",
-        beats: 2,
-        cid: "neighbor",
-        hand: "right",
-      } satisfies Instruction);
-    case "pull_by":
-      return InstructionSchema.parse({
-        id,
-        type: "pull_by",
-        beats: 2,
-        cid: "neighbor",
-        hand: "right",
-      } satisfies Instruction);
-    case "step":
-      return InstructionSchema.parse({
-        id,
-        type: "step",
-        beats: 1,
-        direction: "in_front",
-        distance: 0,
-        facing: "across",
-      } satisfies Instruction);
-    case "give_and_take_into_swing":
-      return InstructionSchema.parse({
-        id,
-        type: "give_and_take_into_swing",
-        beats: 16,
-        cid: "neighbor",
-        drawerRole: "lark",
-        endFacing: "across",
-      } satisfies Instruction);
-    case "split":
-      return InstructionSchema.parse({
-        id,
-        type: "split",
-        by: "role",
-        larks: [],
-        robins: [],
-      } satisfies Instruction);
-    case "relabel":
-      return InstructionSchema.parse({
-        id,
-        type: "relabel",
-        beats: 0,
-        label: "neighbor",
-        cid: "in_front",
-      } satisfies Instruction);
-    case "roll_away":
-      return InstructionSchema.parse({
-        id,
-        type: "roll_away",
-        roller: "lark",
-        rollee: "on_right",
-      });
-    case "face":
-      return InstructionSchema.parse({
-        id,
-        type: "face",
-        beats: 0,
-        direction: "across",
-      } satisfies Instruction);
-    case "take_hands_in_rings":
-      return InstructionSchema.parse({
-        id,
-        type: "take_hands_in_rings",
-        beats: 0,
-      } satisfies Instruction);
-    case "circle":
-      return InstructionSchema.parse({
-        id,
-        type: "circle",
-        beats: 8,
-        direction: "left",
-        rotations: 1,
-      } satisfies Instruction);
-    default:
-      assertNever(type);
-  }
+  const unverified = ((): z.input<typeof InstructionSchema> => {
+    switch (type) {
+      case "allemande":
+        return {
+          id,
+          type: "allemande",
+          beats: 8,
+          cid: "neighbor",
+          handedness: "right",
+          rotations: 1,
+        };
+      case "balance":
+        return { id, type: "balance", beats: 4, cid: "neighbor" };
+      case "box_the_gnat":
+        return { id, type: "box_the_gnat", beats: 4, cid: "neighbor" };
+      case "california_twirl":
+        return { id, type: "california_twirl", beats: 4, cid: "partner" };
+      case "circle":
+        return {
+          id,
+          type: "circle",
+          beats: 8,
+          direction: "left",
+          rotations: 1,
+        };
+      case "do_si_do":
+        return {
+          id,
+          type: "do_si_do",
+          beats: 8,
+          cid: "neighbor",
+          rotations: 1,
+        };
+      case "drop_hands":
+        return { id, type: "drop_hands", beats: 0, which: "both" };
+      case "face":
+        return { id, type: "face", beats: 0, direction: "across" };
+      case "form_short_waves":
+        return { id, type: "form_short_waves", beats: 0 };
+      case "give_and_take_into_swing":
+        return {
+          id,
+          type: "give_and_take_into_swing",
+          beats: 16,
+          cid: "neighbor",
+          drawerRole: "lark",
+          endFacing: "across",
+        };
+      case "pass_by":
+        return {
+          id,
+          type: "pass_by",
+          beats: 2,
+          cid: "neighbor",
+          hand: "right",
+        };
+      case "pull_by":
+        return {
+          id,
+          type: "pull_by",
+          beats: 2,
+          cid: "neighbor",
+          hand: "right",
+        };
+      case "relabel":
+        return {
+          id,
+          type: "relabel",
+          beats: 0,
+          label: "neighbor",
+          cid: "in_front",
+        };
+      case "roll_away":
+        return { id, type: "roll_away", roller: "lark", rollee: "on_right" };
+      case "split":
+        return { id, type: "split", by: "role", larks: [], robins: [] };
+      case "step":
+        return {
+          id,
+          type: "step",
+          beats: 1,
+          direction: "in_front",
+          distance: 0,
+          facing: "across",
+        };
+      case "swing":
+        return {
+          id,
+          type: "swing",
+          beats: 16,
+          cid: "neighbor",
+          endFacing: "across",
+        };
+      case "take_hands_in_rings":
+        return { id, type: "take_hands_in_rings", beats: 0 };
+      case "take_hands":
+        return {
+          id,
+          type: "take_hands",
+          beats: 0,
+          cid: "neighbor",
+          hand: "right",
+        };
+      default:
+        assertNever(type);
+    }
+  })();
+  return InstructionSchema.parse(unverified);
 }
 
 export function makeInstructionId(): InstructionId {

@@ -74,49 +74,49 @@ import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
 
-export type ActionOptionType = AtomicInstruction["type"] | "split";
+export type ActionOptionType = Instruction["type"];
 
 const ACTION_OPTIONS: ActionOptionType[] = [
-  "take_hands",
-  "take_hands_in_rings",
-  "drop_hands",
   "allemande",
-  "circle",
-  "do_si_do",
-  "pull_by",
-  "pass_by",
-  "relabel",
-  "step",
-  "swing",
-  "give_and_take_into_swing",
   "balance",
   "box_the_gnat",
   "california_twirl",
-  "form_short_waves",
-  "roll_away",
+  "circle",
+  "do_si_do",
+  "drop_hands",
   "face",
+  "form_short_waves",
+  "give_and_take_into_swing",
+  "pass_by",
+  "pull_by",
+  "relabel",
+  "roll_away",
   "split",
+  "step",
+  "swing",
+  "take_hands_in_rings",
+  "take_hands",
 ];
 const ACTION_LABELS: Record<string, string> = {
-  take_hands: "take hands",
-  take_hands_in_rings: "take hands in rings",
-  drop_hands: "drop hands",
   allemande: "allemande",
-  circle: "circle",
-  do_si_do: "do si do",
-  pass_by: "pass by",
-  pull_by: "pull by",
-  relabel: "relabel",
-  step: "step",
-  swing: "swing",
-  give_and_take_into_swing: "give & take into swing",
   balance: "balance",
   box_the_gnat: "box the gnat",
   california_twirl: "California twirl",
-  form_short_waves: "form short waves",
-  roll_away: "roll away",
+  circle: "circle",
+  do_si_do: "do si do",
+  drop_hands: "drop hands",
   face: "face",
+  form_short_waves: "form short waves",
+  give_and_take_into_swing: "give & take into swing",
+  pass_by: "pass by",
+  pull_by: "pull by",
+  relabel: "relabel",
+  roll_away: "roll away",
   split: "split",
+  step: "step",
+  swing: "swing",
+  take_hands_in_rings: "take hands in rings",
+  take_hands: "take hands",
 };
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
@@ -434,23 +434,22 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "allemande":
     case "balance":
     case "box_the_gnat":
+    case "california_twirl":
+    case "circle":
     case "do_si_do":
     case "give_and_take_into_swing":
-    case "pull_by":
     case "pass_by":
+    case "pull_by":
+    case "roll_away":
     case "step":
     case "swing":
-    case "california_twirl":
-    case "roll_away":
       return true;
-    case "circle":
-      return true;
-    case "take_hands":
-    case "take_hands_in_rings":
     case "drop_hands":
+    case "face":
     case "form_short_waves":
     case "relabel":
-    case "face":
+    case "take_hands_in_rings":
+    case "take_hands":
       return false;
     default:
       return assertNever(type);
@@ -543,16 +542,10 @@ function InlineForm({
       />
       {(() => {
         switch (instruction.type) {
-          case "take_hands":
-            return <TakeHandsFields {...common} instruction={instruction} />;
-          case "drop_hands":
-            return <DropHandsFields {...common} instruction={instruction} />;
           case "allemande":
             return <AllemandeFields {...common} instruction={instruction} />;
           case "balance":
             return <BalanceFields {...common} instruction={instruction} />;
-          case "swing":
-            return <SwingFields {...common} instruction={instruction} />;
           case "box_the_gnat":
             return <BoxTheGnatFields {...common} instruction={instruction} />;
           case "california_twirl":
@@ -561,28 +554,16 @@ function InlineForm({
             );
           case "circle":
             return <CircleFields {...common} instruction={instruction} />;
+          case "do_si_do":
+            return <DoSiDoFields {...common} instruction={instruction} />;
+          case "drop_hands":
+            return <DropHandsFields {...common} instruction={instruction} />;
+          case "face":
+            return <FaceFields {...common} instruction={instruction} />;
           case "form_short_waves":
             return (
               <FormShortWavesFields {...common} instruction={instruction} />
             );
-          case "take_hands_in_rings":
-            return (
-              <TakeHandsInRingsFields {...common} instruction={instruction} />
-            );
-          case "do_si_do":
-            return <DoSiDoFields {...common} instruction={instruction} />;
-          case "pull_by":
-            return <PullByFields {...common} instruction={instruction} />;
-          case "pass_by":
-            return <PassByFields {...common} instruction={instruction} />;
-          case "relabel":
-            return <RelabelFields {...common} instruction={instruction} />;
-          case "roll_away":
-            return <RollAwayFields {...common} instruction={instruction} />;
-          case "step":
-            return <StepFields {...common} instruction={instruction} />;
-          case "face":
-            return <FaceFields {...common} instruction={instruction} />;
           case "give_and_take_into_swing":
             return (
               <GiveAndTakeIntoSwingFields
@@ -590,8 +571,26 @@ function InlineForm({
                 instruction={instruction}
               />
             );
+          case "pass_by":
+            return <PassByFields {...common} instruction={instruction} />;
+          case "pull_by":
+            return <PullByFields {...common} instruction={instruction} />;
+          case "relabel":
+            return <RelabelFields {...common} instruction={instruction} />;
+          case "roll_away":
+            return <RollAwayFields {...common} instruction={instruction} />;
           case "split":
             return <SplitFields {...common} instruction={instruction} />;
+          case "step":
+            return <StepFields {...common} instruction={instruction} />;
+          case "swing":
+            return <SwingFields {...common} instruction={instruction} />;
+          case "take_hands_in_rings":
+            return (
+              <TakeHandsInRingsFields {...common} instruction={instruction} />
+            );
+          case "take_hands":
+            return <TakeHandsFields {...common} instruction={instruction} />;
           default:
             assertNever(instruction);
         }

@@ -9,35 +9,6 @@ import { getSplitDuration, SplitSchema } from "./split";
 
 export { type InstructionId, InstructionIdSchema } from "./_base";
 
-export const ActionTypeSchema = z.enum([
-  "take_hands",
-  "take_hands_in_rings",
-  "drop_hands",
-  "allemande",
-  "do_si_do",
-  "circle",
-  "pull_by",
-  "pass_by",
-  "step",
-  "balance",
-  "swing",
-  "box_the_gnat",
-  "give_and_take_into_swing",
-  "mad_robin",
-  "turn_alone",
-  "california_twirl",
-  "turn_as_a_couple",
-  "right_left_through",
-  "square_through",
-  "courtesy_turn",
-  "roll_away",
-  "shoulder_round",
-  "short_waves",
-  "long_waves",
-  "long_lines",
-]);
-export type ActionType = z.infer<typeof ActionTypeSchema>;
-
 export const InstructionSchema = z.discriminatedUnion("type", [
   AtomicInstructionSchema,
   SplitSchema,

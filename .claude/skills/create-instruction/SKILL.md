@@ -134,17 +134,7 @@ export const atomicSegmentAnimators = {
 };
 ```
 
-## 3. Add to `ActionTypeSchema` in `src/instructions/index.ts`
-
-```ts
-export const ActionTypeSchema = z.enum([
-  // ...existing entries...
-  "foo",
-  // ...
-]);
-```
-
-## 4. Field component: `src/components/fields/FooFields.tsx`
+## 3. Field component: `src/components/fields/FooFields.tsx`
 
 ```tsx
 import type { AtomicInstruction } from "../../instructions/_atomic";
@@ -187,17 +177,17 @@ Available UI components: `InlineDropdown` (from `../InlineDropdown`), `InlineNum
 
 Common field option constants from `../fieldUtils`: `ROLE_OPTIONS`, `HAND_OPTIONS`, `TAKE_HAND_OPTIONS`.
 
-## 5. Wire into `src/components/CommandPane.tsx`
+## 4. Wire into `src/components/CommandPane.tsx`
 
 Four changes:
 
-### 5a. Import the field component
+### 4a. Import the field component
 
 ```ts
 import { FooFields } from "./fields/FooFields";
 ```
 
-### 5b. Add to `ACTION_OPTIONS` array and `ACTION_LABELS` object
+### 4b. Add to `ACTION_OPTIONS` array and `ACTION_LABELS` object
 
 ```ts
 const ACTION_OPTIONS: ActionOptionType[] = [
@@ -211,18 +201,18 @@ const ACTION_LABELS: Record<string, string> = {
 };
 ```
 
-### 5c. Add to `doesRequireBeatsInput` switch
+### 4c. Add to `doesRequireBeatsInput` switch
 
 Return `true` if the user should be able to edit beats in the UI, `false` for zero-beat instructions like `relabel` or `drop_hands`.
 
-### 5d. Add render case to the instruction fields switch
+### 4d. Add render case to the instruction fields switch
 
 ```tsx
 case "foo":
   return <FooFields {...common} instruction={instruction} />;
 ```
 
-## 6. Wire into `src/components/fieldUtils.ts`
+## 5. Wire into `src/components/fieldUtils.ts`
 
 Add a case to `makeDefaultInstruction`:
 
