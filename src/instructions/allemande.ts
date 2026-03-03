@@ -1,4 +1,3 @@
-import { produce } from "immer";
 import { z } from "zod";
 
 import {
@@ -6,20 +5,16 @@ import {
   RelationshipSchema,
   resolveRelationship,
 } from "../contraCore";
-import {
-  ellipsePosition,
-  getDir,
-  lerpFacing,
-  PI,
-  revolve,
-  TWO_PI,
-} from "../geometry";
+import { getDir, PI, TWO_PI } from "../geometry";
 import { connectHands, getDancerState } from "../worldState";
+import { type Animator, instructionBaseSchemaFields } from "./_base";
 import {
-  type Animator,
-  chainAnimators,
-  instructionBaseSchemaFields,
-} from "./_base";
+  arc,
+  lerpFacingTo,
+  makeAnimation,
+  orbit,
+  rotateFacingBy,
+} from "./_segment";
 
 export const AllemandeInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -40,70 +35,35 @@ export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  return chainAnimators([
-    (init, who) => ({
-      dur: approachBeats,
-      getFrame(t) {
-        return produce(init, (draft) => {
-          const progressFrac = t / approachBeats;
-          for (const id of who) {
-            const start = getDancerState(id, init).pos;
-            const counterpartStart = getDancerState(
-              resolveRelationship(id, instr.relationship),
-              init,
-            ).pos;
-            draft[id].pos = ellipsePosition(
-              start,
-              counterpartStart,
-              -ALLEMANDE_RADIUS * rotationSign,
-              APPROACH_ELLIPSE_RADIANS * progressFrac,
-            );
-            draft[id].facing = lerpFacing(
-              init[id].facing,
-              getDir({ from: start, to: counterpartStart }),
-              progressFrac,
-            );
-          }
-          for (const id of who) {
-            const me = getDancerState(id, init);
-            const them = getDancerState(
-              resolveRelationship(id, instr.relationship),
-              init,
-            );
-            if (me.pos.subtract(them.pos).length() < 1) {
-              connectHands(
-                draft,
-                id,
-                instr.handedness,
-                instr.relationship,
-                instr.handedness,
-              );
-            }
-          }
-        });
-      },
-    }),
-    (init, who) => ({
-      dur: circlingBeats,
-      getFrame(t) {
-        return produce(init, (draft) => {
-          const progressFrac = t / circlingBeats;
-          for (const id of who) {
-            const center = getDancerState(id, init)
-              .pos.add(
-                getDancerState(
-                  resolveRelationship(id, instr.relationship),
-                  init,
-                ).pos,
-              )
-              .divide(2);
-            draft[id].pos = revolve(draft[id].pos, {
-              around: center,
-              radians: numAllemandeRadians * progressFrac,
-            });
-            draft[id].facing = draft[id].facing.rotateByRadians(
-              numAllemandeRadians * progressFrac,
-            );
+  return (init, who) => {
+    const closeEnoughForHands = new Set<string>();
+    for (const id of who) {
+      const me = getDancerState(id, init);
+      const them = getDancerState(
+        resolveRelationship(id, instr.relationship),
+        init,
+      );
+      if (me.pos.subtract(them.pos).length() < 1) {
+        closeEnoughForHands.add(id);
+      }
+    }
+
+    return makeAnimation(init, who, [
+      {
+        dur: approachBeats,
+        position: arc(instr.relationship, {
+          semiMinor: -ALLEMANDE_RADIUS * rotationSign,
+          phi: APPROACH_ELLIPSE_RADIANS,
+        }),
+        facing: lerpFacingTo((id, segInit) => {
+          const them = resolveRelationship(id, instr.relationship);
+          return getDir({
+            from: segInit[id].pos,
+            to: getDancerState(them, segInit).pos,
+          });
+        }),
+        hands: (id, _frac, draft) => {
+          if (closeEnoughForHands.has(id)) {
             connectHands(
               draft,
               id,
@@ -112,8 +72,22 @@ export const allemandeAnimator = (instr: AllemandeInstruction): Animator => {
               instr.handedness,
             );
           }
-        });
+        },
       },
-    }),
-  ]);
+      {
+        dur: circlingBeats,
+        position: orbit(instr.relationship, { radians: numAllemandeRadians }),
+        facing: rotateFacingBy(() => numAllemandeRadians),
+        hands: (id, _frac, draft) => {
+          connectHands(
+            draft,
+            id,
+            instr.handedness,
+            instr.relationship,
+            instr.handedness,
+          );
+        },
+      },
+    ]);
+  };
 };

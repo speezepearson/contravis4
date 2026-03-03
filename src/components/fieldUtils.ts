@@ -80,6 +80,7 @@ export function makeDefaultInstruction(
         id,
         type: "california_twirl",
         beats: 4,
+        relationship: { base: "partner", offset: 0 },
       });
     case "form_short_waves":
       return InstructionSchema.parse({

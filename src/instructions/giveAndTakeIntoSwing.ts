@@ -1,4 +1,3 @@
-import { produce } from "immer";
 import { z } from "zod";
 
 import {
@@ -7,17 +6,21 @@ import {
   resolveRelationship,
   RoleSchema,
 } from "../contraCore";
-import { EAST, getDir, lerpFacing, WEST } from "../geometry";
-import { lerpVectors } from "../utils";
+import { EAST, getDir, WEST } from "../geometry";
 import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   type Animator,
   CardinalDirectionSchema,
-  chainAnimations,
-  type ContraAnimation,
   instructionBaseSchemaFields,
 } from "./_base";
-import { swingAnimator } from "./swing";
+import {
+  addPositionDrift,
+  evaluateSegmentEnd,
+  lerpFacingTo,
+  linearTo,
+  makeAnimation,
+} from "./_segment";
+import { makeSwingSegments } from "./swing";
 
 export const GiveAndTakeIntoSwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -38,11 +41,9 @@ export const giveAndTakeIntoSwingAnimator =
 
     const plans = buildProtoRecord((id) => {
       const amDrawer = parseProtoId(id).role === instr.drawerRole;
-      const me = getDancerState(id, init);
       const themId = resolveRelationship(id, instr.relationship);
-      const [drawerId, draweeId] = amDrawer ? [id, themId] : [themId, id];
-      const drawer = getDancerState(drawerId, init);
-      const drawee = getDancerState(draweeId, init);
+      const drawer = getDancerState(amDrawer ? id : themId, init);
+      const drawee = getDancerState(amDrawer ? themId : id, init);
 
       const postApproachDrawerPos = drawer.pos;
       const postApproachDraweePos = drawer.pos.add(drawee.pos).divide(2);
@@ -62,7 +63,7 @@ export const giveAndTakeIntoSwingAnimator =
           pos: amDrawer ? postApproachDrawerPos : postApproachDraweePos,
           facing: getDir(
             amDrawer
-              ? { from: me.pos, to: postApproachDraweePos }
+              ? { from: drawer.pos, to: postApproachDraweePos }
               : { from: postApproachDraweePos, to: drawer.pos },
           ),
           com: postApproachCoM,
@@ -73,53 +74,31 @@ export const giveAndTakeIntoSwingAnimator =
       };
     });
 
-    const approach: ContraAnimation = {
+    const approachSegment = {
       dur: approachDur,
-      getFrame(t) {
-        return produce(init, (draft) => {
-          const progressFrac = t / approachDur;
-          for (const id of who) {
-            if (parseProtoId(id).role === instr.drawerRole) continue;
-            draft[id].pos = lerpVectors(
-              init[id].pos,
-              plans[id].postApproach.pos,
-              progressFrac,
-            );
-            draft[id].facing = lerpFacing(
-              init[id].facing,
-              plans[id].postApproach.facing,
-              progressFrac,
-            );
-          }
-        });
-      },
+      position: linearTo((id) => plans[id].postApproach.pos),
+      facing: lerpFacingTo((id) => plans[id].postApproach.facing),
     };
 
-    const postApproach = approach.getFrame(approachDur);
+    const postApproach = evaluateSegmentEnd(approachSegment, init, who);
 
-    const naiveSwing: ContraAnimation = swingAnimator({
-      id: instr.id,
-      type: "swing",
-      beats: swingDur,
-      endFacing: instr.endFacing,
-      relationship: instr.relationship,
-    })(postApproach, who);
-
-    return chainAnimations([
-      approach,
+    const swingSegments = makeSwingSegments(
       {
-        dur: swingDur,
-        getFrame(t) {
-          return produce(naiveSwing.getFrame(t), (draft) => {
-            const progressFrac = t / swingDur;
-            for (const id of who) {
-              const drift = plans[id].final.com
-                .subtract(plans[id].postApproach.com)
-                .multiply(progressFrac);
-              draft[id].pos = draft[id].pos.add(drift);
-            }
-          });
-        },
+        id: instr.id,
+        type: "swing",
+        beats: swingDur,
+        endFacing: instr.endFacing,
+        relationship: instr.relationship,
       },
-    ]);
+      postApproach,
+      who,
+    );
+
+    const driftedSwingSegments = addPositionDrift(swingSegments, (id, globalFrac) =>
+      plans[id].final.com
+        .subtract(plans[id].postApproach.com)
+        .multiply(globalFrac),
+    );
+
+    return makeAnimation(init, who, [approachSegment, ...driftedSwingSegments]);
   };
