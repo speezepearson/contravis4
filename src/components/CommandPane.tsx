@@ -27,6 +27,7 @@ import {
 import { z } from "zod";
 
 import type { ProtoId } from "../contraCore";
+import { sortedExampleDances } from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
 import {
@@ -979,8 +980,33 @@ export default memo(function CommandPane({
     );
   }
 
+  const dances = useMemo(() => sortedExampleDances(import.meta.env.DEV), []);
+
+  function handleLoadDance(filename: string) {
+    const entry = dances.find((d) => d.filename === filename);
+    if (!entry) return;
+    setInitFormation(entry.dance.initFormation);
+    setInstructions(entry.dance.instructions);
+  }
+
   return (
     <div className="command-pane">
+      {dances.length > 0 && (
+        <div className="dance-loader">
+          <label>Load dance: </label>
+          <select value="" onChange={(e) => handleLoadDance(e.target.value)}>
+            <option value="" disabled>
+              Select a dance...
+            </option>
+            {dances.map((d) => (
+              <option key={d.filename} value={d.filename}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="formation-selector">
         <label>Formation: </label>
         <InlineDropdown
