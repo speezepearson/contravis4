@@ -2,15 +2,15 @@ import { z } from "zod";
 
 import { type Animator } from "./_base";
 import { type SegmentAnimator, toAnimator } from "./_segment";
-import { AllemandeInstructionSchema,allemandeSegments } from "./allemande";
-import { BalanceInstructionSchema,balanceSegments } from "./balance";
-import { BoxTheGnatInstructionSchema,boxTheGnatSegments } from "./boxTheGnat";
+import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
+import { BalanceInstructionSchema, balanceSegments } from "./balance";
+import { BoxTheGnatInstructionSchema, boxTheGnatSegments } from "./boxTheGnat";
 import {
   CaliforniaTwirlInstructionSchema,
   californiaTwirlSegments,
 } from "./californiaTwirl";
-import { DoSiDoInstructionSchema,doSiDoSegments } from "./doSiDo";
-import { DropHandsInstructionSchema,dropHandsSegments } from "./dropHands";
+import { DoSiDoInstructionSchema, doSiDoSegments } from "./doSiDo";
+import { DropHandsInstructionSchema, dropHandsSegments } from "./dropHands";
 import {
   FormShortWavesInstructionSchema,
   formShortWavesSegments,
@@ -19,11 +19,11 @@ import {
   GiveAndTakeIntoSwingInstructionSchema,
   giveAndTakeIntoSwingSegments,
 } from "./giveAndTakeIntoSwing";
-import { PassByInstructionSchema,passBySegments } from "./passBy";
-import { PullByInstructionSchema,pullBySegments } from "./pullBy";
-import { StepInstructionSchema,stepSegments } from "./step";
-import { SwingInstructionSchema,swingSegments } from "./swing";
-import { TakeHandsInstructionSchema,takeHandsSegments } from "./takeHands";
+import { PassByInstructionSchema, passBySegments } from "./passBy";
+import { PullByInstructionSchema, pullBySegments } from "./pullBy";
+import { StepInstructionSchema, stepSegments } from "./step";
+import { SwingInstructionSchema, swingSegments } from "./swing";
+import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
