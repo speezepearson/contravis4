@@ -328,6 +328,11 @@ input[type="range"] {
   opacity: 0.35;
 }
 
+.instruction-item.errored {
+  border-left-color: #ff3333;
+  background: #3a2525;
+}
+
 /* Beat gutter — fixed-width area on the left for beat count */
 
 .beat-gutter {

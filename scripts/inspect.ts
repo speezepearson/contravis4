@@ -45,12 +45,12 @@ if (!Number.isFinite(time) || time < 0) {
 const raw = JSON.parse(readFileSync(jsonPath, "utf-8"));
 const dance = DanceSchema.parse(raw);
 
-const { animation, error } = generateDanceAnimation(
+const { animation, errors } = generateDanceAnimation(
   dance.instructions,
   dance.initFormation,
 );
 
-if (error) {
+for (const error of errors) {
   console.error(
     `Generation error at instruction ${error.instructionId}: ${error.message}`,
   );

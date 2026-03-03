@@ -343,59 +343,13 @@ function removeMultipleFromTop(
   return [remaining, removed];
 }
 
-function computeDimmedIds(
-  instructions: Instruction[],
-  errorId: InstructionId | undefined,
-): Set<InstructionId> {
-  const dimmed = new Set<InstructionId>();
-  if (!errorId) return dimmed;
-
-  function addAllIds(instr: Instruction) {
-    dimmed.add(instr.id);
-    if (instr.type === "split") {
-      const [la, lb] = splitLists(instr);
-      for (const sub of [...la, ...lb]) dimmed.add(sub.id);
-    }
-  }
-
-  function walkAtomic(instrs: AtomicInstruction[]): boolean {
-    let found = false;
-    for (const instr of instrs) {
-      if (found) {
-        dimmed.add(instr.id);
-        continue;
-      }
-      if (instr.id === errorId) found = true;
-    }
-    return found;
-  }
-
-  let found = false;
-  for (const instr of instructions) {
-    if (found) {
-      addAllIds(instr);
-      continue;
-    }
-    if (instr.id === errorId) {
-      found = true;
-      continue;
-    }
-    if (instr.type === "split") {
-      const [la, lb] = splitLists(instr);
-      if (walkAtomic(la) || walkAtomic(lb)) found = true;
-    }
-  }
-
-  return dimmed;
-}
-
 interface Props {
   instructions: Instruction[];
   setInstructions: (instructions: Instruction[]) => void;
   initFormation: InitFormation;
   setInitFormation: (formation: InitFormation) => void;
   activeId: InstructionId | null;
-  generateError: GenerateError | null;
+  generateErrors: GenerateError[];
   animation: ContraAnimation | null;
   onHoverInstruction?: (id: InstructionId | null) => void;
   onEditInstruction?: (id: InstructionId) => void;
@@ -626,7 +580,7 @@ export default memo(function CommandPane({
   initFormation,
   setInitFormation,
   activeId,
-  generateError,
+  generateErrors,
   animation,
   onHoverInstruction,
   onEditInstruction,
@@ -739,10 +693,13 @@ export default memo(function CommandPane({
     if (newlyAddedId) setNewlyAddedId(null);
   }, [newlyAddedId]);
 
-  const dimmedIds = useMemo(
-    () => computeDimmedIds(instructions, generateError?.instructionId),
-    [instructions, generateError],
-  );
+  const errorById = useMemo(() => {
+    const map = new Map<InstructionId, GenerateError>();
+    for (const err of generateErrors) {
+      map.set(err.instructionId, err);
+    }
+    return map;
+  }, [generateErrors]);
 
   function handleChange(id: InstructionId, updated: Instruction) {
     setInstructions(replaceInTree(instructions, id, updated));
@@ -937,7 +894,7 @@ export default memo(function CommandPane({
         }}
       >
         <div
-          className={`instruction-item${options?.extraClass ? " " + options.extraClass : ""}${instr.id === activeId ? " active" : ""}${dimmedIds.has(instr.id) ? " dimmed" : ""}${isSelected ? " selected" : ""}${isDraggedAway ? " dragged-away" : ""}`}
+          className={`instruction-item${options?.extraClass ? " " + options.extraClass : ""}${instr.id === activeId ? " active" : ""}${errorById.has(instr.id) ? " errored" : ""}${isSelected ? " selected" : ""}${isDraggedAway ? " dragged-away" : ""}`}
           onClick={() => onSkipToInstruction?.(instr.id)}
           onMouseEnter={() => onHoverInstruction?.(instr.id)}
           onMouseLeave={() => onHoverInstruction?.(null)}
@@ -973,8 +930,10 @@ export default memo(function CommandPane({
             {"\u2630"}
           </span>
         </div>
-        {generateError?.instructionId === instr.id && (
-          <div className="instruction-error">{generateError.message}</div>
+        {errorById.has(instr.id) && (
+          <div className="instruction-error">
+            {errorById.get(instr.id)!.message}
+          </div>
         )}
       </InstructionEditContext.Provider>
     );

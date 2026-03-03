@@ -31,7 +31,7 @@ export class GenerateError extends Error {
 
 export interface GenerateResult {
   animation: ContraAnimation | null;
-  error: GenerateError | null;
+  errors: GenerateError[];
 }
 
 /** Animate a single instruction (atomic or split) from `init`. */
@@ -58,6 +58,7 @@ export function generateDanceAnimation(
 ): GenerateResult {
   const initState = initFormationStates[initFormation];
   const segments: ContraAnimation[] = [];
+  const errors: GenerateError[] = [];
 
   let currentState = initState;
 
@@ -65,24 +66,25 @@ export function generateDanceAnimation(
     try {
       const anim = animateInstruction(currentState, instr);
       segments.push(anim);
-      // Advance currentState to the end of this animation
       currentState = anim.getFrame(anim.dur);
     } catch (e) {
-      const partial = segments.length > 0 ? chainAnimations(segments) : null;
-      return {
-        animation: partial,
-        error: new GenerateError(
+      errors.push(
+        new GenerateError(
           instr.id,
           e instanceof Error ? e.message : String(e),
           e instanceof Error ? e : undefined,
         ),
-      };
+      );
+      // Hold at currentState for the failed instruction's duration
+      const dur = instructionDuration(instr);
+      const holdState = currentState;
+      segments.push({ dur, getFrame: () => holdState });
     }
   }
 
   return {
     animation: segments.length > 0 ? chainAnimations(segments) : null,
-    error: null,
+    errors,
   };
 }
 

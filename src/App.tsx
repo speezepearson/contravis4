@@ -150,7 +150,7 @@ export default function App() {
   const [hoveredInstructionId, setHoveredInstructionId] =
     useState<InstructionId | null>(null);
 
-  const { animation, error: generateError } = useMemo(
+  const { animation, errors: generateErrors } = useMemo(
     () => generateDanceAnimation(instructions, initFormation),
     [instructions, initFormation],
   );
@@ -163,10 +163,10 @@ export default function App() {
     [animation, initFormation],
   );
   useEffect(() => {
-    if (generateError) {
-      console.error(generateError);
+    for (const err of generateErrors) {
+      console.error(err);
     }
-  }, [generateError]);
+  }, [generateErrors]);
 
   // Compute preview frames when hovering over an instruction
   const previewFrames = useMemo(() => {
@@ -525,7 +525,7 @@ export default function App() {
     initFormation,
     setInitFormation,
     activeId: activeInstructionId(instructions, beat),
-    generateError,
+    generateErrors,
     animation,
     onHoverInstruction: handleHoverInstruction,
     onEditInstruction: handleEditInstruction,
