@@ -199,7 +199,6 @@ export default function App() {
   const highlightRelRafRef = useRef(0);
 
   const draw = useCallback(() => {
-    console.log("draw");
     const renderer = rendererRef.current;
     if (!renderer || !animation) return;
 
