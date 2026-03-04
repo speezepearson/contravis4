@@ -116,37 +116,37 @@ export function resolveCalledLabel(
       return resolveBasicLabel("partner", neighbor, protos);
     }
     case "next neighbor": {
-      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
+      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
       return addOffsetToId(neighbor, 1 * offsetSign);
     }
     case "next x2 neighbor": {
-      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
+      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
       return addOffsetToId(neighbor, 2 * offsetSign);
     }
     case "next x3 neighbor": {
-      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
+      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
       return addOffsetToId(neighbor, 3 * offsetSign);
     }
     case "prev neighbor": {
-      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
+      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
       return addOffsetToId(neighbor, -1 * offsetSign);
     }
     case "prev x2 neighbor": {
-      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
+      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
       return addOffsetToId(neighbor, -2 * offsetSign);
     }
     case "prev x3 neighbor": {
-      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
+      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
       return addOffsetToId(neighbor, -3 * offsetSign);
@@ -213,9 +213,9 @@ export function resolveCalledDirection(
     case "right_diagonal":
       return state.facing.rotateByDegrees(-45);
     case "larks_left_robins_right":
-      return state.facing.rotateByDegrees(45 * (isLark(id) ? 1 : -1));
+      return state.facing.rotateByDegrees(90 * (isLark(id) ? 1 : -1));
     case "larks_right_robins_left":
-      return state.facing.rotateByDegrees(-45 * (isLark(id) ? 1 : -1));
+      return state.facing.rotateByDegrees(-90 * (isLark(id) ? 1 : -1));
     case "across":
       return state.pos.x < 0 ? EAST : WEST;
     case "out":

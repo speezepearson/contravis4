@@ -132,7 +132,11 @@ export function makeSwingSegments(
   const swingBeats = instr.beats - approachBeats - DISENGAGE_BEATS;
 
   const swingHands: HandsFn = (id) =>
-    hold(["left", matches[id], "left"], ["right", matches[id], "right"]);
+    hold(
+      isLark(id)
+        ? ["right", matches[id], "left"]
+        : ["left", matches[id], "right"],
+    );
 
   return [
     {
@@ -162,9 +166,8 @@ export function makeSwingSegments(
         lerpVectors(plans[id].postSwing.pos, plans[id].final.pos, frac),
       facing: (id, frac) =>
         plans[id].postSwing.facing.rotateByRadians(
-          ((ccwRadsBetween(plans[id].postSwing.facing, plans[id].final.facing) -
-            TWO_PI) %
-            TWO_PI) *
+          (ccwRadsBetween(plans[id].postSwing.facing, plans[id].final.facing) -
+            (isLark(id) ? 0 : TWO_PI)) *
             frac,
         ),
       hands: swingHands,

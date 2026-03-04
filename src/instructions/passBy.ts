@@ -25,7 +25,10 @@ export const passBySegments =
     return [
       {
         dur: instr.beats,
-        position: arc(instr.cid, { semiMinor: 0.25 * { left: -1, right: 1 }[instr.hand], phi: PI }),
+        position: arc(instr.cid, {
+          semiMinor: 0.25 * { left: -1, right: 1 }[instr.hand],
+          phi: PI,
+        }),
         facing: (id, _frac, segInit) => {
           return getDancerState(matches[id], segInit)
             .pos.subtract(segInit[id].pos)
