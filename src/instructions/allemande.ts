@@ -101,7 +101,7 @@ export const allemandeSegments = (
       },
       {
         dur: circlingBeats,
-        position: orbit(instr.cid, { radians: numAllemandeRadians }),
+        position: orbit(matches, { radians: numAllemandeRadians }),
         facing: rotateFacingBy(() => numAllemandeRadians),
         hands: (id) => hold([instr.handedness, matches[id], instr.handedness]),
       },

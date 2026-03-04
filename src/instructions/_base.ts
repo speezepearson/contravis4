@@ -351,7 +351,7 @@ export function findDancerInDirection(
       const target = getDancerState(targetId, protos);
       const disp = target.pos.subtract(pos);
       const r = disp.length();
-      if (r > 1.2 || r < 1e-9) continue;
+      if (r > 1.8 || r < 1e-9) continue;
 
       const cosTheta = dir.dot(disp) / r;
       if (cosTheta < 0) continue;

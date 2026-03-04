@@ -23,6 +23,7 @@ export const rightLeftThroughSegments =
     let state = init;
     const allSegments: Segment[] = [];
 
+    // TODO: this `append` business is kinda inelegant. Wouldn't it be nice to be able to just `return [...pullBySegments(...), ...courtesyTurnSegments(...)]`?
     function append(segs: Segment[]) {
       allSegments.push(...segs);
       state = advanceState(segs, state, who);

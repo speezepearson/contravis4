@@ -132,7 +132,7 @@ export function makeAnimation(
       let accDur = 0;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
-        if (t > accDur + seg.dur) {
+        if (t >= accDur + seg.dur && i < segments.length - 1) {
           accDur += seg.dur;
           continue;
         }
@@ -239,12 +239,12 @@ export function arc(
 
 /** Orbit around midpoint with counterpart. */
 export function orbit(
-  cid: CalledIdentifier,
+  matches: Record<ProtoId, DancerId>,
   opts: { radians: number },
 ): PositionFn {
   return (id, frac, segInit) => {
     const myPos = segInit[id].pos;
-    const themId = resolveMatch(id, cid, segInit);
+    const themId = matches[id];
     const theirPos = getDancerState(themId, segInit).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });

@@ -80,6 +80,8 @@ export function makeDefaultInstruction(
           drawerRole: "lark",
           endFacing: "across",
         };
+      case "long_line_in_center":
+        return { id, type: "long_line_in_center", role: "lark" };
       case "mad_robin":
         return {
           id,
