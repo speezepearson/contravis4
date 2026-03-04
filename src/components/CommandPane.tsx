@@ -912,12 +912,10 @@ export default memo(function CommandPane({
           onMouseLeave={() => onHoverInstruction?.(null)}
         >
           <BeatGutter
-            key={`beat-${instr.type}`}
             instruction={instr}
             onChange={(updated) => handleChange(instr.id, updated)}
           />
           <InlineForm
-            key={instr.type}
             instruction={instr}
             onChange={(updated) => handleChange(instr.id, updated)}
             autoFocusAction={newlyAddedId === instr.id}
