@@ -1,3 +1,4 @@
+import { Vector } from "vecti";
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId } from "../contraCore";
@@ -72,11 +73,15 @@ export function makeSwingSegments(
   const plans = buildProtoRecord((id) => {
     const me = getDancerState(id, init);
     const center = centers[id];
-    const finalFacing = getCardinalBearing(instr.endFacing, center);
+    const finalCenter =
+      instr.endFacing === "across"
+        ? new Vector(center.x < 0 ? -0.5 : 0.5, Math.round(center.y * 2) / 2)
+        : center;
+    const finalFacing = getCardinalBearing(instr.endFacing, finalCenter);
 
     const final = {
       facing: finalFacing,
-      pos: center.add(
+      pos: finalCenter.add(
         finalFacing
           .multiply(FINAL_SEPARATION / 2)
           .rotateByDegrees(90 * (isLark(id) ? 1 : -1)),
