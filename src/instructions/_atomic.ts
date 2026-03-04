@@ -39,6 +39,10 @@ import { PullByInstructionSchema, pullBySegments } from "./pullBy";
 import { RelabelInstructionSchema, relabelSegments } from "./relabel";
 import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
 import { RoryOMoreInstructionSchema, roryOMoreSegments } from "./roryOMore";
+import {
+  SquareThroughInstructionSchema,
+  squareThroughSegments,
+} from "./squareThrough";
 import { StepInstructionSchema, stepSegments } from "./step";
 import { SwingInstructionSchema, swingSegments } from "./swing";
 import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
@@ -67,6 +71,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   RelabelInstructionSchema,
   RollAwayInstructionSchema,
   RoryOMoreInstructionSchema,
+  SquareThroughInstructionSchema,
   StepInstructionSchema,
   SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
@@ -99,6 +104,7 @@ export const atomicSegmentAnimators: {
   relabel: relabelSegments,
   roll_away: rollAwaySegments,
   rory_o_more: roryOMoreSegments,
+  square_through: squareThroughSegments,
   step: stepSegments,
   swing: swingSegments,
   take_hands_in_rings: takeHandsInRingsSegments,

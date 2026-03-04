@@ -110,6 +110,8 @@ export function makeDefaultInstruction(
         return { id, type: "roll_away", roller: "lark", rollee: "on_right" };
       case "rory_o_more":
         return { id, type: "rory_o_more", beats: 4, direction: "right" };
+      case "square_through":
+        return { id, type: "square_through", beats: 8 };
       case "split":
         return { id, type: "split", by: "role", larks: [], robins: [] };
       case "step":

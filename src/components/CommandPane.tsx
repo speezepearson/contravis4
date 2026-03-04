@@ -72,6 +72,7 @@ import { RelabelFields } from "./fields/RelabelFields";
 import { RollAwayFields } from "./fields/RollAwayFields";
 import { RoryOMoreFields } from "./fields/RoryOMoreFields";
 import { SplitFields } from "./fields/SplitFields";
+import { SquareThroughFields } from "./fields/SquareThroughFields";
 import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
@@ -105,6 +106,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "relabel",
   "roll_away",
   "rory_o_more",
+  "square_through",
   "split",
   "step",
   "swing",
@@ -131,6 +133,7 @@ const ACTION_LABELS: Record<string, string> = {
   relabel: "relabel",
   roll_away: "roll away",
   rory_o_more: "Rory O'More",
+  square_through: "square through",
   split: "split",
   step: "step",
   swing: "swing",
@@ -418,6 +421,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "pull_by":
     case "roll_away":
     case "rory_o_more":
+    case "square_through":
     case "step":
     case "swing":
       return true;
@@ -571,6 +575,10 @@ function InlineForm({
             return <RollAwayFields {...common} instruction={instruction} />;
           case "rory_o_more":
             return <RoryOMoreFields {...common} instruction={instruction} />;
+          case "square_through":
+            return (
+              <SquareThroughFields {...common} instruction={instruction} />
+            );
           case "split":
             return <SplitFields {...common} instruction={instruction} />;
           case "step":
