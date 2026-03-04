@@ -18,6 +18,10 @@ import { DoSiDoInstructionSchema, doSiDoSegments } from "./doSiDo";
 import { DropHandsInstructionSchema, dropHandsSegments } from "./dropHands";
 import { FaceInstructionSchema, faceSegments } from "./face";
 import {
+  FormLongWavesInstructionSchema,
+  formLongWavesSegments,
+} from "./formLongWaves";
+import {
   FormShortWavesInstructionSchema,
   formShortWavesSegments,
 } from "./formShortWaves";
@@ -49,6 +53,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   DoSiDoInstructionSchema,
   DropHandsInstructionSchema,
   FaceInstructionSchema,
+  FormLongWavesInstructionSchema,
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
   PassByInstructionSchema,
@@ -79,6 +84,7 @@ export const atomicSegmentAnimators: {
   do_si_do: doSiDoSegments,
   drop_hands: dropHandsSegments,
   face: faceSegments,
+  form_long_waves: formLongWavesSegments,
   form_short_waves: formShortWavesSegments,
   give_and_take_into_swing: giveAndTakeIntoSwingSegments,
   pass_by: passBySegments,

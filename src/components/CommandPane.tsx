@@ -61,6 +61,7 @@ import { CircleFields } from "./fields/CircleFields";
 import { DoSiDoFields } from "./fields/DoSiDoFields";
 import { DropHandsFields } from "./fields/DropHandsFields";
 import { FaceFields } from "./fields/FaceFields";
+import { FormLongWavesFields } from "./fields/FormLongWavesFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
 import { PassByFields } from "./fields/PassByFields";
@@ -93,6 +94,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "do_si_do",
   "drop_hands",
   "face",
+  "form_long_waves",
   "form_short_waves",
   "give_and_take_into_swing",
   "pass_by",
@@ -117,6 +119,7 @@ const ACTION_LABELS: Record<string, string> = {
   do_si_do: "do si do",
   drop_hands: "drop hands",
   face: "face",
+  form_long_waves: "form long waves",
   form_short_waves: "form short waves",
   give_and_take_into_swing: "give & take",
   pass_by: "pass by",
@@ -416,6 +419,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
       return true;
     case "drop_hands":
     case "face":
+    case "form_long_waves":
     case "form_short_waves":
     case "relabel":
     case "take_hands_in_rings":
@@ -534,6 +538,10 @@ function InlineForm({
             return <DropHandsFields {...common} instruction={instruction} />;
           case "face":
             return <FaceFields {...common} instruction={instruction} />;
+          case "form_long_waves":
+            return (
+              <FormLongWavesFields {...common} instruction={instruction} />
+            );
           case "form_short_waves":
             return (
               <FormShortWavesFields {...common} instruction={instruction} />

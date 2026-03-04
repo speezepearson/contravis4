@@ -65,6 +65,8 @@ export function makeDefaultInstruction(
         return { id, type: "drop_hands", beats: 0, which: "both" };
       case "face":
         return { id, type: "face", beats: 0, direction: "across" };
+      case "form_long_waves":
+        return { id, type: "form_long_waves", beats: 0 };
       case "form_short_waves":
         return { id, type: "form_short_waves", beats: 0 };
       case "give_and_take_into_swing":
