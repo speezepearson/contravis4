@@ -4,15 +4,30 @@ import {
   type Beats,
   DOWN_PROTO_IDS,
   LARK_PROTO_IDS,
+  type ProtoId,
   ROBIN_PROTO_IDS,
   UP_PROTO_IDS,
 } from "../contraCore";
 import { assertNever } from "../utils";
+import type { WorldState } from "../worldState";
 import {
+  type AtomicInstruction,
   AtomicInstructionSchema,
-  makeAtomicInstructionAnimator,
+  makeAtomicInstructionSegments,
 } from "./_atomic";
-import { type Animator, chainAnimators, InstructionIdSchema } from "./_base";
+import { type ContraAnimation, InstructionIdSchema } from "./_base";
+import { advanceState, animateSegments, type Segment } from "./_segment";
+
+function chainAtomicInstructionSegments(init:WorldState, who: Set<ProtoId>, instructions: AtomicInstruction[]): Segment[] {
+  let state = init;
+  const result: Segment[] = [];
+  for (const instr of instructions) {
+    const segments = makeAtomicInstructionSegments(instr, state, who);
+    result.push(...segments);
+    state = advanceState(segments, state, who);
+  }
+  return result;
+}
 
 export const SplitSchema = z.discriminatedUnion("by", [
   z.object({
@@ -38,24 +53,21 @@ export type Split = z.infer<typeof SplitSchema>;
  * The `animate` method evaluates both sub-animations at time `t` and merges them.
  */
 export const splitAnimator =
-  (instr: Split): Animator =>
-  (init, who) => {
+  (instr: Split, init: WorldState, who: Set<ProtoId>): ContraAnimation => {
     switch (instr.by) {
       case "role": {
-        const larks = chainAnimators(
-          instr.larks.map(makeAtomicInstructionAnimator),
-        )(init, new Set(LARK_PROTO_IDS.filter((id) => who.has(id))));
-        const robins = chainAnimators(
-          instr.robins.map(makeAtomicInstructionAnimator),
-        )(init, new Set(ROBIN_PROTO_IDS.filter((id) => who.has(id))));
+        const larks = new Set(LARK_PROTO_IDS.filter((id) => who.has(id)));
+        const robins = new Set(ROBIN_PROTO_IDS.filter((id) => who.has(id)));
+        const larksAnim = animateSegments(init, larks, chainAtomicInstructionSegments(init, larks, instr.larks));
+        const robinsAnim = animateSegments(init, robins, chainAtomicInstructionSegments(init, robins, instr.robins));
         return {
-          dur: Math.max(larks.dur, robins.dur),
+          dur: Math.max(larksAnim.dur,robinsAnim.dur),
           getFrame(t) {
             // Each side may have a different duration. When one side finishes
             // early, those dancers hold their final positions while the other
             // side continues, so we clamp t to each side's duration.
-            const larksKf = larks.getFrame(Math.min(t, larks.dur));
-            const robinsKf = robins.getFrame(Math.min(t, robins.dur));
+            const larksKf = larksAnim.getFrame(Math.min(t, larksAnim.dur));
+            const robinsKf = robinsAnim.getFrame(Math.min(t, robinsAnim.dur));
             return {
               up_lark_0: larksKf["up_lark_0"],
               up_robin_0: robinsKf["up_robin_0"],
@@ -66,20 +78,15 @@ export const splitAnimator =
         };
       }
       case "direction": {
-        const ups = chainAnimators(
-          instr.ups.map(makeAtomicInstructionAnimator),
-        )(init, new Set(UP_PROTO_IDS.filter((id) => who.has(id))));
-        const downs = chainAnimators(
-          instr.downs.map(makeAtomicInstructionAnimator),
-        )(init, new Set(DOWN_PROTO_IDS.filter((id) => who.has(id))));
+        const ups = new Set(UP_PROTO_IDS.filter((id) => who.has(id)));
+        const downs = new Set(DOWN_PROTO_IDS.filter((id) => who.has(id)));
+        const upsAnim = animateSegments(init, ups, chainAtomicInstructionSegments(init, ups, instr.ups));
+        const downsAnim = animateSegments(init, downs, chainAtomicInstructionSegments(init, downs, instr.downs));
         return {
-          dur: Math.max(ups.dur, downs.dur),
+          dur: Math.max(upsAnim.dur, downsAnim.dur),
           getFrame(t) {
-            // Each side may have a different duration. When one side finishes
-            // early, those dancers hold their final positions while the other
-            // side continues, so we clamp t to each side's duration.
-            const upsKf = ups.getFrame(Math.min(t, ups.dur));
-            const downsKf = downs.getFrame(Math.min(t, downs.dur));
+            const upsKf = upsAnim.getFrame(Math.min(t, upsAnim.dur));
+            const downsKf = downsAnim.getFrame(Math.min(t, downsAnim.dur));
             return {
               up_lark_0: upsKf["up_lark_0"],
               up_robin_0: upsKf["up_robin_0"],

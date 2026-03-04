@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { type WorldState } from "../worldState";
-import { evaluateSegmentEnd, makeAnimation } from "./_segment";
 import { initFormationStates } from "./index";
 import {
   type SquareThroughInstruction,
   squareThroughSegments,
 } from "./squareThrough";
+import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -30,7 +30,7 @@ describe("squareThrough", () => {
     const segments = squareThroughSegments(instr, init, allProtos);
 
     // Should not throw when building and evaluating the animation
-    const anim = makeAnimation(init, allProtos, segments);
+    const anim = animateSegments(init, allProtos, segments);
     expect(anim.dur).toBe(8);
 
     // Sample frames across the animation — should not throw
@@ -46,7 +46,7 @@ describe("squareThrough", () => {
     // Thread through all segments to get final state
     let state: WorldState = init;
     for (const seg of segments) {
-      state = evaluateSegmentEnd(seg, state, allProtos);
+      state = getSegmentFrameAtFrac(seg, state, allProtos, 1);
     }
 
     // After square through from improper:

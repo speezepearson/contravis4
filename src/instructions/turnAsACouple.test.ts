@@ -5,7 +5,6 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
-import { toAnimator } from "./_segment";
 import {
   type CaliforniaTwirlInstruction,
   californiaTwirlSegments,
@@ -15,6 +14,7 @@ import {
   type TurnAsACoupleInstruction,
   turnAsACoupleSegments,
 } from "./turnAsACouple";
+import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -59,14 +59,8 @@ describe("turnAsACouple", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = toAnimator(turnAsACoupleSegments, taacInstr)(
-      init,
-      allProtos,
-    );
-    const ctAnimation = toAnimator(californiaTwirlSegments, ctInstr)(
-      init,
-      allProtos,
-    );
+    const taacAnimation = animateSegments(init, allProtos, turnAsACoupleSegments(taacInstr, init, allProtos));
+    const ctAnimation = animateSegments(init, allProtos, californiaTwirlSegments(ctInstr, init, allProtos));
 
     const taacFinal = taacAnimation.getFrame(taacAnimation.dur);
     const ctFinal = ctAnimation.getFrame(ctAnimation.dur);
@@ -83,14 +77,8 @@ describe("turnAsACouple", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = toAnimator(turnAsACoupleSegments, taacInstr)(
-      init,
-      allProtos,
-    );
-    const ctAnimation = toAnimator(californiaTwirlSegments, ctInstr)(
-      init,
-      allProtos,
-    );
+      const taacAnimation = animateSegments(init, allProtos, turnAsACoupleSegments(taacInstr, init, allProtos));
+    const ctAnimation = animateSegments(init, allProtos, californiaTwirlSegments(ctInstr, init, allProtos));
 
     const taacMid = taacAnimation.getFrame(2);
     const ctMid = ctAnimation.getFrame(2);

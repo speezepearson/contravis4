@@ -6,9 +6,9 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import type { WorldState } from "../worldState";
-import { makeAnimation } from "./_segment";
 import { initFormationStates } from "./index";
 import { type SwingInstruction, swingSegments } from "./swing";
+import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -31,7 +31,7 @@ function swingFinalState(
 ) {
   const instr = makeInstr(overrides);
   const segments = swingSegments(instr, init, allProtos);
-  const animation = makeAnimation(init, allProtos, segments);
+  const animation = animateSegments(init, allProtos, segments);
   return animation.getFrame(animation.dur);
 }
 
@@ -52,7 +52,7 @@ describe("swing approach/orbit speed matching", () => {
       const init = initWithPartnerDistance(distance);
       const instr = makeInstr();
       const segments = swingSegments(instr, init, allProtos);
-      const animation = makeAnimation(init, allProtos, segments);
+      const animation = animateSegments(init, allProtos, segments);
 
       const approachEnd = segments[0].dur;
       const before = animation.getFrame(approachEnd - dt);

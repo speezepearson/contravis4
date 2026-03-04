@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-import { type Animator } from "./_base";
-import { type InstructionAnimator, toAnimator } from "./_segment";
+import type { ProtoId } from "../contraCore";
+import type { WorldState } from "../worldState";
+import { type InstructionAnimator, type Segment } from "./_segment";
 import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
 import { BalanceInstructionSchema, balanceSegments } from "./balance";
 import {
@@ -141,11 +142,11 @@ export const atomicSegmentAnimators: {
   turn_as_a_couple: turnAsACoupleSegments,
 };
 
-export function makeAtomicInstructionAnimator(
+export function makeAtomicInstructionSegments(
   instr: AtomicInstruction,
-): Animator {
-  const segAnimator = atomicSegmentAnimators[
-    instr.type
-  ] as InstructionAnimator<AtomicInstruction>;
-  return toAnimator(segAnimator, instr);
+  init: WorldState,
+who: Set<ProtoId>,
+): Segment[] {
+  const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<typeof instr>;
+  return segAnimator(instr, init, who);
 }

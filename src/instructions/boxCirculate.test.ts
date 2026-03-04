@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { type WorldState } from "../worldState";
-import { evaluateSegmentEnd } from "./_segment";
 import {
   type BoxCirculateInstruction,
   boxCirculateSegments,
@@ -15,6 +14,7 @@ import {
   formLongWavesSegments,
 } from "./formLongWaves";
 import { initFormationStates } from "./index";
+import { getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -48,14 +48,14 @@ const longWavesInit: WorldState = produce(
 /** Apply formLongWaves to get hands connected. */
 function makeLongWavesState(): WorldState {
   const segments = formLongWavesSegments(formInstr, longWavesInit, allProtos);
-  return evaluateSegmentEnd(segments[0], longWavesInit, allProtos);
+  return getSegmentFrameAtFrac(segments[0], longWavesInit, allProtos, 1);
 }
 
 describe("boxCirculate", () => {
   it("moves across-facing dancers in_front, out-facing dancers to right-hand partner", () => {
     const wavesState = makeLongWavesState();
     const segments = boxCirculateSegments(circInstr, wavesState, allProtos);
-    const result = evaluateSegmentEnd(segments[0], wavesState, allProtos);
+    const result = getSegmentFrameAtFrac(segments[0], wavesState, allProtos, 1);
 
     // up_lark_0 (across, EAST): moves to up_robin_0's position, facing stays EAST
     expect(result.up_lark_0.pos.x).toBeCloseTo(0.5, 10);

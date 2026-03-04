@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
-import { toAnimator } from "./_segment";
 import { type CircleInstruction } from "./circle";
 // circleSegments doesn't exist yet — this import will fail until implemented
 import { circleSegments } from "./circle";
 import { initFormationStates } from "./index";
+import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -29,7 +29,7 @@ describe("circle", () => {
   it("full rotation returns dancers to starting positions", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 4 });
-    const animation = toAnimator(circleSegments, instr)(init, allProtos);
+    const animation = animateSegments(init, allProtos, circleSegments(instr, init, allProtos));
     const final = animation.getFrame(animation.dur);
 
     for (const id of ALL_PROTO_IDS) {
@@ -41,7 +41,7 @@ describe("circle", () => {
   it("direction=left orbits clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 1 });
-    const animation = toAnimator(circleSegments, instr)(init, allProtos);
+    const animation = animateSegments(init, allProtos, circleSegments(instr, init, allProtos));
     const final = animation.getFrame(animation.dur);
 
     // CW 90° around (0,0): (-0.5,-0.5) → (-0.5, 0.5)
@@ -56,7 +56,7 @@ describe("circle", () => {
   it("direction=right orbits counter-clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "right", nPlaces: 1 });
-    const animation = toAnimator(circleSegments, instr)(init, allProtos);
+    const animation = animateSegments(init, allProtos, circleSegments(instr, init, allProtos));
     const final = animation.getFrame(animation.dur);
 
     // CCW 90° around (0,0): (-0.5,-0.5) → (0.5,-0.5)... wait
@@ -70,7 +70,7 @@ describe("circle", () => {
   it("maintains hand connections throughout", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ nPlaces: 2 });
-    const animation = toAnimator(circleSegments, instr)(init, allProtos);
+    const animation = animateSegments(init, allProtos, circleSegments(instr, init, allProtos));
     const mid = animation.getFrame(animation.dur / 2);
 
     for (const id of ALL_PROTO_IDS) {

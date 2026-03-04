@@ -9,7 +9,7 @@ import {
   resolveRings,
 } from "./_base";
 import {
-  evaluateSegmentEnd,
+  getSegmentFrameAtFrac,
   type InstructionAnimator,
   rotateFacingBy,
 } from "./_segment";
@@ -29,7 +29,7 @@ export const circleSegments: InstructionAnimator<CircleInstruction> = (
   who,
 ) => {
   const ringSegment = makeRingSegment(init);
-  const ringState = evaluateSegmentEnd(ringSegment, init, who);
+  const ringState = getSegmentFrameAtFrac(ringSegment, init, who, 1);
   const rings = resolveRings(ringState);
   const centers = buildProtoRecord((id) => avgDancerPos(rings[id], ringState));
 

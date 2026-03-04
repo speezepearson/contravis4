@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { type WorldState } from "../worldState";
-import { evaluateSegmentEnd } from "./_segment";
 import {
   type FormLongWavesInstruction,
   formLongWavesSegments,
 } from "./formLongWaves";
 import { initFormationStates } from "./index";
+import { getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -41,7 +41,7 @@ const longWavesInit: WorldState = produce(
 describe("formLongWaves", () => {
   it("snaps facings and connects hands", () => {
     const segments = formLongWavesSegments(instr, longWavesInit, allProtos);
-    const result = evaluateSegmentEnd(segments[0], longWavesInit, allProtos);
+    const result = getSegmentFrameAtFrac(segments[0], longWavesInit, allProtos, 1);
 
     // Facings should be preserved (already exact EAST/WEST)
     expect(result.up_lark_0.facing.x).toBeCloseTo(EAST.x, 10);
@@ -84,7 +84,7 @@ describe("formLongWaves", () => {
     });
 
     const segments = formLongWavesSegments(instr, init, allProtos);
-    const result = evaluateSegmentEnd(segments[0], init, allProtos);
+    const result = getSegmentFrameAtFrac(segments[0], init, allProtos, 1);
 
     expect(result.up_lark_0.facing.x).toBeCloseTo(EAST.x, 10);
     expect(result.up_lark_0.facing.y).toBeCloseTo(EAST.y, 10);

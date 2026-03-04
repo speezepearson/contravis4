@@ -6,8 +6,7 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { NORTH } from "../geometry";
-import { type Segment } from "./_segment";
-import { makeAnimation } from "./_segment";
+import { animateSegments, type Segment } from "./_segment";
 import { initFormationStates } from "./index";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
@@ -30,7 +29,7 @@ describe("makeAnimation", () => {
       },
     ];
 
-    const anim = makeAnimation(init, allProtos, segments);
+    const anim = animateSegments(init, allProtos, segments);
     expect(anim.dur).toBe(4);
 
     // At t=dur, the trailing zero-dur segment should be active
@@ -51,7 +50,7 @@ describe("makeAnimation", () => {
       },
     ];
 
-    const anim = makeAnimation(init, allProtos, segments);
+    const anim = animateSegments(init, allProtos, segments);
     expect(anim.dur).toBe(4);
 
     // At t=2, the zero-dur segment should have applied — segment 2's

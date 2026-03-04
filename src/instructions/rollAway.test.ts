@@ -6,9 +6,9 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { ccwRadsBetween, NORTH, PI } from "../geometry";
-import { toAnimator } from "./_segment";
 import { initFormationStates } from "./index";
 import { type RollAwayInstruction, rollAwaySegments } from "./rollAway";
+import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -32,8 +32,7 @@ describe("rollAway", () => {
         draft.up_robin_0.pos = new Vector(-1.5, -0.5);
       });
       const instr = makeInstr({ roller: "lark", rollee: "on_right" });
-      const animator = toAnimator(rollAwaySegments, instr);
-      expect(() => animator(init, allProtos)).toThrow("has no opposite-role");
+      expect(() => rollAwaySegments(instr, init, allProtos)).toThrow("has no opposite-role");
     });
 
     it("throws if two rollers have the same rollee", () => {
@@ -56,7 +55,7 @@ describe("rollAway", () => {
   describe("RTL with roller=lark", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ roller: "lark", rollee: "on_right" });
-    const animation = toAnimator(rollAwaySegments, instr)(init, allProtos);
+    const animation = animateSegments(init, allProtos, rollAwaySegments(instr, init, allProtos));
     const final = animation.getFrame(animation.dur);
 
     it("swaps places at the end", () => {

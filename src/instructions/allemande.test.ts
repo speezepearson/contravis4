@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
-import { makeAnimation } from "./_segment";
 import { type AllemandeInstruction, allemandeSegments } from "./allemande";
 import { initFormationStates } from "./index";
+import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -42,7 +42,7 @@ describe("allemande approach/orbit speed matching", () => {
       const init = initWithNeighborDistance(distance);
       const instr = makeInstr();
       const segments = allemandeSegments(instr, init, allProtos);
-      const animation = makeAnimation(init, allProtos, segments);
+      const animation = animateSegments(init, allProtos, segments);
 
       const approachEnd = segments[0].dur;
       const before = animation.getFrame(approachEnd - dt);

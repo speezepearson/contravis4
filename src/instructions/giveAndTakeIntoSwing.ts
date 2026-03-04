@@ -11,7 +11,7 @@ import {
 } from "./_base";
 import {
   addPositionDrift,
-  evaluateSegmentEnd,
+  getSegmentFrameAtFrac,
   type InstructionAnimator,
   lerpFacingTo,
   linearTo,
@@ -83,7 +83,7 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     facing: lerpFacingTo((id) => plans[id].postApproach.facing),
   };
 
-  const postApproach = evaluateSegmentEnd(approachSegment, init, who);
+  const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);
 
   const swingSegments = makeSwingSegments(
     {

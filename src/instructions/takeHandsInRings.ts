@@ -14,7 +14,7 @@ import {
   resolveRings,
 } from "./_base";
 import {
-  evaluateSegmentEnd,
+  getSegmentFrameAtFrac,
   type InstructionAnimator,
   makeImmediateSegment,
   type Segment,
@@ -72,7 +72,7 @@ export const takeHandsInRingsSegments: InstructionAnimator<
   TakeHandsInRingsInstruction
 > = (_instr, init, who) => {
   const segment = makeRingSegment(init);
-  const endState = evaluateSegmentEnd(segment, init, who);
+  const endState = getSegmentFrameAtFrac(segment, init, who, 1);
   resolveRings(endState);
   return [segment];
 };

@@ -22,7 +22,6 @@ import {
   type WorldState,
 } from "../worldState";
 import {
-  type Animator,
   type CalledIdentifier,
   type ContraAnimation,
   resolveMatch,
@@ -78,18 +77,19 @@ export type Segment = {
  * Evaluate a segment to get its final WorldState (used for pre-computing
  * segment initial states and for giveAndTakeIntoSwing's approach→swing handoff).
  */
-export function evaluateSegmentEnd(
+export function getSegmentFrameAtFrac(
   segment: Segment,
   init: WorldState,
   who: Set<ProtoId>,
+  frac: number,
 ): WorldState {
   return produce(init, (draft) => {
     for (const id of who) {
-      if (segment.position) draft[id].pos = segment.position(id, 1, init);
-      if (segment.facing) draft[id].facing = segment.facing(id, 1, init);
-      if (segment.hands) draft[id].hands = segment.hands(id, 1, init);
+      if (segment.position) draft[id].pos = segment.position(id, frac, init);
+      if (segment.facing) draft[id].facing = segment.facing(id, frac, init);
+      if (segment.hands) draft[id].hands = segment.hands(id, frac, init);
       if (segment.labels) {
-        for (const [label, theirId] of segment.labels(id, 1, init)) {
+        for (const [label, theirId] of segment.labels(id, frac, init)) {
           draft[id].labels[label] = theirId;
         }
       }
@@ -104,7 +104,7 @@ export function advanceState(
   who: Set<ProtoId>,
 ): WorldState {
   let s = state;
-  for (const seg of segs) s = evaluateSegmentEnd(seg, s, who);
+  for (const seg of segs) s = getSegmentFrameAtFrac(seg, s, who, 1);
   return s;
 }
 
@@ -115,14 +115,14 @@ export function advanceState(
  * - Routes getFrame(t) to the correct segment
  * - Loops over `who`, calls position/facing/hands fns, applies via produce()
  */
-export function makeAnimation(
+export function animateSegments(
   init: WorldState,
   who: Set<ProtoId>,
   segments: Segment[],
 ): ContraAnimation {
   const segInits: WorldState[] = [init];
   for (let i = 0; i < segments.length - 1; i++) {
-    segInits.push(evaluateSegmentEnd(segments[i], segInits[i], who));
+    segInits.push(getSegmentFrameAtFrac(segments[i], segInits[i], who, 1));
   }
 
   const totalDur = segments.reduce((sum, s) => sum + s.dur, 0);
@@ -130,6 +130,7 @@ export function makeAnimation(
   return {
     dur: totalDur,
     getFrame(t) {
+      if (segments.length === 0) return init;
       let accDur = 0;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
@@ -163,14 +164,6 @@ export function makeAnimation(
       );
     },
   };
-}
-
-/** Wrap an InstructionAnimator into an Animator by rendering segments via makeAnimation. */
-export function toAnimator<T>(
-  segAnimator: InstructionAnimator<T>,
-  instr: T,
-): Animator {
-  return (init, who) => makeAnimation(init, who, segAnimator(instr, init, who));
 }
 
 /**

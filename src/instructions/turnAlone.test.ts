@@ -5,9 +5,9 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, isLark, type ProtoId } from "../contraCore";
 import { ccwRadsBetween, PI } from "../geometry";
-import { toAnimator } from "./_segment";
 import { initFormationStates } from "./index";
 import { type TurnAloneInstruction, turnAloneSegments } from "./turnAlone";
+import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -25,7 +25,7 @@ function makeInstr(
 describe("turnAlone", () => {
   const init = initFormationStates.improper;
   const instr = makeInstr();
-  const animation = toAnimator(turnAloneSegments, instr)(init, allProtos);
+  const animation = animateSegments(init, allProtos, turnAloneSegments(instr, init, allProtos));
   const final = animation.getFrame(animation.dur);
 
   it("does not move dancers' positions", () => {

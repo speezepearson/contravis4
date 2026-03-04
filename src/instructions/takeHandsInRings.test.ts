@@ -8,9 +8,9 @@ import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
 import { getDir } from "../geometry";
 import { must } from "../utils";
 import { getDancerState } from "../worldState";
-import { evaluateSegmentEnd } from "./_segment";
 import { initFormationStates } from "./index";
 import { takeHandsInRingsSegments } from "./takeHandsInRings";
+import { getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
@@ -27,7 +27,7 @@ describe("takeHandsInRings", () => {
     expect(segments).toHaveLength(1);
     expect(segments[0].dur).toBe(0);
 
-    const final = evaluateSegmentEnd(segments[0], init, allProtos);
+    const final = getSegmentFrameAtFrac(segments[0], init, allProtos, 1);
 
     // Every dancer has both hands connected
     for (const id of ALL_PROTO_IDS) {
@@ -51,7 +51,7 @@ describe("takeHandsInRings", () => {
   it("turns dancers to face the center of the ring", () => {
     const init = initFormationStates.improper;
     const segments = takeHandsInRingsSegments(DUMMY_INSTR, init, allProtos);
-    const final = evaluateSegmentEnd(segments[0], init, allProtos);
+    const final = getSegmentFrameAtFrac(segments[0], init, allProtos, 1);
 
     // In the symmetric improper formation, ring center is at (0, 0)
     const center = new Vector(0, 0);
