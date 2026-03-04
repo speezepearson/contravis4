@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ALL_PROTO_IDS } from "../contraCore";
 import { buildProtoRecord } from "../worldState";
 import {
   avgDancerPos,
@@ -18,7 +19,9 @@ export type BalanceTheRingInstruction = z.infer<
 
 export const balanceTheRingSegments =
   (instr: BalanceTheRingInstruction): SegmentAnimator =>
-  (init) => {
+  (init, who) => {
+    if (who.size !== ALL_PROTO_IDS.length)
+      throw new Error(`balanceTheRing instruction must target all dancers`);
     const rings = resolveRings(init);
     const centers = buildProtoRecord((id) => avgDancerPos(rings[id], init));
 

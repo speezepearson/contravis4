@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ALL_PROTO_IDS } from "../contraCore";
 import { ccwRadsBetween, getDir, TWO_PI } from "../geometry";
 import { must } from "../utils";
 import { buildProtoRecord, getDancerState } from "../worldState";
@@ -18,7 +19,9 @@ export type PetronellaInstruction = z.infer<typeof PetronellaInstructionSchema>;
 
 export const petronellaSegments =
   (instr: PetronellaInstruction): SegmentAnimator =>
-  (init) => {
+  (init, who) => {
+    if (who.size !== ALL_PROTO_IDS.length)
+      throw new Error(`petronella instruction must target all dancers`);
     const rings = resolveRings(init);
     const centers = buildProtoRecord((id) => avgDancerPos(rings[id], init));
 

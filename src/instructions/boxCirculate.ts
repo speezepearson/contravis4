@@ -31,7 +31,9 @@ function facesAcross(id: ProtoId, state: WorldState): boolean {
 
 export const boxCirculateSegments =
   (instr: BoxCirculateInstruction): SegmentAnimator =>
-  (init) => {
+  (init, who) => {
+    if (who.size !== ALL_PROTO_IDS.length)
+      throw new Error(`boxCirculate instruction must target all dancers`);
     for (const id of ALL_PROTO_IDS) {
       if (!facesOut(id, init) && !facesAcross(id, init)) {
         throw new Error(
