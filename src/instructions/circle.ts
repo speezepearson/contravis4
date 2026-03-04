@@ -19,7 +19,7 @@ export const CircleInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("circle"),
   direction: HandSchema,
-  rotations: z.number(),
+  nPlaces: z.number().positive(),
 });
 export type CircleInstruction = z.infer<typeof CircleInstructionSchema>;
 
@@ -35,7 +35,7 @@ export const circleSegments =
 
     // CW if direction=left, CCW if direction=right
     const orbitRadians =
-      (instr.direction === "right" ? 1 : -1) * TWO_PI * instr.rotations;
+      (instr.direction === "right" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
 
     return [
       ringSegment,

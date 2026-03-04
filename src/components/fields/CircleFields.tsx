@@ -26,7 +26,7 @@ export function CircleFields({
       type: "circle",
       beats: instruction.beats,
       direction: instruction.direction,
-      rotations: instruction.rotations,
+      nPlaces: instruction.nPlaces,
       ...overrides,
     });
     if (result.success) onChange(result.data);
@@ -42,11 +42,11 @@ export function CircleFields({
         getLabel={(v) => v}
       />{" "}
       <InlineNumber
-        value={String(instruction.rotations)}
-        onTextChange={(v) => tryCommit({ rotations: Number(v) })}
-        onDrag={(n) => tryCommit({ rotations: n })}
-        step={0.25}
-        suffix="x"
+        value={String(instruction.nPlaces)}
+        onTextChange={(v) => tryCommit({ nPlaces: Number(v) })}
+        onDrag={(n) => tryCommit({ nPlaces: n })}
+        step={1}
+        suffix=" places"
       />
     </>
   );

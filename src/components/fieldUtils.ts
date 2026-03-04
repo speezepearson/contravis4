@@ -53,7 +53,7 @@ export function makeDefaultInstruction(
           type: "circle",
           beats: 8,
           direction: "left",
-          rotations: 1,
+          nPlaces: 4,
         };
       case "do_si_do":
         return {
