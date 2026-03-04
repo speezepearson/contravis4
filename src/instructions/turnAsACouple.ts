@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { isLark, parseProtoId } from "../contraCore";
-import { getDir, PI } from "../geometry";
+import { ccwRadsBetween, getDir, PI } from "../geometry";
 import { getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -21,8 +21,25 @@ export type TurnAsACoupleInstruction = z.infer<
 
 export const turnAsACoupleSegments =
   (instr: TurnAsACoupleInstruction): SegmentAnimator =>
-  (init) => {
+  (init, who) => {
     const matches = resolveMatches(instr.cid, init);
+
+    const checked = new Set<string>();
+    for (const id of who) {
+      const themId = matches[id];
+      const pairKey = [id, themId].sort().join(",");
+      if (checked.has(pairKey)) continue;
+      checked.add(pairKey);
+      const angleDiff = Math.abs(
+        ccwRadsBetween(init[id].facing, getDancerState(themId, init).facing),
+      );
+      if (angleDiff > PI / 4) {
+        throw new Error(
+          `${id} and ${themId} are not facing the same direction for turn_as_a_couple`,
+        );
+      }
+    }
+
     return [
       {
         dur: instr.beats,

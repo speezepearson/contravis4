@@ -1,9 +1,10 @@
-import { enableMapSet } from "immer";
+import { enableMapSet, produce } from "immer";
 import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { NORTH, SOUTH } from "../geometry";
 import { toAnimator } from "./_segment";
 import {
   type CaliforniaTwirlInstruction,
@@ -43,6 +44,17 @@ function makeCaliforniaTwirl(
 
 describe("turnAsACouple", () => {
   const init = initFormationStates.improper;
+
+  it("throws if matched dancers are not facing the same way", () => {
+    const badInit = produce(init, (draft) => {
+      draft.up_lark_0.facing = NORTH;
+      draft.up_robin_0.facing = SOUTH;
+    });
+    const instr = makeTurnAsACouple({ cid: "partner" });
+    expect(() => turnAsACoupleSegments(instr)(badInit, allProtos)).toThrow(
+      "not facing the same direction",
+    );
+  });
 
   it("produces the same final state as californiaTwirl", () => {
     const taacInstr = makeTurnAsACouple();
