@@ -388,10 +388,9 @@ export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
     dur: segments.reduce((acc, segment) => acc + segment.dur, 0),
     getFrame(t) {
       let accumulatedDur = 0;
-      for (const segment of segments) {
-        if (t < accumulatedDur)
-          throw new Error(`somehow overshot the desired time`);
-        if (t > accumulatedDur + segment.dur) {
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        if (t >= accumulatedDur + segment.dur && i < segments.length - 1) {
           accumulatedDur += segment.dur;
           continue;
         }

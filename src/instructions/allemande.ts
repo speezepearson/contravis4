@@ -6,7 +6,7 @@ import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveMatches,
+  resolveMatch,
 } from "./_base";
 import {
   arc,
@@ -57,17 +57,21 @@ export const allemandeSegments = (
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  return (init) => {
-    const matches = resolveMatches(instr.cid, init);
+  return (init, who) => {
+    const matches = new Map(
+      [...who].map((id) => [id, resolveMatch(id, instr.cid, init)]),
+    );
     const alreadyClose = buildProtoRecord((id) => {
       const me = getDancerState(id, init);
-      const them = getDancerState(matches[id], init);
-      return me.pos.subtract(them.pos).length() < 1;
+      const matchId = matches.get(id);
+      if (!matchId) return false;
+      const them = getDancerState(matchId, init);
+      return me.pos.subtract(them.pos).length() < 1.2;
     });
 
     let totalDistance = 0;
     let count = 0;
-    for (const [id, matchId] of Object.entries(matches)) {
+    for (const [id, matchId] of matches) {
       const me = getDancerState(id as ProtoId, init);
       const them = getDancerState(matchId, init);
       totalDistance += me.pos.subtract(them.pos).length();
@@ -89,21 +93,26 @@ export const allemandeSegments = (
           phi: APPROACH_ELLIPSE_RADIANS,
         }),
         facing: lerpFacingTo((id, segInit) => {
+          const matchId = matches.get(id);
+          if (!matchId) return segInit[id].facing;
           return getDir({
             from: segInit[id].pos,
-            to: getDancerState(matches[id], segInit).pos,
+            to: getDancerState(matchId, segInit).pos,
           });
         }),
         hands: (id) =>
           alreadyClose[id]
-            ? hold([instr.handedness, matches[id], instr.handedness])
+            ? hold([instr.handedness, matches.get(id)!, instr.handedness])
             : {},
       },
       {
         dur: circlingBeats,
-        position: orbit(matches, { radians: numAllemandeRadians }),
+        position: orbit(matches, { radians: numAllemandeRadians }, who),
         facing: rotateFacingBy(() => numAllemandeRadians),
-        hands: (id) => hold([instr.handedness, matches[id], instr.handedness]),
+        hands: (id) =>
+          !matches.has(id)
+            ? {}
+            : hold([instr.handedness, matches.get(id)!, instr.handedness]),
       },
     ] satisfies Segment[];
   };

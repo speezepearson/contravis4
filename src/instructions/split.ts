@@ -95,9 +95,11 @@ export const splitAnimator =
   };
 
 export function getSplitDuration(split: Split): Beats {
-  const instrs =
+  const [a, b] =
     split.by === "role"
-      ? [...split.larks, ...split.robins]
-      : [...split.ups, ...split.downs];
-  return Math.max(...instrs.map((i) => i.beats));
+      ? [split.larks, split.robins]
+      : [split.ups, split.downs];
+  const sum = (instrs: { beats: Beats }[]) =>
+    instrs.reduce((acc, i) => acc + i.beats, 0);
+  return Math.max(sum(a), sum(b));
 }

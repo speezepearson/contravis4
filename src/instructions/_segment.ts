@@ -239,12 +239,15 @@ export function arc(
 
 /** Orbit around midpoint with counterpart. */
 export function orbit(
-  matches: Record<ProtoId, DancerId>,
+  matches: Map<ProtoId, DancerId>,
   opts: { radians: number },
+  who?: Set<ProtoId>,
 ): PositionFn {
   return (id, frac, segInit) => {
+    if (who && !who.has(id)) return segInit[id].pos;
     const myPos = segInit[id].pos;
-    const themId = matches[id];
+    const themId = matches.get(id);
+    if (!themId) return myPos;
     const theirPos = getDancerState(themId, segInit).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
@@ -272,8 +275,10 @@ export function lerpFacingTo(
     forceDir?: (id: ProtoId) => "cw" | "ccw" | undefined;
     forceDirTolerance?: number;
   } = {},
+  who?: Set<ProtoId>,
 ): FacingFn {
   return (id, frac, segInit) => {
+    if (who && !who.has(id)) return segInit[id].facing;
     return lerpFacingVec(segInit[id].facing, target(id, segInit), frac, {
       forceDir: forceDir?.(id),
       forceDirTolerance,
