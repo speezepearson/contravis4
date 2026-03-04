@@ -1,4 +1,5 @@
 import { ALL_PROTO_IDS, parseProtoId } from "./contraCore";
+import { NORTH } from "./geometry";
 import type { ContraAnimation } from "./instructions/_base";
 import type { WorldState } from "./worldState";
 
@@ -16,34 +17,22 @@ export function inferProgression(
 ): number | null {
   const finalState = animation.getFrame(animation.dur);
 
-  let agreedN: number | null = null;
+  const amountsProgressed: Set<number> = new Set(
+    ALL_PROTO_IDS.map((id) => {
+      const { dir } = parseProtoId(id);
+      // Progression direction: up dancers progress in +Y (NORTH), down in -Y (SOUTH)
+      const progSign = dir === "up" ? 1 : -1;
 
-  for (const id of ALL_PROTO_IDS) {
-    const { dir } = parseProtoId(id);
-    // Progression direction: up dancers progress in +Y (NORTH), down in -Y (SOUTH)
-    const progSign = dir === "up" ? 1 : -1;
+      const initPos = initState[id].pos;
+      const finalPos = finalState[id].pos;
 
-    const initPos = initState[id].pos;
-    const finalPos = finalState[id].pos;
-    const dx = finalPos.x - initPos.x;
-    const dy = finalPos.y - initPos.y;
+      const idealDy = Math.round(finalPos.y - initPos.y);
+      const idealProgressedPos = initPos.add(NORTH.multiply(idealDy));
+      if (finalPos.subtract(idealProgressedPos).length() > TOLERANCE)
+        return null;
+      return progSign * idealDy;
+    }).filter((n) => n !== null),
+  );
 
-    // Component along progression axis (Y)
-    const alongProgression = dy * progSign;
-    // Perpendicular component (X)
-    const perpendicular = Math.abs(dx);
-
-    if (perpendicular > TOLERANCE) return null;
-
-    const rounded = Math.round(alongProgression);
-    if (Math.abs(alongProgression - rounded) > TOLERANCE) return null;
-
-    if (agreedN === null) {
-      agreedN = rounded;
-    } else if (agreedN !== rounded) {
-      return null;
-    }
-  }
-
-  return agreedN;
+  return amountsProgressed.size === 1 ? Array.from(amountsProgressed)[0] : null;
 }
