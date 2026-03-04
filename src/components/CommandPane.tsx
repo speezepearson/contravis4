@@ -55,11 +55,13 @@ import type { DancerState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BalanceTheRingFields } from "./fields/BalanceTheRingFields";
+import { BendTheLineFields } from "./fields/BendTheLineFields";
 import { BoxCirculateFields } from "./fields/BoxCirculateFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
 import { CircleFields } from "./fields/CircleFields";
 import { DoSiDoFields } from "./fields/DoSiDoFields";
+import { DownTheHallFields } from "./fields/DownTheHallFields";
 import { DropHandsFields } from "./fields/DropHandsFields";
 import { FaceFields } from "./fields/FaceFields";
 import { FormLongWavesFields } from "./fields/FormLongWavesFields";
@@ -83,6 +85,7 @@ import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
 import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
+import { UpTheHallFields } from "./fields/UpTheHallFields";
 import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
 import type { InlineDropdownHandle } from "./InlineDropdown";
 import { InlineDropdown } from "./InlineDropdown";
@@ -96,11 +99,13 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "allemande",
   "balance",
   "balance_the_ring",
+  "bend_the_line",
   "box_circulate",
   "box_the_gnat",
   "california_twirl",
   "circle",
   "do_si_do",
+  "down_the_hall",
   "drop_hands",
   "face",
   "form_long_waves",
@@ -124,16 +129,19 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "take_hands",
   "turn_alone",
   "turn_as_a_couple",
+  "up_the_hall",
 ];
 const ACTION_LABELS: Record<string, string> = {
   allemande: "allemande",
   balance: "balance",
   balance_the_ring: "balance the ring",
+  bend_the_line: "bend the line",
   box_circulate: "box circulate",
   box_the_gnat: "box the gnat",
   california_twirl: "California twirl",
   circle: "circle",
   do_si_do: "do si do",
+  down_the_hall: "down the hall",
   drop_hands: "drop hands",
   face: "face",
   form_long_waves: "form long waves",
@@ -157,6 +165,7 @@ const ACTION_LABELS: Record<string, string> = {
   take_hands: "take hands",
   turn_alone: "turn alone",
   turn_as_a_couple: "turn as a couple",
+  up_the_hall: "up the hall",
 };
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
@@ -428,11 +437,13 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "allemande":
     case "balance":
     case "balance_the_ring":
+    case "bend_the_line":
     case "box_circulate":
     case "box_the_gnat":
     case "california_twirl":
     case "circle":
     case "do_si_do":
+    case "down_the_hall":
     case "give_and_take_into_swing":
     case "long_line_in_center":
     case "mad_robin":
@@ -448,6 +459,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "swing":
     case "turn_alone":
     case "turn_as_a_couple":
+    case "up_the_hall":
       return true;
     case "drop_hands":
     case "face":
