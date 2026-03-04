@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { TWO_PI } from "../geometry";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
-import { arc, type SegmentAnimator } from "./_segment";
+import { arc, type InstructionAnimator } from "./_segment";
 
 export const DoSiDoInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -12,14 +12,14 @@ export const DoSiDoInstructionSchema = z.object({
 });
 export type DoSiDoInstruction = z.infer<typeof DoSiDoInstructionSchema>;
 
-export const doSiDoSegments =
-  (instr: DoSiDoInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: instr.beats,
-      position: arc(instr.cid, {
-        semiMinor: 0.25,
-        phi: TWO_PI * instr.rotations,
-      }),
-    },
-  ];
+export const doSiDoSegments: InstructionAnimator<DoSiDoInstruction> = (
+  instr,
+) => [
+  {
+    dur: instr.beats,
+    position: arc(instr.cid, {
+      semiMinor: 0.25,
+      phi: TWO_PI * instr.rotations,
+    }),
+  },
+];

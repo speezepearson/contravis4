@@ -5,7 +5,7 @@ import {
   instructionBaseSchemaFields,
   resolveCalledDirection,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { type InstructionAnimator } from "./_segment";
 
 export const FaceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -15,13 +15,11 @@ export const FaceInstructionSchema = z.object({
 });
 export type FaceInstruction = z.infer<typeof FaceInstructionSchema>;
 
-export const faceSegments =
-  (instr: FaceInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: instr.beats,
-      facing: (id, _frac, segInit) => {
-        return resolveCalledDirection(id, instr.direction, segInit);
-      },
+export const faceSegments: InstructionAnimator<FaceInstruction> = (instr) => [
+  {
+    dur: instr.beats,
+    facing: (id, _frac, segInit) => {
+      return resolveCalledDirection(id, instr.direction, segInit);
     },
-  ];
+  },
+];

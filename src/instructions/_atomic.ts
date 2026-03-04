@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { type Animator } from "./_base";
-import { type SegmentAnimator, toAnimator } from "./_segment";
+import { type InstructionAnimator, toAnimator } from "./_segment";
 import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
 import { BalanceInstructionSchema, balanceSegments } from "./balance";
 import {
@@ -105,9 +105,9 @@ export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
 /** Registry mapping each atomic instruction type to its segment animator. */
 export const atomicSegmentAnimators: {
-  [K in AtomicInstruction["type"]]: (
-    instr: Extract<AtomicInstruction, { type: K }>,
-  ) => SegmentAnimator;
+  [K in AtomicInstruction["type"]]: InstructionAnimator<
+    Extract<AtomicInstruction, { type: K }>
+  >;
 } = {
   allemande: allemandeSegments,
   balance: balanceSegments,
@@ -141,17 +141,11 @@ export const atomicSegmentAnimators: {
   turn_as_a_couple: turnAsACoupleSegments,
 };
 
-export function makeAtomicSegmentAnimator(
-  instr: AtomicInstruction,
-): SegmentAnimator {
-  const makeSegments = atomicSegmentAnimators[instr.type] as (
-    _: typeof instr,
-  ) => SegmentAnimator;
-  return makeSegments(instr);
-}
-
 export function makeAtomicInstructionAnimator(
   instr: AtomicInstruction,
 ): Animator {
-  return toAnimator(makeAtomicSegmentAnimator(instr));
+  const segAnimator = atomicSegmentAnimators[
+    instr.type
+  ] as InstructionAnimator<AtomicInstruction>;
+  return toAnimator(segAnimator, instr);
 }

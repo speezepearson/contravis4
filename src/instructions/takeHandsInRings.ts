@@ -15,9 +15,9 @@ import {
 } from "./_base";
 import {
   evaluateSegmentEnd,
+  type InstructionAnimator,
   makeImmediateSegment,
   type Segment,
-  type SegmentAnimator,
 } from "./_segment";
 
 export const TakeHandsInRingsInstructionSchema = z.object({
@@ -68,11 +68,11 @@ export function makeRingSegment(init: WorldState): Segment {
   });
 }
 
-export const takeHandsInRingsSegments =
-  (_instr: TakeHandsInRingsInstruction): SegmentAnimator =>
-  (init, who) => {
-    const segment = makeRingSegment(init);
-    const endState = evaluateSegmentEnd(segment, init, who);
-    resolveRings(endState);
-    return [segment];
-  };
+export const takeHandsInRingsSegments: InstructionAnimator<
+  TakeHandsInRingsInstruction
+> = (_instr, init, who) => {
+  const segment = makeRingSegment(init);
+  const endState = evaluateSegmentEnd(segment, init, who);
+  resolveRings(endState);
+  return [segment];
+};

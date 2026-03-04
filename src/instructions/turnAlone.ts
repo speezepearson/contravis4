@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isLark } from "../contraCore";
 import { PI } from "../geometry";
 import { InstructionIdSchema } from "./_base";
-import { rotateFacingBy, type SegmentAnimator } from "./_segment";
+import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const TurnAloneInstructionSchema = z.object({
   id: InstructionIdSchema,
@@ -12,11 +12,11 @@ export const TurnAloneInstructionSchema = z.object({
 });
 export type TurnAloneInstruction = z.infer<typeof TurnAloneInstructionSchema>;
 
-export const turnAloneSegments =
-  (instr: TurnAloneInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: instr.beats,
-      facing: rotateFacingBy((id) => (isLark(id) ? -PI : PI)),
-    },
-  ];
+export const turnAloneSegments: InstructionAnimator<TurnAloneInstruction> = (
+  instr,
+) => [
+  {
+    dur: instr.beats,
+    facing: rotateFacingBy((id) => (isLark(id) ? -PI : PI)),
+  },
+];

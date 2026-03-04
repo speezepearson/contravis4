@@ -29,7 +29,8 @@ import {
 } from "./_base";
 
 /** Produces segments for an instruction. The primary interface for atomic instructions. */
-export type SegmentAnimator = (
+export type InstructionAnimator<T> = (
+  instr: T,
   init: WorldState,
   who: Set<ProtoId>,
 ) => Segment[];
@@ -164,9 +165,12 @@ export function makeAnimation(
   };
 }
 
-/** Wrap a SegmentAnimator into an Animator by rendering segments via makeAnimation. */
-export function toAnimator(segAnimator: SegmentAnimator): Animator {
-  return (init, who) => makeAnimation(init, who, segAnimator(init, who));
+/** Wrap an InstructionAnimator into an Animator by rendering segments via makeAnimation. */
+export function toAnimator<T>(
+  segAnimator: InstructionAnimator<T>,
+  instr: T,
+): Animator {
+  return (init, who) => makeAnimation(init, who, segAnimator(instr, init, who));
 }
 
 /**

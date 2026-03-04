@@ -7,7 +7,7 @@ import {
   instructionBaseSchemaFields,
   resolveCalledIdentifier,
 } from "./_base";
-import { makeImmediateSegment, type SegmentAnimator } from "./_segment";
+import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const RelabelInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,11 +18,12 @@ export const RelabelInstructionSchema = z.object({
 });
 export type RelabelInstruction = z.infer<typeof RelabelInstructionSchema>;
 
-export const relabelSegments =
-  (instr: RelabelInstruction): SegmentAnimator =>
-  (init) => [
-    makeImmediateSegment(init, (id, draft) => {
-      const theirId = must(resolveCalledIdentifier(id, instr.cid, init));
-      draft[id].labels[instr.label] = theirId;
-    }),
-  ];
+export const relabelSegments: InstructionAnimator<RelabelInstruction> = (
+  instr,
+  init,
+) => [
+  makeImmediateSegment(init, (id, draft) => {
+    const theirId = must(resolveCalledIdentifier(id, instr.cid, init));
+    draft[id].labels[instr.label] = theirId;
+  }),
+];

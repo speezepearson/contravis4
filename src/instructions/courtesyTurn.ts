@@ -3,7 +3,7 @@ import { z } from "zod";
 import { PI, revolve } from "../geometry";
 import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
-import { hold, rotateFacingBy, type SegmentAnimator } from "./_segment";
+import { hold, type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const CourtesyTurnInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -13,26 +13,26 @@ export type CourtesyTurnInstruction = z.infer<
   typeof CourtesyTurnInstructionSchema
 >;
 
-export const courtesyTurnSegments =
-  (instr: CourtesyTurnInstruction): SegmentAnimator =>
-  (init) => {
-    // TODO: need `who`
-    const matches = resolveMatches("larks_right_robins_left", init, {
-      roles: "different",
-    });
+export const courtesyTurnSegments: InstructionAnimator<
+  CourtesyTurnInstruction
+> = (instr, init) => {
+  // TODO: need `who`
+  const matches = resolveMatches("larks_right_robins_left", init, {
+    roles: "different",
+  });
 
-    return [
-      {
-        dur: instr.beats,
-        position: (id, frac, segInit) => {
-          const myPos = segInit[id].pos;
-          const theirPos = getDancerState(matches[id], segInit).pos;
-          const center = myPos.add(theirPos).divide(2);
-          return revolve(myPos, { around: center, radians: PI * frac });
-        },
-        facing: rotateFacingBy(() => PI),
-        hands: (id) =>
-          hold(["left", matches[id], "left"], ["right", matches[id], "right"]),
+  return [
+    {
+      dur: instr.beats,
+      position: (id, frac, segInit) => {
+        const myPos = segInit[id].pos;
+        const theirPos = getDancerState(matches[id], segInit).pos;
+        const center = myPos.add(theirPos).divide(2);
+        return revolve(myPos, { around: center, radians: PI * frac });
       },
-    ];
-  };
+      facing: rotateFacingBy(() => PI),
+      hands: (id) =>
+        hold(["left", matches[id], "left"], ["right", matches[id], "right"]),
+    },
+  ];
+};

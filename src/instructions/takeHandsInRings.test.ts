@@ -23,7 +23,7 @@ const DUMMY_INSTR = {
 describe("takeHandsInRings", () => {
   it("forms a ring of 4 in improper formation", () => {
     const init = initFormationStates.improper;
-    const segments = takeHandsInRingsSegments(DUMMY_INSTR)(init, allProtos);
+    const segments = takeHandsInRingsSegments(DUMMY_INSTR, init, allProtos);
     expect(segments).toHaveLength(1);
     expect(segments[0].dur).toBe(0);
 
@@ -50,7 +50,7 @@ describe("takeHandsInRings", () => {
 
   it("turns dancers to face the center of the ring", () => {
     const init = initFormationStates.improper;
-    const segments = takeHandsInRingsSegments(DUMMY_INSTR)(init, allProtos);
+    const segments = takeHandsInRingsSegments(DUMMY_INSTR, init, allProtos);
     const final = evaluateSegmentEnd(segments[0], init, allProtos);
 
     // In the symmetric improper formation, ring center is at (0, 0)

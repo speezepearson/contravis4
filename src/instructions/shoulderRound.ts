@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
-import type { SegmentAnimator } from "./_segment";
+import type { InstructionAnimator } from "./_segment";
 import { allemandeSegments } from "./allemande";
 
 export const ShoulderRoundInstructionSchema = z.object({
@@ -16,15 +16,13 @@ export type ShoulderRoundInstruction = z.infer<
   typeof ShoulderRoundInstructionSchema
 >;
 
-export const shoulderRoundSegments = (
-  instr: ShoulderRoundInstruction,
-): SegmentAnimator => {
-  const allemandeAnimator = allemandeSegments({
-    ...instr,
-    type: "allemande",
-  });
-  return (init, who) => {
-    const segments = allemandeAnimator(init, who);
-    return segments.map(({ hands: _hands, ...rest }) => rest);
-  };
+export const shoulderRoundSegments: InstructionAnimator<
+  ShoulderRoundInstruction
+> = (instr, init, who) => {
+  const segments = allemandeSegments(
+    { ...instr, type: "allemande" },
+    init,
+    who,
+  );
+  return segments.map(({ hands: _hands, ...rest }) => rest);
 };

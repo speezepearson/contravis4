@@ -41,7 +41,7 @@ describe("allemande approach/orbit speed matching", () => {
     it(`velocity is smooth at approach→orbit boundary (distance=${distance}m)`, () => {
       const init = initWithNeighborDistance(distance);
       const instr = makeInstr();
-      const segments = allemandeSegments(instr)(init, allProtos);
+      const segments = allemandeSegments(instr, init, allProtos);
       const animation = makeAnimation(init, allProtos, segments);
 
       const approachEnd = segments[0].dur;

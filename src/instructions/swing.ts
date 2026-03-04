@@ -26,8 +26,8 @@ import {
   addPositionDrift,
   type HandsFn,
   hold,
+  type InstructionAnimator,
   type Segment,
-  type SegmentAnimator,
 } from "./_segment";
 
 export const SwingInstructionSchema = z.object({
@@ -193,7 +193,8 @@ export function makeSwingSegments(
   return segments;
 }
 
-export const swingSegments =
-  (instr: SwingInstruction): SegmentAnimator =>
-  (init, who) =>
-    makeSwingSegments(instr, init, who);
+export const swingSegments: InstructionAnimator<SwingInstruction> = (
+  instr,
+  init,
+  who,
+) => makeSwingSegments(instr, init, who);

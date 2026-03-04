@@ -8,7 +8,7 @@ import {
   instructionBaseSchemaFields,
   resolveCalledDirection,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { type InstructionAnimator } from "./_segment";
 
 export const StepInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -19,20 +19,18 @@ export const StepInstructionSchema = z.object({
 });
 export type StepInstruction = z.infer<typeof StepInstructionSchema>;
 
-export const stepSegments =
-  (instr: StepInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: instr.beats,
-      position: (id, frac, segInit) => {
-        const dir = resolveCalledDirection(id, instr.direction, segInit);
-        const startPos = getDancerState(id, segInit).pos;
-        const finalPos = startPos.add(dir.multiply(instr.distance));
-        return lerpVectors(startPos, finalPos, frac);
-      },
-      facing: (id, frac, segInit) => {
-        const finalFacing = resolveCalledDirection(id, instr.facing, segInit);
-        return lerpFacing(segInit[id].facing, finalFacing, frac);
-      },
+export const stepSegments: InstructionAnimator<StepInstruction> = (instr) => [
+  {
+    dur: instr.beats,
+    position: (id, frac, segInit) => {
+      const dir = resolveCalledDirection(id, instr.direction, segInit);
+      const startPos = getDancerState(id, segInit).pos;
+      const finalPos = startPos.add(dir.multiply(instr.distance));
+      return lerpVectors(startPos, finalPos, frac);
     },
-  ];
+    facing: (id, frac, segInit) => {
+      const finalFacing = resolveCalledDirection(id, instr.facing, segInit);
+      return lerpFacing(segInit[id].facing, finalFacing, frac);
+    },
+  },
+];

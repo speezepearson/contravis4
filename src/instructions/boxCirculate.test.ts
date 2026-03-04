@@ -47,14 +47,14 @@ const longWavesInit: WorldState = produce(
 
 /** Apply formLongWaves to get hands connected. */
 function makeLongWavesState(): WorldState {
-  const segments = formLongWavesSegments(formInstr)(longWavesInit, allProtos);
+  const segments = formLongWavesSegments(formInstr, longWavesInit, allProtos);
   return evaluateSegmentEnd(segments[0], longWavesInit, allProtos);
 }
 
 describe("boxCirculate", () => {
   it("moves across-facing dancers in_front, out-facing dancers to right-hand partner", () => {
     const wavesState = makeLongWavesState();
-    const segments = boxCirculateSegments(circInstr)(wavesState, allProtos);
+    const segments = boxCirculateSegments(circInstr, wavesState, allProtos);
     const result = evaluateSegmentEnd(segments[0], wavesState, allProtos);
 
     // up_lark_0 (across, EAST): moves to up_robin_0's position, facing stays EAST
@@ -91,7 +91,7 @@ describe("boxCirculate", () => {
 
   it("out-facing dancers travel in a clockwise semicircle", () => {
     const wavesState = makeLongWavesState();
-    const segments = boxCirculateSegments(circInstr)(wavesState, allProtos);
+    const segments = boxCirculateSegments(circInstr, wavesState, allProtos);
     const seg = segments[0];
 
     // At frac=0.5, out-facing dancers should be at the 90° CW point of the semicircle
@@ -116,7 +116,7 @@ describe("boxCirculate", () => {
       draft.up_lark_0.facing = new Vector(0, 1); // NORTH — neither out nor across
     });
 
-    expect(() => boxCirculateSegments(circInstr)(badInit, allProtos)).toThrow(
+    expect(() => boxCirculateSegments(circInstr, badInit, allProtos)).toThrow(
       "boxCirculate requires every dancer to face out or across",
     );
   });

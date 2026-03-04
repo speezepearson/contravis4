@@ -6,9 +6,9 @@ import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import {
   hold,
+  type InstructionAnimator,
   linearTo,
   rotateFacingBy,
-  type SegmentAnimator,
 } from "./_segment";
 
 export const RoryOMoreInstructionSchema = z.object({
@@ -18,34 +18,35 @@ export const RoryOMoreInstructionSchema = z.object({
 });
 export type RoryOMoreInstruction = z.infer<typeof RoryOMoreInstructionSchema>;
 
-export const roryOMoreSegments =
-  (instr: RoryOMoreInstruction): SegmentAnimator =>
-  (init) => {
-    const matches = resolveMatches(
-      ({ left: "in left hand", right: "in right hand" } as const)[
-        instr.direction
-      ],
-      init,
-    );
+export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
+  instr,
+  init,
+) => {
+  const matches = resolveMatches(
+    ({ left: "in left hand", right: "in right hand" } as const)[
+      instr.direction
+    ],
+    init,
+  );
 
-    // CW for right, CCW for left
-    const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
+  // CW for right, CCW for left
+  const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
 
-    return [
-      {
-        dur: instr.beats,
-        position: linearTo((id) => getDancerState(matches[id], init).pos),
-        facing: rotateFacingBy(() => rotationRadians),
-        hands: () => ({}),
-      },
-      {
-        dur: 0,
-        hands: (id) =>
-          hold([
-            otherHand(instr.direction),
-            matches[id],
-            otherHand(instr.direction),
-          ]),
-      },
-    ];
-  };
+  return [
+    {
+      dur: instr.beats,
+      position: linearTo((id) => getDancerState(matches[id], init).pos),
+      facing: rotateFacingBy(() => rotationRadians),
+      hands: () => ({}),
+    },
+    {
+      dur: 0,
+      hands: (id) =>
+        hold([
+          otherHand(instr.direction),
+          matches[id],
+          otherHand(instr.direction),
+        ]),
+    },
+  ];
+};

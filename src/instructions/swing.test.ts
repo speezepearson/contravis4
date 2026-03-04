@@ -30,7 +30,7 @@ function swingFinalState(
   overrides: Partial<SwingInstruction> = {},
 ) {
   const instr = makeInstr(overrides);
-  const segments = swingSegments(instr)(init, allProtos);
+  const segments = swingSegments(instr, init, allProtos);
   const animation = makeAnimation(init, allProtos, segments);
   return animation.getFrame(animation.dur);
 }
@@ -51,7 +51,7 @@ describe("swing approach/orbit speed matching", () => {
     it(`velocity is smooth at approach→swing boundary (distance=${distance}m)`, () => {
       const init = initWithPartnerDistance(distance);
       const instr = makeInstr();
-      const segments = swingSegments(instr)(init, allProtos);
+      const segments = swingSegments(instr, init, allProtos);
       const animation = makeAnimation(init, allProtos, segments);
 
       const approachEnd = segments[0].dur;

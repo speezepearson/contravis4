@@ -11,11 +11,11 @@ import {
 import {
   arc,
   hold,
+  type InstructionAnimator,
   lerpFacingTo,
   orbit,
   rotateFacingBy,
   type Segment,
-  type SegmentAnimator,
 } from "./_segment";
 
 export const AllemandeInstructionSchema = z.object({
@@ -50,70 +50,70 @@ export function approachBeatsForSpeedMatch(
   return (approachFactor * totalBeats) / (orbitFactor + approachFactor);
 }
 
-export const allemandeSegments = (
-  instr: AllemandeInstruction,
-): SegmentAnimator => {
+export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
+  instr,
+  init,
+  who,
+) => {
   const rotationSign = instr.handedness === "left" ? 1 : -1;
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  return (init, who) => {
-    const matches = new Map(
-      [...who].map((id) => [id, resolveMatch(id, instr.cid, init)]),
-    );
-    const alreadyClose = buildProtoRecord((id) => {
-      const me = getDancerState(id, init);
-      const matchId = matches.get(id);
-      if (!matchId) return false;
-      const them = getDancerState(matchId, init);
-      return me.pos.subtract(them.pos).length() < 1.2;
-    });
+  const matches = new Map(
+    [...who].map((id) => [id, resolveMatch(id, instr.cid, init)]),
+  );
+  const alreadyClose = buildProtoRecord((id) => {
+    const me = getDancerState(id, init);
+    const matchId = matches.get(id);
+    if (!matchId) return false;
+    const them = getDancerState(matchId, init);
+    return me.pos.subtract(them.pos).length() < 1.2;
+  });
 
-    let totalDistance = 0;
-    let count = 0;
-    for (const [id, matchId] of matches) {
-      const me = getDancerState(id as ProtoId, init);
-      const them = getDancerState(matchId, init);
-      totalDistance += me.pos.subtract(them.pos).length();
-      count++;
-    }
-    const avgDistance = totalDistance / count;
-    const approachBeats = approachBeatsForSpeedMatch(
-      avgDistance,
-      instr.beats,
-      numAllemandeRadians,
-    );
-    const circlingBeats = instr.beats - approachBeats;
+  let totalDistance = 0;
+  let count = 0;
+  for (const [id, matchId] of matches) {
+    const me = getDancerState(id as ProtoId, init);
+    const them = getDancerState(matchId, init);
+    totalDistance += me.pos.subtract(them.pos).length();
+    count++;
+  }
+  const avgDistance = totalDistance / count;
+  const approachBeats = approachBeatsForSpeedMatch(
+    avgDistance,
+    instr.beats,
+    numAllemandeRadians,
+  );
+  const circlingBeats = instr.beats - approachBeats;
 
-    return [
-      {
-        dur: approachBeats,
-        position: arc(instr.cid, {
-          semiMinor: -ALLEMANDE_RADIUS * rotationSign,
-          phi: APPROACH_ELLIPSE_RADIANS,
-        }),
-        facing: lerpFacingTo((id, segInit) => {
-          const matchId = matches.get(id);
-          if (!matchId) return segInit[id].facing;
-          return getDir({
-            from: segInit[id].pos,
-            to: getDancerState(matchId, segInit).pos,
-          });
-        }),
-        hands: (id) =>
-          alreadyClose[id]
-            ? hold([instr.handedness, matches.get(id)!, instr.handedness])
-            : {},
-      },
-      {
-        dur: circlingBeats,
-        position: orbit(matches, { radians: numAllemandeRadians }, who),
-        facing: rotateFacingBy(() => numAllemandeRadians),
-        hands: (id) =>
-          !matches.has(id)
-            ? {}
-            : hold([instr.handedness, matches.get(id)!, instr.handedness]),
-      },
-    ] satisfies Segment[];
-  };
+  return [
+    {
+      dur: approachBeats,
+      position: arc(instr.cid, {
+        semiMinor: -ALLEMANDE_RADIUS * rotationSign,
+        phi: APPROACH_ELLIPSE_RADIANS,
+      }),
+      facing: lerpFacingTo((id, segInit) => {
+        const matchId = matches.get(id);
+        if (!matchId) return segInit[id].facing;
+        return getDir({
+          from: segInit[id].pos,
+          to: getDancerState(matchId, segInit).pos,
+        });
+      }),
+      hands: (id) =>
+        alreadyClose[id]
+          ? hold([instr.handedness, matches.get(id)!, instr.handedness])
+          : {},
+    },
+    {
+      dur: circlingBeats,
+      position: orbit(matches, { radians: numAllemandeRadians }, who),
+      facing: rotateFacingBy(() => numAllemandeRadians),
+      hands: (id) =>
+        !matches.has(id)
+          ? {}
+          : hold([instr.handedness, matches.get(id)!, instr.handedness]),
+    },
+  ] satisfies Segment[];
 };

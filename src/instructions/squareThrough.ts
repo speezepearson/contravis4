@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { instructionBaseSchemaFields } from "./_base";
-import { advanceState, type Segment, type SegmentAnimator } from "./_segment";
+import {
+  advanceState,
+  type InstructionAnimator,
+  type Segment,
+} from "./_segment";
 import { balanceSegments } from "./balance";
 import { faceSegments } from "./face";
 import { pullBySegments } from "./pullBy";
@@ -15,81 +19,86 @@ export type SquareThroughInstruction = z.infer<
   typeof SquareThroughInstructionSchema
 >;
 
-export const squareThroughSegments =
-  (instr: SquareThroughInstruction): SegmentAnimator =>
-  (init, who) => {
-    const id = instr.id;
-    const balanceBeats = instr.beats / 2;
-    const pullByBeats = instr.beats / 4;
+export const squareThroughSegments: InstructionAnimator<
+  SquareThroughInstruction
+> = (instr, init, who) => {
+  const id = instr.id;
+  const balanceBeats = instr.beats / 2;
+  const pullByBeats = instr.beats / 4;
 
-    let state = init;
-    const allSegments: Segment[] = [];
+  let state = init;
+  const allSegments: Segment[] = [];
 
-    function append(segs: Segment[]) {
-      allSegments.push(...segs);
-      state = advanceState(segs, state, who);
-    }
+  function append(segs: Segment[]) {
+    allSegments.push(...segs);
+    state = advanceState(segs, state, who);
+  }
 
-    // 1. Face across
-    append(
-      faceSegments({ id, beats: 0, type: "face", direction: "across" })(
-        state,
-        who,
-      ),
-    );
+  // 1. Face across
+  append(
+    faceSegments(
+      { id, beats: 0, type: "face", direction: "across" },
+      state,
+      who,
+    ),
+  );
 
-    // 2. Take right hands with person in front
-    append(
-      takeHandsSegments({
-        id,
-        beats: 0,
-        type: "take_hands",
-        cid: "in_front",
-        hand: "right",
-      })(state, who),
-    );
+  // 2. Take right hands with person in front
+  append(
+    takeHandsSegments(
+      { id, beats: 0, type: "take_hands", cid: "in_front", hand: "right" },
+      state,
+      who,
+    ),
+  );
 
-    // 3. Balance toward person in front
-    append(
-      balanceSegments({
-        id,
-        beats: balanceBeats,
-        type: "balance",
-        did: "in_front",
-      })(state, who),
-    );
+  // 3. Balance toward person in front
+  append(
+    balanceSegments(
+      { id, beats: balanceBeats, type: "balance", did: "in_front" },
+      state,
+      who,
+    ),
+  );
 
-    // 4. Pull by right
-    append(
-      pullBySegments({
+  // 4. Pull by right
+  append(
+    pullBySegments(
+      {
         id,
         beats: pullByBeats,
         type: "pull_by",
         cid: "in right hand",
         hand: "right",
-      })(state, who),
-    );
+      },
+      state,
+      who,
+    ),
+  );
 
-    // 5. Turn: larks right, robins left
-    append(
-      faceSegments({
-        id,
-        beats: 0,
-        type: "face",
-        direction: "larks_right_robins_left",
-      })(state, who),
-    );
+  // 5. Turn: larks right, robins left
+  append(
+    faceSegments(
+      { id, beats: 0, type: "face", direction: "larks_right_robins_left" },
+      state,
+      who,
+    ),
+  );
 
-    // 6. Pull by left with person in front
-    append(
-      pullBySegments({
+  // 6. Pull by left with person in front
+  append(
+    pullBySegments(
+      {
         id,
         beats: pullByBeats,
         type: "pull_by",
         cid: "in_front",
         hand: "left",
-      })(state, who),
-    );
+      },
+      state,
+      who,
+    ),
+  );
 
-    return allSegments;
-  };
+  return allSegments;
+};

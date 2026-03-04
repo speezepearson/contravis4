@@ -8,7 +8,7 @@ import {
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { arc, hold, type SegmentAnimator } from "./_segment";
+import { arc, hold, type InstructionAnimator } from "./_segment";
 
 export const PullByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,22 +18,23 @@ export const PullByInstructionSchema = z.object({
 });
 export type PullByInstruction = z.infer<typeof PullByInstructionSchema>;
 
-export const pullBySegments =
-  (instr: PullByInstruction): SegmentAnimator =>
-  (init) => {
-    const matches = resolveMatches(instr.cid, init);
-    const semiMinor = 0.25 * { left: -1, right: 1 }[instr.hand];
-    return [
-      {
-        dur: instr.beats,
-        position: arc(instr.cid, { semiMinor, phi: PI }),
-        facing: (id, _frac, segInit) => {
-          return getDancerState(matches[id], segInit)
-            .pos.subtract(segInit[id].pos)
-            .normalize();
-        },
-        hands: (id, frac) =>
-          frac < 0.5 ? hold([instr.hand, matches[id], instr.hand]) : {},
+export const pullBySegments: InstructionAnimator<PullByInstruction> = (
+  instr,
+  init,
+) => {
+  const matches = resolveMatches(instr.cid, init);
+  const semiMinor = 0.25 * { left: -1, right: 1 }[instr.hand];
+  return [
+    {
+      dur: instr.beats,
+      position: arc(instr.cid, { semiMinor, phi: PI }),
+      facing: (id, _frac, segInit) => {
+        return getDancerState(matches[id], segInit)
+          .pos.subtract(segInit[id].pos)
+          .normalize();
       },
-    ];
-  };
+      hands: (id, frac) =>
+        frac < 0.5 ? hold([instr.hand, matches[id], instr.hand]) : {},
+    },
+  ];
+};

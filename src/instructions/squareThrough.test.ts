@@ -20,14 +20,14 @@ const instr: SquareThroughInstruction = {
 describe("squareThrough", () => {
   it("segment durations sum to total beats", () => {
     const init = initFormationStates.improper;
-    const segments = squareThroughSegments(instr)(init, allProtos);
+    const segments = squareThroughSegments(instr, init, allProtos);
     const totalDur = segments.reduce((sum, s) => sum + s.dur, 0);
     expect(totalDur).toBe(8);
   });
 
   it("produces a valid animation from improper", () => {
     const init = initFormationStates.improper;
-    const segments = squareThroughSegments(instr)(init, allProtos);
+    const segments = squareThroughSegments(instr, init, allProtos);
 
     // Should not throw when building and evaluating the animation
     const anim = makeAnimation(init, allProtos, segments);
@@ -41,7 +41,7 @@ describe("squareThrough", () => {
 
   it("ends with all dancers having swapped across and progressed along set", () => {
     const init = initFormationStates.improper;
-    const segments = squareThroughSegments(instr)(init, allProtos);
+    const segments = squareThroughSegments(instr, init, allProtos);
 
     // Thread through all segments to get final state
     let state: WorldState = init;
