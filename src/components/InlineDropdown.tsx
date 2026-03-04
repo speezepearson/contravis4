@@ -70,6 +70,12 @@ export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
           tabIndex={0}
           role="button"
           onClick={cycle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              cycle();
+            }
+          }}
         >
           {displayText}
         </span>
@@ -98,6 +104,12 @@ export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
             className={`inline-value${!value ? " inline-value-placeholder" : ""}`}
             tabIndex={0}
             role="button"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleOpenChange(!open);
+              }
+            }}
           >
             {displayText}
           </span>
