@@ -3,7 +3,7 @@ import { z } from "zod";
 import { HandSchema, otherHand } from "../contraCore";
 import { TWO_PI } from "../geometry";
 import { getDancerState } from "../worldState";
-import { instructionBaseSchemaFields, resolveMatches } from "./_base";
+import { instructionBaseSchemaFields, resolveMatch } from "./_base";
 import {
   hold,
   linearTo,
@@ -21,12 +21,9 @@ export type RoryOMoreInstruction = z.infer<typeof RoryOMoreInstructionSchema>;
 export const roryOMoreSegments =
   (instr: RoryOMoreInstruction): SegmentAnimator =>
   (init) => {
-    const matches = resolveMatches(
-      ({ left: "in left hand", right: "in right hand" } as const)[
-        instr.direction
-      ],
-      init,
-    );
+    const cid = ({ left: "in left hand", right: "in right hand" } as const)[
+      instr.direction
+    ];
 
     // CW for right, CCW for left
     const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
@@ -34,18 +31,24 @@ export const roryOMoreSegments =
     return [
       {
         dur: instr.beats,
-        position: linearTo((id) => getDancerState(matches[id], init).pos),
+        position: linearTo((id, segInit) => {
+          const them = resolveMatch(id, cid, segInit);
+          return getDancerState(them, segInit).pos;
+        }),
         facing: rotateFacingBy(() => rotationRadians),
         hands: () => ({}),
       },
       {
         dur: 0,
-        hands: (id) =>
-          hold([
+        // Resolve against init (not segInit) because the first segment drops hands
+        hands: (id) => {
+          const them = resolveMatch(id, cid, init);
+          return hold([
             otherHand(instr.direction),
-            matches[id],
+            them,
             otherHand(instr.direction),
-          ]),
+          ]);
+        },
       },
     ];
   };

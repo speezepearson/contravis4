@@ -1,14 +1,13 @@
 import { z } from "zod";
 
 import { ALL_HANDS } from "../contraCore";
-import { disconnectHands } from "../worldState";
 import {
   type CalledIdentifier,
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveMatches,
+  resolveMatch,
 } from "./_base";
-import { makeImmediateSegment, type SegmentAnimator } from "./_segment";
+import { type SegmentAnimator } from "./_segment";
 
 export const DropHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -40,15 +39,25 @@ export const dropHandsSegments =
         return [{ dur: 0, hands: () => ({}) }];
       default: {
         instr.which satisfies CalledIdentifier;
-        const matches = resolveMatches(instr.which, init);
         return [
-          makeImmediateSegment(init, (id, draft) => {
-            for (const hand of ALL_HANDS) {
-              if (draft[id].hands[hand]?.theirId === matches[id]) {
-                disconnectHands(draft, id, hand);
+          {
+            dur: 0,
+            hands: (id, _frac, segInit) => {
+              const matchId = resolveMatch(
+                id,
+                instr.which as CalledIdentifier,
+                segInit,
+              );
+              const result: (typeof segInit)[typeof id]["hands"] = {};
+              for (const hand of ALL_HANDS) {
+                const existing = segInit[id].hands[hand];
+                if (existing && existing.theirId !== matchId) {
+                  result[hand] = existing;
+                }
               }
-            }
-          }),
+              return result;
+            },
+          },
         ];
       }
     }
