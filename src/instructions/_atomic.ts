@@ -50,6 +50,11 @@ import {
   TakeHandsInRingsInstructionSchema,
   takeHandsInRingsSegments,
 } from "./takeHandsInRings";
+import { TurnAloneInstructionSchema, turnAloneSegments } from "./turnAlone";
+import {
+  TurnAsACoupleInstructionSchema,
+  turnAsACoupleSegments,
+} from "./turnAsACouple";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
@@ -76,6 +81,8 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
   TakeHandsInstructionSchema,
+  TurnAloneInstructionSchema,
+  TurnAsACoupleInstructionSchema,
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
@@ -109,6 +116,8 @@ export const atomicSegmentAnimators: {
   swing: swingSegments,
   take_hands_in_rings: takeHandsInRingsSegments,
   take_hands: takeHandsSegments,
+  turn_alone: turnAloneSegments,
+  turn_as_a_couple: turnAsACoupleSegments,
 };
 
 export function makeAtomicSegmentAnimator(

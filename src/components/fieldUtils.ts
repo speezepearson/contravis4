@@ -141,6 +141,10 @@ export function makeDefaultInstruction(
           cid: "neighbor",
           hand: "right",
         };
+      case "turn_alone":
+        return { id, type: "turn_alone" };
+      case "turn_as_a_couple":
+        return { id, type: "turn_as_a_couple", beats: 4, cid: "partner" };
       default:
         assertNever(type);
     }
