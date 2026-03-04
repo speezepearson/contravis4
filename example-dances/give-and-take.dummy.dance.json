@@ -48,7 +48,7 @@
       "beats": 8,
       "type": "circle",
       "direction": "left",
-      "rotations": 0.75
+      "nPlaces": 3
     }
   ]
 }

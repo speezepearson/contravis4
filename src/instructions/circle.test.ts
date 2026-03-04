@@ -20,7 +20,7 @@ function makeInstr(
     beats: 8,
     type: "circle",
     direction: "left",
-    rotations: 1,
+    nPlaces: 4,
     ...overrides,
   };
 }
@@ -28,7 +28,7 @@ function makeInstr(
 describe("circle", () => {
   it("full rotation returns dancers to starting positions", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ direction: "left", rotations: 1 });
+    const instr = makeInstr({ direction: "left", nPlaces: 4 });
     const animation = toAnimator(circleSegments(instr))(init, allProtos);
     const final = animation.getFrame(animation.dur);
 
@@ -40,7 +40,7 @@ describe("circle", () => {
 
   it("direction=left orbits clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ direction: "left", rotations: 0.25 });
+    const instr = makeInstr({ direction: "left", nPlaces: 1 });
     const animation = toAnimator(circleSegments(instr))(init, allProtos);
     const final = animation.getFrame(animation.dur);
 
@@ -55,7 +55,7 @@ describe("circle", () => {
 
   it("direction=right orbits counter-clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ direction: "right", rotations: 0.25 });
+    const instr = makeInstr({ direction: "right", nPlaces: 1 });
     const animation = toAnimator(circleSegments(instr))(init, allProtos);
     const final = animation.getFrame(animation.dur);
 
@@ -69,7 +69,7 @@ describe("circle", () => {
 
   it("maintains hand connections throughout", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ rotations: 0.5 });
+    const instr = makeInstr({ nPlaces: 2 });
     const animation = toAnimator(circleSegments(instr))(init, allProtos);
     const mid = animation.getFrame(animation.dur / 2);
 

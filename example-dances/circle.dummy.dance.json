@@ -7,14 +7,14 @@
       "beats": 8,
       "type": "circle",
       "direction": "left",
-      "rotations": 0.75
+      "nPlaces": 3
     },
     {
       "id": "05e788af-365e-4536-916a-b6bccda876b7",
       "beats": 8,
       "type": "circle",
       "direction": "right",
-      "rotations": 0.75
+      "nPlaces": 3
     }
   ]
 }
