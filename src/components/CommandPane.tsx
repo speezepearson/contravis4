@@ -66,6 +66,7 @@ import { FormLongWavesFields } from "./fields/FormLongWavesFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
 import { LongLineInCenterFields } from "./fields/LongLineInCenterFields";
+import { LongLinesForwardBackFields } from "./fields/LongLinesForwardBackFields";
 import { MadRobinFields } from "./fields/MadRobinFields";
 import { PassByFields } from "./fields/PassByFields";
 import { PetronellaFields } from "./fields/PetronellaFields";
@@ -107,6 +108,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "form_short_waves",
   "give_and_take_into_swing",
   "long_line_in_center",
+  "long_lines_forward_back",
   "mad_robin",
   "pass_by",
   "petronella",
@@ -140,6 +142,7 @@ const ACTION_LABELS: Record<string, string> = {
   form_short_waves: "form short waves",
   give_and_take_into_swing: "give & take",
   long_line_in_center: "long line in center",
+  long_lines_forward_back: "long lines forward & back",
   mad_robin: "mad robin",
   pass_by: "pass by",
   petronella: "petronella",
@@ -435,6 +438,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "do_si_do":
     case "give_and_take_into_swing":
     case "long_line_in_center":
+    case "long_lines_forward_back":
     case "mad_robin":
     case "pass_by":
     case "petronella":
@@ -590,6 +594,13 @@ function InlineForm({
           case "long_line_in_center":
             return (
               <LongLineInCenterFields {...common} instruction={instruction} />
+            );
+          case "long_lines_forward_back":
+            return (
+              <LongLinesForwardBackFields
+                {...common}
+                instruction={instruction}
+              />
             );
           case "mad_robin":
             return <MadRobinFields {...common} instruction={instruction} />;
