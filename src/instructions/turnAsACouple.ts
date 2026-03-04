@@ -2,10 +2,7 @@ import { z } from "zod";
 
 import { ccwRadsBetween, PI } from "../geometry";
 import { getDancerState } from "../worldState";
-import {
-  instructionBaseSchemaFields,
-  resolveMatches,
-} from "./_base";
+import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import { type SegmentAnimator } from "./_segment";
 import { californiaTwirlSegments } from "./californiaTwirl";
 
@@ -20,7 +17,7 @@ export type TurnAsACoupleInstruction = z.infer<
 export const turnAsACoupleSegments =
   (instr: TurnAsACoupleInstruction): SegmentAnimator =>
   (init, who) => {
-    const matches = resolveMatches('larks_right_robins_left', init);
+    const matches = resolveMatches("larks_right_robins_left", init);
 
     const checked = new Set<string>();
     for (const id of who) {

@@ -96,6 +96,17 @@ export function evaluateSegmentEnd(
   });
 }
 
+/** Advance state through a sequence of segments (for composing multi-step instructions). */
+export function advanceState(
+  segs: Segment[],
+  state: WorldState,
+  who: Set<ProtoId>,
+): WorldState {
+  let s = state;
+  for (const seg of segs) s = evaluateSegmentEnd(seg, s, who);
+  return s;
+}
+
 /**
  * Core composer. Takes init state, a `who` set, and array of segments, returns a ContraAnimation.
  * Handles all boilerplate:

@@ -38,6 +38,10 @@ import { PassByInstructionSchema, passBySegments } from "./passBy";
 import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
 import { PullByInstructionSchema, pullBySegments } from "./pullBy";
 import { RelabelInstructionSchema, relabelSegments } from "./relabel";
+import {
+  RightLeftThroughInstructionSchema,
+  rightLeftThroughSegments,
+} from "./rightLeftThrough";
 import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
 import { RoryOMoreInstructionSchema, roryOMoreSegments } from "./roryOMore";
 import {
@@ -80,6 +84,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   PetronellaInstructionSchema,
   PullByInstructionSchema,
   RelabelInstructionSchema,
+  RightLeftThroughInstructionSchema,
   RollAwayInstructionSchema,
   RoryOMoreInstructionSchema,
   ShoulderRoundInstructionSchema,
@@ -117,6 +122,7 @@ export const atomicSegmentAnimators: {
   petronella: petronellaSegments,
   pull_by: pullBySegments,
   relabel: relabelSegments,
+  right_left_through: rightLeftThroughSegments,
   roll_away: rollAwaySegments,
   rory_o_more: roryOMoreSegments,
   shoulder_round: shoulderRoundSegments,

@@ -70,6 +70,7 @@ import { PassByFields } from "./fields/PassByFields";
 import { PetronellaFields } from "./fields/PetronellaFields";
 import { PullByFields } from "./fields/PullByFields";
 import { RelabelFields } from "./fields/RelabelFields";
+import { RightLeftThroughFields } from "./fields/RightLeftThroughFields";
 import { RollAwayFields } from "./fields/RollAwayFields";
 import { RoryOMoreFields } from "./fields/RoryOMoreFields";
 import { ShoulderRoundFields } from "./fields/ShoulderRoundFields";
@@ -109,6 +110,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "petronella",
   "pull_by",
   "relabel",
+  "right_left_through",
   "roll_away",
   "rory_o_more",
   "shoulder_round",
@@ -140,6 +142,7 @@ const ACTION_LABELS: Record<string, string> = {
   petronella: "petronella",
   pull_by: "pull by",
   relabel: "relabel",
+  right_left_through: "right & left through",
   roll_away: "roll away",
   rory_o_more: "Rory O'More",
   shoulder_round: "shoulder round",
@@ -432,6 +435,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "pass_by":
     case "petronella":
     case "pull_by":
+    case "right_left_through":
     case "roll_away":
     case "rory_o_more":
     case "shoulder_round":
@@ -589,6 +593,10 @@ function InlineForm({
             return <PullByFields {...common} instruction={instruction} />;
           case "relabel":
             return <RelabelFields {...common} instruction={instruction} />;
+          case "right_left_through":
+            return (
+              <RightLeftThroughFields {...common} instruction={instruction} />
+            );
           case "roll_away":
             return <RollAwayFields {...common} instruction={instruction} />;
           case "rory_o_more":

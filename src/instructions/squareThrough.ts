@@ -1,13 +1,7 @@
 import { z } from "zod";
 
-import { type ProtoId } from "../contraCore";
-import { type WorldState } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
-import {
-  evaluateSegmentEnd,
-  type Segment,
-  type SegmentAnimator,
-} from "./_segment";
+import { advanceState, type Segment, type SegmentAnimator } from "./_segment";
 import { balanceSegments } from "./balance";
 import { faceSegments } from "./face";
 import { pullBySegments } from "./pullBy";
@@ -20,16 +14,6 @@ export const SquareThroughInstructionSchema = z.object({
 export type SquareThroughInstruction = z.infer<
   typeof SquareThroughInstructionSchema
 >;
-
-function advanceState(
-  segs: Segment[],
-  state: WorldState,
-  who: Set<ProtoId>,
-): WorldState {
-  let s = state;
-  for (const seg of segs) s = evaluateSegmentEnd(seg, s, who);
-  return s;
-}
 
 export const squareThroughSegments =
   (instr: SquareThroughInstruction): SegmentAnimator =>

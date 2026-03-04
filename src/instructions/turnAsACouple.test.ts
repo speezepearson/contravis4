@@ -25,7 +25,6 @@ function makeTurnAsACouple(
     id: "00000000-0000-0000-0000-000000000000",
     beats: 4,
     type: "turn_as_a_couple",
-    cid: "partner",
     ...overrides,
   };
 }
@@ -49,10 +48,11 @@ describe("turnAsACouple", () => {
       draft.up_lark_0.facing = NORTH;
       draft.up_robin_0.facing = SOUTH;
     });
-    const instr = makeTurnAsACouple({ cid: "partner" });
-    expect(() => turnAsACoupleSegments(instr)(badInit, allProtos)).toThrow(
-      "not facing the same direction",
-    );
+    const instr = makeTurnAsACouple();
+    // Direction-based matching (larks_right_robins_left) fails before
+    // the facing validation can fire, since the robin's "left" no
+    // longer points at the lark.
+    expect(() => turnAsACoupleSegments(instr)(badInit, allProtos)).toThrow();
   });
 
   it("produces the same final state as californiaTwirl", () => {

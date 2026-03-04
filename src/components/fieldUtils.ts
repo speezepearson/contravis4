@@ -114,6 +114,8 @@ export function makeDefaultInstruction(
           label: "neighbor",
           cid: "in_front",
         };
+      case "right_left_through":
+        return { id, type: "right_left_through", beats: 8 };
       case "roll_away":
         return { id, type: "roll_away", roller: "lark", rollee: "on_right" };
       case "rory_o_more":
