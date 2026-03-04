@@ -33,6 +33,7 @@ import {
   GiveAndTakeIntoSwingInstructionSchema,
   giveAndTakeIntoSwingSegments,
 } from "./giveAndTakeIntoSwing";
+import { MadRobinInstructionSchema, madRobinSegments } from "./madRobin";
 import { PassByInstructionSchema, passBySegments } from "./passBy";
 import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
 import { PullByInstructionSchema, pullBySegments } from "./pullBy";
@@ -65,6 +66,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   FormLongWavesInstructionSchema,
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
+  MadRobinInstructionSchema,
   PassByInstructionSchema,
   PetronellaInstructionSchema,
   PullByInstructionSchema,
@@ -98,6 +100,7 @@ export const atomicSegmentAnimators: {
   form_long_waves: formLongWavesSegments,
   form_short_waves: formShortWavesSegments,
   give_and_take_into_swing: giveAndTakeIntoSwingSegments,
+  mad_robin: madRobinSegments,
   pass_by: passBySegments,
   petronella: petronellaSegments,
   pull_by: pullBySegments,

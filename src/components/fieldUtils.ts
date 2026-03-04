@@ -80,6 +80,14 @@ export function makeDefaultInstruction(
           drawerRole: "lark",
           endFacing: "across",
         };
+      case "mad_robin":
+        return {
+          id,
+          type: "mad_robin",
+          cid: "neighbor",
+          rotations: 1,
+          whoInFront: "lark",
+        };
       case "pass_by":
         return {
           id,
