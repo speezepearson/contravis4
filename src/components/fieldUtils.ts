@@ -82,6 +82,8 @@ export function makeDefaultInstruction(
         };
       case "long_line_in_center":
         return { id, type: "long_line_in_center", role: "lark" };
+      case "long_lines_forward_back":
+        return { id, type: "long_lines_forward_back" };
       case "mad_robin":
         return {
           id,
