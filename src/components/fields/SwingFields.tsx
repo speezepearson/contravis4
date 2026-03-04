@@ -1,7 +1,10 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema, inferRoleOfCalledIdentifier } from "../../instructions/_base";
+import {
+  CalledIdentifierSchema,
+  inferRoleOfCalledIdentifier,
+} from "../../instructions/_base";
 import { SwingInstructionSchema } from "../../instructions/swing";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
@@ -35,7 +38,9 @@ export function SwingFields({
   return (
     <>
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options.filter(cid => inferRoleOfCalledIdentifier(cid) !== 'same')}
+        options={CalledIdentifierSchema.options.filter(
+          (cid) => inferRoleOfCalledIdentifier(cid) !== "same",
+        )}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />

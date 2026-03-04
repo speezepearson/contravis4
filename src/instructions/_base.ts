@@ -250,11 +250,27 @@ export function resolveCalledIdentifier(
   return res;
 }
 
-export function inferRoleOfCalledIdentifier(cid: CalledIdentifier): 'same' | 'different' | null {
+export function inferRoleOfCalledIdentifier(
+  cid: CalledIdentifier,
+): "same" | "different" | null {
   switch (cid) {
-    case 'neighbor': case 'next neighbor': case 'next x2 neighbor': case 'next x3 neighbor': case 'prev neighbor': case 'prev x2 neighbor': case 'prev x3 neighbor':
-    case 'partner': case 'shadow': case 'shadow 2': case 'shadow 3': case 'shadow 4': case 'shadow 5': case 'shadow 6': return 'different';
-    case 'opposite': return 'same';
+    case "neighbor":
+    case "next neighbor":
+    case "next x2 neighbor":
+    case "next x3 neighbor":
+    case "prev neighbor":
+    case "prev x2 neighbor":
+    case "prev x3 neighbor":
+    case "partner":
+    case "shadow":
+    case "shadow 2":
+    case "shadow 3":
+    case "shadow 4":
+    case "shadow 5":
+    case "shadow 6":
+      return "different";
+    case "opposite":
+      return "same";
   }
   return null;
 }
@@ -318,6 +334,18 @@ export function resolveRings(
   return buildProtoRecord((id) =>
     getCycle(id, "in right hand", state, { length: 4, roles: "different" }),
   );
+}
+
+/** True when a dancer faces away from the center line (x = 0). */
+export function facesOut(id: DancerId, state: WorldState): boolean {
+  const { facing, pos } = getDancerState(id, state);
+  return (pos.x < 0 && facing.x < 0) || (pos.x > 0 && facing.x > 0);
+}
+
+/** True when a dancer faces toward the center line (x = 0). */
+export function facesAcross(id: DancerId, state: WorldState): boolean {
+  const { facing, pos } = getDancerState(id, state);
+  return (pos.x < 0 && facing.x > 0) || (pos.x > 0 && facing.x < 0);
 }
 
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {

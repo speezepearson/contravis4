@@ -2,7 +2,10 @@ import type z from "zod";
 
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema, inferRoleOfCalledIdentifier } from "../../instructions/_base";
+import {
+  CalledIdentifierSchema,
+  inferRoleOfCalledIdentifier,
+} from "../../instructions/_base";
 import { GiveAndTakeIntoSwingInstructionSchema } from "../../instructions/giveAndTakeIntoSwing";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
@@ -47,7 +50,9 @@ export function GiveAndTakeIntoSwingFields({
       />
       {" draw "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options.filter(cid => inferRoleOfCalledIdentifier(cid) !== 'same')}
+        options={CalledIdentifierSchema.options.filter(
+          (cid) => inferRoleOfCalledIdentifier(cid) !== "same",
+        )}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />

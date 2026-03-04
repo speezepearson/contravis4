@@ -32,7 +32,9 @@ describe("rollAway", () => {
         draft.up_robin_0.pos = new Vector(-1.5, -0.5);
       });
       const instr = makeInstr({ roller: "lark", rollee: "on_right" });
-      expect(() => rollAwaySegments(instr, init, allProtos)).toThrow("has no opposite-role");
+      expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
+        "has no opposite-role",
+      );
     });
 
     it("throws if two rollers have the same rollee", () => {
@@ -55,7 +57,11 @@ describe("rollAway", () => {
   describe("RTL with roller=lark", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ roller: "lark", rollee: "on_right" });
-    const animation = animateSegments(init, allProtos, rollAwaySegments(instr, init, allProtos));
+    const animation = animateSegments(
+      init,
+      allProtos,
+      rollAwaySegments(instr, init, allProtos),
+    );
     const final = animation.getFrame(animation.dur);
 
     it("swaps places at the end", () => {

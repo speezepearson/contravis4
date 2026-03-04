@@ -41,7 +41,12 @@ const longWavesInit: WorldState = produce(
 describe("formLongWaves", () => {
   it("snaps facings and connects hands", () => {
     const segments = formLongWavesSegments(instr, longWavesInit, allProtos);
-    const result = getSegmentFrameAtFrac(segments[0], longWavesInit, allProtos, 1);
+    const result = getSegmentFrameAtFrac(
+      segments[0],
+      longWavesInit,
+      allProtos,
+      1,
+    );
 
     // Facings should be preserved (already exact EAST/WEST)
     expect(result.up_lark_0.facing.x).toBeCloseTo(EAST.x, 10);

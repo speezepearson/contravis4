@@ -43,10 +43,11 @@ function animateInstruction(
   if (instr.type === "split") {
     return splitAnimator(instr, init, new Set<ProtoId>(ALL_PROTO_IDS));
   }
-  return animateSegments(init, new Set<ProtoId>(ALL_PROTO_IDS), makeAtomicInstructionSegments(instr,
+  return animateSegments(
     init,
     new Set<ProtoId>(ALL_PROTO_IDS),
-  ));
+    makeAtomicInstructionSegments(instr, init, new Set<ProtoId>(ALL_PROTO_IDS)),
+  );
 }
 
 /**

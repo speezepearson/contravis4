@@ -25,7 +25,11 @@ function makeInstr(
 describe("turnAlone", () => {
   const init = initFormationStates.improper;
   const instr = makeInstr();
-  const animation = animateSegments(init, allProtos, turnAloneSegments(instr, init, allProtos));
+  const animation = animateSegments(
+    init,
+    allProtos,
+    turnAloneSegments(instr, init, allProtos),
+  );
   const final = animation.getFrame(animation.dur);
 
   it("does not move dancers' positions", () => {

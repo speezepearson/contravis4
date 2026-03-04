@@ -59,8 +59,16 @@ describe("turnAsACouple", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = animateSegments(init, allProtos, turnAsACoupleSegments(taacInstr, init, allProtos));
-    const ctAnimation = animateSegments(init, allProtos, californiaTwirlSegments(ctInstr, init, allProtos));
+    const taacAnimation = animateSegments(
+      init,
+      allProtos,
+      turnAsACoupleSegments(taacInstr, init, allProtos),
+    );
+    const ctAnimation = animateSegments(
+      init,
+      allProtos,
+      californiaTwirlSegments(ctInstr, init, allProtos),
+    );
 
     const taacFinal = taacAnimation.getFrame(taacAnimation.dur);
     const ctFinal = ctAnimation.getFrame(ctAnimation.dur);
@@ -77,8 +85,16 @@ describe("turnAsACouple", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-      const taacAnimation = animateSegments(init, allProtos, turnAsACoupleSegments(taacInstr, init, allProtos));
-    const ctAnimation = animateSegments(init, allProtos, californiaTwirlSegments(ctInstr, init, allProtos));
+    const taacAnimation = animateSegments(
+      init,
+      allProtos,
+      turnAsACoupleSegments(taacInstr, init, allProtos),
+    );
+    const ctAnimation = animateSegments(
+      init,
+      allProtos,
+      californiaTwirlSegments(ctInstr, init, allProtos),
+    );
 
     const taacMid = taacAnimation.getFrame(2);
     const ctMid = ctAnimation.getFrame(2);

@@ -145,8 +145,10 @@ export const atomicSegmentAnimators: {
 export function makeAtomicInstructionSegments(
   instr: AtomicInstruction,
   init: WorldState,
-who: Set<ProtoId>,
+  who: Set<ProtoId>,
 ): Segment[] {
-  const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<typeof instr>;
+  const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<
+    typeof instr
+  >;
   return segAnimator(instr, init, who);
 }

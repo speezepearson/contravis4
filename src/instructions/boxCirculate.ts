@@ -3,8 +3,14 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { PI, revolve } from "../geometry";
 import { lerpVectors } from "../utils";
-import { getDancerState, type WorldState } from "../worldState";
 import {
+  buildProtoRecord,
+  getDancerState,
+  type WorldState,
+} from "../worldState";
+import {
+  facesAcross,
+  facesOut,
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
   resolveMatch,
@@ -18,16 +24,6 @@ export const BoxCirculateInstructionSchema = z.object({
 export type BoxCirculateInstruction = z.infer<
   typeof BoxCirculateInstructionSchema
 >;
-
-function facesOut(id: ProtoId, state: WorldState): boolean {
-  const { facing, pos } = state[id];
-  return (pos.x < 0 && facing.x < 0) || (pos.x > 0 && facing.x > 0);
-}
-
-function facesAcross(id: ProtoId, state: WorldState): boolean {
-  const { facing, pos } = state[id];
-  return (pos.x < 0 && facing.x > 0) || (pos.x > 0 && facing.x < 0);
-}
 
 export const boxCirculateSegments: InstructionAnimator<
   BoxCirculateInstruction
@@ -43,16 +39,11 @@ export const boxCirculateSegments: InstructionAnimator<
     }
   }
 
-  const isOut: Record<string, boolean> = {};
-  const targets: Partial<
-    Record<ProtoId, ReturnType<typeof getDancerState>["pos"]>
-  > = {};
-
-  for (const id of ALL_PROTO_IDS) {
-    isOut[id] = facesOut(id, init);
+  const isOut = buildProtoRecord((id) => facesOut(id, init));
+  const targets = buildProtoRecord((id) => {
     if (isOut[id]) {
       const them = resolveMatch(id, "in right hand", init);
-      targets[id] = getDancerState(them, init).pos;
+      return getDancerState(them, init).pos;
     } else {
       const them = findDancerInCalledDirection(id, "in_front", init);
       if (!them) {
@@ -60,9 +51,9 @@ export const boxCirculateSegments: InstructionAnimator<
           `boxCirculate: ${id} faces across but has no dancer in front`,
         );
       }
-      targets[id] = getDancerState(them, init).pos;
+      return getDancerState(them, init).pos;
     }
-  }
+  });
 
   return [
     {
@@ -70,11 +61,11 @@ export const boxCirculateSegments: InstructionAnimator<
       position: (id: ProtoId, frac: number, segInit: WorldState) => {
         if (isOut[id]) {
           return revolve(segInit[id].pos, {
-            aroundMidpointWith: targets[id]!,
+            aroundMidpointWith: targets[id],
             radians: -PI * frac,
           });
         }
-        return lerpVectors(segInit[id].pos, targets[id]!, frac);
+        return lerpVectors(segInit[id].pos, targets[id], frac);
       },
       facing: (id: ProtoId, frac: number, segInit: WorldState) => {
         if (isOut[id]) {

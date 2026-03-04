@@ -1,7 +1,6 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-
 export const VectorSchema = z.instanceof(Vector);
 
 export const PI = Math.PI;
@@ -60,11 +59,14 @@ export function getDir({ from, to }: { from: Vector; to: Vector }): Vector {
 
 export function revolve(
   x: Vector,
-  {around, aroundMidpointWith, radians}:
-  | { radians: number, around: Vector, aroundMidpointWith?: undefined } 
-  | { radians: number, around?: undefined, aroundMidpointWith: Vector }
+  {
+    around,
+    aroundMidpointWith,
+    radians,
+  }:
+    | { radians: number; around: Vector; aroundMidpointWith?: undefined }
+    | { radians: number; around?: undefined; aroundMidpointWith: Vector },
 ): Vector {
-  const center =
-    around ? around : aroundMidpointWith.add(x).divide(2);
+  const center = around ? around : aroundMidpointWith.add(x).divide(2);
   return center.add(x.subtract(center).rotateByRadians(radians));
 }
