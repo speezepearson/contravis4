@@ -79,6 +79,8 @@ import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
+import { TurnAloneFields } from "./fields/TurnAloneFields";
+import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
 import type { InlineDropdownHandle } from "./InlineDropdown";
 import { InlineDropdown } from "./InlineDropdown";
@@ -116,6 +118,8 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "swing",
   "take_hands_in_rings",
   "take_hands",
+  "turn_alone",
+  "turn_as_a_couple",
 ];
 const ACTION_LABELS: Record<string, string> = {
   allemande: "allemande",
@@ -145,6 +149,8 @@ const ACTION_LABELS: Record<string, string> = {
   swing: "swing",
   take_hands_in_rings: "take hands in rings",
   take_hands: "take hands",
+  turn_alone: "turn alone",
+  turn_as_a_couple: "turn as a couple",
 };
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
@@ -432,6 +438,8 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "square_through":
     case "step":
     case "swing":
+    case "turn_alone":
+    case "turn_as_a_couple":
       return true;
     case "drop_hands":
     case "face":
@@ -605,6 +613,12 @@ function InlineForm({
             );
           case "take_hands":
             return <TakeHandsFields {...common} instruction={instruction} />;
+          case "turn_alone":
+            return <TurnAloneFields {...common} instruction={instruction} />;
+          case "turn_as_a_couple":
+            return (
+              <TurnAsACoupleFields {...common} instruction={instruction} />
+            );
           default:
             assertNever(instruction);
         }
