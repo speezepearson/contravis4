@@ -23,6 +23,7 @@ import {
   resolveMatches,
 } from "./_base";
 import {
+  addPositionDrift,
   type HandsFn,
   hold,
   type Segment,
@@ -73,15 +74,11 @@ export function makeSwingSegments(
   const plans = buildProtoRecord((id) => {
     const me = getDancerState(id, init);
     const center = centers[id];
-    const finalCenter =
-      instr.endFacing === "across"
-        ? new Vector(center.x < 0 ? -0.5 : 0.5, Math.round(center.y * 2) / 2)
-        : center;
-    const finalFacing = getCardinalBearing(instr.endFacing, finalCenter);
+    const finalFacing = getCardinalBearing(instr.endFacing, center);
 
     const final = {
       facing: finalFacing,
-      pos: finalCenter.add(
+      pos: center.add(
         finalFacing
           .multiply(FINAL_SEPARATION / 2)
           .rotateByDegrees(90 * (isLark(id) ? 1 : -1)),
@@ -143,7 +140,7 @@ export function makeSwingSegments(
         : ["left", matches[id], "right"],
     );
 
-  return [
+  const segments: Segment[] = [
     {
       dur: approachBeats,
       position: (id, frac, segInit) =>
@@ -178,6 +175,22 @@ export function makeSwingSegments(
       hands: swingHands,
     },
   ];
+
+  if (instr.endFacing === "across") {
+    const drifts = buildProtoRecord((id) => {
+      const center = centers[id];
+      const finalCenter = new Vector(
+        center.x < 0 ? -0.5 : 0.5,
+        Math.round(center.y),
+      );
+      return finalCenter.subtract(center);
+    });
+    return addPositionDrift(segments, (id, globalFrac) =>
+      drifts[id].multiply(globalFrac),
+    );
+  }
+
+  return segments;
 }
 
 export const swingSegments =

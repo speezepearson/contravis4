@@ -103,9 +103,9 @@ describe("swing endFacing=across snaps to half-integer grid", () => {
           `${id}: expected |x|=0.5 but got x=${pos.x}`,
         ).toBeCloseTo(0.5, 5);
         expect(
-          pos.y * 2,
-          `${id}: expected y to be a multiple of 0.5 but got y=${pos.y}`,
-        ).toBeCloseTo(Math.round(pos.y * 2), 5);
+          pos.y - 0.5,
+          `${id}: expected y to be [integer]+0.5 but got y=${pos.y}`,
+        ).toBeCloseTo(Math.round(pos.y - 0.5), 5);
       }
     });
   }
