@@ -129,7 +129,7 @@ describe("longLinesForwardBack", () => {
     expect(finalState.down_robin_0.pos.y).toBeCloseTo(0.5);
   });
 
-  it("drops hands in the second half", () => {
+  it("keeps hands held in the second half", () => {
     const segments = longLinesForwardBackSegments(
       instr,
       facingAcrossInit,
@@ -137,10 +137,15 @@ describe("longLinesForwardBack", () => {
     );
     const finalState = advanceState(segments, facingAcrossInit, allProtos);
 
-    for (const id of ALL_PROTO_IDS) {
-      expect(finalState[id].hands.left).toBeUndefined();
-      expect(finalState[id].hands.right).toBeUndefined();
-    }
+    // Same hand connections as during the first half
+    expect(finalState.up_lark_0.hands.left).toEqual({
+      theirId: "down_robin_0",
+      theirHand: "right",
+    });
+    expect(finalState.up_lark_0.hands.right).toEqual({
+      theirId: "down_robin_-1",
+      theirHand: "left",
+    });
   });
 
   it("maintains facing across in the second half", () => {

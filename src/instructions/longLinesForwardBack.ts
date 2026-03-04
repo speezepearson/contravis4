@@ -145,14 +145,13 @@ export const longLinesForwardBackSegments: InstructionAnimator<
           ["right", rightPartners.get(id)!, "left"],
         ),
     },
-    // Step back out: x=±0.5, keep y, drop hands
+    // Step back out: x=±0.5, keep y, keep hands
     {
       dur: halfBeats,
       position: linearTo((id, segInit) => {
         const x = Math.sign(segInit[id].pos.x) * 0.5;
         return new Vector(x, segInit[id].pos.y);
       }),
-      hands: () => ({}),
     },
   ];
 };
