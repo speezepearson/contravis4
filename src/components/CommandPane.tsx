@@ -55,6 +55,7 @@ import type { DancerState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BalanceTheRingFields } from "./fields/BalanceTheRingFields";
+import { BoxCirculateFields } from "./fields/BoxCirculateFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
 import { CircleFields } from "./fields/CircleFields";
@@ -88,6 +89,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "allemande",
   "balance",
   "balance_the_ring",
+  "box_circulate",
   "box_the_gnat",
   "california_twirl",
   "circle",
@@ -113,6 +115,7 @@ const ACTION_LABELS: Record<string, string> = {
   allemande: "allemande",
   balance: "balance",
   balance_the_ring: "balance the ring",
+  box_circulate: "box circulate",
   box_the_gnat: "box the gnat",
   california_twirl: "California twirl",
   circle: "circle",
@@ -404,6 +407,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "allemande":
     case "balance":
     case "balance_the_ring":
+    case "box_circulate":
     case "box_the_gnat":
     case "california_twirl":
     case "circle":
@@ -524,6 +528,8 @@ function InlineForm({
             return (
               <BalanceTheRingFields {...common} instruction={instruction} />
             );
+          case "box_circulate":
+            return <BoxCirculateFields {...common} instruction={instruction} />;
           case "box_the_gnat":
             return <BoxTheGnatFields {...common} instruction={instruction} />;
           case "california_twirl":

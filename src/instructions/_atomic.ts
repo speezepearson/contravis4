@@ -8,6 +8,10 @@ import {
   BalanceTheRingInstructionSchema,
   balanceTheRingSegments,
 } from "./balanceTheRing";
+import {
+  BoxCirculateInstructionSchema,
+  boxCirculateSegments,
+} from "./boxCirculate";
 import { BoxTheGnatInstructionSchema, boxTheGnatSegments } from "./boxTheGnat";
 import {
   CaliforniaTwirlInstructionSchema,
@@ -47,6 +51,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
   BalanceInstructionSchema,
   BalanceTheRingInstructionSchema,
+  BoxCirculateInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
   CircleInstructionSchema,
@@ -78,6 +83,7 @@ export const atomicSegmentAnimators: {
   allemande: allemandeSegments,
   balance: balanceSegments,
   balance_the_ring: balanceTheRingSegments,
+  box_circulate: boxCirculateSegments,
   box_the_gnat: boxTheGnatSegments,
   california_twirl: californiaTwirlSegments,
   circle: circleSegments,

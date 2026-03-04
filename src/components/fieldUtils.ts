@@ -41,6 +41,8 @@ export function makeDefaultInstruction(
         return { id, type: "balance", beats: 4, did: "neighbor" };
       case "balance_the_ring":
         return { id, type: "balance_the_ring", beats: 4 };
+      case "box_circulate":
+        return { id, type: "box_circulate", beats: 4 };
       case "box_the_gnat":
         return { id, type: "box_the_gnat", beats: 4, cid: "neighbor" };
       case "california_twirl":
