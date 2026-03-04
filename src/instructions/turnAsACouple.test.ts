@@ -52,18 +52,18 @@ describe("turnAsACouple", () => {
     // Direction-based matching (larks_right_robins_left) fails before
     // the facing validation can fire, since the robin's "left" no
     // longer points at the lark.
-    expect(() => turnAsACoupleSegments(instr)(badInit, allProtos)).toThrow();
+    expect(() => turnAsACoupleSegments(instr, badInit, allProtos)).toThrow();
   });
 
   it("produces the same final state as californiaTwirl", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = toAnimator(turnAsACoupleSegments(taacInstr))(
+    const taacAnimation = toAnimator(turnAsACoupleSegments, taacInstr)(
       init,
       allProtos,
     );
-    const ctAnimation = toAnimator(californiaTwirlSegments(ctInstr))(
+    const ctAnimation = toAnimator(californiaTwirlSegments, ctInstr)(
       init,
       allProtos,
     );
@@ -83,11 +83,11 @@ describe("turnAsACouple", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = toAnimator(turnAsACoupleSegments(taacInstr))(
+    const taacAnimation = toAnimator(turnAsACoupleSegments, taacInstr)(
       init,
       allProtos,
     );
-    const ctAnimation = toAnimator(californiaTwirlSegments(ctInstr))(
+    const ctAnimation = toAnimator(californiaTwirlSegments, ctInstr)(
       init,
       allProtos,
     );

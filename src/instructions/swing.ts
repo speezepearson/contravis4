@@ -1,3 +1,4 @@
+import { Vector } from "vecti";
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId } from "../contraCore";
@@ -22,10 +23,11 @@ import {
   resolveMatches,
 } from "./_base";
 import {
+  addPositionDrift,
   type HandsFn,
   hold,
+  type InstructionAnimator,
   type Segment,
-  type SegmentAnimator,
 } from "./_segment";
 
 export const SwingInstructionSchema = z.object({
@@ -138,7 +140,7 @@ export function makeSwingSegments(
         : ["left", matches[id], "right"],
     );
 
-  return [
+  const segments: Segment[] = [
     {
       dur: approachBeats,
       position: (id, frac, segInit) =>
@@ -173,9 +175,26 @@ export function makeSwingSegments(
       hands: swingHands,
     },
   ];
+
+  if (instr.endFacing === "across") {
+    const drifts = buildProtoRecord((id) => {
+      const center = centers[id];
+      const finalCenter = new Vector(
+        center.x < 0 ? -0.5 : 0.5,
+        Math.round(center.y),
+      );
+      return finalCenter.subtract(center);
+    });
+    return addPositionDrift(segments, (id, globalFrac) =>
+      drifts[id].multiply(globalFrac),
+    );
+  }
+
+  return segments;
 }
 
-export const swingSegments =
-  (instr: SwingInstruction): SegmentAnimator =>
-  (init, who) =>
-    makeSwingSegments(instr, init, who);
+export const swingSegments: InstructionAnimator<SwingInstruction> = (
+  instr,
+  init,
+  who,
+) => makeSwingSegments(instr, init, who);

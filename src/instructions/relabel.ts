@@ -7,7 +7,7 @@ import {
   instructionBaseSchemaFields,
   resolveCalledIdentifier,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { type InstructionAnimator } from "./_segment";
 
 export const RelabelInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,14 +18,14 @@ export const RelabelInstructionSchema = z.object({
 });
 export type RelabelInstruction = z.infer<typeof RelabelInstructionSchema>;
 
-export const relabelSegments =
-  (instr: RelabelInstruction): SegmentAnimator =>
-  () => [
-    {
-      dur: 0,
-      labels: (id, _frac, segInit) => {
-        const theirId = must(resolveCalledIdentifier(id, instr.cid, segInit));
-        return [[instr.label, theirId]];
-      },
+export const relabelSegments: InstructionAnimator<RelabelInstruction> = (
+  instr,
+) => [
+  {
+    dur: 0,
+    labels: (id, _frac, segInit) => {
+      const theirId = must(resolveCalledIdentifier(id, instr.cid, segInit));
+      return [[instr.label, theirId]];
     },
-  ];
+  },
+];

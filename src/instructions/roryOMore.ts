@@ -6,9 +6,9 @@ import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatch } from "./_base";
 import {
   hold,
+  type InstructionAnimator,
   linearTo,
   rotateFacingBy,
-  type SegmentAnimator,
 } from "./_segment";
 
 export const RoryOMoreInstructionSchema = z.object({
@@ -18,37 +18,38 @@ export const RoryOMoreInstructionSchema = z.object({
 });
 export type RoryOMoreInstruction = z.infer<typeof RoryOMoreInstructionSchema>;
 
-export const roryOMoreSegments =
-  (instr: RoryOMoreInstruction): SegmentAnimator =>
-  (init) => {
-    const cid = ({ left: "in left hand", right: "in right hand" } as const)[
-      instr.direction
-    ];
+export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
+  instr,
+  init,
+) => {
+  const cid = ({ left: "in left hand", right: "in right hand" } as const)[
+    instr.direction
+  ];
 
-    // CW for right, CCW for left
-    const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
+  // CW for right, CCW for left
+  const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
 
-    return [
-      {
-        dur: instr.beats,
-        position: linearTo((id, segInit) => {
-          const them = resolveMatch(id, cid, segInit);
-          return getDancerState(them, segInit).pos;
-        }),
-        facing: rotateFacingBy(() => rotationRadians),
-        hands: () => ({}),
+  return [
+    {
+      dur: instr.beats,
+      position: linearTo((id, segInit) => {
+        const them = resolveMatch(id, cid, segInit);
+        return getDancerState(them, segInit).pos;
+      }),
+      facing: rotateFacingBy(() => rotationRadians),
+      hands: () => ({}),
+    },
+    {
+      dur: 0,
+      // Resolve against init (not segInit) because the first segment drops hands
+      hands: (id) => {
+        const them = resolveMatch(id, cid, init);
+        return hold([
+          otherHand(instr.direction),
+          them,
+          otherHand(instr.direction),
+        ]);
       },
-      {
-        dur: 0,
-        // Resolve against init (not segInit) because the first segment drops hands
-        hands: (id) => {
-          const them = resolveMatch(id, cid, init);
-          return hold([
-            otherHand(instr.direction),
-            them,
-            otherHand(instr.direction),
-          ]);
-        },
-      },
-    ];
-  };
+    },
+  ];
+};

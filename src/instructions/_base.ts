@@ -78,12 +78,6 @@ export type ContraAnimation = {
   getFrame: (t: Beats) => WorldState;
 };
 
-export type InstructionAnimator<Instr> = (
-  init: WorldState,
-  who: Set<ProtoId>,
-  instr: Instr,
-) => ContraAnimation;
-
 const DerivedLabelSchema = z.enum([
   "opposite",
   "next neighbor",

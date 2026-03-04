@@ -40,7 +40,7 @@ const longWavesInit: WorldState = produce(
 
 describe("formLongWaves", () => {
   it("snaps facings and connects hands", () => {
-    const segments = formLongWavesSegments(instr)(longWavesInit, allProtos);
+    const segments = formLongWavesSegments(instr, longWavesInit, allProtos);
     const result = evaluateSegmentEnd(segments[0], longWavesInit, allProtos);
 
     // Facings should be preserved (already exact EAST/WEST)
@@ -83,7 +83,7 @@ describe("formLongWaves", () => {
       draft.down_robin_0.facing = new Vector(-0.8, -0.3);
     });
 
-    const segments = formLongWavesSegments(instr)(init, allProtos);
+    const segments = formLongWavesSegments(instr, init, allProtos);
     const result = evaluateSegmentEnd(segments[0], init, allProtos);
 
     expect(result.up_lark_0.facing.x).toBeCloseTo(EAST.x, 10);
@@ -97,7 +97,7 @@ describe("formLongWaves", () => {
       draft.down_lark_0.pos = new Vector(-0.5, 0.5);
     });
 
-    expect(() => formLongWavesSegments(instr)(badInit, allProtos)).toThrow(
+    expect(() => formLongWavesSegments(instr, badInit, allProtos)).toThrow(
       "formLongWaves requires one lark on each side of the set",
     );
   });
@@ -107,7 +107,7 @@ describe("formLongWaves", () => {
       draft.down_robin_0.pos = new Vector(0.5, 0.5);
     });
 
-    expect(() => formLongWavesSegments(instr)(badInit, allProtos)).toThrow(
+    expect(() => formLongWavesSegments(instr, badInit, allProtos)).toThrow(
       "formLongWaves requires one robin on each side of the set",
     );
   });
@@ -119,7 +119,7 @@ describe("formLongWaves", () => {
       draft.down_lark_0.facing = EAST; // was WEST (across), now EAST (out)
     });
 
-    expect(() => formLongWavesSegments(instr)(badInit, allProtos)).toThrow(
+    expect(() => formLongWavesSegments(instr, badInit, allProtos)).toThrow(
       "formLongWaves requires all larks facing the same way",
     );
   });
