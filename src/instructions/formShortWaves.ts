@@ -1,12 +1,13 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type DancerId, getRole } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
-import { connectHands } from "../worldState";
+import { connectHands, getDancerState } from "../worldState";
 import {
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
+  resolveShortLines,
 } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
@@ -27,21 +28,28 @@ export const formShortWavesSegments: InstructionAnimator<
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`formShortWaves instruction must target all dancers`);
 
-  const protosWestToEast = ([...ALL_PROTO_IDS] as ProtoId[]).sort(
-    (a, b) => init[a].pos.x - init[b].pos.x,
-  );
-  if (
-    parseProtoId(protosWestToEast[1]).role !==
-    parseProtoId(protosWestToEast[2]).role
-  ) {
+  const shortLines = resolveShortLines(init);
+  const line = shortLines[ALL_PROTO_IDS[0]];
+  if (getRole(line[1]) !== getRole(line[2])) {
     throw new Error(`dancers in middle of short waves do not have same role`);
+  }
+  for (let i = 0; i < 3; i++) {
+    const isUp = getDancerState(line[i], init).facing.y > 0;
+    const nextIsUp = getDancerState(line[i + 1], init).facing.y > 0;
+    if (isUp === nextIsUp) {
+      throw new Error(
+        `short waves should have dancers alternating facing up/down, but ${line[i]} and ${line[i + 1]} are both facing ${isUp ? "up" : "down"}`,
+      );
+    }
   }
 
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const i = protosWestToEast.indexOf(id);
-      draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y);
+      const i = line.indexOf(id as DancerId);
       draft[id].facing = init[id].facing.y > 0 ? NORTH : SOUTH;
+      draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y).add(
+        draft[id].facing.multiply(-0.1),
+      );
       const onLeft = findDancerInCalledDirection(id, "on_left", draft);
       const onRight = findDancerInCalledDirection(id, "on_right", draft);
       if (onLeft) connectHands(draft, id, "left", onLeft, "left");

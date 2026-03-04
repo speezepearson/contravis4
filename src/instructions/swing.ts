@@ -176,18 +176,21 @@ export function makeSwingSegments(
     },
   ];
 
-  if (instr.endFacing === "across") {
-    const drifts = buildProtoRecord((id) => {
-      const center = centers[id];
-      const finalCenter = new Vector(
-        center.x < 0 ? -0.5 : 0.5,
-        Math.round(center.y),
+  switch (instr.endFacing) {
+    case "across":
+    case "out": {
+      const drifts = buildProtoRecord((id) => {
+        const center = centers[id];
+        const finalCenter = new Vector(
+          center.x < 0 ? -0.5 : 0.5,
+          Math.round(center.y),
+        );
+        return finalCenter.subtract(center);
+      });
+      return addPositionDrift(segments, (id, globalFrac) =>
+        drifts[id].multiply(globalFrac),
       );
-      return finalCenter.subtract(center);
-    });
-    return addPositionDrift(segments, (id, globalFrac) =>
-      drifts[id].multiply(globalFrac),
-    );
+    }
   }
 
   return segments;

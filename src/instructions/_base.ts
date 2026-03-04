@@ -15,7 +15,7 @@ import {
   protoIdToDancerId,
 } from "../contraCore";
 import { EAST, getDir, NORTH, SOUTH, WEST } from "../geometry";
-import { assertNever, isNTuple, type NTuple, parses } from "../utils";
+import { assertNever, isEqual, isNTuple, type NTuple, parses } from "../utils";
 import {
   buildProtoRecord,
   type DancerState,
@@ -409,6 +409,114 @@ export function findDancerInCalledDirection(
 ): DancerId | null {
   const dir = resolveCalledDirection(id, side, dancers);
   return findDancerInDirection(dancers, id, dir, { roles });
+}
+
+export function findClosestDancer(
+  pos: Vector,
+  state: WorldState,
+  { exclude }: { exclude: DancerId[] },
+): DancerId {
+  const excludeSet = new Set<DancerId>(exclude);
+  let bestDist = Infinity;
+  let bestId: DancerId | null = null;
+
+  for (let halfWidth = 2; ; halfWidth += 2) {
+    const prevHalfWidth = halfWidth - 2;
+    for (const protoId of ALL_PROTO_IDS) {
+      const dyBase = state[protoId].pos.y - pos.y;
+      const oBest = Math.round(-dyBase / 2);
+
+      for (let o = oBest - halfWidth; o <= oBest + halfWidth; o++) {
+        if (
+          halfWidth > 2 &&
+          o >= oBest - prevHalfWidth &&
+          o <= oBest + prevHalfWidth
+        )
+          continue;
+
+        const targetId = protoIdToDancerId(protoId, o);
+        if (excludeSet.has(targetId)) continue;
+
+        const target = getDancerState(targetId, state);
+        const dist = target.pos.subtract(pos).length();
+
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestId = targetId;
+        }
+      }
+    }
+
+    // At the next widening, new offsets have Y distance >= 2*halfWidth+1 from pos.
+    // Since total distance >= Y distance, if bestDist is less, no future candidate can beat it.
+    if (bestId !== null && bestDist < 2 * halfWidth + 1) break;
+
+    if (halfWidth > 100) {
+      throw new Error(
+        `findClosestDancer: could not find a non-excluded dancer near (${pos.x}, ${pos.y})`,
+      );
+    }
+  }
+
+  if (!bestId) {
+    throw new Error(
+      `findClosestDancer: could not find a non-excluded dancer near (${pos.x}, ${pos.y})`,
+    );
+  }
+
+  return bestId;
+}
+
+export function resolveShortLines(
+  state: WorldState,
+): Record<ProtoId, NTuple<4, DancerId>> {
+  const result = buildProtoRecord((protoId) => {
+    const protoY = state[protoId].pos.y;
+
+    type Candidate = { id: DancerId; yDist: number; x: number };
+    const candidates: Candidate[] = [];
+
+    for (const otherProtoId of ALL_PROTO_IDS) {
+      const dyBase = state[otherProtoId].pos.y - protoY;
+      const oBest = Math.round(-dyBase / 2);
+
+      for (let o = oBest - 1; o <= oBest + 1; o++) {
+        const targetId = protoIdToDancerId(otherProtoId, o);
+        const target = getDancerState(targetId, state);
+        candidates.push({
+          id: targetId,
+          yDist: Math.abs(target.pos.y - protoY),
+          x: target.pos.x,
+        });
+      }
+    }
+
+    candidates.sort((a, b) => a.yDist - b.yDist);
+    const top4 = candidates.slice(0, 4);
+    top4.sort((a, b) => a.x - b.x);
+
+    const ids = top4.map((c) => c.id);
+    if (!isNTuple(ids, 4)) {
+      throw new Error(
+        `resolveShortLines: expected 4 dancers for proto ${protoId}, got ${ids.length}`,
+      );
+    }
+    return ids;
+  });
+
+  // Assert: overlapping results must be identical
+  const values = Object.values(result) as NTuple<4, DancerId>[];
+  for (const arr1 of values) {
+    for (const arr2 of values) {
+      if (arr1.some((id) => arr2.includes(id)) && !isEqual(arr1, arr2)) {
+        throw new Error(
+          `resolveShortLines consistency check failed: ${JSON.stringify(arr1)} and ${JSON.stringify(arr2)} overlap but are not equal`,
+        );
+      }
+    }
+  }
+
+  return result;
 }
 
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {

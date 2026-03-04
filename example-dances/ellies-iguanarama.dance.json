@@ -75,7 +75,7 @@
           "id": "06a83f18-4e9c-4f20-bac9-a5fd92f8f9a0",
           "beats": 4,
           "type": "balance",
-          "did": "on_right"
+          "cid": "on_right"
         },
         {
           "id": "4377ab1d-8819-4137-96ab-e169c93527d2",

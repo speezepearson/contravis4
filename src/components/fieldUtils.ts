@@ -38,13 +38,13 @@ export function makeDefaultInstruction(
           rotations: 1,
         };
       case "balance":
-        return { id, type: "balance", beats: 4, did: "neighbor" };
+        return { id, type: "balance", beats: 4, cid: "partner" };
       case "balance_the_ring":
         return { id, type: "balance_the_ring", beats: 4 };
       case "box_circulate":
         return { id, type: "box_circulate", beats: 4 };
       case "box_the_gnat":
-        return { id, type: "box_the_gnat", beats: 4, cid: "neighbor" };
+        return { id, type: "box_the_gnat", beats: 4, cid: "partner" };
       case "california_twirl":
         return { id, type: "california_twirl", beats: 4 };
       case "circle":
@@ -76,7 +76,7 @@ export function makeDefaultInstruction(
           id,
           type: "give_and_take_into_swing",
           beats: 16,
-          cid: "neighbor",
+          cid: "partner",
           drawerRole: "lark",
           endFacing: "across",
         };
@@ -107,7 +107,7 @@ export function makeDefaultInstruction(
           id,
           type: "pull_by",
           beats: 2,
-          cid: "neighbor",
+          cid: "partner",
           hand: "right",
         };
       case "relabel":
@@ -129,7 +129,7 @@ export function makeDefaultInstruction(
           id,
           type: "shoulder_round",
           beats: 8,
-          cid: "neighbor",
+          cid: "partner",
           handedness: "right",
           rotations: 1,
         };
@@ -151,7 +151,7 @@ export function makeDefaultInstruction(
           id,
           type: "swing",
           beats: 16,
-          cid: "neighbor",
+          cid: "partner",
           endFacing: "across",
         };
       case "take_hands_in_rings":
@@ -161,13 +161,19 @@ export function makeDefaultInstruction(
           id,
           type: "take_hands",
           beats: 0,
-          cid: "neighbor",
+          cid: "partner",
           hand: "right",
         };
       case "turn_alone":
         return { id, type: "turn_alone" };
       case "turn_as_a_couple":
         return { id, type: "turn_as_a_couple", beats: 4 };
+      case "bend_the_line":
+        return { id, type: "bend_the_line", beats: 4 };
+      case "down_the_hall":
+        return { id, type: "down_the_hall", beats: 4 };
+      case "up_the_hall":
+        return { id, type: "up_the_hall", beats: 4 };
       default:
         assertNever(type);
     }
