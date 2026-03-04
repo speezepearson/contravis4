@@ -3,7 +3,6 @@ import { z } from "zod";
 import { ccwRadsBetween, PI } from "../geometry";
 import { getDancerState } from "../worldState";
 import {
-  CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
@@ -13,7 +12,6 @@ import { californiaTwirlSegments } from "./californiaTwirl";
 export const TurnAsACoupleInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("turn_as_a_couple"),
-  cid: CalledIdentifierSchema,
 });
 export type TurnAsACoupleInstruction = z.infer<
   typeof TurnAsACoupleInstructionSchema
@@ -22,7 +20,7 @@ export type TurnAsACoupleInstruction = z.infer<
 export const turnAsACoupleSegments =
   (instr: TurnAsACoupleInstruction): SegmentAnimator =>
   (init, who) => {
-    const matches = resolveMatches(instr.cid, init);
+    const matches = resolveMatches('larks_right_robins_left', init);
 
     const checked = new Set<string>();
     for (const id of who) {
@@ -40,8 +38,9 @@ export const turnAsACoupleSegments =
       }
     }
 
-    return californiaTwirlSegments({ ...instr, type: "california_twirl" })(
-      init,
-      who,
-    );
+    return californiaTwirlSegments({
+      id: instr.id,
+      beats: instr.beats,
+      type: "california_twirl",
+    })(init, who);
   };

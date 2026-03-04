@@ -5,27 +5,14 @@
     {
       "id": "ee88d476-5590-4787-bec2-d50db05c1fce",
       "beats": 4,
-      "type": "california_twirl",
-      "cid": "partner"
-    },
-    {
-      "id": "e57ffd42-7338-4c7c-bfa8-12b8db7eba3c",
-      "beats": 0,
-      "type": "drop_hands",
-      "which": "both"
+      "type": "california_twirl"
     },
     {
       "id": "85347ba0-d879-4fb1-a175-14dcddaeb24c",
-      "beats": 2,
+      "beats": 4,
       "type": "pull_by",
       "cid": "partner",
       "hand": "right"
-    },
-    {
-      "id": "1d8be7f9-b3a0-4114-b78f-7466f98c6b71",
-      "beats": 0,
-      "type": "face",
-      "direction": "larks_right_robins_left"
     }
   ]
 }

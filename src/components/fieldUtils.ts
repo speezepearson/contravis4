@@ -46,7 +46,7 @@ export function makeDefaultInstruction(
       case "box_the_gnat":
         return { id, type: "box_the_gnat", beats: 4, cid: "neighbor" };
       case "california_twirl":
-        return { id, type: "california_twirl", beats: 4, cid: "partner" };
+        return { id, type: "california_twirl", beats: 4 };
       case "circle":
         return {
           id,
@@ -161,7 +161,7 @@ export function makeDefaultInstruction(
       case "turn_alone":
         return { id, type: "turn_alone" };
       case "turn_as_a_couple":
-        return { id, type: "turn_as_a_couple", beats: 4, cid: "partner" };
+        return { id, type: "turn_as_a_couple", beats: 4 };
       default:
         assertNever(type);
     }

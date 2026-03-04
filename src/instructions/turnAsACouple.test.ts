@@ -37,7 +37,6 @@ function makeCaliforniaTwirl(
     id: "00000000-0000-0000-0000-000000000000",
     beats: 4,
     type: "california_twirl",
-    cid: "partner",
     ...overrides,
   };
 }

@@ -3,17 +3,12 @@ import { z } from "zod";
 import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
 import { getDancerState } from "../worldState";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-  resolveMatches,
-} from "./_base";
+import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import { arc, hold, lerpFacingTo, type SegmentAnimator } from "./_segment";
 
 export const CaliforniaTwirlInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("california_twirl"),
-  cid: CalledIdentifierSchema,
 });
 export type CaliforniaTwirlInstruction = z.infer<
   typeof CaliforniaTwirlInstructionSchema
@@ -22,11 +17,11 @@ export type CaliforniaTwirlInstruction = z.infer<
 export const californiaTwirlSegments =
   (instr: CaliforniaTwirlInstruction): SegmentAnimator =>
   (init) => {
-    const matches = resolveMatches(instr.cid, init);
+    const matches = resolveMatches('larks_right_robins_left', init);
     return [
       {
         dur: instr.beats,
-        position: arc(instr.cid, { semiMinor: 0.25, phi: PI }),
+        position: arc('larks_right_robins_left', { semiMinor: 0.25, phi: PI }),
         facing: lerpFacingTo((id, segInit) => {
           // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
           const myRole = parseProtoId(id).role;
