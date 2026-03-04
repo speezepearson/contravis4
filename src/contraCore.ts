@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-import { NORTH } from "./geometry";
-import type { DancerState } from "./worldState";
-
 export const BeatsSchema = z.number().int();
 export type Beats = z.infer<typeof BeatsSchema>;
 
@@ -126,25 +123,36 @@ export function addOffsetToId(
   const { dir, role, offset } = parseDancerId(id);
   return makeDancerId({ dir, role, offset: offset + deltaOffset });
 }
-export function addOffsetToDancer(
-  state: DancerState,
-  deltaOffset: DancerOffset,
-): DancerState {
+
+export function buildHandsRecord<V>(f: (h: Hand) => V): Record<Hand, V> {
   return {
-    protoId: state.protoId,
-    pos: state.pos.add(NORTH.multiply(deltaOffset * 2)),
-    facing: state.facing,
-    hands: new Map(
-      [...state.hands].map(([hand, { theirId, theirHand }]) => [
-        hand,
-        { theirId: addOffsetToId(theirId, deltaOffset), theirHand },
-      ]),
-    ),
-    labels: new Map(
-      [...state.labels].map(([label, theirId]) => [
-        label,
-        addOffsetToId(theirId, deltaOffset),
-      ]),
-    ),
+    left: f("left"),
+    right: f("right"),
   };
 }
+export function buildLabelsRecord<V>(
+  f: (label: BasicLabel) => V,
+): Record<BasicLabel, V> {
+  return {
+    partner: f("partner"),
+    neighbor: f("neighbor"),
+    shadow: f("shadow"),
+    "shadow 2": f("shadow 2"),
+    "shadow 3": f("shadow 3"),
+    "shadow 4": f("shadow 4"),
+    "shadow 5": f("shadow 5"),
+    "shadow 6": f("shadow 6"),
+  };
+}
+
+export const BasicLabelSchema = z.enum([
+  "partner",
+  "neighbor",
+  "shadow",
+  "shadow 2",
+  "shadow 3",
+  "shadow 4",
+  "shadow 5",
+  "shadow 6",
+]);
+export type BasicLabel = z.infer<typeof BasicLabelSchema>;

@@ -1,13 +1,13 @@
 import { z } from "zod";
 
+import { BasicLabelSchema } from "../contraCore";
 import { must } from "../utils";
-import { BasicLabelSchema } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveCalledIdentifier,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { makeImmediateSegment, type SegmentAnimator } from "./_segment";
 
 export const RelabelInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -21,11 +21,8 @@ export type RelabelInstruction = z.infer<typeof RelabelInstructionSchema>;
 export const relabelSegments =
   (instr: RelabelInstruction): SegmentAnimator =>
   (init) => [
-    {
-      dur: 0,
-      labels: (id, _frac, draft) => {
-        const theirId = must(resolveCalledIdentifier(id, instr.cid, init));
-        draft[id].labels.set(instr.label, theirId);
-      },
-    },
+    makeImmediateSegment(init, (id, draft) => {
+      const theirId = must(resolveCalledIdentifier(id, instr.cid, init));
+      draft[id].labels[instr.label] = theirId;
+    }),
   ];

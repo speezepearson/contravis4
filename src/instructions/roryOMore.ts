@@ -1,16 +1,15 @@
 import { z } from "zod";
 
-import { HandSchema } from "../contraCore";
+import { HandSchema, otherHand } from "../contraCore";
 import { TWO_PI } from "../geometry";
-import { connectHands, getDancerState } from "../worldState";
+import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import {
-  disconnect,
+  hold,
   linearTo,
   rotateFacingBy,
   type SegmentAnimator,
 } from "./_segment";
-import { resolveInsideHand } from "./takeHands";
 
 export const RoryOMoreInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -34,21 +33,18 @@ export const roryOMoreSegments =
 
     return [
       {
-        dur: 0,
-        hands: disconnect(),
-      },
-      {
         dur: instr.beats,
         position: linearTo((id) => getDancerState(matches[id], init).pos),
         facing: rotateFacingBy(() => rotationRadians),
-        hands: (id, frac, draft) => {
-          if (frac < 1) return;
-          const me = draft[id];
-          const them = getDancerState(matches[id], draft);
-          const myHand = resolveInsideHand(me, them);
-          const theirHand = resolveInsideHand(them, me);
-          connectHands(draft, id, myHand, matches[id], theirHand);
-        },
+      },
+      {
+        dur: 0,
+        hands: (id) =>
+          hold([
+            otherHand(instr.direction),
+            matches[id],
+            otherHand(instr.direction),
+          ]),
       },
     ];
   };

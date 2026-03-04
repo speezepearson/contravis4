@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 import { PI, revolve } from "../geometry";
-import { connectHands, getDancerState } from "../worldState";
+import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
-import { rotateFacingBy, type SegmentAnimator } from "./_segment";
+import { hold, rotateFacingBy, type SegmentAnimator } from "./_segment";
 
 export const CourtesyTurnInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -31,10 +31,8 @@ export const courtesyTurnSegments =
           return revolve(myPos, { around: center, radians: PI * frac });
         },
         facing: rotateFacingBy(() => PI),
-        hands: (id, _frac, draft) => {
-          connectHands(draft, id, "left", matches[id], "left");
-          connectHands(draft, id, "right", matches[id], "right");
-        },
+        hands: (id) =>
+          hold(["left", matches[id], "left"], ["right", matches[id], "right"]),
       },
     ];
   };

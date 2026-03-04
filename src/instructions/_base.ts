@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   addOffsetToId,
   ALL_PROTO_IDS,
+  BasicLabelSchema,
   type Beats,
   BeatsSchema,
   type DancerId,
@@ -15,7 +16,6 @@ import {
 import { EAST, getDir, NORTH, SOUTH, WEST } from "../geometry";
 import { assertNever, isNTuple, type NTuple, parses } from "../utils";
 import {
-  BasicLabelSchema,
   buildProtoRecord,
   type DancerState,
   getDancerState,
@@ -145,10 +145,10 @@ export function resolveCalledLabel(
       return addOffsetToId(neighbor, -3);
     }
     case "in right hand": {
-      return getDancerState(id, protos).hands.get("right")?.theirId ?? null;
+      return getDancerState(id, protos).hands["right"]?.theirId ?? null;
     }
     case "in left hand": {
-      return getDancerState(id, protos).hands.get("left")?.theirId ?? null;
+      return getDancerState(id, protos).hands["left"]?.theirId ?? null;
     }
     default:
       assertNever(label);

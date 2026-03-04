@@ -1,7 +1,14 @@
 import { produce } from "immer";
 import type { Vector } from "vecti";
 
-import type { Beats, Hand, ProtoId } from "../contraCore";
+import {
+  ALL_PROTO_IDS,
+  type BasicLabel,
+  type Beats,
+  type DancerId,
+  type Hand,
+  type ProtoId,
+} from "../contraCore";
 import {
   ellipsePosition,
   lerpFacing as lerpFacingVec,
@@ -9,7 +16,8 @@ import {
 } from "../geometry";
 import { lerpVectors } from "../utils";
 import {
-  disconnectHands,
+  type DancerHandPointer,
+  type DancerState,
   getDancerState,
   type WorldState,
 } from "../worldState";
@@ -40,11 +48,19 @@ export type FacingFn = (
   segInit: WorldState,
 ) => Vector;
 
-/** Per-dancer labels function: mutates draft state for labels. */
-export type LabelsFn = (id: ProtoId, frac: number, draft: WorldState) => void;
+/** Per-dancer labels function: overwrites *just the returned labels*, leaving others unchanged. */
+export type LabelsFn = (
+  id: ProtoId,
+  frac: number,
+  segInit: WorldState,
+) => Array<[BasicLabel, DancerId]>;
 
-/** Per-dancer hands function: mutates draft state for hand connections. */
-export type HandsFn = (id: ProtoId, frac: number, draft: WorldState) => void;
+/** Per-dancer hands function: overwrites *all* the dancer's hands, leaving unmentioned hands unattached. */
+export type HandsFn = (
+  id: ProtoId,
+  frac: number,
+  segInit: WorldState,
+) => DancerState["hands"];
 
 /** A single phase of an animation. */
 export type Segment = {
@@ -70,10 +86,12 @@ export function evaluateSegmentEnd(
     for (const id of who) {
       if (segment.position) draft[id].pos = segment.position(id, 1, init);
       if (segment.facing) draft[id].facing = segment.facing(id, 1, init);
-    }
-    for (const id of who) {
-      if (segment.hands) segment.hands(id, 1, draft);
-      if (segment.labels) segment.labels(id, 1, draft);
+      if (segment.hands) draft[id].hands = segment.hands(id, 1, init);
+      if (segment.labels) {
+        for (const [label, theirId] of segment.labels(id, 1, init)) {
+          draft[id].labels[label] = theirId;
+        }
+      }
     }
   });
 }
@@ -116,8 +134,15 @@ export function makeAnimation(
             if (seg.facing) draft[id].facing = seg.facing(id, frac, segInit);
           }
           for (const id of who) {
-            if (seg.hands) seg.hands(id, frac, draft);
-            if (seg.labels) seg.labels(id, frac, draft);
+            if (seg.hands) {
+              draft[id].hands = {};
+              draft[id].hands = seg.hands(id, frac, segInit);
+            }
+            if (seg.labels) {
+              for (const [label, theirId] of seg.labels(id, frac, segInit)) {
+                draft[id].labels[label] = theirId;
+              }
+            }
           }
         });
       }
@@ -160,6 +185,30 @@ export function addPositionDrift(
       },
     };
   });
+}
+
+export function makeImmediateSegment(
+  init: WorldState,
+  mutate: (id: ProtoId, draft: WorldState) => void,
+): Segment {
+  const final = produce(init, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
+      mutate(id, draft);
+    }
+  });
+  return {
+    dur: 0,
+    position: (id) => final[id].pos,
+    facing: (id) => final[id].facing,
+    hands: (id) => final[id].hands,
+    labels: (id) => {
+      const entries: Array<[BasicLabel, DancerId]> = [];
+      for (const [l, v] of Object.entries(final[id].labels)) {
+        if (v) entries.push([l as BasicLabel, v]);
+      }
+      return entries;
+    },
+  };
 }
 
 // ── Position primitives ─────────────────────────────────────────────────
@@ -220,9 +269,14 @@ export function rotateFacingBy(radiansFn: (id: ProtoId) => number): FacingFn {
 
 // ── Hand primitives ─────────────────────────────────────────────────────
 
-/** Disconnect all hands. */
-export function disconnect(hand?: Hand): HandsFn {
-  return (id, _frac, draft) => {
-    disconnectHands(draft, id, hand);
-  };
+export function hold(
+  ...args:
+    | [[Hand, DancerId, Hand]]
+    | [["left", DancerId, Hand], ["right", DancerId, Hand]]
+): DancerState["hands"] {
+  const result: Partial<Record<Hand, DancerHandPointer>> = {};
+  for (const [hand, theirId, theirHand] of args) {
+    result[hand] = { theirId, theirHand };
+  }
+  return result;
 }

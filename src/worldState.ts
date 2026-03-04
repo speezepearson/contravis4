@@ -1,11 +1,15 @@
 import { z } from "zod";
 
 import {
-  addOffsetToDancer,
   addOffsetToId,
   ALL_PROTO_IDS,
+  type BasicLabel,
+  BasicLabelSchema,
+  buildHandsRecord,
+  buildLabelsRecord,
   type DancerId,
   DancerIdSchema,
+  type DancerOffset,
   getOffset,
   type Hand,
   HandSchema,
@@ -13,28 +17,23 @@ import {
   type ProtoId,
   ProtoIdSchema,
 } from "./contraCore";
-import { VectorSchema } from "./geometry";
+import { NORTH, VectorSchema } from "./geometry";
 import { isEqual } from "./utils";
 
-export const BasicLabelSchema = z.enum([
-  "partner",
-  "neighbor",
-  "shadow",
-  "shadow 2",
-  "shadow 3",
-  "shadow 4",
-  "shadow 5",
-  "shadow 6",
-]);
-export type BasicLabel = z.infer<typeof BasicLabelSchema>;
 export function resolveBasicLabel(
   label: BasicLabel,
   id: DancerId,
   protos: Record<ProtoId, DancerState>,
 ): DancerId | null {
   const state = getDancerState(id, protos);
-  return state.labels.get(label) ?? null;
+  return state.labels[label] ?? null;
 }
+
+export const DancerHandPointerSchema = z.object({
+  theirId: DancerIdSchema,
+  theirHand: HandSchema,
+});
+export type DancerHandPointer = z.infer<typeof DancerHandPointerSchema>;
 
 export const DancerStateSchema = z.object({
   protoId: ProtoIdSchema,
@@ -47,13 +46,10 @@ export const DancerStateSchema = z.object({
   facing: VectorSchema,
 
   /** Who's being held in each hand. */
-  hands: z.map(
-    HandSchema,
-    z.object({ theirId: DancerIdSchema, theirHand: HandSchema }),
-  ),
+  hands: z.partialRecord(HandSchema, DancerHandPointerSchema),
 
   /** Labels the dancer has mentally assigned to other dancers, e.g. "partner", "neighbor", "shadow". */
-  labels: z.map(BasicLabelSchema, DancerIdSchema),
+  labels: z.partialRecord(BasicLabelSchema, DancerIdSchema),
 });
 export type DancerState = z.infer<typeof DancerStateSchema>;
 
@@ -78,28 +74,32 @@ export function connectHands(
   if (id === theirId) {
     throw new Error(`Dancer ${id} cannot connect hands to themselves`);
   }
-  const holding = state[id].hands.get(hand);
+  const holding = state[id].hands[hand];
   if (holding) {
-    if (isEqual(holding, { theirId, theirHand })) return;
+    if (isEqual(holding, { theirId, theirHand })) {
+      return;
+    }
     throw new Error(
       `${id}'s ${hand} hand is already holding ${holding.theirId}'s ${holding.theirHand}, so can't grab ${theirId}'s ${theirHand} hand`,
     );
   }
 
   const them = getDancerState(theirId, state);
-  const themHolding = them.hands.get(theirHand);
+  const themHolding = them.hands[theirHand];
   if (themHolding) {
-    if (isEqual(themHolding, { theirId: id, theirHand: hand })) return;
+    if (isEqual(themHolding, { theirId: id, theirHand: hand })) {
+      return;
+    }
     throw new Error(
       `${theirId}'s ${theirHand} hand is already holding ${themHolding.theirId}'s ${themHolding.theirHand}, so ${id} can't grab it in their ${hand}`,
     );
   }
 
-  state[id].hands.set(hand, { theirId, theirHand });
-  state[projectDancerIdToProtoId(theirId)].hands.set(theirHand, {
+  state[id].hands[hand] = { theirId, theirHand };
+  state[projectDancerIdToProtoId(theirId)].hands[theirHand] = {
     theirId: addOffsetToId(id, -getOffset(theirId)),
     theirHand: hand,
-  });
+  };
 }
 
 export function disconnectHands(
@@ -108,24 +108,24 @@ export function disconnectHands(
   hand?: Hand,
 ): void {
   if (hand == null) {
-    if (state[id].hands.has("left")) disconnectHands(state, id, "left");
-    if (state[id].hands.has("right")) disconnectHands(state, id, "right");
+    if (state[id].hands["left"]) disconnectHands(state, id, "left");
+    if (state[id].hands["left"]) disconnectHands(state, id, "right");
     return;
   }
 
-  const holding = state[id].hands.get(hand);
+  const holding = state[id].hands[hand];
   if (!holding) throw new Error(`Dancer ${id}'s ${hand} hand is not connected`);
   const { theirId, theirHand } = holding;
 
   const them = getDancerState(theirId, state);
-  const themHolding = them.hands.get(theirHand);
+  const themHolding = them.hands[theirHand];
   if (!(themHolding && isEqual(themHolding, { theirId: id, theirHand: hand })))
     throw new Error(
       `somehow got asymmetric hands state: ${JSON.stringify(state)}`,
     );
 
-  state[id].hands.delete(hand);
-  state[them.protoId].hands.delete(theirHand);
+  delete state[id].hands[hand];
+  delete state[them.protoId].hands[theirHand];
 }
 
 export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
@@ -143,4 +143,28 @@ export function mapProtos(
   return Object.fromEntries(
     ALL_PROTO_IDS.map((id) => [id, f(protos[id])] as const),
   ) as Record<ProtoId, DancerState>;
+}
+
+export function addOffsetToDancer(
+  state: DancerState,
+  deltaOffset: DancerOffset,
+): DancerState {
+  return {
+    protoId: state.protoId,
+    pos: state.pos.add(NORTH.multiply(deltaOffset * 2)),
+    facing: state.facing,
+    hands: buildHandsRecord((hand) => {
+      const held = state.hands[hand];
+      if (!held) return undefined;
+      return {
+        theirId: addOffsetToId(held.theirId, deltaOffset),
+        theirHand: held.theirHand,
+      };
+    }),
+    labels: buildLabelsRecord((label) => {
+      const theirId = state.labels[label];
+      if (!theirId) return undefined;
+      return addOffsetToId(theirId, deltaOffset);
+    }),
+  };
 }

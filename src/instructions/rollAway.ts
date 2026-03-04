@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  BasicLabelSchema,
   BeatsSchema,
   type DancerId,
   getRole,
@@ -17,18 +18,13 @@ import {
   PI,
   TWO_PI,
 } from "../geometry";
-import {
-  BasicLabelSchema,
-  buildProtoRecord,
-  connectHands,
-  getDancerState,
-} from "../worldState";
+import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   type CalledIdentifier,
   InstructionIdSchema,
   resolveCalledIdentifier,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { hold, type SegmentAnimator } from "./_segment";
 
 export const RolleeSpecSchema = z.enum([
   "on_right",
@@ -127,7 +123,7 @@ export const rollAwaySegments =
             ccwRadsBetween(segInit[id].facing, normal) + rolleeRotation;
           return segInit[id].facing.rotateByRadians(totalRads * frac);
         },
-        hands: (id, frac, draft) => {
+        hands: (id, frac) => {
           const isRoller = getRole(id) === instr.roller;
           const themId = matches[id];
 
@@ -147,7 +143,7 @@ export const rollAwaySegments =
               ? firstRollerHand
               : otherHand(firstRollerHand);
 
-          connectHands(draft, id, myHand, themId, theirHand);
+          return hold([myHand, themId, theirHand]);
         },
       },
     ];

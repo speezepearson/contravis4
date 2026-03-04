@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
-import { buildProtoRecord, connectHands } from "../worldState";
+import { connectHands } from "../worldState";
 import {
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { makeImmediateSegment, type SegmentAnimator } from "./_segment";
 
 export const FormShortWavesInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -37,42 +37,15 @@ export const formShortWavesSegments =
       throw new Error(`dancers in middle of short waves do not have same role`);
     }
 
-    const positions = new Map<ProtoId, Vector>();
-    const facings = new Map<ProtoId, Vector>();
-    for (let i = 0; i < 4; i++) {
-      const id = protosWestToEast[i];
-      facings.set(id, init[id].facing.y > 0 ? NORTH : SOUTH);
-      positions.set(id, new Vector(SHORT_WAVES_XS[i], init[id].pos.y));
-    }
-
-    for (let i = 0; i < 3; i++) {
-      const id = protosWestToEast[i];
-      const nextId = protosWestToEast[i + 1];
-      if (facings.get(id)!.y === facings.get(nextId)!.y) {
-        throw new Error(
-          `adjacent dancers in short waves are facing the same way`,
-        );
-      }
-    }
-
-    const onLeft = buildProtoRecord((id) =>
-      findDancerInCalledDirection(id, "on_left", init),
-    );
-    const onRight = buildProtoRecord((id) =>
-      findDancerInCalledDirection(id, "on_right", init),
-    );
-
     return [
-      {
-        dur: 0,
-        position: (id) => positions.get(id)!,
-        facing: (id) => facings.get(id)!,
-        hands: (id, _frac, draft) => {
-          const left = onLeft[id];
-          const right = onRight[id];
-          if (left) connectHands(draft, id, "left", left, "left");
-          if (right) connectHands(draft, id, "right", right, "right");
-        },
-      },
+      makeImmediateSegment(init, (id, draft) => {
+        const i = protosWestToEast.indexOf(id);
+        draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y);
+        draft[id].facing = init[id].facing.y > 0 ? NORTH : SOUTH;
+        const onLeft = findDancerInCalledDirection(id, "on_left", draft);
+        const onRight = findDancerInCalledDirection(id, "on_right", draft);
+        if (onLeft) connectHands(draft, id, "left", onLeft, "left");
+        if (onRight) connectHands(draft, id, "right", onRight, "right");
+      }),
     ];
   };

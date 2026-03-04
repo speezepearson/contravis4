@@ -2,13 +2,13 @@ import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
 import { PI } from "../geometry";
-import { connectHands, disconnectHands, getDancerState } from "../worldState";
+import { getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { arc, type SegmentAnimator } from "./_segment";
+import { arc, hold, type SegmentAnimator } from "./_segment";
 
 export const PullByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -32,13 +32,8 @@ export const pullBySegments =
             .pos.subtract(segInit[id].pos)
             .normalize();
         },
-        hands: (id, frac, draft) => {
-          if (frac < 0.5) {
-            connectHands(draft, id, instr.hand, matches[id], instr.hand);
-          } else {
-            disconnectHands(draft, id);
-          }
-        },
+        hands: (id, frac) =>
+          frac < 0.5 ? hold([instr.hand, matches[id], instr.hand]) : {},
       },
     ];
   };

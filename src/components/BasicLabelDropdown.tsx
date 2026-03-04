@@ -1,4 +1,4 @@
-import { type BasicLabel, BasicLabelSchema } from "../worldState";
+import { type BasicLabel, BasicLabelSchema } from "../contraCore";
 import { InlineDropdown } from "./InlineDropdown";
 
 export function BasicLabelDropdown({

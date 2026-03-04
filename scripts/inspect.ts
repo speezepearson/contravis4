@@ -161,11 +161,11 @@ function formatFacing(v: Vector): string {
 }
 
 function formatHands(
-  hands: Map<Hand, { theirId: DancerId; theirHand: Hand }>,
+  hands: Partial<Record<Hand, { theirId: DancerId; theirHand: Hand }>>,
 ): string {
   const parts: string[] = [];
   for (const hand of ["left", "right"] as const) {
-    const held = hands.get(hand);
+    const held = hands[hand];
     if (!held) continue;
     const h = hand === "left" ? "L" : "R";
     const th = held.theirHand === "left" ? "L" : "R";

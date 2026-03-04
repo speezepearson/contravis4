@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { type Beats, HandSchema, type ProtoId } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
-import { connectHands, getDancerState } from "../worldState";
+import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -10,9 +10,11 @@ import {
 } from "./_base";
 import {
   arc,
+  hold,
   lerpFacingTo,
   orbit,
   rotateFacingBy,
+  type Segment,
   type SegmentAnimator,
 } from "./_segment";
 
@@ -57,6 +59,11 @@ export const allemandeSegments = (
 
   return (init) => {
     const matches = resolveMatches(instr.cid, init);
+    const alreadyClose = buildProtoRecord((id) => {
+      const me = getDancerState(id, init);
+      const them = getDancerState(matches[id], init);
+      return me.pos.subtract(them.pos).length() < 1;
+    });
 
     let totalDistance = 0;
     let count = 0;
@@ -87,34 +94,17 @@ export const allemandeSegments = (
             to: getDancerState(matches[id], segInit).pos,
           });
         }),
-        hands: (id, _frac, draft) => {
-          const me = getDancerState(id, draft);
-          const them = getDancerState(matches[id], draft);
-          if (me.pos.subtract(them.pos).length() < 1) {
-            connectHands(
-              draft,
-              id,
-              instr.handedness,
-              matches[id],
-              instr.handedness,
-            );
-          }
-        },
+        hands: (id) =>
+          alreadyClose[id]
+            ? hold([instr.handedness, matches[id], instr.handedness])
+            : {},
       },
       {
         dur: circlingBeats,
         position: orbit(instr.cid, { radians: numAllemandeRadians }),
         facing: rotateFacingBy(() => numAllemandeRadians),
-        hands: (id, _frac, draft) => {
-          connectHands(
-            draft,
-            id,
-            instr.handedness,
-            matches[id],
-            instr.handedness,
-          );
-        },
+        hands: (id) => hold([instr.handedness, matches[id], instr.handedness]),
       },
-    ];
+    ] satisfies Segment[];
   };
 };

@@ -8,7 +8,7 @@ import {
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { type SegmentAnimator } from "./_segment";
+import { makeImmediateSegment, type SegmentAnimator } from "./_segment";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
 export type TakeHand = z.infer<typeof TakeHandSchema>;
@@ -43,27 +43,24 @@ export const takeHandsSegments =
   (init) => {
     const matches = resolveMatches(instr.cid, init);
     return [
-      {
-        dur: 0,
-        hands: (id, _frac, draft) => {
-          const otherId = matches[id];
-          const other = getDancerState(otherId, draft);
-          switch (instr.hand) {
-            case "left":
-              connectHands(draft, id, "left", otherId, "left");
-              break;
-            case "right":
-              connectHands(draft, id, "right", otherId, "right");
-              break;
-            case "inside": {
-              const ourHand = resolveInsideHand(draft[id], other);
-              connectHands(draft, id, ourHand, otherId, ourHand);
-              break;
-            }
-            default:
-              assertNever(instr.hand);
+      makeImmediateSegment(init, (id, draft) => {
+        const otherId = matches[id];
+        const other = getDancerState(otherId, draft);
+        switch (instr.hand) {
+          case "left":
+            connectHands(draft, id, "left", otherId, "left");
+            break;
+          case "right":
+            connectHands(draft, id, "right", otherId, "right");
+            break;
+          case "inside": {
+            const ourHand = resolveInsideHand(draft[id], other);
+            connectHands(draft, id, ourHand, otherId, ourHand);
+            break;
           }
-        },
-      },
+          default:
+            assertNever(instr.hand);
+        }
+      }),
     ];
   };

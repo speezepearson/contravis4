@@ -8,7 +8,7 @@ import {
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { disconnect, type SegmentAnimator } from "./_segment";
+import { makeImmediateSegment, type SegmentAnimator } from "./_segment";
 
 export const DropHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -23,25 +23,32 @@ export const dropHandsSegments =
   (init) => {
     switch (instr.which) {
       case "left":
-        return [{ dur: 0, hands: disconnect("left") }];
+        return [
+          {
+            dur: 0,
+            hands: (id) => ({ left: undefined, right: init[id].hands.right }),
+          },
+        ];
       case "right":
-        return [{ dur: 0, hands: disconnect("right") }];
+        return [
+          {
+            dur: 0,
+            hands: (id) => ({ right: undefined, left: init[id].hands.left }),
+          },
+        ];
       case "both":
-        return [{ dur: 0, hands: disconnect() }];
+        return [{ dur: 0, hands: () => ({}) }];
       default: {
         instr.which satisfies CalledIdentifier;
         const matches = resolveMatches(instr.which, init);
         return [
-          {
-            dur: 0,
-            hands: (id, _frac, draft) => {
-              for (const hand of ALL_HANDS) {
-                if (draft[id].hands.get(hand)?.theirId === matches[id]) {
-                  disconnectHands(draft, id, hand);
-                }
+          makeImmediateSegment(init, (id, draft) => {
+            for (const hand of ALL_HANDS) {
+              if (draft[id].hands[hand]?.theirId === matches[id]) {
+                disconnectHands(draft, id, hand);
               }
-            },
-          },
+            }
+          }),
         ];
       }
     }

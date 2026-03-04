@@ -1,14 +1,14 @@
 import { z } from "zod";
 
-import { isLark, otherHand, parseProtoId } from "../contraCore";
+import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
-import { connectHands, getDancerState } from "../worldState";
+import { getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { arc, lerpFacingTo, type SegmentAnimator } from "./_segment";
+import { arc, hold, lerpFacingTo, type SegmentAnimator } from "./_segment";
 
 export const CaliforniaTwirlInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -35,10 +35,10 @@ export const californiaTwirlSegments =
             to: getDancerState(matches[id], segInit).pos,
           }).rotateByDegrees(90 * (myRole === "lark" ? 1 : -1));
         }),
-        hands: (id, _frac, draft) => {
-          const twirlHand = isLark(id) ? "right" : "left";
-          connectHands(draft, id, twirlHand, matches[id], otherHand(twirlHand));
-        },
+        hands: (id) =>
+          isLark(id)
+            ? hold(["right", matches[id], "left"])
+            : hold(["left", matches[id], "right"]),
       },
     ];
   };

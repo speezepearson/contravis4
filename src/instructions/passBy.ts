@@ -8,7 +8,7 @@ import {
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { arc, disconnect, type SegmentAnimator } from "./_segment";
+import { arc, type SegmentAnimator } from "./_segment";
 
 export const PassByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -25,13 +25,13 @@ export const passBySegments =
     return [
       {
         dur: instr.beats,
-        position: arc(instr.cid, { semiMinor: 0.25, phi: PI }),
+        position: arc(instr.cid, { semiMinor: 0.25 * { left: -1, right: 1 }[instr.hand], phi: PI }),
         facing: (id, _frac, segInit) => {
           return getDancerState(matches[id], segInit)
             .pos.subtract(segInit[id].pos)
             .normalize();
         },
-        hands: disconnect(),
+        hands: () => ({}),
       },
     ];
   };

@@ -31,25 +31,19 @@ describe("takeHandsInRings", () => {
 
     // Every dancer has both hands connected
     for (const id of ALL_PROTO_IDS) {
-      expect(final[id].hands.has("left"), `${id} missing left hand`).toBe(true);
-      expect(final[id].hands.has("right"), `${id} missing right hand`).toBe(
-        true,
-      );
+      expect(final[id].hands.left, `${id} missing left hand`).toBeDefined();
+      expect(final[id].hands.right, `${id} missing right hand`).toBeDefined();
     }
 
     // Following right hands forms a ring of exactly 4
     let current: DancerId = "up_lark_0";
     const visited: DancerId[] = [current];
     for (let i = 0; i < 3; i++) {
-      const { theirId } = must(
-        getDancerState(current, final).hands.get("right"),
-      );
+      const { theirId } = must(getDancerState(current, final).hands.right);
       current = theirId;
       visited.push(current);
     }
-    const { theirId: back } = must(
-      getDancerState(current, final).hands.get("right"),
-    );
+    const { theirId: back } = must(getDancerState(current, final).hands.right);
     expect(back).toBe("up_lark_0");
     expect(new Set(visited).size).toBe(4);
   });

@@ -8,12 +8,7 @@ import {
   instructionBaseSchemaFields,
   resolveRings,
 } from "./_base";
-import {
-  disconnect,
-  linearTo,
-  rotateFacingBy,
-  type SegmentAnimator,
-} from "./_segment";
+import { linearTo, rotateFacingBy, type SegmentAnimator } from "./_segment";
 
 export const PetronellaInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -28,7 +23,7 @@ export const petronellaSegments =
     const centers = buildProtoRecord((id) => avgDancerPos(rings[id], init));
 
     const targets = buildProtoRecord((id) => {
-      const { theirId } = must(init[id].hands.get("right"));
+      const { theirId } = must(init[id].hands["right"]);
       const targetPos = getDancerState(theirId, init).pos;
       const targetFacing = getDir({ from: targetPos, to: centers[id] });
       // Always rotate CW: if ccwRadsBetween gives positive, subtract 2PI
@@ -42,7 +37,7 @@ export const petronellaSegments =
         dur: instr.beats,
         position: linearTo((id) => targets[id].targetPos),
         facing: rotateFacingBy((id) => targets[id].cwAngle),
-        hands: disconnect(),
+        hands: () => ({}),
       },
     ];
   };

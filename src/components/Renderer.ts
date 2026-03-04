@@ -32,7 +32,7 @@ function extractHandConnections(
   for (const id of ALL_PROTO_IDS) {
     const dancer = protos[id];
     for (const hand of ["left", "right"] as Hand[]) {
-      const holding = dancer.hands.get(hand);
+      const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
       const targetState = getDancerState(theirId, protos);

@@ -74,8 +74,8 @@ describe("circle", () => {
     const mid = animation.getFrame(animation.dur / 2);
 
     for (const id of ALL_PROTO_IDS) {
-      expect(mid[id].hands.has("left"), `${id} lost left hand`).toBe(true);
-      expect(mid[id].hands.has("right"), `${id} lost right hand`).toBe(true);
+      expect(mid[id].hands.left, `${id} lost left hand`).toBeDefined();
+      expect(mid[id].hands.right, `${id} lost right hand`).toBeDefined();
     }
   });
 });

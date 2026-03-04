@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 import { getDir, PI } from "../geometry";
-import { connectHands, getDancerState } from "../worldState";
+import { getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
-import { arc, lerpFacingTo, type SegmentAnimator } from "./_segment";
+import { arc, hold, lerpFacingTo, type SegmentAnimator } from "./_segment";
 
 export const BoxTheGnatInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -30,8 +30,7 @@ export const boxTheGnatSegments =
             to: segInit[id].pos,
           });
         }),
-        hands: (id, _frac, draft) =>
-          connectHands(draft, id, "right", matches[id], "right"),
+        hands: (id) => hold(["right", matches[id], "right"]),
       },
     ];
   };

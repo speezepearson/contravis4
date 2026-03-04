@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { getDir } from "../geometry";
+import { ccwRadsBetween, getDir } from "../geometry";
 import { must } from "../utils";
 import {
   buildProtoRecord,
@@ -15,10 +15,10 @@ import {
 } from "./_base";
 import {
   evaluateSegmentEnd,
+  makeImmediateSegment,
   type Segment,
   type SegmentAnimator,
 } from "./_segment";
-import { resolveInsideHand } from "./takeHands";
 
 export const TakeHandsInRingsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -49,34 +49,23 @@ export function makeRingSegment(init: WorldState): Segment {
     return { acrossId, alongId };
   });
 
-  return {
-    dur: 0,
-    facing: (id, _frac, segInit) => {
-      const { acrossId, alongId } = targets[id];
-      const dirToAcross = getDir({
-        from: segInit[id].pos,
-        to: getDancerState(acrossId, segInit).pos,
-      });
-      const dirToAlong = getDir({
-        from: segInit[id].pos,
-        to: getDancerState(alongId, segInit).pos,
-      });
-      return dirToAcross.add(dirToAlong).normalize();
-    },
-    hands: (id, _frac, draft) => {
-      const { acrossId, alongId } = targets[id];
+  return makeImmediateSegment(init, (id, draft) => {
+    const { acrossId, alongId } = targets[id];
+    const dirToAcross = getDir({
+      from: init[id].pos,
+      to: getDancerState(acrossId, init).pos,
+    });
+    const dirToAlong = getDir({
+      from: init[id].pos,
+      to: getDancerState(alongId, init).pos,
+    });
+    draft[id].facing = dirToAcross.add(dirToAlong).normalize();
 
-      const acrossState = getDancerState(acrossId, draft);
-      const myHandToAcross = resolveInsideHand(draft[id], acrossState);
-      const theirHandFromAcross = resolveInsideHand(acrossState, draft[id]);
-      connectHands(draft, id, myHandToAcross, acrossId, theirHandFromAcross);
+    const onRightId =
+      ccwRadsBetween(draft[id].facing, dirToAlong) > 0 ? acrossId : alongId;
 
-      const alongState = getDancerState(alongId, draft);
-      const myHandToAlong = resolveInsideHand(draft[id], alongState);
-      const theirHandFromAlong = resolveInsideHand(alongState, draft[id]);
-      connectHands(draft, id, myHandToAlong, alongId, theirHandFromAlong);
-    },
-  };
+    connectHands(draft, id, "right", onRightId, "left");
+  });
 }
 
 export const takeHandsInRingsSegments =
