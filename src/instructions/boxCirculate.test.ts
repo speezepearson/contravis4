@@ -89,6 +89,28 @@ describe("boxCirculate", () => {
     }
   });
 
+  it("out-facing dancers travel in a clockwise semicircle", () => {
+    const wavesState = makeLongWavesState();
+    const segments = boxCirculateSegments(circInstr)(wavesState, allProtos);
+    const seg = segments[0];
+
+    // At frac=0.5, out-facing dancers should be at the 90° CW point of the semicircle
+    // down_robin_0: (-0.5,0.5)→(-0.5,1.5), center=(-0.5,1.0), at frac=0.5 → (-1.0, 1.0)
+    const drPos = seg.position!("down_robin_0", 0.5, wavesState);
+    expect(drPos.x).toBeCloseTo(-1.0, 10);
+    expect(drPos.y).toBeCloseTo(1.0, 10);
+
+    // up_robin_0: (0.5,-0.5)→(0.5,-1.5), center=(0.5,-1.0), at frac=0.5 → (1.0, -1.0)
+    const urPos = seg.position!("up_robin_0", 0.5, wavesState);
+    expect(urPos.x).toBeCloseTo(1.0, 10);
+    expect(urPos.y).toBeCloseTo(-1.0, 10);
+
+    // Across-facing dancers should still be at the linear midpoint
+    const ulPos = seg.position!("up_lark_0", 0.5, wavesState);
+    expect(ulPos.x).toBeCloseTo(0.0, 10);
+    expect(ulPos.y).toBeCloseTo(-0.5, 10);
+  });
+
   it("throws if a dancer faces neither out nor across", () => {
     const badInit = produce(longWavesInit, (draft) => {
       draft.up_lark_0.facing = new Vector(0, 1); // NORTH — neither out nor across

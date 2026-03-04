@@ -1,14 +1,15 @@
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
-import { PI } from "../geometry";
+import { PI, revolve } from "../geometry";
+import { lerpVectors } from "../utils";
 import { getDancerState, type WorldState } from "../worldState";
 import {
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
   resolveMatch,
 } from "./_base";
-import { linearTo, type SegmentAnimator } from "./_segment";
+import { type SegmentAnimator } from "./_segment";
 
 export const BoxCirculateInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -63,7 +64,15 @@ export const boxCirculateSegments =
     return [
       {
         dur: instr.beats,
-        position: linearTo((id) => targets[id]!),
+        position: (id: ProtoId, frac: number, segInit: WorldState) => {
+          if (isOut[id]) {
+            return revolve(segInit[id].pos, {
+              aroundMidpointWith: targets[id]!,
+              radians: -PI * frac,
+            });
+          }
+          return lerpVectors(segInit[id].pos, targets[id]!, frac);
+        },
         facing: (id: ProtoId, frac: number, segInit: WorldState) => {
           if (isOut[id]) {
             return segInit[id].facing.rotateByRadians(-PI * frac);
