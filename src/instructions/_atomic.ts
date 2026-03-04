@@ -10,6 +10,10 @@ import {
   balanceTheRingSegments,
 } from "./balanceTheRing";
 import {
+  BendTheLineInstructionSchema,
+  bendTheLineSegments,
+} from "./bendTheLine";
+import {
   BoxCirculateInstructionSchema,
   boxCirculateSegments,
 } from "./boxCirculate";
@@ -20,6 +24,10 @@ import {
 } from "./californiaTwirl";
 import { CircleInstructionSchema, circleSegments } from "./circle";
 import { DoSiDoInstructionSchema, doSiDoSegments } from "./doSiDo";
+import {
+  DownTheHallInstructionSchema,
+  downTheHallSegments,
+} from "./downTheHall";
 import { DropHandsInstructionSchema, dropHandsSegments } from "./dropHands";
 import { FaceInstructionSchema, faceSegments } from "./face";
 import {
@@ -69,16 +77,19 @@ import {
   TurnAsACoupleInstructionSchema,
   turnAsACoupleSegments,
 } from "./turnAsACouple";
+import { UpTheHallInstructionSchema, upTheHallSegments } from "./upTheHall";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
   BalanceInstructionSchema,
   BalanceTheRingInstructionSchema,
+  BendTheLineInstructionSchema,
   BoxCirculateInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
   CircleInstructionSchema,
   DoSiDoInstructionSchema,
+  DownTheHallInstructionSchema,
   DropHandsInstructionSchema,
   FaceInstructionSchema,
   FormLongWavesInstructionSchema,
@@ -101,6 +112,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   TakeHandsInstructionSchema,
   TurnAloneInstructionSchema,
   TurnAsACoupleInstructionSchema,
+  UpTheHallInstructionSchema,
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
@@ -113,11 +125,13 @@ export const atomicSegmentAnimators: {
   allemande: allemandeSegments,
   balance: balanceSegments,
   balance_the_ring: balanceTheRingSegments,
+  bend_the_line: bendTheLineSegments,
   box_circulate: boxCirculateSegments,
   box_the_gnat: boxTheGnatSegments,
   california_twirl: californiaTwirlSegments,
   circle: circleSegments,
   do_si_do: doSiDoSegments,
+  down_the_hall: downTheHallSegments,
   drop_hands: dropHandsSegments,
   face: faceSegments,
   form_long_waves: formLongWavesSegments,
@@ -140,6 +154,7 @@ export const atomicSegmentAnimators: {
   take_hands: takeHandsSegments,
   turn_alone: turnAloneSegments,
   turn_as_a_couple: turnAsACoupleSegments,
+  up_the_hall: upTheHallSegments,
 };
 
 export function makeAtomicInstructionSegments(
