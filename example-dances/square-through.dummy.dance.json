@@ -1,0 +1,16 @@
+{
+  "name": "(dummy) Square through",
+  "initFormation": "improper",
+  "instructions": [
+    {
+      "id": "e927993b-3243-4c47-820d-be321715a023",
+      "beats": 8,
+      "type": "square_through"
+    },
+    {
+      "id": "623181bf-a1fe-4a13-8a2e-613a4b4340eb",
+      "beats": 8,
+      "type": "square_through"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "(dummy) Turn as a couple",
+  "initFormation": "improper",
+  "instructions": [
+    {
+      "id": "79626d86-2fe9-4aef-9387-a3e2c756c99b",
+      "beats": 0,
+      "type": "face",
+      "direction": "across"
+    },
+    {
+      "id": "755cadfe-b22c-4bcd-a1b1-9d497e07ba35",
+      "beats": 4,
+      "type": "turn_as_a_couple",
+      "cid": "neighbor"
+    },
+    {
+      "id": "9ba831fc-bb1f-43d7-a2b0-36923c5f1caa",
+      "beats": 4,
+      "type": "turn_as_a_couple",
+      "cid": "next neighbor"
+    }
+  ]
+}
