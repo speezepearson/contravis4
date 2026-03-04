@@ -37,8 +37,18 @@ export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
     const dropdownRef = useRef<SearchableDropdownHandle>(null);
     const { onPopoverOpen } = useInstructionEdit();
 
+    const canCycle = options.length <= 3;
+
+    function cycle() {
+      const idx = options.indexOf(value);
+      onChange(options[(idx + 1) % options.length]);
+    }
+
     useImperativeHandle(ref, () => ({
-      focus: () => setOpen(true),
+      focus: () => {
+        if (canCycle) cycle();
+        else setOpen(true);
+      },
     }));
 
     useEffect(() => {
@@ -52,6 +62,19 @@ export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
         ? getLabel(value)
         : value
       : (placeholder ?? "...");
+
+    if (canCycle) {
+      return (
+        <span
+          className={`inline-value${!value ? " inline-value-placeholder" : ""}`}
+          tabIndex={0}
+          role="button"
+          onClick={cycle}
+        >
+          {displayText}
+        </span>
+      );
+    }
 
     function handleChange(v: string) {
       onChange(v);
