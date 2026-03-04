@@ -5,9 +5,9 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, isLark, type ProtoId } from "../contraCore";
 import { ccwRadsBetween, PI } from "../geometry";
+import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type TurnAloneInstruction, turnAloneSegments } from "./turnAlone";
-import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

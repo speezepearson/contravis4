@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { type WorldState } from "../worldState";
+import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
 import {
   type SquareThroughInstruction,
   squareThroughSegments,
 } from "./squareThrough";
-import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

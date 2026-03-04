@@ -8,9 +8,9 @@ import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
 import { getDir } from "../geometry";
 import { must } from "../utils";
 import { getDancerState } from "../worldState";
+import { getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
 import { takeHandsInRingsSegments } from "./takeHandsInRings";
-import { getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

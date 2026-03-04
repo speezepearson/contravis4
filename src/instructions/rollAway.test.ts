@@ -6,9 +6,9 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { ccwRadsBetween, NORTH, PI } from "../geometry";
+import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type RollAwayInstruction, rollAwaySegments } from "./rollAway";
-import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

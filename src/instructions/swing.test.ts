@@ -6,9 +6,9 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import type { WorldState } from "../worldState";
+import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type SwingInstruction, swingSegments } from "./swing";
-import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

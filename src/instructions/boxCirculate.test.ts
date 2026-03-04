@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { type WorldState } from "../worldState";
+import { getSegmentFrameAtFrac } from "./_segment";
 import {
   type BoxCirculateInstruction,
   boxCirculateSegments,
@@ -14,7 +15,6 @@ import {
   formLongWavesSegments,
 } from "./formLongWaves";
 import { initFormationStates } from "./index";
-import { getSegmentFrameAtFrac } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

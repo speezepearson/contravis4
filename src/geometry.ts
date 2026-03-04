@@ -1,7 +1,6 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { assertNever } from "./utils";
 
 export const VectorSchema = z.instanceof(Vector);
 
@@ -61,22 +60,11 @@ export function getDir({ from, to }: { from: Vector; to: Vector }): Vector {
 
 export function revolve(
   x: Vector,
-  how: ({ around: Vector } | { aroundMidpointWith: Vector }) &
-    ({ radians: number } | { degrees: number } | { rotations: number }),
+  {around, aroundMidpointWith, radians}:
+  | { radians: number, around: Vector, aroundMidpointWith?: undefined } 
+  | { radians: number, around?: undefined, aroundMidpointWith: Vector }
 ): Vector {
   const center =
-    "around" in how
-      ? how.around
-      : "aroundMidpointWith" in how
-        ? how.aroundMidpointWith.add(x).divide(2)
-        : assertNever(how);
-  const radians =
-    "radians" in how
-      ? how.radians
-      : "degrees" in how
-        ? (how.degrees / 180) * PI
-        : "rotations" in how
-          ? 360 * how.rotations
-          : assertNever(how);
+    around ? around : aroundMidpointWith.add(x).divide(2);
   return center.add(x.subtract(center).rotateByRadians(radians));
 }

@@ -33,7 +33,7 @@ export function BalanceFields({
   return (
     <>
       <CalledIdentifierDropdown
-        options={CalledDirectionSchema.options} // TODO: exclude same-role dancers
+        options={CalledDirectionSchema.options}
         value={instruction.did}
         onChange={(did) => tryCommit({ did })}
       />

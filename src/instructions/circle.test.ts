@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { animateSegments } from "./_segment";
 import { type CircleInstruction } from "./circle";
 // circleSegments doesn't exist yet — this import will fail until implemented
 import { circleSegments } from "./circle";
 import { initFormationStates } from "./index";
-import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 

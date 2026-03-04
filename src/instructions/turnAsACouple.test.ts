@@ -5,6 +5,7 @@ enableMapSet();
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
+import { animateSegments } from "./_segment";
 import {
   type CaliforniaTwirlInstruction,
   californiaTwirlSegments,
@@ -14,7 +15,6 @@ import {
   type TurnAsACoupleInstruction,
   turnAsACoupleSegments,
 } from "./turnAsACouple";
-import { animateSegments } from "./_segment";
 
 const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
 
