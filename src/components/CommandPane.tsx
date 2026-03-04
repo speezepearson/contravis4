@@ -635,6 +635,12 @@ function InlineForm({
             return (
               <TurnAsACoupleFields {...common} instruction={instruction} />
             );
+          case "bend_the_line":
+            return <BendTheLineFields {...common} instruction={instruction} />;
+          case "down_the_hall":
+            return <DownTheHallFields {...common} instruction={instruction} />;
+          case "up_the_hall":
+            return <UpTheHallFields {...common} instruction={instruction} />;
           default:
             assertNever(instruction);
         }

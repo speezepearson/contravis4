@@ -10,7 +10,7 @@ export const UpTheHallInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("up_the_hall"),
   beats: BeatsSchema.default(6),
-  distance: z.number().default(3),
+  distance: z.number().default(1.5),
 });
 export type UpTheHallInstruction = z.infer<typeof UpTheHallInstructionSchema>;
 

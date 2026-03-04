@@ -55,7 +55,7 @@ export const squareThroughSegments: InstructionAnimator<
   // 3. Balance toward person in front
   append(
     balanceSegments(
-      { id, beats: balanceBeats, type: "balance", did: "in_front" },
+      { id, beats: balanceBeats, type: "balance", cid: "in_front" },
       state,
       who,
     ),

@@ -23,7 +23,7 @@ export function BalanceFields({
       id,
       type: "balance",
       beats: instruction.beats,
-      did: instruction.did,
+      cid: instruction.cid,
       ...overrides,
     });
     if (result.success) onChange(result.data);
@@ -34,8 +34,8 @@ export function BalanceFields({
     <>
       <CalledIdentifierDropdown
         options={CalledDirectionSchema.options}
-        value={instruction.did}
-        onChange={(did) => tryCommit({ did })}
+        value={instruction.cid}
+        onChange={(cid) => tryCommit({ cid })}
       />
     </>
   );

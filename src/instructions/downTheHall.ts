@@ -21,7 +21,7 @@ export const DownTheHallInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("down_the_hall"),
   beats: BeatsSchema.default(6),
-  distance: z.number().default(3),
+  distance: z.number().default(1.5),
 });
 export type DownTheHallInstruction = z.infer<
   typeof DownTheHallInstructionSchema
@@ -55,11 +55,11 @@ export function theHallSegments(
       const idx = line.indexOf(id as DancerId);
       if (idx < 0) throw new Error(`Proto ${id} not found in its short line`);
       if (idx < 3) {
-        const neighborId = line[idx + 1];
-        const neighborState = getDancerState(neighborId, draft);
-        const myHand = resolveInsideHand(draft[id], neighborState);
-        const theirHand = resolveInsideHand(neighborState, draft[id]);
-        connectHands(draft, id, myHand, neighborId, theirHand);
+        const adjId = line[idx + 1];
+        const adjState = getDancerState(adjId, draft);
+        const myHand = resolveInsideHand(draft[id], adjState);
+        const theirHand = resolveInsideHand(adjState, draft[id]);
+        connectHands(draft, id, myHand, adjId, theirHand);
       }
     }),
     // Walk down/up the hall

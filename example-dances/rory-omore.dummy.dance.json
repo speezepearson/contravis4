@@ -19,7 +19,7 @@
       "id": "03d2342c-ca32-43a6-9747-2d1722402039",
       "beats": 4,
       "type": "balance",
-      "did": "neighbor"
+      "cid": "neighbor"
     },
     {
       "id": "9596411b-aacd-4774-a592-f02e4f1c817d",
@@ -36,7 +36,7 @@
       "id": "8440ff60-26f3-4811-8187-47a32b37d956",
       "beats": 4,
       "type": "balance",
-      "did": "neighbor"
+      "cid": "neighbor"
     },
     {
       "id": "3ce813f8-d0bd-4e37-a06b-a33587c146b5",

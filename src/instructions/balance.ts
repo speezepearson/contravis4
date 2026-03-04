@@ -1,16 +1,18 @@
 import { z } from "zod";
 
+import { getDir } from "../geometry";
+import { getDancerState } from "../worldState";
 import {
-  CalledDirectionSchema,
+  CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveCalledDirection,
+  resolveCalledIdentifier,
 } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
 export const BalanceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("balance"),
-  did: CalledDirectionSchema,
+  cid: CalledIdentifierSchema,
 });
 export type BalanceInstruction = z.infer<typeof BalanceInstructionSchema>;
 
@@ -24,7 +26,13 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
     {
       dur: halfBeats,
       position: linearTo((id, segInit) => {
-        const dir = resolveCalledDirection(id, instr.did, segInit);
+        const otherId = resolveCalledIdentifier(id, instr.cid, segInit);
+        if (!otherId)
+          throw new Error(`${id} has no ${instr.cid} to balance with`);
+        const dir = getDir({
+          from: segInit[id].pos,
+          to: getDancerState(otherId, segInit).pos,
+        });
         return segInit[id].pos.add(dir.multiply(0.2));
       }),
     },
