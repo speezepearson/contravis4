@@ -23,9 +23,22 @@ export function ccwRadsBetween(a: Vector, b: Vector): number {
   return diff;
 }
 
-/** Lerp between two facing vectors via the short arc. */
-export function lerpFacing(a: Vector, b: Vector, progressFrac: number): Vector {
-  return a.rotateByRadians(ccwRadsBetween(a, b) * progressFrac);
+/** Lerp between two facing vectors via the short arc (or forced direction). */
+export function lerpFacing(
+  a: Vector,
+  b: Vector,
+  progressFrac: number,
+  {
+    forceDir,
+    forceDirTolerance = 0.1,
+  }: { forceDir?: "cw" | "ccw"; forceDirTolerance?: number } = {},
+): Vector {
+  let rads = ccwRadsBetween(a, b);
+  if (forceDir && Math.abs(rads) > forceDirTolerance) {
+    if (forceDir === "ccw" && rads < 0) rads += TWO_PI;
+    else if (forceDir === "cw" && rads > 0) rads -= TWO_PI;
+  }
+  return a.rotateByRadians(rads * progressFrac);
 }
 
 export function ellipsePosition(

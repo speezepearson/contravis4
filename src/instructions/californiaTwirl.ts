@@ -28,7 +28,9 @@ export const californiaTwirlSegments =
           return getDir({
             from: segInit[id].pos,
             to: getDancerState(matches[id], segInit).pos,
-          }).rotateByDegrees(90 * (myRole === "lark" ? 1 : -1));
+          }).rotateByDegrees(90 * (myRole === "lark" ? -1 : 1));
+        }, {
+          forceDir: (id) => isLark(id) ? 'cw' : 'ccw'
         }),
         hands: (id) =>
           isLark(id)

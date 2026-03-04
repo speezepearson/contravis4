@@ -251,12 +251,22 @@ export function linearTo(
 
 // ── Facing primitives ───────────────────────────────────────────────────
 
-/** Lerp facing toward a target direction via the short arc. */
+/** Lerp facing toward a target direction via the short arc (or forced direction). */
 export function lerpFacingTo(
   target: (id: ProtoId, segInit: WorldState) => Vector,
+  {
+    forceDir,
+    forceDirTolerance = 0.1,
+  }: {
+    forceDir?: (id: ProtoId) => "cw" | "ccw" | undefined;
+    forceDirTolerance?: number;
+  } = {},
 ): FacingFn {
   return (id, frac, segInit) => {
-    return lerpFacingVec(segInit[id].facing, target(id, segInit), frac);
+    return lerpFacingVec(segInit[id].facing, target(id, segInit), frac, {
+      forceDir: forceDir?.(id),
+      forceDirTolerance,
+    });
   };
 }
 
