@@ -79,6 +79,7 @@ import type { InlineDropdownHandle } from "./InlineDropdown";
 import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
+import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
 
 export type ActionOptionType = Instruction["type"];
 
@@ -660,6 +661,11 @@ export default memo(function CommandPane({
     [instructions],
   );
 
+  const sections = useMemo(
+    () => groupIntoSections(instructions),
+    [instructions],
+  );
+
   const progression = useMemo(() => {
     if (!animation) return null;
     return inferProgression(animation, initFormationStates[initFormation]);
@@ -1000,28 +1006,62 @@ export default memo(function CommandPane({
             items={instructions.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            {renderAddGap("top", 0)}
-            {instructions.map((instr, i) => (
-              <Fragment key={instr.id}>
-                <SortableItem id={instr.id}>
-                  {(dragHandleProps) => (
-                    <>
-                      {instr.type === "split" ? (
-                        <div
-                          className={`split-wrapper${selectedIds.has(instr.id) ? " selected" : ""}`}
-                        >
-                          {renderInstruction(instr, dragHandleProps)}
-                          {renderSplitBody(instr)}
+            {sections.map((section, sectionIdx) => {
+              let emptyGapIndex = 0;
+              if (section.items.length === 0) {
+                for (let si = sectionIdx - 1; si >= 0; si--) {
+                  const prev = sections[si].items;
+                  if (prev.length > 0) {
+                    emptyGapIndex = prev[prev.length - 1].index + 1;
+                    break;
+                  }
+                }
+              }
+              return (
+                <Fragment key={section.label}>
+                  <div className="section-header">{section.label}</div>
+                  {section.items.length === 0 &&
+                    renderAddGap("top", emptyGapIndex)}
+                  {section.items.map((item, si) => (
+                    <Fragment key={item.instruction.id}>
+                      {si === 0 && renderAddGap("top", item.index)}
+                      <SortableItem id={item.instruction.id}>
+                        {(dragHandleProps) => (
+                          <>
+                            {item.instruction.type === "split" ? (
+                              <div
+                                className={`split-wrapper${selectedIds.has(item.instruction.id) ? " selected" : ""}`}
+                              >
+                                {renderInstruction(
+                                  item.instruction,
+                                  dragHandleProps,
+                                )}
+                                {renderSplitBody(item.instruction)}
+                              </div>
+                            ) : (
+                              renderInstruction(
+                                item.instruction,
+                                dragHandleProps,
+                              )
+                            )}
+                          </>
+                        )}
+                      </SortableItem>
+                      {item.spillsOver && (
+                        <div className="instruction-warning">
+                          Spills into{" "}
+                          {spillTargetLabel(
+                            item.startBeat,
+                            instructionDuration(item.instruction),
+                          )}
                         </div>
-                      ) : (
-                        renderInstruction(instr, dragHandleProps)
                       )}
-                    </>
-                  )}
-                </SortableItem>
-                {renderAddGap("top", i + 1)}
-              </Fragment>
-            ))}
+                      {renderAddGap("top", item.index + 1)}
+                    </Fragment>
+                  ))}
+                </Fragment>
+              );
+            })}
           </SortableContext>
           <DropZone containerId="top" />
           {instructions.length === 0 && (
