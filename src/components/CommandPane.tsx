@@ -30,6 +30,7 @@ import type { ProtoId } from "../contraCore";
 import { sortedExampleDances } from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
+import { inferProgression } from "../inferProgression";
 import {
   type AtomicInstruction,
   AtomicInstructionSchema,
@@ -44,6 +45,7 @@ import type {
 import {
   DanceSchema,
   InitFormationSchema,
+  initFormationStates,
   instructionDuration,
   InstructionSchema,
 } from "../instructions/index";
@@ -653,6 +655,16 @@ export default memo(function CommandPane({
     return result;
   }, [instructions, animation]);
 
+  const totalBeats = useMemo(
+    () => instructions.reduce((s, i) => s + instructionDuration(i), 0),
+    [instructions],
+  );
+
+  const progression = useMemo(() => {
+    if (!animation) return null;
+    return inferProgression(animation, initFormationStates[initFormation]);
+  }, [animation, initFormation]);
+
   const handleCheckboxClick = useCallback(
     (id: InstructionId, event: React.MouseEvent) => {
       setSelectedIds((prev) => {
@@ -1019,6 +1031,17 @@ export default memo(function CommandPane({
               No instructions yet. Click + to add one.
             </div>
           )}
+        </div>
+
+        <div className="dance-info">
+          <span>
+            {totalBeats} beat{totalBeats !== 1 && "s"}
+          </span>
+          <span>
+            {progression === null
+              ? "Progression: <invalid>"
+              : `Progression: ${progression}`}
+          </span>
         </div>
 
         <div className="json-io">
