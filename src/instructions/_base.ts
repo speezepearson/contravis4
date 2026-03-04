@@ -10,6 +10,7 @@ import {
   type DancerId,
   getRole,
   isLark,
+  parseDancerId,
   type ProtoId,
   protoIdToDancerId,
 } from "../contraCore";
@@ -115,34 +116,40 @@ export function resolveCalledLabel(
       return resolveBasicLabel("partner", neighbor, protos);
     }
     case "next neighbor": {
+      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
-      return addOffsetToId(neighbor, 1);
+      return addOffsetToId(neighbor, 1 * offsetSign);
     }
     case "next x2 neighbor": {
+      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
-      return addOffsetToId(neighbor, 2);
+      return addOffsetToId(neighbor, 2 * offsetSign);
     }
     case "next x3 neighbor": {
+      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
-      return addOffsetToId(neighbor, 3);
+      return addOffsetToId(neighbor, 3 * offsetSign);
     }
     case "prev neighbor": {
+      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
-      return addOffsetToId(neighbor, -1);
+      return addOffsetToId(neighbor, -1 * offsetSign);
     }
     case "prev x2 neighbor": {
+      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
-      return addOffsetToId(neighbor, -2);
+      return addOffsetToId(neighbor, -2 * offsetSign);
     }
     case "prev x3 neighbor": {
+      const offsetSign = parseDancerId(id).dir === 'up' ? 1 : -1;
       const neighbor = resolveBasicLabel("neighbor", id, protos);
       if (!neighbor) return null;
-      return addOffsetToId(neighbor, -3);
+      return addOffsetToId(neighbor, -3 * offsetSign);
     }
     case "in right hand": {
       return getDancerState(id, protos).hands["right"]?.theirId ?? null;
