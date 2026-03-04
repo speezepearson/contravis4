@@ -1,6 +1,7 @@
 import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
+import { ALL_PROTO_IDS } from "./contraCore";
 import { EAST, NORTH, SOUTH } from "./geometry";
 import { inferProgression } from "./inferProgression";
 import { initFormationStates } from "./instructions";
@@ -96,6 +97,23 @@ describe("inferProgression", () => {
             SOUTH.multiply(3).add(EAST.multiply(0.2)),
           );
         });
+      },
+    };
+    const progression = inferProgression(animation, init);
+    expect(progression).toBe(null);
+  });
+
+  it("returns null if dancers have permuted their positions", () => {
+    const init = initFormationStates.improper;
+    const final = produce(init, (draft) => {
+      for (const id of ALL_PROTO_IDS)
+        draft[id].pos = draft[id].pos.rotateByRadians(Math.PI / 2);
+    });
+    const animation: ContraAnimation = {
+      dur: 64,
+      getFrame: (t) => {
+        if (t < 32) return init;
+        return final;
       },
     };
     const progression = inferProgression(animation, init);

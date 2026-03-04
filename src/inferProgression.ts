@@ -17,22 +17,20 @@ export function inferProgression(
 ): number | null {
   const finalState = animation.getFrame(animation.dur);
 
-  const amountsProgressed: Set<number> = new Set(
-    ALL_PROTO_IDS.map((id) => {
-      const { dir } = parseProtoId(id);
-      // Progression direction: up dancers progress in +Y (NORTH), down in -Y (SOUTH)
-      const progSign = dir === "up" ? 1 : -1;
+  const amountsProgressed = new Set<number>();
+  for (const id of ALL_PROTO_IDS) {
+    const { dir } = parseProtoId(id);
+    // Progression direction: up dancers progress in +Y (NORTH), down in -Y (SOUTH)
+    const progSign = dir === "up" ? 1 : -1;
 
-      const initPos = initState[id].pos;
-      const finalPos = finalState[id].pos;
+    const initPos = initState[id].pos;
+    const finalPos = finalState[id].pos;
 
-      const idealDy = Math.round(finalPos.y - initPos.y);
-      const idealProgressedPos = initPos.add(NORTH.multiply(idealDy));
-      if (finalPos.subtract(idealProgressedPos).length() > TOLERANCE)
-        return null;
-      return progSign * idealDy;
-    }).filter((n) => n !== null),
-  );
+    const idealDy = Math.round(finalPos.y - initPos.y);
+    const idealProgressedPos = initPos.add(NORTH.multiply(idealDy));
+    if (finalPos.subtract(idealProgressedPos).length() > TOLERANCE) return null;
+    amountsProgressed.add(progSign * idealDy);
+  }
 
   return amountsProgressed.size === 1 ? Array.from(amountsProgressed)[0] : null;
 }
