@@ -55,15 +55,6 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
       .add(postApproachDraweePos)
       .divide(2);
 
-    console.log({
-      drawerPos: drawer.pos,
-      cardinal: resolveCardinalDirection("across", drawer.pos),
-      finalCoM: drawer.pos.add(
-        resolveCardinalDirection("across", drawer.pos)
-          .multiply(0.5)
-          .rotateByDegrees(90 * (instr.drawerRole === "robin" ? 1 : -1)),
-      ),
-    });
     const finalCoM = drawer.pos.add(
       resolveCardinalDirection("across", drawer.pos)
         .multiply(0.5)
@@ -94,16 +85,6 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
   };
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);
-
-  console.log(
-    buildProtoRecord((id) => {
-      console.log({
-        id,
-        postApproachCom: plans[id].postApproach.com,
-        finalCom: plans[id].final.com,
-      });
-    }),
-  );
 
   const preferDriftOnWest = (() => {
     if (instr.endFacing !== "across") return undefined;
