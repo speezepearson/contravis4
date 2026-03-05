@@ -1,4 +1,4 @@
-import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
+import { ALL_PROTO_IDS_SET } from "./contraCore";
 import {
   type AtomicInstruction,
   makeAtomicInstructionSegments,
@@ -41,12 +41,12 @@ function animateInstruction(
   instr: Instruction,
 ): ContraAnimation {
   if (instr.type === "split") {
-    return splitAnimator(instr, init, new Set<ProtoId>(ALL_PROTO_IDS));
+    return splitAnimator(instr, init, ALL_PROTO_IDS_SET);
   }
   return animateSegments(
     init,
-    new Set<ProtoId>(ALL_PROTO_IDS),
-    makeAtomicInstructionSegments(instr, init, new Set<ProtoId>(ALL_PROTO_IDS)),
+    ALL_PROTO_IDS_SET,
+    makeAtomicInstructionSegments(instr, init, ALL_PROTO_IDS_SET),
   );
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS } from "../contraCore";
 import { type WorldState } from "../worldState";
 import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
@@ -9,7 +9,7 @@ import {
   squareThroughSegments,
 } from "./squareThrough";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 const instr: SquareThroughInstruction = {
   id: "00000000-0000-0000-0000-000000000001",

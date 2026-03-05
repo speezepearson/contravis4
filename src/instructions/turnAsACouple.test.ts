@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
 import { animateSegments } from "./_segment";
 import {
@@ -16,7 +16,7 @@ import {
   turnAsACoupleSegments,
 } from "./turnAsACouple";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 function makeTurnAsACouple(
   overrides: Partial<TurnAsACoupleInstruction> = {},

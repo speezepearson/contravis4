@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS } from "../contraCore";
 import { ccwRadsBetween, NORTH, PI } from "../geometry";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type RollAwayInstruction, rollAwaySegments } from "./rollAway";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 function makeInstr(
   overrides: Partial<RollAwayInstruction> = {},

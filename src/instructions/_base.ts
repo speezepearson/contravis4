@@ -52,7 +52,7 @@ export function getCardinalBearing(
   }
 }
 
-export type Animator = (init: WorldState, who: Set<ProtoId>) => ContraAnimation;
+export type Animator = (init: WorldState, who: ReadonlySet<ProtoId>) => ContraAnimation;
 export function chainAnimators(animators: Animator[]): Animator {
   return (init, who) => {
     if (animators.length === 0) {

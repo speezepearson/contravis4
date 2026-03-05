@@ -166,7 +166,7 @@ export const atomicSegmentAnimators: {
 export function makeAtomicInstructionSegments(
   instr: AtomicInstruction,
   init: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
 ): Segment[] {
   const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<
     typeof instr

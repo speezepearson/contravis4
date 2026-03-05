@@ -2,7 +2,7 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { type WorldState } from "../worldState";
 import { getSegmentFrameAtFrac } from "./_segment";
@@ -12,7 +12,7 @@ import {
 } from "./formLongWaves";
 import { initFormationStates } from "./index";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 const instr: FormLongWavesInstruction = {
   id: "00000000-0000-0000-0000-000000000001",

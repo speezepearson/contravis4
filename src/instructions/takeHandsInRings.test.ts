@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type DancerId } from "../contraCore";
 import { getDir } from "../geometry";
 import { must } from "../utils";
 import { getDancerState } from "../worldState";
@@ -12,7 +12,7 @@ import { getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
 import { takeHandsInRingsSegments } from "./takeHandsInRings";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 const DUMMY_INSTR = {
   id: "00000000-0000-0000-0000-000000000000" as const,

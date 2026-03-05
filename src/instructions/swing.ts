@@ -63,7 +63,7 @@ export function swingApproachBeatsForSpeedMatch(
 export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
-  _who: Set<ProtoId>,
+  _who: ReadonlySet<ProtoId>,
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
   const centers = buildProtoRecord((id) =>

@@ -20,7 +20,7 @@ import { advanceState, animateSegments, type Segment } from "./_segment";
 
 function chainAtomicInstructionSegments(
   init: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
   instructions: AtomicInstruction[],
 ): Segment[] {
   let state = init;
@@ -59,7 +59,7 @@ export type Split = z.infer<typeof SplitSchema>;
 export const splitAnimator = (
   instr: Split,
   init: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
 ): ContraAnimation => {
   switch (instr.by) {
     case "role": {

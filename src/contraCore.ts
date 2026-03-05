@@ -39,6 +39,7 @@ export const ALL_PROTO_IDS = [
   "down_lark_0",
   "down_robin_0",
 ] as const;
+export const ALL_PROTO_IDS_SET: ReadonlySet<ProtoId> = new Set(ALL_PROTO_IDS);
 export const LARK_PROTO_IDS = ["up_lark_0", "down_lark_0"] as const;
 export const ROBIN_PROTO_IDS = ["up_robin_0", "down_robin_0"] as const;
 export const UP_PROTO_IDS = ["up_lark_0", "up_robin_0"] as const;

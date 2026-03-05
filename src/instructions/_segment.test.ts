@@ -4,12 +4,11 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { NORTH } from "../geometry";
 import { animateSegments, type Segment } from "./_segment";
 import { initFormationStates } from "./index";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 describe("makeAnimation", () => {
   const init = initFormationStates.improper;

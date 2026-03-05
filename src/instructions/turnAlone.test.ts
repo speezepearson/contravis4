@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, isLark, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, isLark } from "../contraCore";
 import { ccwRadsBetween, PI } from "../geometry";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type TurnAloneInstruction, turnAloneSegments } from "./turnAlone";
 
-const allProtos = new Set<ProtoId>(ALL_PROTO_IDS);
+const allProtos = ALL_PROTO_IDS_SET;
 
 function makeInstr(
   overrides: Partial<TurnAloneInstruction> = {},

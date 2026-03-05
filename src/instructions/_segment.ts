@@ -31,7 +31,7 @@ import {
 export type InstructionAnimator<T> = (
   instr: T,
   init: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
 ) => Segment[];
 
 /** Per-dancer position function: given dancer id, progress fraction [0,1], and segment initial state, returns position. */
@@ -80,7 +80,7 @@ export type Segment = {
 export function getSegmentFrameAtFrac(
   segment: Segment,
   init: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
   frac: number,
 ): WorldState {
   return produce(init, (draft) => {
@@ -101,7 +101,7 @@ export function getSegmentFrameAtFrac(
 export function advanceState(
   segs: Segment[],
   state: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
 ): WorldState {
   let s = state;
   for (const seg of segs) s = getSegmentFrameAtFrac(seg, s, who, 1);
@@ -117,7 +117,7 @@ export function advanceState(
  */
 export function animateSegments(
   init: WorldState,
-  who: Set<ProtoId>,
+  who: ReadonlySet<ProtoId>,
   segments: Segment[],
 ): ContraAnimation {
   const segInits: WorldState[] = [init];
@@ -238,7 +238,7 @@ export function arc(
 export function orbit(
   matches: Map<ProtoId, DancerId>,
   opts: { radians: number },
-  who?: Set<ProtoId>,
+  who?: ReadonlySet<ProtoId>,
 ): PositionFn {
   return (id, frac, segInit) => {
     if (who && !who.has(id)) return segInit[id].pos;
@@ -272,7 +272,7 @@ export function lerpFacingTo(
     forceDir?: (id: ProtoId) => "cw" | "ccw" | undefined;
     forceDirTolerance?: number;
   } = {},
-  who?: Set<ProtoId>,
+  who?: ReadonlySet<ProtoId>,
 ): FacingFn {
   return (id, frac, segInit) => {
     if (who && !who.has(id)) return segInit[id].facing;
