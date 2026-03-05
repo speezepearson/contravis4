@@ -19,6 +19,7 @@ import {
   type DancerHandPointer,
   type DancerState,
   getDancerState,
+  sanityCheckWorldState,
   type WorldState,
 } from "../worldState";
 import {
@@ -141,23 +142,25 @@ export function animateSegments(
         const localT = t - accDur;
         const frac = seg.dur > 0 ? localT / seg.dur : 1;
         const segInit = segInits[i];
-        return produce(segInit, (draft) => {
-          for (const id of who) {
-            if (seg.position) draft[id].pos = seg.position(id, frac, segInit);
-            if (seg.facing) draft[id].facing = seg.facing(id, frac, segInit);
-          }
-          for (const id of who) {
-            if (seg.hands) {
-              draft[id].hands = {};
-              draft[id].hands = seg.hands(id, frac, segInit);
+        return sanityCheckWorldState(
+          produce(segInit, (draft) => {
+            for (const id of who) {
+              if (seg.position) draft[id].pos = seg.position(id, frac, segInit);
+              if (seg.facing) draft[id].facing = seg.facing(id, frac, segInit);
             }
-            if (seg.labels) {
-              for (const [label, theirId] of seg.labels(id, frac, segInit)) {
-                draft[id].labels[label] = theirId;
+            for (const id of who) {
+              if (seg.hands) {
+                draft[id].hands = {};
+                draft[id].hands = seg.hands(id, frac, segInit);
+              }
+              if (seg.labels) {
+                for (const [label, theirId] of seg.labels(id, frac, segInit)) {
+                  draft[id].labels[label] = theirId;
+                }
               }
             }
-          }
-        });
+          }),
+        );
       }
       throw new Error(
         `time ${t} is out of range for animation with duration ${totalDur}`,

@@ -218,7 +218,7 @@ export function makeSwingSegments(
           return smallestCrossDyToMakeAlignByMultOfTwo(westCoM.y, eastCoM.y, {
             errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
           });
-        } catch (_e) { // eslint-disable-line unused-imports/no-unused-vars
+        } catch {
           return (
             smallestCrossDyToMakeAlignByMultOfTwo(
               westCoM.y + fudge,

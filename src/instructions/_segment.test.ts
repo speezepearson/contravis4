@@ -15,7 +15,7 @@ describe("makeAnimation", () => {
   const init = initFormationStates.improper;
 
   it("renders a trailing zero-duration segment", () => {
-    const marker = new Vector(99, 99);
+    const marker = new Vector(5, 5);
     const segments: Segment[] = [
       {
         dur: 4,
@@ -34,8 +34,8 @@ describe("makeAnimation", () => {
 
     // At t=dur, the trailing zero-dur segment should be active
     const final = anim.getFrame(4);
-    expect(final.up_lark_0.pos.x).toBe(99);
-    expect(final.up_lark_0.pos.y).toBe(99);
+    expect(final.up_lark_0.pos.x).toBe(5);
+    expect(final.up_lark_0.pos.y).toBe(5);
   });
 
   it("renders mid-animation zero-duration segments correctly", () => {

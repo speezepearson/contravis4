@@ -17,10 +17,17 @@ import type { WorldState } from "./worldState";
 export class GenerateError extends Error {
   public instructionId: InstructionId;
   public message: string;
-  constructor(instructionId: InstructionId, message: string, cause?: Error) {
+  public initState: WorldState;
+  constructor(
+    instructionId: InstructionId,
+    message: string,
+    initState: WorldState,
+    cause?: Error,
+  ) {
     super(message);
     this.instructionId = instructionId;
     this.message = message;
+    this.initState = initState;
     this.cause = cause;
   }
 }
@@ -68,7 +75,7 @@ export function generateDanceAnimation(
         new GenerateError(
           instr.id,
           e instanceof Error ? e.message : String(e),
-          e instanceof Error ? e : undefined,
+          currentState,
         ),
       );
       // Hold at currentState for the failed instruction's duration
