@@ -1,3 +1,4 @@
+import { Vector } from "vecti";
 import { z } from "zod";
 
 import {
@@ -18,7 +19,7 @@ import {
   ProtoIdSchema,
 } from "./contraCore";
 import { NORTH, VectorSchema } from "./geometry";
-import { isEqual } from "./utils";
+import { getSide, isEqual } from "./utils";
 
 export function resolveBasicLabel(
   label: BasicLabel,
@@ -167,4 +168,22 @@ export function addOffsetToDancer(
       return addOffsetToId(theirId, deltaOffset);
     }),
   };
+}
+
+export function getDancerSide(
+  dancer: DancerState,
+  {
+    errMsg = `dancer ${dancer.protoId} is too close to the center, refusing to guess which side they're supposed to be on`,
+  }: { errMsg?: string } = {},
+): "east" | "west" {
+  return getSide(dancer.pos, { errMsg });
+}
+
+export function avgPos(state: WorldState, ...ids: DancerId[]): Vector {
+  return ids
+    .reduce(
+      (acc, id) => acc.add(getDancerState(id, state).pos),
+      new Vector(0, 0),
+    )
+    .divide(ids.length);
 }

@@ -1,1 +1,1 @@
-- When you're done with a change, `npm run format && npm run lint -- --fix && npm run build`. Then, if you didn't make any tough judgement calls and you don't have any outstanding questions, commit.
+- When you're done with a change, `npm run format && npm run lint -- --fix && npm run typecheck && npm run test`. Then, if you didn't make any tough judgement calls and you don't have any outstanding questions, commit.

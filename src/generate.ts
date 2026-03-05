@@ -9,12 +9,7 @@ import {
   type InstructionId,
 } from "./instructions/_base";
 import { animateSegments } from "./instructions/_segment";
-import {
-  type InitFormation,
-  initFormationStates,
-  type Instruction,
-  instructionDuration,
-} from "./instructions/index";
+import { type Instruction, instructionDuration } from "./instructions/index";
 import { type Split, splitAnimator } from "./instructions/split";
 import { assertNever } from "./utils";
 import type { WorldState } from "./worldState";
@@ -56,9 +51,8 @@ function animateInstruction(
  */
 export function generateDanceAnimation(
   instructions: Instruction[],
-  initFormation: InitFormation,
+  initState: WorldState,
 ): GenerateResult {
-  const initState = initFormationStates[initFormation];
   const segments: ContraAnimation[] = [];
   const errors: GenerateError[] = [];
 

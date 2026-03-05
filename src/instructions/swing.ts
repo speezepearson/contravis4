@@ -1,7 +1,7 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId, type Role, RoleSchema } from "../contraCore";
 import {
   ccwRadsBetween,
   getDir,
@@ -9,8 +9,9 @@ import {
   revolve,
   TWO_PI,
 } from "../geometry";
-import { avgPos, lerpVectors } from "../utils";
+import { getSide, lerpVectors, smallestCrossDyToMakeAlignByMultOfTwo } from "../utils";
 import {
+  avgPos,
   buildProtoRecord,
   getDancerState,
   type WorldState,
@@ -18,8 +19,8 @@ import {
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
-  getCardinalBearing,
   instructionBaseSchemaFields,
+  resolveCardinalDirection,
   resolveMatches,
 } from "./_base";
 import {
@@ -64,16 +65,15 @@ export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
   _who: ReadonlySet<ProtoId>,
+  { preferDriftToKeepStill }: { preferDriftToKeepStill?: Role } = {},
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
-  const centers = buildProtoRecord((id) =>
-    avgPos(getDancerState(id, init).pos, getDancerState(matches[id], init).pos),
-  );
+  const centers = buildProtoRecord((id) => avgPos(init, id, matches[id]));
 
   const plans = buildProtoRecord((id) => {
     const me = getDancerState(id, init);
     const center = centers[id];
-    const finalFacing = getCardinalBearing(instr.endFacing, center);
+    const finalFacing = resolveCardinalDirection(instr.endFacing, center);
 
     const final = {
       facing: finalFacing,
@@ -180,11 +180,41 @@ export function makeSwingSegments(
   switch (instr.endFacing) {
     case "across":
     case "out": {
+      // Empirically, ~every "swing, end facing across/out" instruction I've heard
+      // has had *everybody* swinging, and ending with every pair facing across to another pair.
+      const westSwingers = ALL_PROTO_IDS.filter(
+        (id) => getSide(plans[id].center) === "west",
+      );
+      const eastSwingers = ALL_PROTO_IDS.filter(
+        (id) => getSide(plans[id].center) === "east",
+      );
+      if (westSwingers.length !== eastSwingers.length) {
+        throw new Error(
+          `[swing end facing across/out] expected 2 dancers on each side of the set, but got [${westSwingers}] vs [${eastSwingers}]`,
+        );
+      }
+      const westCoM = avgPos(init, ...westSwingers);
+      const eastCoM = avgPos(init, ...eastSwingers);
+      // Every pair's CoM should end up across the set from another pair's CoM.
+      // We want to choose a dy such that (westCoM.y+dy) and (eastCoM.y-dy) differ by a multiple of 2.
+      const dy = (() => {
+        const fudge = preferDriftToKeepStill == null ? 0 : preferDriftToKeepStill === 'robin' ? 0.2 : -0.2;
+        try { 
+          return smallestCrossDyToMakeAlignByMultOfTwo(westCoM.y, eastCoM.y, {errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`});
+        } catch (e) {
+          return smallestCrossDyToMakeAlignByMultOfTwo(
+            westCoM.y + fudge,
+            eastCoM.y - fudge,
+            {errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`});
+
+        }
+      })();
+
       const drifts = buildProtoRecord((id) => {
         const center = centers[id];
         const finalCenter = new Vector(
-          center.x < 0 ? -0.5 : 0.5,
-          Math.round(center.y),
+          { east: 0.5, west: -0.5 }[getSide(center)],
+          center.y + dy * (westSwingers.includes(id) ? 1 : -1),
         );
         return finalCenter.subtract(center);
       });

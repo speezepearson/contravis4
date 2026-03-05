@@ -14,6 +14,7 @@ import { generateDanceAnimation } from "../src/generate";
 import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
 import {
   DanceSchema,
+  initFormationStates,
   type Instruction,
   instructionDuration,
 } from "../src/instructions/index";
@@ -47,7 +48,7 @@ const dance = DanceSchema.parse(raw);
 
 const { animation, errors } = generateDanceAnimation(
   dance.instructions,
-  dance.initFormation,
+  initFormationStates[dance.initFormation],
 );
 
 for (const error of errors) {

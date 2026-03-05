@@ -2,16 +2,21 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "./contraCore";
+import {
+  addOffsetToId,
+  ALL_PROTO_IDS,
+  BasicOtherDirLabelSchema,
+  parseDancerId,
+  parseProtoId,
+  type ProtoId,
+} from "./contraCore";
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
-import {
-  DanceSchema,
-  type Instruction,
-  InstructionSchema,
-} from "./instructions/index";
+import { DanceSchema, initFormationStates } from "./instructions/index";
+import { WorldState } from "./worldState";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const exampleDancesDir = resolve(__dirname, "../example-dances");
@@ -19,47 +24,25 @@ const files = readdirSync(exampleDancesDir).filter((f: string) =>
   f.endsWith(".json"),
 );
 
-/**
- * "Teleport 1m in your progression direction; the person in front
- * of you is your new neighbor."
- *
- * This is a 0-beat preamble: a direction-split step (ups go up, downs
- * go down) followed by a relabel that makes "in_front" the new neighbor.
- */
-const teleportAndRelabel: Instruction[] = [
-  InstructionSchema.parse({
-    id: "fd81c037-ed06-4b9b-b7de-9b074778e3be",
-    type: "split",
-    by: "direction",
-    ups: [
-      {
-        id: "6d4cf45d-db18-4416-bf50-bf4be70828c3",
-        beats: 0,
-        type: "step",
-        direction: "up",
-        distance: 1,
-        facing: "in_front",
-      },
-    ],
-    downs: [
-      {
-        id: "e18e7465-2512-4cc2-b7fb-3e58fdeb3db4",
-        beats: 0,
-        type: "step",
-        direction: "down",
-        distance: 1,
-        facing: "in_front",
-      },
-    ],
-  }),
-  InstructionSchema.parse({
-    id: "39d20029-01f5-4ba0-bb99-f0ee9849c596",
-    beats: 0,
-    type: "relabel",
-    label: "neighbor",
-    cid: "in_front",
-  }),
-];
+function progressInitFormation(state: WorldState): WorldState {
+  for (const id of ALL_PROTO_IDS) {
+    if (state[id].hands.left || state[id].hands.right)
+      throw new Error("in init formation nobody should be holding hands");
+  }
+  return produce(state, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
+      draft[id].pos = draft[id].pos.add(progressionDelta(id));
+      for (const label of BasicOtherDirLabelSchema.options) {
+        const otherId = draft[id].labels[label];
+        if (otherId)
+          draft[id].labels[label] = addOffsetToId(
+            otherId,
+            parseDancerId(id).dir === "up" ? 1 : -1,
+          );
+      }
+    }
+  });
+}
 
 function progressionDelta(protoId: ProtoId) {
   return parseProtoId(protoId).dir === "up" ? NORTH : SOUTH;
@@ -76,19 +59,17 @@ describe("progression shift invariance", () => {
     if (dance.instructions.length === 0) continue;
 
     it(`${dance.name ?? file}`, () => {
+      const initState = initFormationStates[dance.initFormation];
       const { animation: origAnim, errors: origErrors } =
-        generateDanceAnimation(dance.instructions, dance.initFormation);
+        generateDanceAnimation(dance.instructions, initState);
       expect(origErrors).toHaveLength(0);
       expect(origAnim).not.toBeNull();
       if (!origAnim) return;
 
-      const modifiedInstructions: Instruction[] = [
-        ...teleportAndRelabel,
-        ...dance.instructions,
-      ];
+      const modInitState = progressInitFormation(initState);
       const { animation: modAnim, errors: modErrors } = generateDanceAnimation(
-        modifiedInstructions,
-        dance.initFormation,
+        dance.instructions,
+        modInitState,
       );
       expect(modErrors).toHaveLength(0);
       expect(modAnim).not.toBeNull();

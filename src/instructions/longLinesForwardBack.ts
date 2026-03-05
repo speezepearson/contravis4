@@ -2,11 +2,11 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { type DancerId, type ProtoId } from "../contraCore";
-import { EAST, WEST } from "../geometry";
+import { getDancerSide } from "../worldState";
 import {
-  facesAcross,
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
+  resolveCardinalDirection,
 } from "./_base";
 import {
   hold,
@@ -83,7 +83,10 @@ export const longLinesForwardBackSegments: InstructionAnimator<
 > = (instr, init, who) => {
   // Assert everybody faces across
   for (const id of who) {
-    if (!facesAcross(id, init)) {
+    if (
+      init[id].facing.dot(resolveCardinalDirection("across", init[id].pos)) <
+      0.7
+    ) {
       throw new Error(`${id} must face across for long lines forward and back`);
     }
   }
@@ -114,14 +117,18 @@ export const longLinesForwardBackSegments: InstructionAnimator<
   }
 
   // Pre-compute non-overlapping y targets per side
-  const leftDancers = [...who].filter((id) => init[id].pos.x < 0);
-  const rightDancers = [...who].filter((id) => init[id].pos.x > 0);
+  const westDancers = [...who].filter(
+    (id) => getDancerSide(init[id]) == "west",
+  );
+  const eastDancers = [...who].filter(
+    (id) => getDancerSide(init[id]) == "east",
+  );
   const yTargets = new Map<ProtoId, number>([
     ...assignNonOverlappingSlots(
-      leftDancers.map((id) => ({ id, y: init[id].pos.y })),
+      westDancers.map((id) => ({ id, y: init[id].pos.y })),
     ),
     ...assignNonOverlappingSlots(
-      rightDancers.map((id) => ({ id, y: init[id].pos.y })),
+      eastDancers.map((id) => ({ id, y: init[id].pos.y })),
     ),
   ]);
 
@@ -136,7 +143,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         return new Vector(x, yTargets.get(id)!);
       }),
       facing: lerpFacingTo((id, segInit) =>
-        segInit[id].pos.x < 0 ? EAST : WEST,
+        resolveCardinalDirection("across", segInit[id].pos),
       ),
       hands: (id) =>
         hold(

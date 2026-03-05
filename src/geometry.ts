@@ -70,3 +70,11 @@ export function revolve(
   const center = around ? around : aroundMidpointWith.add(x).divide(2);
   return center.add(x.subtract(center).rotateByRadians(radians));
 }
+
+export function roughlySameDir(
+  a: Vector,
+  b: Vector,
+  { tol = 0.2 }: { tol?: number } = {},
+): boolean {
+  return a.dot(b) > 1 - tol;
+}

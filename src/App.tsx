@@ -151,7 +151,8 @@ export default function App() {
     useState<InstructionId | null>(null);
 
   const { animation, errors: generateErrors } = useMemo(
-    () => generateDanceAnimation(instructions, initFormation),
+    () =>
+      generateDanceAnimation(instructions, initFormationStates[initFormation]),
     [instructions, initFormation],
   );
   const DANCE_LENGTH = useMemo(() => danceLength(instructions), [instructions]);

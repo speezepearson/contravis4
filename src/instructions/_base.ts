@@ -14,8 +14,15 @@ import {
   type ProtoId,
   protoIdToDancerId,
 } from "../contraCore";
-import { EAST, getDir, NORTH, SOUTH, WEST } from "../geometry";
-import { assertNever, isEqual, isNTuple, type NTuple, parses } from "../utils";
+import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "../geometry";
+import {
+  assertNever,
+  getSide,
+  isEqual,
+  isNTuple,
+  type NTuple,
+  parses,
+} from "../utils";
 import {
   buildProtoRecord,
   type DancerState,
@@ -34,9 +41,12 @@ export const instructionBaseSchemaFields = {
 
 export const CardinalDirectionSchema = z.enum(["up", "down", "across", "out"]);
 export type CardinalDirection = z.infer<typeof CardinalDirectionSchema>;
-export function getCardinalBearing(
+export function resolveCardinalDirection(
   dir: CardinalDirection,
   pos: Vector,
+  {
+    errMsg = `unable to resolve ${dir} from pos (${pos.x}, ${pos.y})`,
+  }: { errMsg?: string } = {},
 ): Vector {
   switch (dir) {
     case "up":
@@ -44,15 +54,18 @@ export function getCardinalBearing(
     case "down":
       return SOUTH;
     case "across":
-      return pos.x < 0 ? EAST : WEST;
+      return { west: EAST, east: WEST }[getSide(pos, { errMsg })];
     case "out":
-      return pos.x < 0 ? WEST : EAST;
+      return { west: WEST, east: EAST }[getSide(pos, { errMsg })];
     default:
       assertNever(dir);
   }
 }
 
-export type Animator = (init: WorldState, who: ReadonlySet<ProtoId>) => ContraAnimation;
+export type Animator = (
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+) => ContraAnimation;
 export function chainAnimators(animators: Animator[]): Animator {
   return (init, who) => {
     if (animators.length === 0) {
@@ -211,13 +224,10 @@ export function resolveCalledDirection(
     case "larks_right_robins_left":
       return state.facing.rotateByDegrees(-90 * (isLark(id) ? 1 : -1));
     case "across":
-      return state.pos.x < 0 ? EAST : WEST;
     case "out":
-      return state.pos.x < 0 ? WEST : EAST;
     case "up":
-      return NORTH;
     case "down":
-      return SOUTH;
+      return resolveCardinalDirection(dir, state.pos);
     default:
       assertNever(dir);
   }
@@ -336,16 +346,30 @@ export function resolveRings(
   );
 }
 
-/** True when a dancer faces away from the center line (x = 0). */
-export function facesOut(id: DancerId, state: WorldState): boolean {
+/** True when a dancer faces roughly away from the center line (x = 0). */
+export function facesOut(
+  id: DancerId,
+  state: WorldState,
+  { errMsg }: { errMsg?: string } = {},
+): boolean {
   const { facing, pos } = getDancerState(id, state);
-  return (pos.x < 0 && facing.x < 0) || (pos.x > 0 && facing.x > 0);
+  return roughlySameDir(
+    facing,
+    resolveCardinalDirection("out", pos, { errMsg }),
+  );
 }
 
 /** True when a dancer faces toward the center line (x = 0). */
-export function facesAcross(id: DancerId, state: WorldState): boolean {
+export function facesAcross(
+  id: DancerId,
+  state: WorldState,
+  { errMsg }: { errMsg?: string } = {},
+): boolean {
   const { facing, pos } = getDancerState(id, state);
-  return (pos.x < 0 && facing.x > 0) || (pos.x > 0 && facing.x < 0);
+  return roughlySameDir(
+    facing,
+    resolveCardinalDirection("across", pos, { errMsg }),
+  );
 }
 
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {

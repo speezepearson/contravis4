@@ -3,19 +3,14 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { PI, revolve } from "../geometry";
 import { lerpVectors } from "../utils";
-import {
-  buildProtoRecord,
-  getDancerState,
-  type WorldState,
-} from "../worldState";
+import { getDancerState, type WorldState } from "../worldState";
 import {
   facesAcross,
   facesOut,
-  findDancerInCalledDirection,
   instructionBaseSchemaFields,
-  resolveMatch,
+  resolveCalledIdentifier,
 } from "./_base";
-import { type InstructionAnimator } from "./_segment";
+import { type InstructionAnimator, lerpFacingTo } from "./_segment";
 
 export const BoxCirculateInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -31,48 +26,57 @@ export const boxCirculateSegments: InstructionAnimator<
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`boxCirculate instruction must target all dancers`);
 
-  for (const id of ALL_PROTO_IDS) {
-    if (!facesOut(id, init) && !facesAcross(id, init)) {
-      throw new Error(
-        `boxCirculate requires every dancer to face out or across`,
-      );
+  const outFacers: ProtoId[] = [];
+  const acrossFacers: ProtoId[] = [];
+  for (const id of who) {
+    if (facesOut(id, init)) {
+      outFacers.push(id);
+    } else if (facesAcross(id, init)) {
+      acrossFacers.push(id);
+    } else {
+      throw new Error(`${id} is not facing out or across`);
     }
   }
-
-  const isOut = buildProtoRecord((id) => facesOut(id, init));
-  const targets = buildProtoRecord((id) => {
-    if (isOut[id]) {
-      const them = resolveMatch(id, "in right hand", init);
-      return getDancerState(them, init).pos;
-    } else {
-      const them = findDancerInCalledDirection(id, "in_front", init);
-      if (!them) {
-        throw new Error(
-          `boxCirculate: ${id} faces across but has no dancer in front`,
-        );
-      }
-      return getDancerState(them, init).pos;
-    }
-  });
+  if (!(outFacers.length === 2 && acrossFacers.length === 2)) {
+    throw new Error(
+      `boxCirculate requires two dancers to face out and two to face across`,
+    );
+  }
 
   return [
     {
       dur: instr.beats,
       position: (id: ProtoId, frac: number, segInit: WorldState) => {
-        if (isOut[id]) {
+        if (outFacers.includes(id)) {
+          const matchId = resolveCalledIdentifier(id, "on_right", segInit);
+          if (!matchId)
+            throw new Error(
+              `${id} has nobody on their right to box circulate to`,
+            );
           return revolve(segInit[id].pos, {
-            aroundMidpointWith: targets[id],
+            aroundMidpointWith: getDancerState(matchId, segInit).pos,
             radians: -PI * frac,
           });
+        } else {
+          const matchId = resolveCalledIdentifier(id, "in_front", segInit);
+          if (!matchId)
+            throw new Error(`${id} has nobody in front to box circulate to`);
+          return lerpVectors(
+            segInit[id].pos,
+            getDancerState(matchId, segInit).pos,
+            frac,
+          );
         }
-        return lerpVectors(segInit[id].pos, targets[id], frac);
       },
-      facing: (id: ProtoId, frac: number, segInit: WorldState) => {
-        if (isOut[id]) {
-          return segInit[id].facing.rotateByRadians(-PI * frac);
-        }
-        return segInit[id].facing;
-      },
+      facing: lerpFacingTo(
+        (id: ProtoId, segInit: WorldState) => {
+          if (outFacers.includes(id)) {
+            return segInit[id].facing.rotateByRadians(PI);
+          }
+          return segInit[id].facing;
+        },
+        { forceDir: () => "cw" },
+      ),
       hands: () => ({}),
     },
   ];

@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId, RoleSchema } from "../contraCore";
-import { EAST, getDir, WEST } from "../geometry";
-import { buildProtoRecord, getDancerState } from "../worldState";
+import { getDir } from "../geometry";
+import { buildProtoRecord, getDancerSide, getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
   instructionBaseSchemaFields,
+  resolveCardinalDirection,
   resolveMatches,
 } from "./_base";
 import {
-  addPositionDrift,
   getSegmentFrameAtFrac,
   type InstructionAnimator,
   lerpFacingTo,
@@ -38,7 +38,7 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
   for (const id of ALL_PROTO_IDS) {
     const me = getDancerState(id, init);
     const them = getDancerState(matches[id], init);
-    if (me.pos.x < 0 === them.pos.x < 0) {
+    if (getDancerSide(me) === getDancerSide(them)) {
       throw new Error(`dancers ${id} and ${matches[id]} are on the same side`);
     }
   }
@@ -54,8 +54,17 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
       .add(postApproachDraweePos)
       .divide(2);
 
+    console.log({
+      drawerPos: drawer.pos,
+      cardinal: resolveCardinalDirection("across", drawer.pos),
+      finalCoM: drawer.pos.add(
+        resolveCardinalDirection("across", drawer.pos)
+          .multiply(0.5)
+          .rotateByDegrees(90 * (instr.drawerRole === "robin" ? 1 : -1)),
+      ),
+    });
     const finalCoM = drawer.pos.add(
-      (drawer.pos.x < 0 ? EAST : WEST)
+      resolveCardinalDirection("across", drawer.pos)
         .multiply(0.5)
         .rotateByDegrees(90 * (instr.drawerRole === "robin" ? 1 : -1)),
     );
@@ -85,6 +94,16 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);
 
+  console.log(
+    buildProtoRecord((id) => {
+      console.log({
+        id,
+        postApproachCom: plans[id].postApproach.com,
+        finalCom: plans[id].final.com,
+      });
+    }),
+  );
+
   const swingSegments = makeSwingSegments(
     {
       id: instr.id,
@@ -95,15 +114,8 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     },
     postApproach,
     who,
+    { preferDriftToKeepStill: instr.drawerRole },
   );
 
-  const driftedSwingSegments = addPositionDrift(
-    swingSegments,
-    (id, globalFrac) =>
-      plans[id].final.com
-        .subtract(plans[id].postApproach.com)
-        .multiply(globalFrac),
-  );
-
-  return [approachSegment, ...driftedSwingSegments];
+  return [approachSegment, ...swingSegments];
 };

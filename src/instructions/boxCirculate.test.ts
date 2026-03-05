@@ -117,7 +117,7 @@ describe("boxCirculate", () => {
     });
 
     expect(() => boxCirculateSegments(circInstr, badInit, allProtos)).toThrow(
-      "boxCirculate requires every dancer to face out or across",
+      "not facing out or across",
     );
   });
 });

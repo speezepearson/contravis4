@@ -1,11 +1,7 @@
 import type { Vector } from "vecti";
 import { z } from "zod";
 
-import {
-  ALL_PROTO_IDS,
-  type Beats,
-  type DancerId,
-} from "../contraCore";
+import { ALL_PROTO_IDS, type Beats, type DancerId } from "../contraCore";
 import { SOUTH } from "../geometry";
 import { connectHands, getDancerState, type WorldState } from "../worldState";
 import { instructionBaseSchemaFields, resolveShortLines } from "./_base";

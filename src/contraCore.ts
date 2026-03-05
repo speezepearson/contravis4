@@ -146,14 +146,18 @@ export function buildLabelsRecord<V>(
   };
 }
 
-export const BasicLabelSchema = z.enum([
+export const BasicOtherDirLabelSchema = z.enum(["neighbor"]);
+export const BasicSameDirLabelSchema = z.enum([
   "partner",
-  "neighbor",
   "shadow",
   "shadow 2",
   "shadow 3",
   "shadow 4",
   "shadow 5",
   "shadow 6",
+]);
+export const BasicLabelSchema = z.enum([
+  ...BasicOtherDirLabelSchema.options,
+  ...BasicSameDirLabelSchema.options,
 ]);
 export type BasicLabel = z.infer<typeof BasicLabelSchema>;

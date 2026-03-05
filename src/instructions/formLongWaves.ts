@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
-import { connectHands } from "../worldState";
+import { connectHands, getDancerSide } from "../worldState";
 import { facesOut, instructionBaseSchemaFields, resolveMatches } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
@@ -25,11 +25,10 @@ export const formLongWavesSegments: InstructionAnimator<
   // Assert one lark on each side, one robin on each side
   for (const role of ["lark", "robin"] as const) {
     const protos = ALL_PROTO_IDS.filter((id) => parseProtoId(id).role === role);
-    const hasLeft = protos.some((id) => init[id].pos.x < 0);
-    const hasRight = protos.some((id) => init[id].pos.x > 0);
-    if (!hasLeft || !hasRight)
+    const sides = new Set(protos.map((id) => getDancerSide(init[id])));
+    if (sides.size !== 2)
       throw new Error(
-        `formLongWaves requires one ${role} on each side of the set`,
+        `formLongWaves requires one ${role} on each side of the set, got sides [${sides}]`,
       );
   }
 

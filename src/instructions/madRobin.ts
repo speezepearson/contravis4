@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
-import { EAST, ellipsePosition, TWO_PI, WEST } from "../geometry";
+import { ellipsePosition, TWO_PI } from "../geometry";
 import { getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
+  resolveCardinalDirection,
   resolveMatches,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
@@ -67,7 +68,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
         return ellipsePosition(start, end, semiMinor, phi * frac);
       },
       facing: (id, _frac, segInit) => {
-        return segInit[id].pos.x < 0 ? EAST : WEST;
+        return resolveCardinalDirection("across", segInit[id].pos);
       },
       hands: () => ({}),
     },

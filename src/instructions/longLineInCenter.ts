@@ -2,9 +2,9 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
-import { EAST, WEST } from "../geometry";
 import {
   instructionBaseSchemaFields,
+  resolveCardinalDirection,
   resolveMatch,
 } from "./_base";
 import { hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
@@ -33,7 +33,7 @@ export const longLineInCenterSegments: InstructionAnimator<
       },
       facing: lerpFacingTo((id, segInit) => {
         if (getRole(id) !== instr.role) return segInit[id].facing;
-        return segInit[id].pos.x < 0 ? EAST : WEST;
+        return resolveCardinalDirection("across", segInit[id].pos);
       }),
       hands: () => ({}),
     },
