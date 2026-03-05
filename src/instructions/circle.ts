@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
 import { revolve, TWO_PI } from "../geometry";
+import { lerp } from "../utils";
 import { buildProtoRecord } from "../worldState";
 import {
   avgDancerPos,
@@ -45,7 +46,13 @@ export const circleSegments: InstructionAnimator<CircleInstruction> = (
         revolve(segInit[id].pos, {
           around: centers[id],
           radians: orbitRadians * frac,
-        }),
+        }).multiply(
+          lerp(
+            1,
+            Math.sqrt(2) / 2 / segInit[id].pos.subtract(centers[id]).length(),
+            frac,
+          ),
+        ),
       facing: rotateFacingBy(() => orbitRadians),
     },
   ];
