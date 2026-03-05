@@ -16,6 +16,7 @@ import {
   HandSchema,
   projectDancerIdToProtoId,
   type ProtoId,
+  protoIdToDancerId,
 } from "./contraCore";
 import { NORTH } from "./geometry";
 import { getSide, isEqual } from "./utils";
@@ -239,4 +240,32 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
     }
   }
   return state;
+}
+
+const NEARBY_HALF_WINDOW = 2 as DancerOffset;
+
+export function findNearbyDancers(
+  pos: Vector,
+  state: WorldState,
+): Record<ProtoId, DancerState[]> {
+  return buildProtoRecord((protoId) => {
+    const bestOffset = Math.round(
+      (pos.y - state[protoId].pos.y) / 2,
+    ) as DancerOffset;
+
+    const dancers: DancerState[] = [];
+    for (
+      let o = bestOffset - NEARBY_HALF_WINDOW;
+      o <= bestOffset + NEARBY_HALF_WINDOW;
+      o++
+    ) {
+      dancers.push(getDancerState(protoIdToDancerId(protoId, o), state));
+    }
+
+    dancers.sort(
+      (a, b) => a.pos.subtract(pos).length() - b.pos.subtract(pos).length(),
+    );
+
+    return dancers;
+  });
 }
