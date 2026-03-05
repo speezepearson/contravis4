@@ -2,6 +2,7 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
+import { ALL_PROTO_IDS_SET } from "../contraCore";
 import { EAST, NORTH, WEST } from "../geometry";
 import { advanceState, getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";

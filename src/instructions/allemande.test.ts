@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
+import { ALL_PROTO_IDS_SET } from "../contraCore";
 import { animateSegments } from "./_segment";
 import { type AllemandeInstruction, allemandeSegments } from "./allemande";
 import { initFormationStates } from "./index";

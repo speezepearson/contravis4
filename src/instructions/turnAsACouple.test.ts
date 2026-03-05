@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS } from "../contraCore";
+import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
 import { animateSegments } from "./_segment";
 import {

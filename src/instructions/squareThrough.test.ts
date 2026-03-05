@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS } from "../contraCore";
+import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { type WorldState } from "../worldState";
 import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";

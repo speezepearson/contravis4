@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, isLark } from "../contraCore";
+import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, isLark } from "../contraCore";
 import { ccwRadsBetween, PI } from "../geometry";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
