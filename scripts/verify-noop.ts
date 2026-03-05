@@ -221,7 +221,7 @@ const GENERATOR_SCRIPT = `\
 import { enableMapSet } from "immer";
 import { readFileSync } from "node:fs";
 import { generateDanceAnimation } from "../src/generate";
-import { DanceSchema, danceLength } from "../src/instructions/index";
+import { DanceSchema, danceLength, initFormationStates } from "../src/instructions/index";
 
 enableMapSet();
 
@@ -231,7 +231,7 @@ for (const path of process.argv.slice(2)) {
     const dance = DanceSchema.parse(JSON.parse(readFileSync(path, "utf-8")));
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
-      dance.initFormation,
+      initFormationStates[dance.initFormation],
     );
     if (!animation) {
       results[path] = {
