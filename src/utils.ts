@@ -102,6 +102,16 @@ export function smallestCrossDyToMakeAlignByMultOfTwo(
   return safeRound(halfDiff, { errMsg }) - halfDiff;
 }
 
+/** Shortest distance between two points on a circle of the given circumference. */
+export function circularDistance(
+  a: number,
+  b: number,
+  modulus: number,
+): number {
+  const d = (((a - b) % modulus) + modulus) % modulus;
+  return Math.min(d, modulus - d);
+}
+
 export function safeRound(
   x: number,
   { tol = 0.1, errMsg }: { tol?: number; errMsg?: string } = {},
@@ -111,4 +121,15 @@ export function safeRound(
     throw new Error(errMsg ?? "value is too far from an integer");
   }
   return rounded;
+}
+
+export function try_<T>(fn: () => T): T | Error {
+  try {
+    return fn();
+  } catch (e) {
+    if (e instanceof Error) {
+      return e;
+    }
+    return new Error(String(e));
+  }
 }

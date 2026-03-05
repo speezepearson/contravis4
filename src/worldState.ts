@@ -187,3 +187,59 @@ export function avgPos(state: WorldState, ...ids: DancerId[]): Vector {
     )
     .divide(ids.length);
 }
+
+export function sanityCheckWorldState(state: WorldState): WorldState {
+  for (const id of ALL_PROTO_IDS) {
+    const dancer = state[id];
+    if (
+      !(
+        isFinite(dancer.facing.length()) &&
+        Math.abs(dancer.facing.length() - 1) < 0.01
+      )
+    ) {
+      throw new Error(
+        `dancer ${id} has a crazy facing: ${dancer.facing.x}, ${dancer.facing.y}`,
+      );
+    }
+    if (
+      !(
+        isFinite(dancer.pos.x) &&
+        -30 < dancer.pos.x &&
+        dancer.pos.x < 30 &&
+        isFinite(dancer.pos.y) &&
+        -30 < dancer.pos.y &&
+        dancer.pos.y < 30
+      )
+    ) {
+      throw new Error(
+        `dancer ${id} has a crazy position: ${dancer.pos.x}, ${dancer.pos.y}`,
+      );
+    }
+    if (!dancer.labels["neighbor"])
+      throw new Error(`dancer ${id} has no neighbor`);
+    for (const label of BasicLabelSchema.options) {
+      const theirId = dancer.labels[label];
+      if (!theirId) continue;
+      const theirSymmetricPointer = getDancerState(theirId, state).labels[
+        label
+      ];
+      if (theirSymmetricPointer !== id)
+        throw new Error(
+          `${id}'s ${label}'s thinks their ${label} is ${theirSymmetricPointer} -- this should never be asymmetric!`,
+        );
+    }
+    for (const hand of HandSchema.options) {
+      const holding = dancer.hands[hand];
+      if (!holding) continue;
+      const { theirId, theirHand } = holding;
+      const theirSymmetricPointer = getDancerState(theirId, state).hands[
+        theirHand
+      ];
+      if (!isEqual(theirSymmetricPointer, { theirId: id, theirHand: hand }))
+        throw new Error(
+          `${id} thinks their ${hand} hand is holding ${theirId}'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
+        );
+    }
+  }
+  return state;
+}

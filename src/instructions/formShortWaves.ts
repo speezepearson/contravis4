@@ -29,23 +29,25 @@ export const formShortWavesSegments: InstructionAnimator<
     throw new Error(`formShortWaves instruction must target all dancers`);
 
   const shortLines = resolveShortLines(init);
-  const line = shortLines[ALL_PROTO_IDS[0]];
-  if (getRole(line[1]) !== getRole(line[2])) {
-    throw new Error(`dancers in middle of short waves do not have same role`);
-  }
-  for (let i = 0; i < 3; i++) {
-    const isUp = getDancerState(line[i], init).facing.y > 0;
-    const nextIsUp = getDancerState(line[i + 1], init).facing.y > 0;
-    if (isUp === nextIsUp) {
-      throw new Error(
-        `short waves should have dancers alternating facing up/down, but ${line[i]} and ${line[i + 1]} are both facing ${isUp ? "up" : "down"}`,
-      );
+  for (const id of ALL_PROTO_IDS) {
+    const line = shortLines[id];
+    if (getRole(line[1]) !== getRole(line[2])) {
+      throw new Error(`dancers in middle of short waves do not have same role`);
+    }
+    for (let i = 0; i < 3; i++) {
+      const isUp = getDancerState(line[i], init).facing.y > 0;
+      const nextIsUp = getDancerState(line[i + 1], init).facing.y > 0;
+      if (isUp === nextIsUp) {
+        throw new Error(
+          `short waves should have dancers alternating facing up/down, but ${line[i]} and ${line[i + 1]} are both facing ${isUp ? "up" : "down"}`,
+        );
+      }
     }
   }
 
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const i = line.indexOf(id as DancerId);
+      const i = shortLines[id].indexOf(id as DancerId);
       draft[id].facing = init[id].facing.y > 0 ? NORTH : SOUTH;
       draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y).add(
         draft[id].facing.multiply(-0.1),

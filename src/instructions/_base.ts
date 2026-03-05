@@ -15,14 +15,7 @@ import {
   protoIdToDancerId,
 } from "../contraCore";
 import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "../geometry";
-import {
-  assertNever,
-  getSide,
-  isEqual,
-  isNTuple,
-  type NTuple,
-  parses,
-} from "../utils";
+import { assertNever, getSide, isNTuple, type NTuple, parses } from "../utils";
 import {
   buildProtoRecord,
   type DancerState,
@@ -494,53 +487,42 @@ export function findClosestDancer(
 export function resolveShortLines(
   state: WorldState,
 ): Record<ProtoId, NTuple<4, DancerId>> {
-  const result = buildProtoRecord((protoId) => {
+  return buildProtoRecord((protoId) => {
     const protoY = state[protoId].pos.y;
 
-    type Candidate = { id: DancerId; yDist: number; x: number };
-    const candidates: Candidate[] = [];
+    const line: { id: DancerId; x: number }[] = [];
 
     for (const otherProtoId of ALL_PROTO_IDS) {
       const dyBase = state[otherProtoId].pos.y - protoY;
       const oBest = Math.round(-dyBase / 2);
 
+      // Find the offset copy closest in y
+      let bestId: DancerId | null = null;
+      let bestYDist = Infinity;
+      let bestX = 0;
       for (let o = oBest - 1; o <= oBest + 1; o++) {
-        const targetId = protoIdToDancerId(otherProtoId, o);
-        const target = getDancerState(targetId, state);
-        candidates.push({
-          id: targetId,
-          yDist: Math.abs(target.pos.y - protoY),
-          x: target.pos.x,
-        });
+        const id = protoIdToDancerId(otherProtoId, o);
+        const target = getDancerState(id, state);
+        const yDist = Math.abs(target.pos.y - protoY);
+        if (yDist < bestYDist) {
+          bestId = id;
+          bestYDist = yDist;
+          bestX = target.pos.x;
+        }
       }
-    }
 
-    candidates.sort((a, b) => a.yDist - b.yDist);
-    const top4 = candidates.slice(0, 4);
-    top4.sort((a, b) => a.x - b.x);
-
-    const ids = top4.map((c) => c.id);
-    if (!isNTuple(ids, 4)) {
-      throw new Error(
-        `resolveShortLines: expected 4 dancers for proto ${protoId}, got ${ids.length}`,
-      );
-    }
-    return ids;
-  });
-
-  // Assert: overlapping results must be identical
-  const values = Object.values(result) as NTuple<4, DancerId>[];
-  for (const arr1 of values) {
-    for (const arr2 of values) {
-      if (arr1.some((id) => arr2.includes(id)) && !isEqual(arr1, arr2)) {
+      if (bestYDist > 0.5) {
         throw new Error(
-          `resolveShortLines consistency check failed: ${JSON.stringify(arr1)} and ${JSON.stringify(arr2)} overlap but are not equal`,
+          `resolveShortLines: closest copy of ${otherProtoId} is ${bestYDist.toFixed(3)} away in y from ${protoId} (max 0.5)`,
         );
       }
-    }
-  }
 
-  return result;
+      line.push({ id: bestId!, x: bestX });
+    }
+
+    line.sort((a, b) => a.x - b.x);
+    return line.map((c) => c.id) as NTuple<4, DancerId>;
+  });
 }
 
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {

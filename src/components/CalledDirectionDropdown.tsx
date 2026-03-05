@@ -8,7 +8,7 @@ import {
   PositionBasedDirectionSchema,
   resolveCalledIdentifier,
 } from "../instructions/_base";
-import { parses } from "../utils";
+import { parses, try_ } from "../utils";
 import { getDancerState } from "../worldState";
 import { calledDirectionToText } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
@@ -39,10 +39,14 @@ export function CalledDirectionDropdown({
         )
         .sort((a, b) => {
           a satisfies CalledLabel;
-          const aId = resolveCalledIdentifier("up_lark_0", a, dancerStates);
-          if (!aId) return 1;
-          const bId = resolveCalledIdentifier("up_lark_0", b, dancerStates);
-          if (!bId) return -1;
+          const aId = try_(() =>
+            resolveCalledIdentifier("up_lark_0", a, dancerStates),
+          );
+          if (aId instanceof Error || !aId) return 1;
+          const bId = try_(() =>
+            resolveCalledIdentifier("up_lark_0", b, dancerStates),
+          );
+          if (bId instanceof Error || !bId) return -1;
           const targetA = getDancerState(aId, dancerStates);
           const targetB = getDancerState(bId, dancerStates);
           const distA = larkState.pos.subtract(targetA.pos).length();

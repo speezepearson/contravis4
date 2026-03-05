@@ -42,17 +42,16 @@ export const circleSegments: InstructionAnimator<CircleInstruction> = (
     ringSegment,
     {
       dur: instr.beats,
-      position: (id, frac, segInit) =>
-        revolve(segInit[id].pos, {
+      position: (id, frac, segInit) => {
+        const revolved = revolve(segInit[id].pos, {
           around: centers[id],
           radians: orbitRadians * frac,
-        }).multiply(
-          lerp(
-            1,
-            Math.sqrt(2) / 2 / segInit[id].pos.subtract(centers[id]).length(),
-            frac,
-          ),
-        ),
+        });
+        const offset = revolved.subtract(centers[id]);
+        const targetScale =
+          Math.sqrt(2) / 2 / segInit[id].pos.subtract(centers[id]).length();
+        return centers[id].add(offset.multiply(lerp(1, targetScale, frac)));
+      },
       facing: rotateFacingBy(() => orbitRadians),
     },
   ];

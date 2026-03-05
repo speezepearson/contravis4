@@ -30,7 +30,7 @@ import {
   InstructionSchema,
 } from "./instructions/index";
 import { initFormationStates } from "./instructions/index";
-import { isLocalStorageAvailable } from "./utils";
+import { isLocalStorageAvailable, try_ } from "./utils";
 import { getDancerState, type WorldState } from "./worldState";
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
@@ -124,6 +124,7 @@ export default function App() {
   );
 
   const [playing, setPlaying] = useState(false);
+  const [looping, setLooping] = useState(true);
   const [bpm, setBpm] = useState(120);
   const [beat, setBeat] = useState(0);
   const [instructions, setInstructions] = useState<Instruction[]>(() =>
@@ -137,7 +138,7 @@ export default function App() {
       : "improper",
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [smoothness, setSmoothness] = useState(1);
+  const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 1);
   const [exporting, setExporting] = useState(false);
 
   // Persist dance to localStorage whenever it changes
@@ -239,8 +240,7 @@ export default function App() {
     } else {
       frame = animation.getFrame(t);
     }
-    const progressionForCamera = inferredProgression ?? 0;
-    renderer.drawFrame(t, frame, -progressionForCamera / DANCE_LENGTH);
+    renderer.drawFrame(t, frame);
 
     // Draw relationship highlight lines
     const highlightedRel = highlightedRelRef.current;
@@ -252,8 +252,10 @@ export default function App() {
         toY: number;
       }> = [];
       for (const id of ALL_PROTO_IDS) {
-        const targetId = resolveCalledIdentifier(id, highlightedRel, frame);
-        if (!targetId) continue;
+        const targetId = try_(() =>
+          resolveCalledIdentifier(id, highlightedRel, frame),
+        );
+        if (targetId instanceof Error || !targetId) continue;
         const from = frame[id];
         const to = getDancerState(targetId, frame);
         lines.push({
@@ -271,7 +273,7 @@ export default function App() {
       renderer.drawPreviewKeyframes(previewFrames);
     }
     setBeat(beatRef.current);
-  }, [animation, DANCE_LENGTH, inferredProgression, previewFrames, smoothness]);
+  }, [animation, inferredProgression, previewFrames, smoothness]);
 
   // Keep drawRef in sync so stable callbacks can always call the latest draw
   useEffect(() => {
@@ -381,8 +383,15 @@ export default function App() {
 
       beatRef.current += dt * (bpm / 60);
       if (beatRef.current > DANCE_LENGTH) {
-        beatRef.current = 0;
-        rendererRef.current?.clearTrails();
+        if (looping) {
+          beatRef.current = 0;
+          rendererRef.current?.clearTrails();
+        } else {
+          beatRef.current = DANCE_LENGTH;
+          setPlaying(false);
+          drawRef.current();
+          return;
+        }
       }
 
       drawRef.current();
@@ -467,6 +476,14 @@ export default function App() {
         <button onClick={togglePlay}>
           {playing ? "\u23F8 Pause" : "\u25B6 Play"}
         </button>
+        <label>
+          <input
+            type="checkbox"
+            checked={looping}
+            onChange={(e) => setLooping(e.target.checked)}
+          />{" "}
+          Loop
+        </label>
         <input
           type="range"
           min={0}
@@ -565,6 +582,14 @@ export default function App() {
             <button onClick={togglePlay}>
               {playing ? "\u23F8 Pause" : "\u25B6 Play"}
             </button>
+            <label>
+              <input
+                type="checkbox"
+                checked={looping}
+                onChange={(e) => setLooping(e.target.checked)}
+              />{" "}
+              Loop
+            </label>
             <input
               type="range"
               min={0}
