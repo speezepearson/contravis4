@@ -83,6 +83,7 @@ import {
   turnAsACoupleSegments,
 } from "./turnAsACouple";
 import { UpTheHallInstructionSchema, upTheHallSegments } from "./upTheHall";
+import { ZigZagInstructionSchema, zigZagSegments } from "./zigZag";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
@@ -120,6 +121,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   TurnAloneInstructionSchema,
   TurnAsACoupleInstructionSchema,
   UpTheHallInstructionSchema,
+  ZigZagInstructionSchema,
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
@@ -164,6 +166,7 @@ export const atomicSegmentAnimators: {
   turn_alone: turnAloneSegments,
   turn_as_a_couple: turnAsACoupleSegments,
   up_the_hall: upTheHallSegments,
+  zig_zag: zigZagSegments,
 };
 
 export function makeAtomicInstructionSegments(

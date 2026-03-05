@@ -184,6 +184,15 @@ export function makeDefaultInstruction(
         return { id, type: "turn_alone", beats: 2 };
       case "turn_as_a_couple":
         return { id, type: "turn_as_a_couple", beats: 4 };
+      case "zig_zag":
+        return {
+          id,
+          type: "zig_zag",
+          beats: 8,
+          leader: "lark",
+          leaderDir: "left",
+          nZigs: 2,
+        };
       case "bend_the_line":
         return { id, type: "bend_the_line", beats: 2 };
       case "down_the_hall":
