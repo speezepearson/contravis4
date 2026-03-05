@@ -39,7 +39,6 @@ export const SwingInstructionSchema = z.object({
 export type SwingInstruction = z.infer<typeof SwingInstructionSchema>;
 
 const DISENGAGE_BEATS = 1.5;
-const FINAL_SEPARATION = 1;
 const ORBIT_RADIUS = 0.2;
 const APPROX_BEATS_PER_SWING_ROTATION = 4;
 
@@ -80,7 +79,9 @@ export function makeSwingSegments(
       facing: finalFacing,
       pos: center.add(
         finalFacing
-          .multiply(FINAL_SEPARATION / 2)
+          .multiply(
+            { across: 1, out: 1, up: 0.5, down: 0.5 }[instr.endFacing] / 2,
+          )
           .rotateByDegrees(90 * (isLark(id) ? 1 : -1)),
       ),
     };

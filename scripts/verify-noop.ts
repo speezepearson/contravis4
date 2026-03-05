@@ -78,11 +78,10 @@ function isOk(r: DanceResult): r is DanceOk {
 }
 
 type InstructionInfo = {
+  instr: Instruction;
   index: number;
-  type: string;
   startBeat: number;
   endBeat: number;
-  id: string;
 };
 
 type DiffDetail = {
@@ -124,11 +123,10 @@ function findActiveInstruction(
     ) {
       const instr = instructions[i];
       return {
+        instr,
         index: i,
-        type: instr.type === "split" ? `split by ${instr.by}` : instr.type,
         startBeat: beat,
         endBeat: beat + dur,
-        id: instr.id,
       };
     }
     beat += dur;
@@ -467,7 +465,7 @@ function outputTxt(reports: DanceReport[]): void {
     if (firstDiff.instruction) {
       const i = firstDiff.instruction;
       console.log(
-        `  Instruction #${i.index}: ${i.type} (beats ${i.startBeat}\u2013${i.endBeat}, id ${i.id})`,
+        `  Instruction #${i.index}: ${i.instr.type} (beats ${i.startBeat}-${i.endBeat}, ${JSON.stringify(i.instr)})`,
       );
     }
     if (firstDiff.initState !== undefined) {
