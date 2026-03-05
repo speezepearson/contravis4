@@ -1,8 +1,6 @@
-import { enableMapSet, produce } from "immer";
+import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
-
-enableMapSet();
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { ccwRadsBetween, NORTH, PI } from "../geometry";

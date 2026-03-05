@@ -1,8 +1,5 @@
-import { enableMapSet } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
-
-enableMapSet();
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, type DancerId } from "../contraCore";
 import { getDir } from "../geometry";

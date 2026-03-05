@@ -1,7 +1,4 @@
-import { enableMapSet } from "immer";
 import { describe, expect, it } from "vitest";
-
-enableMapSet();
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { animateSegments } from "./_segment";

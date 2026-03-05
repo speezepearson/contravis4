@@ -1,8 +1,5 @@
 import fc from "fast-check";
-import { enableMapSet } from "immer";
 import { describe, expect, it } from "vitest";
-
-enableMapSet();
 
 import type { Hand, Role } from "../contraCore";
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
