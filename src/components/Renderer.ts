@@ -257,40 +257,63 @@ export class Renderer {
     if (frames.length === 0) return;
     const ctx = this.ctx;
 
-    for (const id of ALL_PROTO_IDS) {
-      const color = COLORS[id];
-      ctx.strokeStyle = color.fill;
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      for (let i = 0; i < frames.length; i++) {
-        const d = frames[i][id];
-        const [cx, cy] = this.worldToCanvas(d.pos.x, d.pos.y);
-        if (i === 0) ctx.moveTo(cx, cy);
-        else ctx.lineTo(cx, cy);
+    const viewYMin = this.cameraY - this.yRange / 2;
+    const viewYMax = this.cameraY + this.yRange / 2;
+    const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
+    const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
+
+    for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
+      const baseAlpha = offset === 0 ? 0.3 : 0.12;
+      for (const id of ALL_PROTO_IDS) {
+        const color = COLORS[id];
+        ctx.strokeStyle = color.fill;
+        ctx.globalAlpha = baseAlpha;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for (let i = 0; i < frames.length; i++) {
+          const d = frames[i][id];
+          const [cx, cy] = this.worldToCanvas(d.pos.x, d.pos.y + offset);
+          if (i === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
-      ctx.stroke();
-      ctx.setLineDash([]);
     }
 
     const last = frames[frames.length - 1];
-    for (const id of ALL_PROTO_IDS) {
-      const d = last[id];
-      this.drawGhostDancer(id, d.pos.x, d.pos.y, d.facing);
+    for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
+      const ghostAlpha = offset === 0 ? 0.18 : 0.07;
+      for (const id of ALL_PROTO_IDS) {
+        const d = last[id];
+        this.drawGhostDancer(
+          id,
+          d.pos.x,
+          d.pos.y + offset,
+          d.facing,
+          ghostAlpha,
+        );
+      }
     }
 
     ctx.globalAlpha = 1.0;
   }
 
-  private drawGhostDancer(id: ProtoId, x: number, y: number, facing: Vector) {
+  private drawGhostDancer(
+    id: ProtoId,
+    x: number,
+    y: number,
+    facing: Vector,
+    alpha = 0.18,
+  ) {
     const color = COLORS[id];
     if (!color) return;
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
     const r = 10;
 
-    ctx.globalAlpha = 0.18;
+    ctx.globalAlpha = alpha;
 
     ctx.fillStyle = color.fill;
     ctx.strokeStyle = color.stroke;
