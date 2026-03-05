@@ -3,8 +3,8 @@ import type { Vector } from "vecti";
 import type { Beats, Hand } from "../contraCore";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
 import { PI } from "../geometry";
-import type { DancerState, WorldState } from "../worldState";
-import { getDancerState } from "../worldState";
+import type { Dancer, WorldState } from "../worldState";
+import { getDancer } from "../worldState";
 
 const COLORS: Record<ProtoId, { fill: string; stroke: string; label: string }> =
   {
@@ -19,12 +19,12 @@ const PX_PER_METER = 103;
 
 /** Extract hand connections from WorldState, deduplicating (each appears from both sides). */
 function extractHandConnections(
-  protos: Record<ProtoId, DancerState>,
-): Array<{ a: DancerState; ha: Hand; b: DancerState; hb: Hand }> {
+  protos: Record<ProtoId, Dancer>,
+): Array<{ a: Dancer; ha: Hand; b: Dancer; hb: Hand }> {
   const connections: Array<{
-    a: DancerState;
+    a: Dancer;
     ha: Hand;
-    b: DancerState;
+    b: Dancer;
     hb: Hand;
   }> = [];
   const seen = new Set<string>();
@@ -35,7 +35,7 @@ function extractHandConnections(
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const targetState = getDancerState(theirId, protos);
+      const targetState = getDancer(theirId, protos);
 
       // Dedup: use sorted key
       const key = [id, hand, theirId, theirHand].sort().join("|");
@@ -191,9 +191,9 @@ export class Renderer {
   }
 
   private drawHandsForAllCopies(
-    da: DancerState,
+    da: Dancer,
     handA: "left" | "right",
-    db: DancerState,
+    db: Dancer,
     handB: "left" | "right",
   ) {
     const ctx = this.ctx;
@@ -389,7 +389,7 @@ export class Renderer {
       const recentAlpha = 0.8 / (i + 1);
       if (recentAlpha < 0.05) break;
 
-      const recentDancer = getDancerState(recents[i], frame);
+      const recentDancer = getDancer(recents[i], frame);
       ctx.globalAlpha = recentAlpha;
       const [cx, cy] = this.worldToCanvas(
         recentDancer.pos.x,

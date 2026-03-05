@@ -51,7 +51,7 @@ import {
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
 import { assertNever, indexOf } from "../utils";
-import type { DancerState } from "../worldState";
+import type { Dancer } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BalanceTheRingFields } from "./fields/BalanceTheRingFields";
@@ -724,7 +724,7 @@ export default memo(function CommandPane({
 
   // Pre-compute dancer states at each instruction's start beat using animation
   const dancerStatesById = useMemo(() => {
-    const result = new Map<InstructionId, Record<ProtoId, DancerState>>();
+    const result = new Map<InstructionId, Record<ProtoId, Dancer>>();
     if (!animation) return result;
 
     let beat = 0;

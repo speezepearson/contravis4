@@ -6,7 +6,7 @@ import {
   resolveCalledIdentifier,
 } from "../instructions/_base";
 import { try_ } from "../utils";
-import { getDancerState } from "../worldState";
+import { getDancer } from "../worldState";
 import { calledIdentifierToText } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
@@ -36,8 +36,8 @@ export function CalledIdentifierDropdown({
         resolveCalledIdentifier("up_lark_0", b, dancerStates),
       );
       if (bId instanceof Error || !bId) return -1;
-      const targetA = getDancerState(aId, dancerStates);
-      const targetB = getDancerState(bId, dancerStates);
+      const targetA = getDancer(aId, dancerStates);
+      const targetB = getDancer(bId, dancerStates);
       const distA = larkState.pos.subtract(targetA.pos).length();
       const distB = larkState.pos.subtract(targetB.pos).length();
       if (Math.abs(distA - distB) > 1e-6) return distA - distB;
