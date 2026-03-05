@@ -41,7 +41,10 @@ export const fcDancerId: fc.Arbitrary<DancerId> = fc
   })
   .map(({ dir, role, offset }) => makeDancerId({ dir, role, offset }));
 
-// TODO: someday this should also be able to randomly sample a state from an example dance.
+// TODO: someday:
+// export const fcExampleDanceInterFigureWorldState: fc.Arbitrary<WorldState> = ...pick a random non-dummy dance from `example-dances/` and run some number of its instructions...
+// export const fcExampleDanceMidFigureWorldState: fc.Arbitrary<WorldState> = ...pick a random dance from `example-dances/` and getFrame(some random time)...
+
 export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
   .record({
     // Random positions for each proto dancer
