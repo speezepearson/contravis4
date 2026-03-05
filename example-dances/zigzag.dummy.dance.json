@@ -1,0 +1,22 @@
+{
+  "name": "(dummy) Zigzag",
+  "initFormation": "improper",
+  "instructions": [
+    {
+      "id": "47069928-e844-43f9-947c-bdd4de869411",
+      "beats": 8,
+      "type": "zig_zag",
+      "leader": "lark",
+      "leaderDir": "left",
+      "nZigs": 2
+    },
+    {
+      "id": "6806969f-821f-400e-9968-7ceea10c51ad",
+      "beats": 8,
+      "type": "zig_zag",
+      "leader": "lark",
+      "leaderDir": "right",
+      "nZigs": 2
+    }
+  ]
+}
