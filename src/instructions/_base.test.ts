@@ -4,6 +4,7 @@ import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { circularDistance } from "../utils";
 import type { WorldState } from "../worldState";
 import { resolveShortLines } from "./_base";
 import { initFormationStates } from "./index";
@@ -81,24 +82,45 @@ describe("resolveShortLines", () => {
   });
 
   it("should throw when a dancer's y is shifted by an odd integer", () => {
-    // Apply the same even base shift to ALL dancers (preserving alignment),
-    // then add 1 to one dancer, making its total shift 1+2n (odd).
-    // The uniform even shift is a no-op for relative positions, so the
-    // odd dancer is always exactly 1 unit out of alignment → overlap failure.
-    const fcN = fc.integer({ min: -10, max: 10 });
+    const fcOddShift = fc.integer({ min: -10, max: 10 }).map((n) => 1 + 2 * n);
     const fcProtoId = fc.constantFrom<ProtoId>(...ALL_PROTO_IDS);
 
     fc.assert(
-      fc.property(fcN, fcProtoId, (n, protoId) => {
+      fc.property(fcOddShift, fcProtoId, (dy, protoId) => {
         const state = produce(OK_BASE, (draft) => {
-          const evenShift = new Vector(0, 2 * n);
-          for (const id of ALL_PROTO_IDS) {
-            draft[id].pos = draft[id].pos.add(evenShift);
-          }
-          draft[protoId].pos = draft[protoId].pos.add(new Vector(0, 1));
+          draft[protoId].pos = draft[protoId].pos.add(new Vector(0, dy));
         });
 
         expect(() => resolveShortLines(state)).toThrow();
+      }),
+    );
+  });
+
+  it("should throw iff max pairwise circularDistance > 0.5", () => {
+    const XS: [number, number, number, number] = [0, 0.5, 1, 1.5];
+    const fcY = fc.double({ noNaN: true, min: 0, max: 100 });
+
+    fc.assert(
+      fc.property(fcY, fcY, fcY, fcY, (y0, y1, y2, y3) => {
+        const ys = [y0, y1, y2, y3];
+        const state = produce(initFormationStates.improper, (draft) => {
+          ALL_PROTO_IDS.forEach((id, i) => {
+            draft[id].pos = new Vector(XS[i], ys[i]);
+          });
+        });
+
+        let maxDist = 0;
+        for (let i = 0; i < 4; i++) {
+          for (let j = i + 1; j < 4; j++) {
+            maxDist = Math.max(maxDist, circularDistance(ys[i], ys[j], 2));
+          }
+        }
+
+        if (maxDist > 0.5) {
+          expect(() => resolveShortLines(state)).toThrow();
+        } else {
+          expect(() => resolveShortLines(state)).not.toThrow();
+        }
       }),
     );
   });

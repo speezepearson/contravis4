@@ -102,6 +102,16 @@ export function smallestCrossDyToMakeAlignByMultOfTwo(
   return safeRound(halfDiff, { errMsg }) - halfDiff;
 }
 
+/** Shortest distance between two points on a circle of the given circumference. */
+export function circularDistance(
+  a: number,
+  b: number,
+  modulus: number,
+): number {
+  const d = (((a - b) % modulus) + modulus) % modulus;
+  return Math.min(d, modulus - d);
+}
+
 export function safeRound(
   x: number,
   { tol = 0.1, errMsg }: { tol?: number; errMsg?: string } = {},
