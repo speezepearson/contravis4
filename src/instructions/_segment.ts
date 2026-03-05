@@ -78,11 +78,8 @@ export type Segment = {
 
 // ── Core ────────────────────────────────────────────────────────────────
 
-/**
- * Evaluate a segment to get its final WorldState (used for pre-computing
- * segment initial states and for giveAndTakeIntoSwing's approach→swing handoff).
- */
-export function getSegmentFrameAtFrac(
+/** Apply a segment at a given frac to produce a new WorldState. */
+function applySegment(
   segment: Segment,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
@@ -92,7 +89,12 @@ export function getSegmentFrameAtFrac(
     for (const id of who) {
       if (segment.position) draft[id].pos = segment.position(id, frac, init);
       if (segment.facing) draft[id].facing = segment.facing(id, frac, init);
-      if (segment.hands) draft[id].hands = segment.hands(id, frac, init);
+    }
+    for (const id of who) {
+      if (segment.hands) {
+        draft[id].hands = {};
+        draft[id].hands = segment.hands(id, frac, init);
+      }
       if (segment.labels) {
         for (const [label, theirId] of segment.labels(id, frac, init)) {
           draft[id].labels[label] = theirId;
@@ -107,6 +109,19 @@ export function getSegmentFrameAtFrac(
       }
     }
   });
+}
+
+/**
+ * Evaluate a segment to get its final WorldState (used for pre-computing
+ * segment initial states and for giveAndTakeIntoSwing's approach→swing handoff).
+ */
+export function getSegmentFrameAtFrac(
+  segment: Segment,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+  frac: number,
+): WorldState {
+  return applySegment(segment, init, who, frac);
 }
 
 /** Advance state through a sequence of segments (for composing multi-step instructions). */
@@ -153,32 +168,7 @@ export function animateSegments(
         const localT = t - accDur;
         const frac = seg.dur > 0 ? localT / seg.dur : 1;
         const segInit = segInits[i];
-        return sanityCheckWorldState(
-          produce(segInit, (draft) => {
-            for (const id of who) {
-              if (seg.position) draft[id].pos = seg.position(id, frac, segInit);
-              if (seg.facing) draft[id].facing = seg.facing(id, frac, segInit);
-            }
-            for (const id of who) {
-              if (seg.hands) {
-                draft[id].hands = {};
-                draft[id].hands = seg.hands(id, frac, segInit);
-              }
-              if (seg.labels) {
-                for (const [label, theirId] of seg.labels(id, frac, segInit)) {
-                  draft[id].labels[label] = theirId;
-                }
-              }
-              if (seg.interactedWith) {
-                const newRecents = seg.interactedWith(id, segInit);
-                draft[id].recents = [
-                  ...newRecents,
-                  ...draft[id].recents.filter((i) => !newRecents.includes(i)),
-                ];
-              }
-            }
-          }),
-        );
+        return sanityCheckWorldState(applySegment(seg, segInit, who, frac));
       }
       throw new Error(
         `time ${t} is out of range for animation with duration ${totalDur}`,
