@@ -1,8 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import type { Hand, Role } from "../contraCore";
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
+import { fcHand,fcRole } from "../testHelpers";
 import { advanceState, animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type ZigZagInstruction, zigZagSegments } from "./zigZag";
@@ -201,9 +201,6 @@ describe("zigZag", () => {
   });
 
   describe("leader moves outward, follower moves inward (fast-check)", () => {
-    const fcRole = fc.constantFrom<Role>("lark", "robin");
-    const fcHand = fc.constantFrom<Hand>("left", "right");
-
     it("at a quarter beat, leader abs(x) > init abs(x) and follower abs(x) < init abs(x)", () => {
       fc.assert(
         fc.property(fcRole, fcHand, (leader, leaderDir) => {

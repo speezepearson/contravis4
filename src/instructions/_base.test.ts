@@ -3,7 +3,8 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS } from "../contraCore";
+import { fcProtoId } from "../testHelpers";
 import { circularDistance } from "../utils";
 import type { WorldState } from "../worldState";
 import { resolveShortLines } from "./_base";
@@ -83,7 +84,6 @@ describe("resolveShortLines", () => {
 
   it("should throw when a dancer's y is shifted by an odd integer", () => {
     const fcOddShift = fc.integer({ min: -10, max: 10 }).map((n) => 1 + 2 * n);
-    const fcProtoId = fc.constantFrom<ProtoId>(...ALL_PROTO_IDS);
 
     fc.assert(
       fc.property(fcOddShift, fcProtoId, (dy, protoId) => {

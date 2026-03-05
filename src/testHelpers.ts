@@ -6,29 +6,37 @@ import {
   type BasicLabel,
   type DancerId,
   type Hand,
+  HandSchema,
   makeDancerId,
   otherRole,
   parseProtoId,
   type ProgressionDir,
+  ProgressionDirSchema,
   type ProtoId,
   type Role,
+  RoleSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
 import { connectHands, Dancer, type WorldState } from "./worldState";
 
-export const fcProtoId: fc.Arbitrary<ProtoId> = fc.constantFrom<ProtoId>(
+export const fcProtoId: fc.Arbitrary<ProtoId> = fc.constantFrom(
   ...ALL_PROTO_IDS,
 );
 
-export const fcHand: fc.Arbitrary<Hand> = fc.constantFrom<Hand>(
-  "left",
-  "right",
+export const fcHand: fc.Arbitrary<Hand> = fc.constantFrom(
+  ...HandSchema.options,
+);
+export const fcRole: fc.Arbitrary<Role> = fc.constantFrom(
+  ...RoleSchema.options,
+);
+export const fcProgressionDir: fc.Arbitrary<ProgressionDir> = fc.constantFrom(
+  ...ProgressionDirSchema.options,
 );
 
 export const fcDancerId: fc.Arbitrary<DancerId> = fc
   .record({
-    dir: fc.constantFrom<ProgressionDir>("up", "down"),
-    role: fc.constantFrom<Role>("lark", "robin"),
+    dir: fcProgressionDir,
+    role: fcRole,
     offset: fc.integer({ min: -10, max: 10 }),
   })
   .map(({ dir, role, offset }) => makeDancerId({ dir, role, offset }));

@@ -1,9 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import type { Hand, Role } from "../contraCore";
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
 import { EAST, WEST } from "../geometry";
+import { fcHand,fcRole } from "../testHelpers";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type PoussetteInstruction, poussetteSegments } from "./poussette";
@@ -140,9 +140,6 @@ describe("poussette", () => {
   });
 
   describe("backer moves outward, non-backer moves inward (fast-check)", () => {
-    const fcRole = fc.constantFrom<Role>("lark", "robin");
-    const fcHand = fc.constantFrom<Hand>("left", "right");
-
     it("at a quarter beat, backer abs(x) > init abs(x) and non-backer abs(x) < init abs(x)", () => {
       fc.assert(
         fc.property(fcRole, fcHand, (backer, backerDir) => {
