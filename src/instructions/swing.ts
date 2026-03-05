@@ -6,7 +6,6 @@ import {
   type Beats,
   isLark,
   type ProtoId,
-  type Role,
 } from "../contraCore";
 import {
   ccwRadsBetween,
@@ -75,7 +74,7 @@ export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
   _who: ReadonlySet<ProtoId>,
-  { preferDriftToKeepStill }: { preferDriftToKeepStill?: Role } = {},
+  { preferDriftOnWest }: { preferDriftOnWest?: "up" | "down" } = {},
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
   const centers = buildProtoRecord((id) => avgPos(init, id, matches[id]));
@@ -208,17 +207,15 @@ export function makeSwingSegments(
       // Every pair's CoM should end up across the set from another pair's CoM.
       // We want to choose a dy such that (westCoM.y+dy) and (eastCoM.y-dy) differ by a multiple of 2.
       const dy = (() => {
-        const fudge =
-          preferDriftToKeepStill == null
-            ? 0
-            : preferDriftToKeepStill === "robin"
-              ? 0.2
-              : -0.2;
+        console.log({ preferDriftOnWest });
         try {
           return smallestCrossDyToMakeAlignByMultOfTwo(westCoM.y, eastCoM.y, {
             errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
           });
-        } catch {
+        } catch (e) {
+          if (!preferDriftOnWest) throw e;
+          console.log("fudging");
+          const fudge = preferDriftOnWest === "up" ? 0.2 : -0.2;
           return (
             smallestCrossDyToMakeAlignByMultOfTwo(
               westCoM.y + fudge,
