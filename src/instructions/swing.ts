@@ -1,7 +1,13 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId, type Role, RoleSchema } from "../contraCore";
+import {
+  ALL_PROTO_IDS,
+  type Beats,
+  isLark,
+  type ProtoId,
+  type Role,
+} from "../contraCore";
 import {
   ccwRadsBetween,
   getDir,
@@ -9,7 +15,11 @@ import {
   revolve,
   TWO_PI,
 } from "../geometry";
-import { getSide, lerpVectors, smallestCrossDyToMakeAlignByMultOfTwo } from "../utils";
+import {
+  getSide,
+  lerpVectors,
+  smallestCrossDyToMakeAlignByMultOfTwo,
+} from "../utils";
 import {
   avgPos,
   buildProtoRecord,
@@ -198,15 +208,26 @@ export function makeSwingSegments(
       // Every pair's CoM should end up across the set from another pair's CoM.
       // We want to choose a dy such that (westCoM.y+dy) and (eastCoM.y-dy) differ by a multiple of 2.
       const dy = (() => {
-        const fudge = preferDriftToKeepStill == null ? 0 : preferDriftToKeepStill === 'robin' ? 0.2 : -0.2;
-        try { 
-          return smallestCrossDyToMakeAlignByMultOfTwo(westCoM.y, eastCoM.y, {errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`});
-        } catch (e) {
-          return smallestCrossDyToMakeAlignByMultOfTwo(
-            westCoM.y + fudge,
-            eastCoM.y - fudge,
-            {errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`});
-
+        const fudge =
+          preferDriftToKeepStill == null
+            ? 0
+            : preferDriftToKeepStill === "robin"
+              ? 0.2
+              : -0.2;
+        try {
+          return smallestCrossDyToMakeAlignByMultOfTwo(westCoM.y, eastCoM.y, {
+            errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
+          });
+        } catch (_e) { // eslint-disable-line unused-imports/no-unused-vars
+          return (
+            smallestCrossDyToMakeAlignByMultOfTwo(
+              westCoM.y + fudge,
+              eastCoM.y - fudge,
+              {
+                errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
+              },
+            ) + fudge
+          );
         }
       })();
 

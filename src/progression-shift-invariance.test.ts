@@ -62,7 +62,7 @@ describe("progression shift invariance", () => {
       const initState = initFormationStates[dance.initFormation];
       const { animation: origAnim, errors: origErrors } =
         generateDanceAnimation(dance.instructions, initState);
-      expect(origErrors).toHaveLength(0);
+      expect(origErrors).toEqual([]);
       expect(origAnim).not.toBeNull();
       if (!origAnim) return;
 
@@ -71,7 +71,7 @@ describe("progression shift invariance", () => {
         dance.instructions,
         modInitState,
       );
-      expect(modErrors).toHaveLength(0);
+      expect(modErrors).toEqual([]);
       expect(modAnim).not.toBeNull();
       if (!modAnim) return;
 
