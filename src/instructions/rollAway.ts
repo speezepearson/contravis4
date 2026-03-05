@@ -145,6 +145,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
 
         return hold([myHand, themId, theirHand]);
       },
+      interactedWith: (id) => [matches[id]],
     },
   ];
 };

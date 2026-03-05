@@ -33,6 +33,7 @@ export function averageFrames(frames: WorldState[]): WorldState {
           : frames[Math.floor(n / 2)][id].facing,
       hands: frames[Math.floor(n / 2)][id].hands,
       labels: frames[Math.floor(n / 2)][id].labels,
+      recents: frames[Math.floor(n / 2)][id].recents,
     };
   }
 

@@ -40,5 +40,8 @@ export const californiaTwirlSegments: InstructionAnimator<
         ? hold(["right", them, "left"])
         : hold(["left", them, "right"]);
     },
+    interactedWith: (id, segInit) => [
+      resolveMatch(id, "larks_right_robins_left", segInit),
+    ],
   },
 ];

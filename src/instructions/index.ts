@@ -45,6 +45,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "up_robin_0",
         neighbor: "down_robin_0",
       },
+      recents: ["up_robin_0", "down_robin_0"],
     },
     up_robin_0: {
       protoId: "up_robin_0",
@@ -55,6 +56,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "up_lark_0",
         neighbor: "down_lark_0",
       },
+      recents: ["up_lark_0", "down_lark_0"],
     },
     down_lark_0: {
       protoId: "down_lark_0",
@@ -65,6 +67,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "down_robin_0",
         neighbor: "up_robin_0",
       },
+      recents: ["down_robin_0", "up_robin_0"],
     },
     down_robin_0: {
       protoId: "down_robin_0",
@@ -75,6 +78,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "down_lark_0",
         neighbor: "up_lark_0",
       },
+      recents: ["down_lark_0", "up_lark_0"],
     },
   },
   beckett: {
@@ -87,6 +91,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "up_robin_0",
         neighbor: "down_robin_0",
       },
+      recents: ["up_robin_0", "down_robin_0"],
     },
     up_robin_0: {
       protoId: "up_robin_0",
@@ -97,6 +102,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "up_lark_0",
         neighbor: "down_lark_0",
       },
+      recents: ["up_lark_0", "down_lark_0"],
     },
     down_lark_0: {
       protoId: "down_lark_0",
@@ -107,6 +113,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "down_robin_0",
         neighbor: "up_robin_0",
       },
+      recents: ["down_robin_0", "up_robin_0"],
     },
     down_robin_0: {
       protoId: "down_robin_0",
@@ -117,6 +124,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         partner: "down_lark_0",
         neighbor: "up_lark_0",
       },
+      recents: ["down_lark_0", "up_lark_0"],
     },
   },
 };

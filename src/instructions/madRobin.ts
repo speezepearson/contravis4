@@ -71,6 +71,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
         return resolveCardinalDirection("across", segInit[id].pos);
       },
       hands: () => ({}),
+      interactedWith: (id) => [matches[id]],
     },
   ];
 };

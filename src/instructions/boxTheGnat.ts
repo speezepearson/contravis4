@@ -33,5 +33,6 @@ export const boxTheGnatSegments: InstructionAnimator<BoxTheGnatInstruction> = (
       const them = resolveMatch(id, instr.cid, segInit);
       return hold(["right", them, "right"]);
     },
+    interactedWith: (id, segInit) => [resolveMatch(id, instr.cid, segInit)],
   },
 ];

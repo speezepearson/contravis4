@@ -32,6 +32,7 @@ export const balanceTheRingSegments: InstructionAnimator<
     {
       dur: halfBeats,
       position: linearTo((id) => init[id].pos.add(centers[id]).divide(2)),
+      interactedWith: (id) => rings[id].slice(1),
     },
     {
       dur: halfBeats,

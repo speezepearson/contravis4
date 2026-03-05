@@ -37,6 +37,7 @@ export const pullBySegments: InstructionAnimator<PullByInstruction> = (
         const them = resolveMatch(id, instr.cid, segInit);
         return hold([instr.hand, them, instr.hand]);
       },
+      interactedWith: (id, segInit) => [resolveMatch(id, instr.cid, segInit)],
     },
   ];
 };

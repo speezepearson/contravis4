@@ -153,6 +153,7 @@ export function makeSwingSegments(
       facing: (id, frac, segInit) =>
         lerpFacing(segInit[id].facing, plans[id].postApproach.facing, frac),
       hands: () => ({}),
+      interactedWith: (id) => [matches[id]],
     },
     {
       dur: swingBeats,

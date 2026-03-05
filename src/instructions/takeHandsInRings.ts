@@ -1,5 +1,7 @@
+import { produce } from "immer";
 import { z } from "zod";
 
+import { ALL_PROTO_IDS } from "../contraCore";
 import { ccwRadsBetween, getDir } from "../geometry";
 import { must } from "../utils";
 import {
@@ -16,7 +18,6 @@ import {
 import {
   getSegmentFrameAtFrac,
   type InstructionAnimator,
-  makeImmediateSegment,
   type Segment,
 } from "./_segment";
 
@@ -49,23 +50,33 @@ export function makeRingSegment(init: WorldState): Segment {
     return { acrossId, alongId };
   });
 
-  return makeImmediateSegment(init, (id, draft) => {
-    const { acrossId, alongId } = targets[id];
-    const dirToAcross = getDir({
-      from: init[id].pos,
-      to: getDancerState(acrossId, init).pos,
-    });
-    const dirToAlong = getDir({
-      from: init[id].pos,
-      to: getDancerState(alongId, init).pos,
-    });
-    draft[id].facing = dirToAcross.add(dirToAlong).normalize();
+  const final = produce(init, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
+      const { acrossId, alongId } = targets[id];
+      const dirToAcross = getDir({
+        from: init[id].pos,
+        to: getDancerState(acrossId, init).pos,
+      });
+      const dirToAlong = getDir({
+        from: init[id].pos,
+        to: getDancerState(alongId, init).pos,
+      });
+      draft[id].facing = dirToAcross.add(dirToAlong).normalize();
 
-    const onRightId =
-      ccwRadsBetween(draft[id].facing, dirToAlong) > 0 ? acrossId : alongId;
+      const onRightId =
+        ccwRadsBetween(draft[id].facing, dirToAlong) > 0 ? acrossId : alongId;
 
-    connectHands(draft, id, "right", onRightId, "left");
+      connectHands(draft, id, "right", onRightId, "left");
+    }
   });
+
+  return {
+    dur: 0,
+    position: (id) => final[id].pos,
+    facing: (id) => final[id].facing,
+    hands: (id) => final[id].hands,
+    interactedWith: (id) => [targets[id].acrossId, targets[id].alongId],
+  };
 }
 
 export const takeHandsInRingsSegments: InstructionAnimator<

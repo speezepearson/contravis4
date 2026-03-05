@@ -28,6 +28,7 @@ import {
   type InstructionAnimator,
   makeImmediateSegment,
   type PositionFn,
+  type Segment,
 } from "./_segment";
 
 export const PoussetteInstructionSchema = z.object({
@@ -126,7 +127,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 
   const halfBeats = instr.full ? instr.beats / 2 : instr.beats;
 
-  const firstHalf = {
+  const firstHalf: Segment = {
     dur: halfBeats,
     position: makeHalfPoussetteArcPosition(
       instr.backer,
@@ -136,6 +137,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
       who,
     ),
     hands: handsFn,
+    interactedWith: (id) => [matches[id]],
   };
 
   if (!instr.full) {

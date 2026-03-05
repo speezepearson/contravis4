@@ -122,6 +122,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       dur: beatsPerZig,
       position,
       hands: makeHandsFn(instr.leader),
+      interactedWith: (id) => [matches[id]],
     };
 
     segments.push(zigSegment);

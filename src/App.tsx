@@ -4,7 +4,7 @@ import { averageFrames, shiftFrameByProgression } from "./averageFrames";
 import CommandPane from "./components/CommandPane";
 import { CalledIdentifierHighlightContext } from "./components/RelationshipHighlightContext";
 import { Renderer } from "./components/Renderer";
-import { ALL_PROTO_IDS } from "./contraCore";
+import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { exportGif } from "./exportGif";
 import {
   findInstructionStartBeat,
@@ -195,6 +195,10 @@ export default function App() {
     return frames;
   }, [hoveredInstructionId, instructions, animation]);
 
+  // Dancer hover: ref-based to avoid re-renders on fast mouse movements
+  const hoveredDancerRef = useRef<ProtoId | null>(null);
+  const lastFrameRef = useRef<WorldState | null>(null);
+
   // Relationship highlight: ref-based to avoid re-renders on fast mouse movements
   const highlightedRelRef = useRef<CalledIdentifier | null>(null);
   const highlightRelRafRef = useRef(0);
@@ -260,7 +264,14 @@ export default function App() {
     }
 
     if (frame) {
+      lastFrameRef.current = frame;
       renderer.drawFrame(t, frame);
+
+      // Draw recents highlight for hovered dancer
+      const hoveredDancer = hoveredDancerRef.current;
+      if (hoveredDancer) {
+        renderer.drawRecentsHighlight(frame[hoveredDancer].recents, frame);
+      }
 
       // Draw relationship highlight lines
       const highlightedRel = highlightedRelRef.current;
@@ -389,6 +400,31 @@ export default function App() {
 
     applySize();
 
+    let hoverRaf = 0;
+    const onMouseMove = (e: MouseEvent) => {
+      const renderer = rendererRef.current;
+      const frame = lastFrameRef.current;
+      if (!renderer || !frame) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const hit = renderer.hitTestDancer(x, y, frame);
+      if (hit !== hoveredDancerRef.current) {
+        hoveredDancerRef.current = hit;
+        cancelAnimationFrame(hoverRaf);
+        hoverRaf = requestAnimationFrame(() => drawRef.current());
+      }
+    };
+    const onMouseLeave = () => {
+      if (hoveredDancerRef.current !== null) {
+        hoveredDancerRef.current = null;
+        cancelAnimationFrame(hoverRaf);
+        hoverRaf = requestAnimationFrame(() => drawRef.current());
+      }
+    };
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mouseleave", onMouseLeave);
+
     let resizeRaf = 0;
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(resizeRaf);
@@ -399,6 +435,9 @@ export default function App() {
     return () => {
       observer.disconnect();
       cancelAnimationFrame(resizeRaf);
+      cancelAnimationFrame(hoverRaf);
+      canvas.removeEventListener("mousemove", onMouseMove);
+      canvas.removeEventListener("mouseleave", onMouseLeave);
     };
   }, []);
 

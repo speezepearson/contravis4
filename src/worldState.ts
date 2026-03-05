@@ -16,9 +16,8 @@ import {
   HandSchema,
   projectDancerIdToProtoId,
   type ProtoId,
-  ProtoIdSchema,
 } from "./contraCore";
-import { NORTH, VectorSchema } from "./geometry";
+import { NORTH } from "./geometry";
 import { getSide, isEqual } from "./utils";
 
 export function resolveBasicLabel(
@@ -36,23 +35,19 @@ export const DancerHandPointerSchema = z.object({
 });
 export type DancerHandPointer = z.infer<typeof DancerHandPointerSchema>;
 
-export const DancerStateSchema = z.object({
-  protoId: ProtoIdSchema,
-
+export type DancerState = {
+  protoId: ProtoId;
   /** Position in the global coordinate frame (i.e. (0,0) is the center of the dance floor) */
-  pos: VectorSchema,
-  // maybe also wants a velocity vector? not sure
-
+  pos: Vector;
   /** Unit vector pointing the dir the dancer is facing, in the global coordinate frame (i.e. NORTH = (0,1), EAST = (1,0)) */
-  facing: VectorSchema,
-
+  facing: Vector;
   /** Who's being held in each hand. */
-  hands: z.partialRecord(HandSchema, DancerHandPointerSchema),
-
+  hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
   /** Labels the dancer has mentally assigned to other dancers, e.g. "partner", "neighbor", "shadow". */
-  labels: z.partialRecord(BasicLabelSchema, DancerIdSchema),
-});
-export type DancerState = z.infer<typeof DancerStateSchema>;
+  labels: Partial<Record<BasicLabel, DancerId | undefined>>;
+  /** Dancers this dancer has interacted with recently, most recent first. */
+  recents: DancerId[];
+};
 
 export function getDancerState(
   id: DancerId,
@@ -61,8 +56,7 @@ export function getDancerState(
   return addOffsetToDancer(protos[projectDancerIdToProtoId(id)], getOffset(id));
 }
 
-export const WorldStateSchema = z.record(ProtoIdSchema, DancerStateSchema);
-export type WorldState = z.infer<typeof WorldStateSchema>;
+export type WorldState = Record<ProtoId, DancerState>;
 
 /** Connects two hands of two dancers. Throws an error if the hands are already in use, unless they are already paired with each other. */
 export function connectHands(
@@ -167,6 +161,7 @@ export function addOffsetToDancer(
       if (!theirId) return undefined;
       return addOffsetToId(theirId, deltaOffset);
     }),
+    recents: state.recents.map((id) => addOffsetToId(id, deltaOffset)),
   };
 }
 
