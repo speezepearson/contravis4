@@ -1,7 +1,7 @@
 import type { Vector } from "vecti";
 
 import type { Beats, Hand } from "../contraCore";
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
 import { PI } from "../geometry";
 import type { DancerState, WorldState } from "../worldState";
 import { getDancerState } from "../worldState";
@@ -327,6 +327,47 @@ export class Renderer {
     ctx.lineTo(ax, ay);
     ctx.stroke();
 
+    ctx.globalAlpha = 1.0;
+  }
+
+  hitTestDancer(
+    canvasX: number,
+    canvasY: number,
+    frame: WorldState,
+  ): ProtoId | null {
+    const r = 14;
+    for (const id of ALL_PROTO_IDS) {
+      const d = frame[id];
+      const [cx, cy] = this.worldToCanvas(d.pos.x, d.pos.y);
+      const dx = canvasX - cx;
+      const dy = canvasY - cy;
+      if (dx * dx + dy * dy <= r * r) return id;
+    }
+    return null;
+  }
+
+  drawRecentsHighlight(recents: DancerId[], frame: WorldState) {
+    if (recents.length === 0) return;
+    const ctx = this.ctx;
+    const circleR = 20;
+
+    ctx.strokeStyle = "#ff3333";
+    ctx.lineWidth = 2.5;
+
+    for (let i = 0; i < recents.length; i++) {
+      const recentAlpha = 0.8 / (i + 1);
+      if (recentAlpha < 0.05) break;
+
+      const recentDancer = getDancerState(recents[i], frame);
+      ctx.globalAlpha = recentAlpha;
+      const [cx, cy] = this.worldToCanvas(
+        recentDancer.pos.x,
+        recentDancer.pos.y,
+      );
+      ctx.beginPath();
+      ctx.arc(cx, cy, circleR, 0, PI * 2);
+      ctx.stroke();
+    }
     ctx.globalAlpha = 1.0;
   }
 

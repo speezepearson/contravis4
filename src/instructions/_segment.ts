@@ -169,6 +169,13 @@ export function animateSegments(
                   draft[id].labels[label] = theirId;
                 }
               }
+              if (seg.interactedWith) {
+                const newRecents = seg.interactedWith(id, segInit);
+                draft[id].recents = [
+                  ...newRecents,
+                  ...draft[id].recents.filter((i) => !newRecents.includes(i)),
+                ];
+              }
             }
           }),
         );
