@@ -16,9 +16,8 @@ import {
 } from "../geometry";
 import { lerpVectors } from "../utils";
 import {
+  Dancer,
   type DancerHandPointer,
-  type DancerState,
-  getDancerState,
   sanityCheckWorldState,
   type WorldState,
 } from "../worldState";
@@ -61,7 +60,7 @@ export type HandsFn = (
   id: ProtoId,
   frac: number,
   segInit: WorldState,
-) => DancerState["hands"];
+) => Dancer["hands"];
 
 /** Per-dancer recents function: returns a list of dancers that a dancer interacted with in this segment. */
 export type InteractedWithFn = (id: ProtoId, segInit: WorldState) => DancerId[];
@@ -240,7 +239,7 @@ export function arc(
   return (id, frac, segInit) => {
     const themId = resolveMatch(id, cid, segInit);
     const start = segInit[id].pos;
-    const end = getDancerState(themId, segInit).pos;
+    const end = Dancer.get(themId, segInit).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
   };
 }
@@ -256,7 +255,7 @@ export function orbit(
     const myPos = segInit[id].pos;
     const themId = matches.get(id);
     if (!themId) return myPos;
-    const theirPos = getDancerState(themId, segInit).pos;
+    const theirPos = Dancer.get(themId, segInit).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
   };
@@ -307,7 +306,7 @@ export function hold(
   ...args:
     | [[Hand, DancerId, Hand]]
     | [["left", DancerId, Hand], ["right", DancerId, Hand]]
-): DancerState["hands"] {
+): Dancer["hands"] {
   const result: Partial<Record<Hand, DancerHandPointer>> = {};
   for (const [hand, theirId, theirHand] of args) {
     result[hand] = { theirId, theirHand };

@@ -18,7 +18,7 @@ import {
   type Instruction,
   instructionDuration,
 } from "../src/instructions/index";
-import type { DancerState, WorldState } from "../src/worldState";
+import type { Dancer, WorldState } from "../src/worldState";
 
 enableMapSet();
 
@@ -133,7 +133,7 @@ function formatWorldState(ws: WorldState, label: string, t: number): string {
   return lines.join("\n");
 }
 
-function formatDancer(id: ProtoId, d: DancerState): string {
+function formatDancer(id: ProtoId, d: Dancer): string {
   const pos = formatPos(d.pos);
   const facing = formatFacing(d.facing);
   const hands = formatHands(d.hands);

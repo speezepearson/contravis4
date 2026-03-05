@@ -9,7 +9,7 @@ import {
   resolveCalledIdentifier,
 } from "../instructions/_base";
 import { parses, try_ } from "../utils";
-import { getDancerState } from "../worldState";
+import { Dancer } from "../worldState";
 import { calledDirectionToText } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
@@ -47,8 +47,8 @@ export function CalledDirectionDropdown({
             resolveCalledIdentifier("up_lark_0", b, dancerStates),
           );
           if (bId instanceof Error || !bId) return -1;
-          const targetA = getDancerState(aId, dancerStates);
-          const targetB = getDancerState(bId, dancerStates);
+          const targetA = Dancer.get(aId, dancerStates);
+          const targetB = Dancer.get(bId, dancerStates);
           const distA = larkState.pos.subtract(targetA.pos).length();
           const distB = larkState.pos.subtract(targetB.pos).length();
           if (Math.abs(distA - distB) > 1e-6) return distA - distB;

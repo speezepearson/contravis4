@@ -8,7 +8,7 @@ import {
 } from "../contraCore";
 import { getDir } from "../geometry";
 import { assertNever, getSide } from "../utils";
-import { buildProtoRecord, getDancerSide, getDancerState } from "../worldState";
+import { buildProtoRecord, Dancer, getDancerSide } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
@@ -42,8 +42,8 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
   const swingDur = instr.beats - approachDur;
   const matches = resolveMatches(instr.cid, init, { roles: "different" });
   for (const id of ALL_PROTO_IDS) {
-    const me = getDancerState(id, init);
-    const them = getDancerState(matches[id], init);
+    const me = Dancer.get(id, init);
+    const them = Dancer.get(matches[id], init);
     if (getDancerSide(me) === getDancerSide(them)) {
       throw new Error(`dancers ${id} and ${matches[id]} are on the same side`);
     }
@@ -51,8 +51,8 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 
   const plans = buildProtoRecord((id) => {
     const amDrawer = parseProtoId(id).role === instr.drawerRole;
-    const drawer = getDancerState(amDrawer ? id : matches[id], init);
-    const drawee = getDancerState(amDrawer ? matches[id] : id, init);
+    const drawer = Dancer.get(amDrawer ? id : matches[id], init);
+    const drawee = Dancer.get(amDrawer ? matches[id] : id, init);
 
     const postApproachDrawerPos = drawer.pos;
     const postApproachDraweePos = drawer.pos.add(drawee.pos).divide(2);

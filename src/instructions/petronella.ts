@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS } from "../contraCore";
 import { ccwRadsBetween, getDir, TWO_PI } from "../geometry";
 import { must } from "../utils";
-import { buildProtoRecord, getDancerState } from "../worldState";
+import { buildProtoRecord, Dancer } from "../worldState";
 import {
   avgDancerPos,
   instructionBaseSchemaFields,
@@ -30,7 +30,7 @@ export const petronellaSegments: InstructionAnimator<PetronellaInstruction> = (
 
   const targets = buildProtoRecord((id) => {
     const { theirId } = must(init[id].hands["right"]);
-    const targetPos = getDancerState(theirId, init).pos;
+    const targetPos = Dancer.get(theirId, init).pos;
     const targetFacing = getDir({ from: targetPos, to: centers[id] });
     // Always rotate CW: if ccwRadsBetween gives positive, subtract 2PI
     const ccwAngle = ccwRadsBetween(init[id].facing, targetFacing);

@@ -1,3 +1,4 @@
+import { immerable } from "immer";
 import { Vector } from "vecti";
 import { z } from "zod";
 
@@ -12,23 +13,18 @@ import {
   DancerIdSchema,
   type DancerOffset,
   getOffset,
+  getRole,
   type Hand,
   HandSchema,
+  parseDancerId,
+  type ProgressionDir,
   projectDancerIdToProtoId,
   type ProtoId,
   protoIdToDancerId,
+  type Role,
 } from "./contraCore";
 import { NORTH } from "./geometry";
 import { getSide, isEqual } from "./utils";
-
-export function resolveBasicLabel(
-  label: BasicLabel,
-  id: DancerId,
-  protos: Record<ProtoId, DancerState>,
-): DancerId | null {
-  const state = getDancerState(id, protos);
-  return state.labels[label] ?? null;
-}
 
 export const DancerHandPointerSchema = z.object({
   theirId: DancerIdSchema,
@@ -36,8 +32,10 @@ export const DancerHandPointerSchema = z.object({
 });
 export type DancerHandPointer = z.infer<typeof DancerHandPointerSchema>;
 
-export type DancerState = {
-  protoId: ProtoId;
+export class Dancer {
+  static [immerable] = true;
+
+  readonly id: DancerId;
   /** Position in the global coordinate frame (i.e. (0,0) is the center of the dance floor) */
   pos: Vector;
   /** Unit vector pointing the dir the dancer is facing, in the global coordinate frame (i.e. NORTH = (0,1), EAST = (1,0)) */
@@ -45,19 +43,88 @@ export type DancerState = {
   /** Who's being held in each hand. */
   hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
   /** Labels the dancer has mentally assigned to other dancers, e.g. "partner", "neighbor", "shadow". */
-  labels: Partial<Record<BasicLabel, DancerId | undefined>>;
+  labels: Partial<Record<BasicLabel, DancerId | undefined>> & {
+    neighbor: DancerId;
+  };
   /** Dancers this dancer has interacted with recently, most recent first. */
   recents: DancerId[];
-};
 
-export function getDancerState(
-  id: DancerId,
-  protos: Record<ProtoId, DancerState>,
-): DancerState {
-  return addOffsetToDancer(protos[projectDancerIdToProtoId(id)], getOffset(id));
+  constructor(
+    id: DancerId,
+    state: {
+      pos: Vector;
+      facing: Vector;
+      hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
+      labels: Partial<Record<BasicLabel, DancerId | undefined>> & {
+        neighbor: DancerId;
+      };
+      recents: DancerId[];
+    },
+  ) {
+    this.id = id;
+    this.pos = state.pos;
+    this.facing = state.facing;
+    this.hands = state.hands;
+    this.labels = state.labels;
+    this.recents = state.recents;
+  }
+
+  get protoId(): ProtoId {
+    return projectDancerIdToProtoId(this.id);
+  }
+  get role(): Role {
+    return getRole(this.id);
+  }
+  get dir(): ProgressionDir {
+    return parseDancerId(this.id).dir;
+  }
+  get offset(): DancerOffset {
+    return getOffset(this.id);
+  }
+  get isLark(): boolean {
+    return this.role === "lark";
+  }
+
+  static get(id: DancerId, protos: Record<ProtoId, Dancer>): Dancer {
+    return protos[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
+  }
+
+  addOffset(deltaOffset: DancerOffset): Dancer {
+    if (deltaOffset === 0) return this;
+    return new Dancer(addOffsetToId(this.id, deltaOffset), {
+      pos: this.pos.add(NORTH.multiply(deltaOffset * 2)),
+      facing: this.facing,
+      hands: buildHandsRecord((hand) => {
+        const held = this.hands[hand];
+        if (!held) return undefined;
+        return {
+          theirId: addOffsetToId(held.theirId, deltaOffset),
+          theirHand: held.theirHand,
+        };
+      }),
+      labels: {
+        ...buildLabelsRecord((label) => {
+          const theirId = this.labels[label];
+          if (!theirId) return undefined;
+          return addOffsetToId(theirId, deltaOffset);
+        }),
+        neighbor: addOffsetToId(this.labels.neighbor, deltaOffset),
+      },
+      recents: this.recents.map((rid) => addOffsetToId(rid, deltaOffset)),
+    });
+  }
 }
 
-export type WorldState = Record<ProtoId, DancerState>;
+export function resolveBasicLabel(
+  label: BasicLabel,
+  id: DancerId,
+  protos: Record<ProtoId, Dancer>,
+): DancerId | null {
+  const dancer = Dancer.get(id, protos);
+  return dancer.labels[label] ?? null;
+}
+
+export type WorldState = Record<ProtoId, Dancer>;
 
 /** Connects two hands of two dancers. Throws an error if the hands are already in use, unless they are already paired with each other. */
 export function connectHands(
@@ -82,7 +149,7 @@ export function connectHands(
     );
   }
 
-  const them = getDancerState(theirId, state);
+  const them = Dancer.get(theirId, state);
   const themHolding = them.hands[theirHand];
   if (themHolding) {
     if (isEqual(themHolding, { theirId: id, theirHand: hand })) {
@@ -115,7 +182,7 @@ export function disconnectHands(
   if (!holding) throw new Error(`Dancer ${id}'s ${hand} hand is not connected`);
   const { theirId, theirHand } = holding;
 
-  const them = getDancerState(theirId, state);
+  const them = Dancer.get(theirId, state);
   const themHolding = them.hands[theirHand];
   if (!(themHolding && isEqual(themHolding, { theirId: id, theirHand: hand })))
     throw new Error(
@@ -135,43 +202,18 @@ export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
   };
 }
 export function mapProtos(
-  protos: Record<ProtoId, DancerState>,
-  f: (state: DancerState) => DancerState,
-): Record<ProtoId, DancerState> {
+  protos: Record<ProtoId, Dancer>,
+  f: (dancer: Dancer) => Dancer,
+): Record<ProtoId, Dancer> {
   return Object.fromEntries(
     ALL_PROTO_IDS.map((id) => [id, f(protos[id])] as const),
-  ) as Record<ProtoId, DancerState>;
-}
-
-export function addOffsetToDancer(
-  state: DancerState,
-  deltaOffset: DancerOffset,
-): DancerState {
-  return {
-    protoId: state.protoId,
-    pos: state.pos.add(NORTH.multiply(deltaOffset * 2)),
-    facing: state.facing,
-    hands: buildHandsRecord((hand) => {
-      const held = state.hands[hand];
-      if (!held) return undefined;
-      return {
-        theirId: addOffsetToId(held.theirId, deltaOffset),
-        theirHand: held.theirHand,
-      };
-    }),
-    labels: buildLabelsRecord((label) => {
-      const theirId = state.labels[label];
-      if (!theirId) return undefined;
-      return addOffsetToId(theirId, deltaOffset);
-    }),
-    recents: state.recents.map((id) => addOffsetToId(id, deltaOffset)),
-  };
+  ) as Record<ProtoId, Dancer>;
 }
 
 export function getDancerSide(
-  dancer: DancerState,
+  dancer: Dancer,
   {
-    errMsg = `dancer ${dancer.protoId} is too close to the center, refusing to guess which side they're supposed to be on`,
+    errMsg = `dancer ${dancer.id} is too close to the center, refusing to guess which side they're supposed to be on`,
   }: { errMsg?: string } = {},
 ): "east" | "west" {
   return getSide(dancer.pos, { errMsg });
@@ -179,10 +221,7 @@ export function getDancerSide(
 
 export function avgPos(state: WorldState, ...ids: DancerId[]): Vector {
   return ids
-    .reduce(
-      (acc, id) => acc.add(getDancerState(id, state).pos),
-      new Vector(0, 0),
-    )
+    .reduce((acc, id) => acc.add(Dancer.get(id, state).pos), new Vector(0, 0))
     .divide(ids.length);
 }
 
@@ -218,9 +257,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
     for (const label of BasicLabelSchema.options) {
       const theirId = dancer.labels[label];
       if (!theirId) continue;
-      const theirSymmetricPointer = getDancerState(theirId, state).labels[
-        label
-      ];
+      const theirSymmetricPointer = Dancer.get(theirId, state).labels[label];
       if (theirSymmetricPointer !== id)
         throw new Error(
           `${id}'s ${label}'s thinks their ${label} is ${theirSymmetricPointer} -- this should never be asymmetric!`,
@@ -230,9 +267,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const theirSymmetricPointer = getDancerState(theirId, state).hands[
-        theirHand
-      ];
+      const theirSymmetricPointer = Dancer.get(theirId, state).hands[theirHand];
       if (!isEqual(theirSymmetricPointer, { theirId: id, theirHand: hand }))
         throw new Error(
           `${id} thinks their ${hand} hand is holding ${theirId}'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
@@ -247,19 +282,19 @@ const NEARBY_HALF_WINDOW = 2 as DancerOffset;
 export function findNearbyDancers(
   pos: Vector,
   state: WorldState,
-): Record<ProtoId, DancerState[]> {
+): Record<ProtoId, Dancer[]> {
   return buildProtoRecord((protoId) => {
     const bestOffset = Math.round(
       (pos.y - state[protoId].pos.y) / 2,
     ) as DancerOffset;
 
-    const dancers: DancerState[] = [];
+    const dancers: Dancer[] = [];
     for (
       let o = bestOffset - NEARBY_HALF_WINDOW;
       o <= bestOffset + NEARBY_HALF_WINDOW;
       o++
     ) {
-      dancers.push(getDancerState(protoIdToDancerId(protoId, o), state));
+      dancers.push(Dancer.get(protoIdToDancerId(protoId, o), state));
     }
 
     dancers.sort(

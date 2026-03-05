@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { getDir, PI } from "../geometry";
-import { getDancerState } from "../worldState";
+import { Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -25,7 +25,7 @@ export const boxTheGnatSegments: InstructionAnimator<BoxTheGnatInstruction> = (
     facing: lerpFacingTo((id, segInit) => {
       const them = resolveMatch(id, instr.cid, segInit);
       return getDir({
-        from: getDancerState(them, segInit).pos,
+        from: Dancer.get(them, segInit).pos,
         to: segInit[id].pos,
       });
     }),

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { ccwRadsBetween, PI } from "../geometry";
-import { getDancerState } from "../worldState";
+import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatch } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 import { californiaTwirlSegments } from "./californiaTwirl";
@@ -24,7 +24,7 @@ export const turnAsACoupleSegments: InstructionAnimator<
     if (checked.has(pairKey)) continue;
     checked.add(pairKey);
     const angleDiff = Math.abs(
-      ccwRadsBetween(init[id].facing, getDancerState(themId, init).facing),
+      ccwRadsBetween(init[id].facing, Dancer.get(themId, init).facing),
     );
     if (angleDiff > PI / 4) {
       throw new Error(

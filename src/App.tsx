@@ -31,7 +31,7 @@ import {
 } from "./instructions/index";
 import { initFormationStates } from "./instructions/index";
 import { isLocalStorageAvailable, try_ } from "./utils";
-import { getDancerState, type WorldState } from "./worldState";
+import { Dancer, type WorldState } from "./worldState";
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 
@@ -288,7 +288,7 @@ export default function App() {
           );
           if (targetId instanceof Error || !targetId) continue;
           const from = frame[id];
-          const to = getDancerState(targetId, frame);
+          const to = Dancer.get(targetId, frame);
           lines.push({
             fromX: from.pos.x,
             fromY: from.pos.y,

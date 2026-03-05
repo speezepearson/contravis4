@@ -18,8 +18,7 @@ import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "../geometry";
 import { assertNever, getSide, isNTuple, type NTuple, parses } from "../utils";
 import {
   buildProtoRecord,
-  type DancerState,
-  getDancerState,
+  Dancer,
   resolveBasicLabel,
   type WorldState,
 } from "../worldState";
@@ -104,7 +103,7 @@ export type CalledLabel = z.infer<typeof CalledLabelSchema>;
 export function resolveCalledLabel(
   label: CalledLabel,
   id: DancerId,
-  protos: Record<ProtoId, DancerState>,
+  protos: Record<ProtoId, Dancer>,
 ): DancerId | null {
   if (parses(BasicLabelSchema, label)) {
     return resolveBasicLabel(label, id, protos);
@@ -152,10 +151,10 @@ export function resolveCalledLabel(
       return addOffsetToId(neighbor, -3 * offsetSign);
     }
     case "in right hand": {
-      return getDancerState(id, protos).hands["right"]?.theirId ?? null;
+      return Dancer.get(id, protos).hands["right"]?.theirId ?? null;
     }
     case "in left hand": {
-      return getDancerState(id, protos).hands["left"]?.theirId ?? null;
+      return Dancer.get(id, protos).hands["left"]?.theirId ?? null;
     }
     default:
       assertNever(label);
@@ -188,17 +187,17 @@ export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 export function resolveCalledDirection(
   id: DancerId,
   dir: CalledDirection,
-  protos: Record<ProtoId, DancerState>,
+  protos: Record<ProtoId, Dancer>,
 ): Vector {
   if (parses(CalledLabelSchema, dir)) {
     const themId = resolveCalledLabel(dir, id, protos);
     if (!themId) throw new Error(`${id} has no ${dir}`);
     return getDir({
-      from: getDancerState(id, protos).pos,
-      to: getDancerState(themId, protos).pos,
+      from: Dancer.get(id, protos).pos,
+      to: Dancer.get(themId, protos).pos,
     });
   }
-  const state = getDancerState(id, protos);
+  const state = Dancer.get(id, protos);
   switch (dir) {
     case "on_right":
       return state.facing.rotateByDegrees(-90);
@@ -234,7 +233,7 @@ export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 export function resolveCalledIdentifier(
   id: DancerId,
   cid: CalledIdentifier,
-  protos: Record<ProtoId, DancerState>,
+  protos: Record<ProtoId, Dancer>,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
   if (parses(CalledLabelSchema, cid))
@@ -281,7 +280,7 @@ export function inferRoleOfCalledIdentifier(
 export function getCycle<N extends number>(
   id: DancerId,
   cid: CalledIdentifier,
-  protos: Record<ProtoId, DancerState>,
+  protos: Record<ProtoId, Dancer>,
   { length, roles }: { length: N; roles?: "same" | "different" },
 ): NTuple<N, DancerId> {
   const seen = new Set<DancerId>();
@@ -345,7 +344,7 @@ export function facesOut(
   state: WorldState,
   { errMsg }: { errMsg?: string } = {},
 ): boolean {
-  const { facing, pos } = getDancerState(id, state);
+  const { facing, pos } = Dancer.get(id, state);
   return roughlySameDir(
     facing,
     resolveCardinalDirection("out", pos, { errMsg }),
@@ -358,7 +357,7 @@ export function facesAcross(
   state: WorldState,
   { errMsg }: { errMsg?: string } = {},
 ): boolean {
-  const { facing, pos } = getDancerState(id, state);
+  const { facing, pos } = Dancer.get(id, state);
   return roughlySameDir(
     facing,
     resolveCardinalDirection("across", pos, { errMsg }),
@@ -368,19 +367,19 @@ export function facesAcross(
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
   let sum = new Vector(0, 0);
   for (const id of dancers) {
-    sum = sum.add(getDancerState(id, state).pos);
+    sum = sum.add(Dancer.get(id, state).pos);
   }
   return sum.divide(dancers.length);
 }
 
 export function findDancerInDirection(
-  protos: Record<ProtoId, DancerState>,
+  protos: Record<ProtoId, Dancer>,
   id: DancerId,
   dir: Vector,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
   dir = dir.normalize();
-  const pos = getDancerState(id, protos).pos;
+  const pos = Dancer.get(id, protos).pos;
 
   let bestScore = Infinity;
   let bestTarget: DancerId | null = null;
@@ -396,7 +395,7 @@ export function findDancerInDirection(
     const oBest = Math.round(-dyBase / 2);
     for (let o = oBest - 2; o <= oBest + 2; o++) {
       const targetId = protoIdToDancerId(otherProtoId, o);
-      const target = getDancerState(targetId, protos);
+      const target = Dancer.get(targetId, protos);
       const disp = target.pos.subtract(pos);
       const r = disp.length();
       if (r > 1.8 || r < 1e-9) continue;
@@ -421,7 +420,7 @@ export function findDancerInDirection(
 export function findDancerInCalledDirection(
   id: ProtoId,
   side: CalledDirection,
-  dancers: Record<ProtoId, DancerState>,
+  dancers: Record<ProtoId, Dancer>,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | null {
   const dir = resolveCalledDirection(id, side, dancers);
@@ -454,7 +453,7 @@ export function findClosestDancer(
         const targetId = protoIdToDancerId(protoId, o);
         if (excludeSet.has(targetId)) continue;
 
-        const target = getDancerState(targetId, state);
+        const target = Dancer.get(targetId, state);
         const dist = target.pos.subtract(pos).length();
 
         if (dist < bestDist) {
@@ -502,7 +501,7 @@ export function resolveShortLines(
       let bestX = 0;
       for (let o = oBest - 1; o <= oBest + 1; o++) {
         const id = protoIdToDancerId(otherProtoId, o);
-        const target = getDancerState(id, state);
+        const target = Dancer.get(id, state);
         const yDist = Math.abs(target.pos.y - protoY);
         if (yDist < bestYDist) {
           bestId = id;

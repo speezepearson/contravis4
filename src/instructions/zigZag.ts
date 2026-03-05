@@ -13,7 +13,7 @@ import {
 } from "../contraCore";
 import { getDir } from "../geometry";
 import { getSide } from "../utils";
-import { getDancerState } from "../worldState";
+import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import {
   advanceState,
@@ -52,8 +52,8 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       followerId = id;
       leaderId = matches[id];
     }
-    const leaderPos = getDancerState(leaderId, init).pos;
-    const followerPos = getDancerState(followerId, init).pos;
+    const leaderPos = Dancer.get(leaderId, init).pos;
+    const followerPos = Dancer.get(followerId, init).pos;
     const dirToFollower = getDir({ from: leaderPos, to: followerPos });
     const rotation = instr.leaderDir === "left" ? 90 : -90;
     facingByProto.set(id, dirToFollower.rotateByDegrees(rotation));

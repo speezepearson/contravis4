@@ -14,7 +14,7 @@ import {
   type Role,
 } from "./contraCore";
 import { NORTH } from "./geometry";
-import { connectHands, type WorldState } from "./worldState";
+import { connectHands, Dancer, type WorldState } from "./worldState";
 
 export const fcProtoId: fc.Arbitrary<ProtoId> = fc.constantFrom<ProtoId>(
   ...ALL_PROTO_IDS,
@@ -158,8 +158,7 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
           offset: 0,
         });
 
-        state[protoId] = {
-          protoId,
+        state[protoId] = new Dancer(protoId, {
           pos: positions[protoId],
           facing: NORTH,
           hands: {},
@@ -169,7 +168,7 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
             ...shadowLabels[protoId],
           },
           recents: [partnerId, neighborIds[protoId], ...extraRecents[protoId]],
-        };
+        });
       }
 
       // Apply hand connections, ignoring any exceptions

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, type DancerId } from "../contraCore";
 import { getDir } from "../geometry";
 import { must } from "../utils";
-import { getDancerState } from "../worldState";
+import { Dancer } from "../worldState";
 import { getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
 import { takeHandsInRingsSegments } from "./takeHandsInRings";
@@ -36,11 +36,11 @@ describe("takeHandsInRings", () => {
     let current: DancerId = "up_lark_0";
     const visited: DancerId[] = [current];
     for (let i = 0; i < 3; i++) {
-      const { theirId } = must(getDancerState(current, final).hands.right);
+      const { theirId } = must(Dancer.get(current, final).hands.right);
       current = theirId;
       visited.push(current);
     }
-    const { theirId: back } = must(getDancerState(current, final).hands.right);
+    const { theirId: back } = must(Dancer.get(current, final).hands.right);
     expect(back).toBe("up_lark_0");
     expect(new Set(visited).size).toBe(4);
   });
