@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { getDir } from "../geometry";
-import { getDancerState } from "../worldState";
+import { getDancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -32,7 +32,7 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
           throw new Error(`${id} has no ${instr.cid} to balance with`);
         const dir = getDir({
           from: segInit[id].pos,
-          to: getDancerState(otherId, segInit).pos,
+          to: getDancer(otherId, segInit).pos,
         });
         return segInit[id].pos.add(dir.multiply(0.2));
       }),

@@ -66,7 +66,7 @@ export const fooSegments =
 |------|-------------|
 | `ellipsePosition`, `PI`, `TWO_PI`, `revolve`, `getDir` | `../geometry` |
 | `getRole`, `isLark`, `otherHand`, `otherRole`, `ProtoId`, `Hand`, `RoleSchema` | `../contraCore` |
-| `connectHands`, `disconnectHands`, `getDancerState` | `../worldState` |
+| `connectHands`, `disconnectHands`, `getDancer` | `../worldState` |
 | `resolveCalledIdentifier`, `findDancerInCalledDirection`, `CalledIdentifierSchema` | `./_base` |
 | `arc`, `orbit`, `linearTo`, `lerpFacingTo`, `rotateFacingBy`, `hold`, `holdByRole`, `holdUntil`, `disconnect` | `./_segment` |
 | `must` | `../utils` |
@@ -106,7 +106,7 @@ When you need role-filtered or direction-based partner lookups (which can't use 
   }
   return [{ dur: instr.beats, position: (id, frac, segInit) => {
     const themId = partners.get(id)!;
-    // use themId with getDancerState(themId, segInit).pos etc.
+    // use themId with getDancer(themId, segInit).pos etc.
   }}];
 };
 ```

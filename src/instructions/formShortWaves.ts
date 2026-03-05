@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, getRole } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
 import { indexOf, must } from "../utils";
-import { connectHands, getDancerState } from "../worldState";
+import { connectHands, getDancer } from "../worldState";
 import {
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
@@ -36,8 +36,8 @@ export const formShortWavesSegments: InstructionAnimator<
       throw new Error(`dancers in middle of short waves do not have same role`);
     }
     for (let i = 0; i < 3; i++) {
-      const isUp = getDancerState(line[i], init).facing.y > 0;
-      const nextIsUp = getDancerState(line[i + 1], init).facing.y > 0;
+      const isUp = getDancer(line[i], init).facing.y > 0;
+      const nextIsUp = getDancer(line[i + 1], init).facing.y > 0;
       if (isUp === nextIsUp) {
         throw new Error(
           `short waves should have dancers alternating facing up/down, but ${line[i]} and ${line[i + 1]} are both facing ${isUp ? "up" : "down"}`,

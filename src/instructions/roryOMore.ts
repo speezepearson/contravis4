@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { HandSchema, otherHand } from "../contraCore";
 import { TWO_PI } from "../geometry";
-import { getDancerState } from "../worldState";
+import { getDancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatch } from "./_base";
 import {
   hold,
@@ -34,7 +34,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
       dur: instr.beats,
       position: linearTo((id, segInit) => {
         const them = resolveMatch(id, cid, segInit);
-        return getDancerState(them, segInit).pos;
+        return getDancer(them, segInit).pos;
       }),
       facing: rotateFacingBy(() => rotationRadians),
       hands: () => ({}),

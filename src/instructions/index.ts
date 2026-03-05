@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { type Beats } from "../contraCore";
 import { EAST, NORTH, SOUTH, WEST } from "../geometry";
-import type { WorldState } from "../worldState";
+import { Dancer, type WorldState } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
 import { getSplitDuration, SplitSchema } from "./split";
 
@@ -36,8 +36,7 @@ export type InitFormation = z.infer<typeof InitFormationSchema>;
 
 export const initFormationStates: Record<InitFormation, WorldState> = {
   improper: {
-    up_lark_0: {
-      protoId: "up_lark_0",
+    up_lark_0: new Dancer("up_lark_0", {
       pos: new Vector(-0.5, -0.5),
       facing: NORTH,
       hands: {},
@@ -46,9 +45,8 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "down_robin_0",
       },
       recents: ["up_robin_0", "down_robin_0"],
-    },
-    up_robin_0: {
-      protoId: "up_robin_0",
+    }),
+    up_robin_0: new Dancer("up_robin_0", {
       pos: new Vector(0.5, -0.5),
       facing: NORTH,
       hands: {},
@@ -57,9 +55,8 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "down_lark_0",
       },
       recents: ["up_lark_0", "down_lark_0"],
-    },
-    down_lark_0: {
-      protoId: "down_lark_0",
+    }),
+    down_lark_0: new Dancer("down_lark_0", {
       pos: new Vector(0.5, 0.5),
       facing: SOUTH,
       hands: {},
@@ -68,9 +65,8 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "up_robin_0",
       },
       recents: ["down_robin_0", "up_robin_0"],
-    },
-    down_robin_0: {
-      protoId: "down_robin_0",
+    }),
+    down_robin_0: new Dancer("down_robin_0", {
       pos: new Vector(-0.5, 0.5),
       facing: SOUTH,
       hands: {},
@@ -79,11 +75,10 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "up_lark_0",
       },
       recents: ["down_lark_0", "up_lark_0"],
-    },
+    }),
   },
   beckett: {
-    up_lark_0: {
-      protoId: "up_lark_0",
+    up_lark_0: new Dancer("up_lark_0", {
       pos: new Vector(-0.5, 0.5),
       facing: EAST,
       hands: {},
@@ -92,9 +87,8 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "down_robin_0",
       },
       recents: ["up_robin_0", "down_robin_0"],
-    },
-    up_robin_0: {
-      protoId: "up_robin_0",
+    }),
+    up_robin_0: new Dancer("up_robin_0", {
       pos: new Vector(-0.5, -0.5),
       facing: EAST,
       hands: {},
@@ -103,9 +97,8 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "down_lark_0",
       },
       recents: ["up_lark_0", "down_lark_0"],
-    },
-    down_lark_0: {
-      protoId: "down_lark_0",
+    }),
+    down_lark_0: new Dancer("down_lark_0", {
       pos: new Vector(0.5, -0.5),
       facing: WEST,
       hands: {},
@@ -114,9 +107,8 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "up_robin_0",
       },
       recents: ["down_robin_0", "up_robin_0"],
-    },
-    down_robin_0: {
-      protoId: "down_robin_0",
+    }),
+    down_robin_0: new Dancer("down_robin_0", {
       pos: new Vector(0.5, 0.5),
       facing: WEST,
       hands: {},
@@ -125,7 +117,7 @@ export const initFormationStates: Record<InitFormation, WorldState> = {
         neighbor: "up_lark_0",
       },
       recents: ["down_lark_0", "up_lark_0"],
-    },
+    }),
   },
 };
 

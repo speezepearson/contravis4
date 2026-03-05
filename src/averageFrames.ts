@@ -1,11 +1,11 @@
 import { Vector } from "vecti";
 
 import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "./contraCore";
-import type { DancerState, WorldState } from "./worldState";
+import { Dancer, type WorldState } from "./worldState";
 
 export function averageFrames(frames: WorldState[]): WorldState {
   const n = frames.length;
-  const result = {} as Record<ProtoId, DancerState>;
+  const result = {} as Record<ProtoId, Dancer>;
 
   for (const id of ALL_PROTO_IDS) {
     let posX = 0;
@@ -23,18 +23,15 @@ export function averageFrames(frames: WorldState[]): WorldState {
 
     const avgFacing = new Vector(facingX, facingY);
     const facingLen = avgFacing.length();
+    const mid = frames[Math.floor(n / 2)][id];
 
-    result[id] = {
-      protoId: id,
+    result[id] = new Dancer(id, {
       pos: new Vector(posX / n, posY / n),
-      facing:
-        facingLen > 0
-          ? avgFacing.normalize()
-          : frames[Math.floor(n / 2)][id].facing,
-      hands: frames[Math.floor(n / 2)][id].hands,
-      labels: frames[Math.floor(n / 2)][id].labels,
-      recents: frames[Math.floor(n / 2)][id].recents,
-    };
+      facing: facingLen > 0 ? avgFacing.normalize() : mid.facing,
+      hands: mid.hands,
+      labels: mid.labels,
+      recents: mid.recents,
+    });
   }
 
   return result;
@@ -45,15 +42,18 @@ export function shiftFrameByProgression(
   frame: WorldState,
   n: number,
 ): WorldState {
-  const result = {} as Record<ProtoId, DancerState>;
+  const result = {} as Record<ProtoId, Dancer>;
   for (const id of ALL_PROTO_IDS) {
     const { dir } = parseProtoId(id);
     const dy = dir === "up" ? n : -n;
     const dancer = frame[id];
-    result[id] = {
-      ...dancer,
+    result[id] = new Dancer(id, {
       pos: new Vector(dancer.pos.x, dancer.pos.y + dy),
-    };
+      facing: dancer.facing,
+      hands: dancer.hands,
+      labels: dancer.labels,
+      recents: dancer.recents,
+    });
   }
   return result;
 }

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { type Hand } from "../contraCore";
 import { assertNever } from "../utils";
-import { connectHands, type DancerState, getDancerState } from "../worldState";
+import { connectHands, type Dancer, getDancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -15,10 +15,7 @@ export type TakeHand = z.infer<typeof TakeHandSchema>;
 
 /** Determine a dancer's inside hand (the hand closer to the target).
  *  Throws if the target is directly in front of or behind the dancer. */
-export function resolveInsideHand(
-  dancer: DancerState,
-  target: DancerState,
-): Hand {
+export function resolveInsideHand(dancer: Dancer, target: Dancer): Hand {
   const delta = target.pos.subtract(dancer.pos);
   const cross = dancer.facing.x * delta.y - dancer.facing.y * delta.x;
   if (Math.abs(cross) < 1e-9) {
@@ -46,7 +43,7 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
   return [
     makeImmediateSegment(init, (id, draft) => {
       const otherId = matches[id];
-      const other = getDancerState(otherId, draft);
+      const other = getDancer(otherId, draft);
       switch (instr.hand) {
         case "left":
           connectHands(draft, id, "left", otherId, "left");
