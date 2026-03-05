@@ -1,8 +1,9 @@
 import type { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type Beats, type DancerId } from "../contraCore";
+import { ALL_PROTO_IDS, type Beats } from "../contraCore";
 import { SOUTH } from "../geometry";
+import { indexOf, must } from "../utils";
 import { connectHands, getDancerState, type WorldState } from "../worldState";
 import { instructionBaseSchemaFields, resolveShortLines } from "./_base";
 import {
@@ -46,7 +47,7 @@ export function theHallSegments(
     // Connect inside hands between adjacent dancers in the line
     makeImmediateSegment(init, (id, draft) => {
       const line = shortLines[id];
-      const idx = line.indexOf(id as DancerId);
+      const idx = must(indexOf(line, id));
       if (idx < 0) throw new Error(`Proto ${id} not found in its short line`);
       if (idx < 3) {
         const adjId = line[idx + 1];

@@ -1,8 +1,9 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type DancerId, getRole } from "../contraCore";
+import { ALL_PROTO_IDS, getRole } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
+import { indexOf, must } from "../utils";
 import { connectHands, getDancerState } from "../worldState";
 import {
   findDancerInCalledDirection,
@@ -47,7 +48,7 @@ export const formShortWavesSegments: InstructionAnimator<
 
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const i = shortLines[id].indexOf(id as DancerId);
+      const i = must(indexOf(shortLines[id], id));
       draft[id].facing = init[id].facing.y > 0 ? NORTH : SOUTH;
       draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y).add(
         draft[id].facing.multiply(-0.1),

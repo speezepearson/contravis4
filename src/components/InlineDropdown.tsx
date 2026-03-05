@@ -11,6 +11,7 @@ import {
   type CalledIdentifier,
   CalledIdentifierSchema,
 } from "../instructions/_base";
+import { indexOf } from "../utils";
 import { useInstructionEdit } from "./InstructionEditContext";
 import type { SearchableDropdownHandle } from "./SearchableDropdown";
 import SearchableDropdown from "./SearchableDropdown";
@@ -40,8 +41,8 @@ export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
     const canCycle = options.length <= 3;
 
     function cycle() {
-      const idx = options.indexOf(value);
-      onChange(options[(idx + 1) % options.length]);
+      const idx = indexOf(options, value);
+      onChange(options[idx === undefined ? 0 : (idx + 1) % options.length]);
     }
 
     useImperativeHandle(ref, () => ({

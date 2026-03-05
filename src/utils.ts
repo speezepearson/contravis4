@@ -133,3 +133,13 @@ export function try_<T>(fn: () => T): T | Error {
     return new Error(String(e));
   }
 }
+
+// TODO: add a lint rule ensuring that nowhere else uses Array.indexOf
+export function indexOf<T extends string | number>(
+  arr: readonly T[],
+  x: T,
+): number | undefined {
+  const i = arr.indexOf(x);
+  if (i === -1) return undefined;
+  return i;
+}

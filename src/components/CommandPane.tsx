@@ -50,7 +50,7 @@ import {
   InstructionSchema,
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
-import { assertNever } from "../utils";
+import { assertNever, indexOf } from "../utils";
 import type { DancerState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
@@ -783,9 +783,9 @@ export default memo(function CommandPane({
       setSelectedIds((prev) => {
         const next = new Set(prev);
         if (event.shiftKey && lastClickedIdRef.current) {
-          const lastIdx = allFlatIds.indexOf(lastClickedIdRef.current);
-          const curIdx = allFlatIds.indexOf(id);
-          if (lastIdx !== -1 && curIdx !== -1) {
+          const lastIdx = indexOf(allFlatIds, lastClickedIdRef.current);
+          const curIdx = indexOf(allFlatIds, id);
+          if (lastIdx !== undefined && curIdx !== undefined) {
             const lo = Math.min(lastIdx, curIdx);
             const hi = Math.max(lastIdx, curIdx);
             for (let i = lo; i <= hi; i++) {

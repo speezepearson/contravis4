@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, type DancerId } from "../contraCore";
 import { PI, revolve } from "../geometry";
+import { indexOf, must } from "../utils";
 import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveShortLines } from "./_base";
 import { type InstructionAnimator } from "./_segment";
@@ -37,7 +38,7 @@ export const bendTheLineSegments: InstructionAnimator<
       dur: instr.beats,
       position: (id, frac, segInit) => {
         const line = shortLines[id];
-        const idx = line.indexOf(id as DancerId);
+        const idx = must(indexOf(line, id as DancerId));
         if (idx === 0) {
           // Left end: arc CW around neighbor
           const center = getDancerState(line[1], segInit).pos;
@@ -57,14 +58,14 @@ export const bendTheLineSegments: InstructionAnimator<
       },
       facing: (id, frac, segInit) => {
         const line = shortLines[id];
-        const idx = line.indexOf(id as DancerId);
+        const idx = must(indexOf(line, id));
         // Left pair rotates CW, right pair rotates CCW
         const radians = idx <= 1 ? -PI / 2 : PI / 2;
         return segInit[id].facing.rotateByRadians(radians * frac);
       },
       interactedWith: (id) => {
         const line = shortLines[id];
-        const idx = line.indexOf(id as DancerId);
+        const idx = must(indexOf(line, id));
         // Left pair (0,1) and right pair (2,3) bend together
         return [line[idx ^ 1]];
       },
