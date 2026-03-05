@@ -96,7 +96,7 @@ const DerivedLabelSchema = z.enum([
 export const SymmetricLabelSchema = z.enum([
   ...BasicLabelSchema.options,
   ...DerivedLabelSchema.options,
-])
+]);
 export type SymmetricLabel = z.infer<typeof SymmetricLabelSchema>;
 
 export const CalledLabelSchema = z.enum([

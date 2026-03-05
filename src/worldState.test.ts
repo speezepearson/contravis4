@@ -5,13 +5,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALL_PROTO_IDS,
+  type DancerId,
   getOffset,
+  parseDancerId,
   projectDancerIdToProtoId,
   protoIdToDancerId,
+  SettableLabelSchema,
+  ShadowLabelSchema,
 } from "./contraCore";
 import { initFormationStates } from "./instructions/index";
-import { fcAnyWorldState, fcDancerId, fcHand, fcProtoId } from "./testHelpers";
-import { connectHands, findNearbyDancers } from "./worldState";
+import {
+  fcAnyWorldState,
+  fcDancerId,
+  fcHand,
+  fcNonzeroOffset,
+  fcProtoId,
+  fcSettableLabel,
+} from "./testHelpers";
+import { connectHands, findNearbyDancers, setLabel } from "./worldState";
 
 describe("connectHands", () => {
   it("creates bidirectional hand connections with correct offset adjustment", () => {
@@ -98,6 +109,118 @@ describe("findNearbyDancers", () => {
           ).toBeLessThanOrEqual(1);
         }
       }),
+    );
+  });
+});
+
+describe("setLabel", () => {
+  it("throws when dancerId's proto is protoId", () => {
+    const state = initFormationStates.improper;
+    expect(() => setLabel(state, "up_lark_0", "neighbor", "up_lark_5")).toThrow(
+      "same proto",
+    );
+  });
+
+  it("throws when dancerId has the same role as protoId", () => {
+    const state = initFormationStates.improper;
+    expect(() =>
+      setLabel(state, "up_lark_0", "neighbor", "down_lark_5"),
+    ).toThrow("same role");
+  });
+
+  it("throws when setting other-dir label to same-dir dancer", () => {
+    const state = initFormationStates.improper;
+    expect(() =>
+      setLabel(state, "up_lark_0", "neighbor", "up_robin_5"),
+    ).toThrow();
+  });
+
+  it("throws when setting same-dir label to other-dir dancer", () => {
+    const state = initFormationStates.improper;
+    expect(() =>
+      setLabel(state, "up_lark_0", "shadow", "down_robin_5"),
+    ).toThrow();
+  });
+
+  it("throws when setting shadow to partner", () => {
+    const state = initFormationStates.improper;
+    expect(() => setLabel(state, "up_lark_0", "shadow", "up_robin_0")).toThrow(
+      "partner",
+    );
+  });
+
+  // These fc tests are red until setLabel is implemented (currently throws "not implemented")
+  it.skip("updates all neighbor labels consistently", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -10, max: 10 }), (n) => {
+        const state = produce(initFormationStates.improper, (draft) => {
+          setLabel(
+            draft,
+            "up_lark_0",
+            "neighbor",
+            `down_robin_${n}` as DancerId,
+          );
+        });
+        expect(state.up_lark_0.labels.neighbor).toBe(`down_robin_${n}`);
+        expect(state.down_robin_0.labels.neighbor).toBe(`up_lark_${-n}`);
+        expect(state.down_lark_0.labels.neighbor).toBe(`up_robin_${-n}`);
+        expect(state.up_robin_0.labels.neighbor).toBe(`down_lark_${n}`);
+      }),
+    );
+  });
+
+  it.skip("updates all shadow labels consistently", () => {
+    fc.assert(
+      fc.property(fcNonzeroOffset, (n) => {
+        const state = produce(initFormationStates.improper, (draft) => {
+          setLabel(draft, "up_lark_0", "shadow", `up_robin_${n}` as DancerId);
+        });
+        expect(state.up_lark_0.labels.shadow).toBe(`up_robin_${n}`);
+        expect(state.up_robin_0.labels.shadow).toBe(`up_lark_${-n}`);
+        expect(state.down_lark_0.labels.shadow).toBe(`down_robin_${-n}`);
+        expect(state.down_robin_0.labels.shadow).toBe(`down_lark_${n}`);
+      }),
+    );
+  });
+
+  it.skip("setLabel is a noop when re-applied with the value it already set", () => {
+    fc.assert(
+      fc.property(
+        fcProtoId,
+        fcSettableLabel,
+        fcDancerId,
+        fcProtoId,
+        (p1, label, target, p2) => {
+          // Filter to inputs that pass validation
+          const { dir: p1Dir, role: p1Role } = parseDancerId(p1);
+          const { dir: tDir, role: tRole } = parseDancerId(target);
+          fc.pre(projectDancerIdToProtoId(target) !== p1);
+          fc.pre(tRole !== p1Role);
+          const isOtherDir = SettableLabelSchema.options.indexOf(label) === 0; // "neighbor"
+          fc.pre(isOtherDir ? p1Dir !== tDir : p1Dir === tDir);
+          fc.pre(
+            !ShadowLabelSchema.safeParse(label).success ||
+              initFormationStates.improper[p1].labels.partner !== target,
+          );
+
+          const state = produce(initFormationStates.improper, (draft) => {
+            setLabel(draft, p1, label, target);
+            const p2Label =
+              draft[p2].labels[
+                label as keyof (typeof draft)[typeof p2]["labels"]
+              ];
+            setLabel(draft, p2, label, p2Label as DancerId);
+          });
+
+          const state2 = produce(initFormationStates.improper, (draft) => {
+            setLabel(draft, p1, label, target);
+          });
+
+          for (const id of ALL_PROTO_IDS) {
+            expect(state[id].labels).toEqual(state2[id].labels);
+          }
+        },
+      ),
     );
   });
 });

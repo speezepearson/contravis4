@@ -15,6 +15,8 @@ import {
   type ProtoId,
   type Role,
   RoleSchema,
+  type SettableLabel,
+  SettableLabelSchema,
   ShadowLabelSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
@@ -32,6 +34,10 @@ export const fcRole: fc.Arbitrary<Role> = fc.constantFrom(
 );
 export const fcProgressionDir: fc.Arbitrary<ProgressionDir> = fc.constantFrom(
   ...ProgressionDirSchema.options,
+);
+
+export const fcSettableLabel: fc.Arbitrary<SettableLabel> = fc.constantFrom(
+  ...SettableLabelSchema.options,
 );
 
 export const fcDancerId: fc.Arbitrary<DancerId> = fc
@@ -53,7 +59,7 @@ const fcPos = fc
   })
   .map(({ x, y }) => new Vector(x, y));
 
-const fcNonzeroOffset = fc
+export const fcNonzeroOffset = fc
   .integer({ min: -10, max: 10 })
   .filter((o) => o !== 0);
 
@@ -77,7 +83,10 @@ function fcShadowLabels(
   [Partial<Record<BasicLabel, DancerId>>, Partial<Record<BasicLabel, DancerId>>]
 > {
   return fc
-    .array(fcNonzeroOffset, { minLength: 0, maxLength: ShadowLabelSchema.options.length })
+    .array(fcNonzeroOffset, {
+      minLength: 0,
+      maxLength: ShadowLabelSchema.options.length,
+    })
     .map((offsets) => {
       const larkShadows: Partial<Record<BasicLabel, DancerId>> = {};
       const robinShadows: Partial<Record<BasicLabel, DancerId>> = {};

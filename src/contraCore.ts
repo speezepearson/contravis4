@@ -131,20 +131,6 @@ export function buildHandsRecord<V>(f: (h: Hand) => V): Record<Hand, V> {
     right: f("right"),
   };
 }
-export function buildLabelsRecord<V>(
-  f: (label: BasicLabel) => V,
-): Record<BasicLabel, V> {
-  return {
-    partner: f("partner"),
-    neighbor: f("neighbor"),
-    shadow: f("shadow"),
-    "shadow 2": f("shadow 2"),
-    "shadow 3": f("shadow 3"),
-    "shadow 4": f("shadow 4"),
-    "shadow 5": f("shadow 5"),
-    "shadow 6": f("shadow 6"),
-  };
-}
 
 export const BasicOtherDirLabelSchema = z.enum(["neighbor"]);
 export const ShadowLabelSchema = z.enum([
@@ -155,9 +141,19 @@ export const ShadowLabelSchema = z.enum([
   "shadow 5",
   "shadow 6",
 ]);
-export const BasicSameDirLabelSchema = z.enum(["partner", ...ShadowLabelSchema.options]);
+export type ShadowLabel = z.infer<typeof ShadowLabelSchema>;
+export const BasicSameDirLabelSchema = z.enum([
+  "partner",
+  ...ShadowLabelSchema.options,
+]);
 export const BasicLabelSchema = z.enum([
   ...BasicOtherDirLabelSchema.options,
   ...BasicSameDirLabelSchema.options,
 ]);
 export type BasicLabel = z.infer<typeof BasicLabelSchema>;
+
+export const SettableLabelSchema = z.enum([
+  "neighbor",
+  ...ShadowLabelSchema.options,
+]);
+export type SettableLabel = z.infer<typeof SettableLabelSchema>;

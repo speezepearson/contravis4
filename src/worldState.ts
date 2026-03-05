@@ -7,8 +7,9 @@ import {
   ALL_PROTO_IDS,
   type BasicLabel,
   BasicLabelSchema,
+  BasicOtherDirLabelSchema,
+  BasicSameDirLabelSchema,
   buildHandsRecord,
-  buildLabelsRecord,
   type DancerId,
   DancerIdSchema,
   type DancerOffset,
@@ -22,6 +23,9 @@ import {
   type ProtoId,
   protoIdToDancerId,
   type Role,
+  type SettableLabel,
+  type ShadowLabel,
+  ShadowLabelSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
 import { getSide, isEqual } from "./utils";
@@ -43,9 +47,10 @@ export class Dancer {
   /** Who's being held in each hand. */
   hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
   /** Labels the dancer has mentally assigned to other dancers, e.g. "partner", "neighbor", "shadow". */
-  labels: Partial<Record<BasicLabel, DancerId | undefined>> & {
+  labels: {
+    partner: DancerId;
     neighbor: DancerId;
-  };
+  } & Partial<Record<ShadowLabel, DancerId>>;
   /** Dancers this dancer has interacted with recently, most recent first. */
   recents: DancerId[];
 
@@ -55,9 +60,10 @@ export class Dancer {
       pos: Vector;
       facing: Vector;
       hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
-      labels: Partial<Record<BasicLabel, DancerId | undefined>> & {
+      labels: {
+        partner: DancerId;
         neighbor: DancerId;
-      };
+      } & Partial<Record<ShadowLabel, DancerId>>;
       recents: DancerId[];
     },
   ) {
@@ -103,12 +109,16 @@ export class Dancer {
         };
       }),
       labels: {
-        ...buildLabelsRecord((label) => {
-          const theirId = this.labels[label];
-          if (!theirId) return undefined;
-          return addOffsetToId(theirId, deltaOffset);
-        }),
+        partner: addOffsetToId(this.labels.partner, deltaOffset),
         neighbor: addOffsetToId(this.labels.neighbor, deltaOffset),
+        ...Object.fromEntries(
+          ShadowLabelSchema.options.map((label) => [
+            label,
+            !this.labels[label]
+              ? undefined
+              : addOffsetToId(this.labels[label], deltaOffset),
+          ]),
+        ),
       },
       recents: this.recents.map((rid) => addOffsetToId(rid, deltaOffset)),
     });
@@ -275,6 +285,58 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
     }
   }
   return state;
+}
+
+/** Sets a label for all dancers, updating each proto's value for `label` consistently. */
+export function setLabel(
+  state: WorldState,
+  protoId: ProtoId,
+  label: SettableLabel,
+  dancerId: DancerId,
+): void {
+  const { dir: protoDir, role: protoRole } = parseDancerId(protoId);
+  const { dir: dancerDir, role: dancerRole } = parseDancerId(dancerId);
+
+  if (projectDancerIdToProtoId(dancerId) === protoId) {
+    throw new Error(
+      `Cannot set ${label} of ${protoId} to ${dancerId} (same proto)`,
+    );
+  }
+
+  if (dancerRole === protoRole) {
+    throw new Error(
+      `Cannot set ${label} of ${protoId} to ${dancerId} (same role)`,
+    );
+  }
+
+  if (
+    BasicOtherDirLabelSchema.safeParse(label).success &&
+    protoDir === dancerDir
+  ) {
+    throw new Error(
+      `Cannot set other-dir label "${label}" of ${protoId} to same-dir dancer ${dancerId}`,
+    );
+  }
+
+  if (
+    BasicSameDirLabelSchema.safeParse(label).success &&
+    protoDir !== dancerDir
+  ) {
+    throw new Error(
+      `Cannot set same-dir label "${label}" of ${protoId} to other-dir dancer ${dancerId}`,
+    );
+  }
+
+  if (
+    ShadowLabelSchema.safeParse(label).success &&
+    state[protoId].labels.partner === dancerId
+  ) {
+    throw new Error(
+      `Cannot set shadow "${label}" of ${protoId} to ${dancerId} (already partner)`,
+    );
+  }
+
+  throw new Error("not implemented");
 }
 
 const NEARBY_HALF_WINDOW = 2 as DancerOffset;
