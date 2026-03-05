@@ -199,6 +199,8 @@ export default function App() {
   const highlightedRelRef = useRef<CalledIdentifier | null>(null);
   const highlightRelRafRef = useRef(0);
 
+  const lastFrameWarnRef = useRef(0);
+
   const draw = useCallback(() => {
     const renderer = rendererRef.current;
     if (!renderer || !animation) return;
@@ -207,71 +209,100 @@ export default function App() {
     if (t > animation.dur) t = animation.dur;
     if (t < 0) t = 0;
 
-    let frame: WorldState;
-    if (smoothness > 0) {
-      const N = 10;
-      const dur = animation.dur;
-      const frames: WorldState[] = [];
-      for (let i = 0; i < N; i++) {
-        const sampleT = t + smoothness * (i / (N - 1) - 0.5);
-        if (
-          inferredProgression !== null &&
-          dur > 0 &&
-          (sampleT < 0 || sampleT > dur)
-        ) {
-          // Wrap around with progression offset
-          const wraps =
-            sampleT < 0
-              ? Math.ceil(-sampleT / dur)
-              : -Math.floor(sampleT / dur);
-          const wrappedT = sampleT + wraps * dur;
-          const rawFrame = animation.getFrame(
-            Math.max(0, Math.min(dur, wrappedT)),
-          );
-          frames.push(
-            shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
-          );
-        } else {
-          const clampedT = Math.max(0, Math.min(dur, sampleT));
-          frames.push(animation.getFrame(clampedT));
+    let frame: WorldState | null = null;
+    let frameError: string | null = null;
+
+    try {
+      if (smoothness > 0) {
+        const N = 10;
+        const dur = animation.dur;
+        const frames: WorldState[] = [];
+        let lastSampleError: string | null = null;
+        for (let i = 0; i < N; i++) {
+          const sampleT = t + smoothness * (i / (N - 1) - 0.5);
+          try {
+            if (
+              inferredProgression !== null &&
+              dur > 0 &&
+              (sampleT < 0 || sampleT > dur)
+            ) {
+              // Wrap around with progression offset
+              const wraps =
+                sampleT < 0
+                  ? Math.ceil(-sampleT / dur)
+                  : -Math.floor(sampleT / dur);
+              const wrappedT = sampleT + wraps * dur;
+              const rawFrame = animation.getFrame(
+                Math.max(0, Math.min(dur, wrappedT)),
+              );
+              frames.push(
+                shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
+              );
+            } else {
+              const clampedT = Math.max(0, Math.min(dur, sampleT));
+              frames.push(animation.getFrame(clampedT));
+            }
+          } catch (e) {
+            lastSampleError = e instanceof Error ? e.message : String(e);
+          }
         }
+        if (frames.length > 0) {
+          frame = averageFrames(frames);
+        } else {
+          frameError =
+            lastSampleError ?? "all frame samples failed sanity check";
+        }
+      } else {
+        frame = animation.getFrame(t);
       }
-      frame = averageFrames(frames);
-    } else {
-      frame = animation.getFrame(t);
-    }
-    renderer.drawFrame(t, frame);
-
-    // Draw relationship highlight lines
-    const highlightedRel = highlightedRelRef.current;
-    if (highlightedRel) {
-      const lines: Array<{
-        fromX: number;
-        fromY: number;
-        toX: number;
-        toY: number;
-      }> = [];
-      for (const id of ALL_PROTO_IDS) {
-        const targetId = try_(() =>
-          resolveCalledIdentifier(id, highlightedRel, frame),
-        );
-        if (targetId instanceof Error || !targetId) continue;
-        const from = frame[id];
-        const to = getDancerState(targetId, frame);
-        lines.push({
-          fromX: from.pos.x,
-          fromY: from.pos.y,
-          toX: to.pos.x,
-          toY: to.pos.y,
-        });
-      }
-      renderer.drawRelationshipLines(lines);
+    } catch (e) {
+      frameError = e instanceof Error ? e.message : String(e);
     }
 
-    // Draw preview keyframes overlay
-    if (previewFrames.length > 0) {
-      renderer.drawPreviewKeyframes(previewFrames);
+    if (frame) {
+      renderer.drawFrame(t, frame);
+
+      // Draw relationship highlight lines
+      const highlightedRel = highlightedRelRef.current;
+      if (highlightedRel) {
+        const lines: Array<{
+          fromX: number;
+          fromY: number;
+          toX: number;
+          toY: number;
+        }> = [];
+        for (const id of ALL_PROTO_IDS) {
+          const targetId = try_(() =>
+            resolveCalledIdentifier(id, highlightedRel, frame),
+          );
+          if (targetId instanceof Error || !targetId) continue;
+          const from = frame[id];
+          const to = getDancerState(targetId, frame);
+          lines.push({
+            fromX: from.pos.x,
+            fromY: from.pos.y,
+            toX: to.pos.x,
+            toY: to.pos.y,
+          });
+        }
+        renderer.drawRelationshipLines(lines);
+      }
+
+      // Draw preview keyframes overlay
+      if (previewFrames.length > 0) {
+        renderer.drawPreviewKeyframes(previewFrames);
+      }
     }
+
+    if (frameError) {
+      renderer.drawErrorBadge(frameError);
+      const now = Date.now();
+      if (now - lastFrameWarnRef.current > 1000) {
+        console.warn("Frame sanity check failed:", frameError);
+        lastFrameWarnRef.current = now;
+      }
+    }
+
     setBeat(beatRef.current);
   }, [animation, inferredProgression, previewFrames, smoothness]);
 

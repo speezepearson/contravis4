@@ -59,10 +59,14 @@ function sampleFrame(
   t: number,
   smoothness: number,
   inferredProgression: number | null,
-): WorldState {
+): WorldState | null {
   if (smoothness <= 0) {
     const clamped = Math.max(0, Math.min(animation.dur, t));
-    return animation.getFrame(clamped);
+    try {
+      return animation.getFrame(clamped);
+    } catch {
+      return null;
+    }
   }
 
   const N = 10;
@@ -70,24 +74,31 @@ function sampleFrame(
   const frames: WorldState[] = [];
   for (let i = 0; i < N; i++) {
     const sampleT = t + smoothness * (i / (N - 1) - 0.5);
-    if (
-      inferredProgression !== null &&
-      dur > 0 &&
-      (sampleT < 0 || sampleT > dur)
-    ) {
-      const wraps =
-        sampleT < 0 ? Math.ceil(-sampleT / dur) : -Math.floor(sampleT / dur);
-      const wrappedT = sampleT + wraps * dur;
-      const rawFrame = animation.getFrame(Math.max(0, Math.min(dur, wrappedT)));
-      frames.push(
-        shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
-      );
-    } else {
-      const clampedT = Math.max(0, Math.min(dur, sampleT));
-      frames.push(animation.getFrame(clampedT));
+    try {
+      if (
+        inferredProgression !== null &&
+        dur > 0 &&
+        (sampleT < 0 || sampleT > dur)
+      ) {
+        const wraps =
+          sampleT < 0 ? Math.ceil(-sampleT / dur) : -Math.floor(sampleT / dur);
+        const wrappedT = sampleT + wraps * dur;
+        const rawFrame = animation.getFrame(
+          Math.max(0, Math.min(dur, wrappedT)),
+        );
+        frames.push(
+          shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
+        );
+      } else {
+        const clampedT = Math.max(0, Math.min(dur, sampleT));
+        frames.push(animation.getFrame(clampedT));
+      }
+    } catch {
+      // Skip this sample — other samples may still be valid
     }
   }
 
+  if (frames.length === 0) return null;
   return averageFrames(frames);
 }
 
@@ -125,6 +136,7 @@ export function exportGif(
   for (let beat = 0; beat <= danceLength + beatStep / 2; beat += beatStep) {
     const t = Math.min(beat, danceLength);
     const frame = sampleFrame(animation, t, smoothness, inferredProgression);
+    if (!frame) continue;
 
     renderer.drawFrame(t, frame);
 

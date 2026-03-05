@@ -248,6 +248,37 @@ export class Renderer {
     ctx.globalAlpha = 1.0;
   }
 
+  drawErrorBadge(message: string) {
+    const ctx = this.ctx;
+    const padding = 8;
+    const text = `\u26A0 frame error`;
+    ctx.font = "bold 11px monospace";
+    const metrics = ctx.measureText(text);
+    const boxW = metrics.width + padding * 2;
+    const boxH = 16 + padding * 2;
+    const x = this.width - boxW - 10;
+    const y = 10;
+
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#331111";
+    ctx.fillRect(x, y, boxW, boxH);
+    ctx.strokeStyle = "#993333";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, boxW, boxH);
+
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = "#ff6666";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + padding, y + boxH / 2);
+
+    // Second line: truncated detail
+    const detail = message.length > 50 ? message.slice(0, 47) + "..." : message;
+    ctx.font = "10px monospace";
+    ctx.fillStyle = "#cc8888";
+    ctx.fillText(detail, x + padding, y + boxH / 2 + 14);
+  }
+
   drawPreviewKeyframes(frames: WorldState[]) {
     if (frames.length === 0) return;
     const ctx = this.ctx;
