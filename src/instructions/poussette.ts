@@ -44,13 +44,12 @@ export type PoussetteInstruction = z.infer<typeof PoussetteInstructionSchema>;
  * The backer traces an elliptical arc; the non-backer maintains displacement.
  * Arc dests are resolved by temporarily facing dancers across.
  */
-export function makePoussetteArcPosition(
+export function makeHalfPoussetteArcPosition(
   backerRole: Role,
   backerDir: Hand,
   matches: Record<ProtoId, DancerId>,
   state: WorldState,
   who: ReadonlySet<ProtoId>,
-  phi: number = PI,
 ): PositionFn {
   // Face across internally for arc dest resolution (on_left/on_right depend on facing)
   const facedAcross = produce(state, (draft) => {
@@ -86,7 +85,9 @@ export function makePoussetteArcPosition(
 
   const getBackerPos = (id: ProtoId, frac: number) => {
     const { start, end } = arcDests.get(id)!;
-    return ellipsePosition(start, end, 0.5, phi * frac);
+    // Sign so backer always arcs outward (away from center line x=0)
+    const semiMinorCw = -0.75 * Math.sign(start.x) * Math.sign(end.y - start.y);
+    return ellipsePosition(start, end, semiMinorCw, PI * frac);
   };
 
   return (id, frac, segInit) => {
@@ -127,7 +128,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 
   const firstHalf = {
     dur: halfBeats,
-    position: makePoussetteArcPosition(
+    position: makeHalfPoussetteArcPosition(
       instr.backer,
       instr.backerDir,
       matches,
@@ -148,7 +149,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
   // bringing the couple back to where it started.
   const secondHalf = {
     dur: halfBeats,
-    position: makePoussetteArcPosition(
+    position: makeHalfPoussetteArcPosition(
       otherRole(instr.backer),
       instr.backerDir,
       matches,

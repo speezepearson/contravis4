@@ -1,10 +1,12 @@
+import fc from "fast-check";
 import { enableMapSet } from "immer";
 import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
-import { animateSegments } from "./_segment";
+import type { Hand, Role } from "../contraCore";
+import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
+import { advanceState, animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type ZigZagInstruction, zigZagSegments } from "./zigZag";
 
@@ -32,10 +34,13 @@ describe("zigZag", () => {
     const animation = animateSegments(init, allProtos, segments);
     const final = animation.getFrame(animation.dur);
 
-    it("returns dancers to starting positions after 2 zigs", () => {
+    it("moves dancers 2 units along the line after 2 zigs", () => {
       for (const id of ALL_PROTO_IDS) {
         expect(final[id].pos.x, `${id} x`).toBeCloseTo(init[id].pos.x);
-        expect(final[id].pos.y, `${id} y`).toBeCloseTo(init[id].pos.y);
+        expect(
+          Math.abs(final[id].pos.y - init[id].pos.y),
+          `${id} y`,
+        ).toBeCloseTo(2);
       }
     });
 
@@ -125,11 +130,107 @@ describe("zigZag", () => {
     const animation = animateSegments(init, allProtos, segments);
     const final = animation.getFrame(animation.dur);
 
-    it("returns dancers to starting positions after 4 zigs", () => {
+    it("moves dancers 4 units along the line after 4 zigs", () => {
+      for (const id of ALL_PROTO_IDS) {
+        expect(final[id].pos.x, `${id} x`).toBeCloseTo(init[id].pos.x);
+        expect(
+          Math.abs(final[id].pos.y - init[id].pos.y),
+          `${id} y`,
+        ).toBeCloseTo(4);
+      }
+    });
+  });
+
+  describe("nZigs=2 crosses the center line", () => {
+    const init = initFormationStates.improper;
+    const instr = makeInstr();
+    const segments = zigZagSegments(instr, init, allProtos);
+    const animation = animateSegments(init, allProtos, segments);
+
+    it("every dancer is at x<0 and x>0 at some point", () => {
+      for (const id of ALL_PROTO_IDS) {
+        let seenNegX = false;
+        let seenPosX = false;
+        for (let t = 0; t <= instr.beats; t += 0.25) {
+          const frame = animation.getFrame(t);
+          if (frame[id].pos.x < -0.01) seenNegX = true;
+          if (frame[id].pos.x > 0.01) seenPosX = true;
+        }
+        expect(seenNegX, `${id} should be at x<0 at some point`).toBe(true);
+        expect(seenPosX, `${id} should be at x>0 at some point`).toBe(true);
+      }
+    });
+  });
+
+  describe("zig-and-zag then opposite-hand zig-and-zag returns to start", () => {
+    const init = initFormationStates.improper;
+    const instr1 = makeInstr({ leaderDir: "left" });
+    const segs1 = zigZagSegments(instr1, init, allProtos);
+    const afterFirst = advanceState(segs1, init, allProtos);
+
+    const instr2 = makeInstr({ leaderDir: "right" });
+    const segs2 = zigZagSegments(instr2, afterFirst, allProtos);
+    const animation2 = animateSegments(afterFirst, allProtos, segs2);
+    const final = animation2.getFrame(animation2.dur);
+
+    it("every dancer ends where they started", () => {
       for (const id of ALL_PROTO_IDS) {
         expect(final[id].pos.x, `${id} x`).toBeCloseTo(init[id].pos.x);
         expect(final[id].pos.y, `${id} y`).toBeCloseTo(init[id].pos.y);
       }
+    });
+  });
+
+  describe.each([
+    { nZigs: 1 as const, beats: 8 },
+    { nZigs: 2 as const, beats: 8 },
+    { nZigs: 3 as const, beats: 12 },
+    { nZigs: 4 as const, beats: 16 },
+  ])("nZigs=$nZigs y-displacement", ({ nZigs, beats }) => {
+    const init = initFormationStates.improper;
+    const instr = makeInstr({ nZigs, beats });
+    const segments = zigZagSegments(instr, init, allProtos);
+    const animation = animateSegments(init, allProtos, segments);
+    const final = animation.getFrame(animation.dur);
+
+    it(`every dancer has abs(final.y - init.y) = ${nZigs}`, () => {
+      for (const id of ALL_PROTO_IDS) {
+        expect(
+          Math.abs(final[id].pos.y - init[id].pos.y),
+          `${id} y-displacement`,
+        ).toBeCloseTo(nZigs);
+      }
+    });
+  });
+
+  describe("leader moves outward, follower moves inward (fast-check)", () => {
+    const fcRole = fc.constantFrom<Role>("lark", "robin");
+    const fcHand = fc.constantFrom<Hand>("left", "right");
+
+    it("at a quarter beat, leader abs(x) > init abs(x) and follower abs(x) < init abs(x)", () => {
+      fc.assert(
+        fc.property(fcRole, fcHand, (leader, leaderDir) => {
+          const init = initFormationStates.improper;
+          const instr = makeInstr({ leader, leaderDir, nZigs: 1 });
+          const segments = zigZagSegments(instr, init, allProtos);
+          const animation = animateSegments(init, allProtos, segments);
+          const frame = animation.getFrame(0.25);
+          for (const id of ALL_PROTO_IDS) {
+            const initAbsX = Math.abs(init[id].pos.x);
+            const frameAbsX = Math.abs(frame[id].pos.x);
+            if (getRole(id) === leader) {
+              if (frameAbsX <= initAbsX) {
+                return false;
+              }
+            } else {
+              if (frameAbsX >= initAbsX) {
+                return false;
+              }
+            }
+          }
+          return true;
+        }),
+      );
     });
   });
 

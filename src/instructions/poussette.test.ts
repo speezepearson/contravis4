@@ -1,9 +1,11 @@
+import fc from "fast-check";
 import { enableMapSet } from "immer";
 import { describe, expect, it } from "vitest";
 
 enableMapSet();
 
-import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
+import type { Hand, Role } from "../contraCore";
+import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
@@ -101,10 +103,10 @@ describe("poussette", () => {
       expect(final.down_robin_0.pos.x).toBeCloseTo(init.down_robin_0.pos.x);
     });
 
-    it("at midpoint, backer swings toward center of set", () => {
+    it("at midpoint, backer swings away from center of set", () => {
       const mid = animation.getFrame(instr.beats / 2);
-      // up_lark should swing toward x=0 at midpoint
-      expect(Math.abs(mid.up_lark_0.pos.x)).toBeLessThan(
+      // up_lark should swing away from x=0 (outward) at midpoint
+      expect(Math.abs(mid.up_lark_0.pos.x)).toBeGreaterThan(
         Math.abs(init.up_lark_0.pos.x),
       );
     });
@@ -137,6 +139,37 @@ describe("poussette", () => {
         expect(seenNegX, `${id} should be at x<0 at some point`).toBe(true);
         expect(seenPosX, `${id} should be at x>0 at some point`).toBe(true);
       }
+    });
+  });
+
+  describe("backer moves outward, non-backer moves inward (fast-check)", () => {
+    const fcRole = fc.constantFrom<Role>("lark", "robin");
+    const fcHand = fc.constantFrom<Hand>("left", "right");
+
+    it("at a quarter beat, backer abs(x) > init abs(x) and non-backer abs(x) < init abs(x)", () => {
+      fc.assert(
+        fc.property(fcRole, fcHand, (backer, backerDir) => {
+          const init = initFormationStates.improper;
+          const instr = makeInstr({ backer, backerDir });
+          const segments = poussetteSegments(instr, init, allProtos);
+          const animation = animateSegments(init, allProtos, segments);
+          const frame = animation.getFrame(0.25);
+          for (const id of ALL_PROTO_IDS) {
+            const initAbsX = Math.abs(init[id].pos.x);
+            const frameAbsX = Math.abs(frame[id].pos.x);
+            if (getRole(id) === backer) {
+              if (frameAbsX <= initAbsX) {
+                return false;
+              }
+            } else {
+              if (frameAbsX >= initAbsX) {
+                return false;
+              }
+            }
+          }
+          return true;
+        }),
+      );
     });
   });
 
