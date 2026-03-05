@@ -76,6 +76,7 @@ export function generateDanceAnimation(
           instr.id,
           e instanceof Error ? e.message : String(e),
           currentState,
+          e instanceof Error ? e : undefined,
         ),
       );
       // Hold at currentState for the failed instruction's duration
