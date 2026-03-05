@@ -45,16 +45,74 @@ export const fcDancerId: fc.Arbitrary<DancerId> = fc
 // export const fcExampleDanceInterFigureWorldState: fc.Arbitrary<WorldState> = ...pick a random non-dummy dance from `example-dances/` and run some number of its instructions...
 // export const fcExampleDanceMidFigureWorldState: fc.Arbitrary<WorldState> = ...pick a random dance from `example-dances/` and getFrame(some random time)...
 
+const fcPos = fc
+  .record({
+    x: fc.double({ noNaN: true, min: -4, max: 4 }),
+    y: fc.double({ noNaN: true, min: -30, max: 30 }),
+  })
+  .map(({ x, y }) => new Vector(x, y));
+
+const fcNonzeroOffset = fc
+  .integer({ min: -10, max: 10 })
+  .filter((o) => o !== 0);
+
+const SHADOW_LABELS: BasicLabel[] = [
+  "shadow",
+  "shadow 2",
+  "shadow 3",
+  "shadow 4",
+  "shadow 5",
+  "shadow 6",
+];
+
+/** Random symmetric neighbor labels for a (lark, robin) pair in opposite dirs. */
+function fcNeighborPair(
+  larkDir: ProgressionDir,
+  robinDir: ProgressionDir,
+): fc.Arbitrary<[DancerId, DancerId]> {
+  return fc
+    .integer({ min: -10, max: 10 })
+    .map((offset) => [
+      makeDancerId({ dir: robinDir, role: "robin", offset }),
+      makeDancerId({ dir: larkDir, role: "lark", offset: -offset }),
+    ]);
+}
+
+/** Random symmetric shadow labels for a (lark, robin) pair in the same dir. */
+function fcShadowLabels(
+  dir: ProgressionDir,
+): fc.Arbitrary<
+  [Partial<Record<BasicLabel, DancerId>>, Partial<Record<BasicLabel, DancerId>>]
+> {
+  return fc
+    .array(fcNonzeroOffset, { minLength: 0, maxLength: 6 })
+    .map((offsets) => {
+      const larkShadows: Partial<Record<BasicLabel, DancerId>> = {};
+      const robinShadows: Partial<Record<BasicLabel, DancerId>> = {};
+      for (let i = 0; i < offsets.length; i++) {
+        larkShadows[SHADOW_LABELS[i]] = makeDancerId({
+          dir,
+          role: "robin",
+          offset: offsets[i],
+        });
+        robinShadows[SHADOW_LABELS[i]] = makeDancerId({
+          dir,
+          role: "lark",
+          offset: -offsets[i],
+        });
+      }
+      return [larkShadows, robinShadows];
+    });
+}
+
 export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
   .record({
-    // Random positions for each proto dancer
     positions: fc.record({
-      up_lark_0: fcPos(),
-      up_robin_0: fcPos(),
-      down_lark_0: fcPos(),
-      down_robin_0: fcPos(),
+      up_lark_0: fcPos,
+      up_robin_0: fcPos,
+      down_lark_0: fcPos,
+      down_robin_0: fcPos,
     }),
-    // 0-4 connectHands attempts
     handConnections: fc.array(
       fc.record({
         id: fcProtoId,
@@ -64,21 +122,10 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
       }),
       { minLength: 0, maxLength: 4 },
     ),
-    // Neighbor offsets: (up_lark, down_robin) pair and (up_robin, down_lark) pair
-    neighborOffset1: fc.integer({ min: -10, max: 10 }),
-    neighborOffset2: fc.integer({ min: -10, max: 10 }),
-    // Shadow labels: optional offset for each of the shadow types per direction pair
-    shadowOffsets: fc.record({
-      up: fc.array(
-        fc.integer({ min: -10, max: 10 }).filter((o) => o !== 0),
-        { minLength: 0, maxLength: 6 },
-      ),
-      down: fc.array(
-        fc.integer({ min: -10, max: 10 }).filter((o) => o !== 0),
-        { minLength: 0, maxLength: 6 },
-      ),
-    }),
-    // Extra recents beyond partner+neighbor
+    upNeighbors: fcNeighborPair("up", "down"),
+    downNeighbors: fcNeighborPair("down", "up"),
+    upShadows: fcShadowLabels("up"),
+    downShadows: fcShadowLabels("down"),
     extraRecents: fc.record({
       up_lark_0: fc.array(fcDancerId, { minLength: 0, maxLength: 3 }),
       up_robin_0: fc.array(fcDancerId, { minLength: 0, maxLength: 3 }),
@@ -90,99 +137,48 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
     ({
       positions,
       handConnections,
-      neighborOffset1,
-      neighborOffset2,
-      shadowOffsets,
+      upNeighbors,
+      downNeighbors,
+      upShadows,
+      downShadows,
       extraRecents,
     }) => {
-      const SHADOW_LABELS: BasicLabel[] = [
-        "shadow",
-        "shadow 2",
-        "shadow 3",
-        "shadow 4",
-        "shadow 5",
-        "shadow 6",
-      ];
-
-      // Build neighbor DancerIds for each proto.
-      // Neighbor pairs: (up_lark, down_robin) and (up_robin, down_lark)
-      const neighborIds: Record<ProtoId, DancerId> = {
-        up_lark_0: makeDancerId({
-          dir: "down",
-          role: "robin",
-          offset: neighborOffset1,
-        }),
-        down_robin_0: makeDancerId({
-          dir: "up",
-          role: "lark",
-          offset: -neighborOffset1,
-        }),
-        up_robin_0: makeDancerId({
-          dir: "down",
-          role: "lark",
-          offset: neighborOffset2,
-        }),
-        down_lark_0: makeDancerId({
-          dir: "up",
-          role: "robin",
-          offset: -neighborOffset2,
-        }),
+      const neighbors: Record<ProtoId, DancerId> = {
+        up_lark_0: upNeighbors[0],
+        down_robin_0: upNeighbors[1],
+        up_robin_0: downNeighbors[0],
+        down_lark_0: downNeighbors[1],
+      };
+      const shadows: Record<ProtoId, Partial<Record<BasicLabel, DancerId>>> = {
+        up_lark_0: upShadows[0],
+        up_robin_0: upShadows[1],
+        down_lark_0: downShadows[0],
+        down_robin_0: downShadows[1],
       };
 
-      // Build shadow labels per proto (symmetric within dir pair)
-      const shadowLabels: Record<
-        ProtoId,
-        Partial<Record<BasicLabel, DancerId>>
-      > = {
-        up_lark_0: {},
-        up_robin_0: {},
-        down_lark_0: {},
-        down_robin_0: {},
-      };
-
-      for (const dir of ["up", "down"] as const) {
-        const offsets = shadowOffsets[dir];
-        const { larkProto, robinProto } = dirProtos(dir);
-        for (let i = 0; i < offsets.length && i < SHADOW_LABELS.length; i++) {
-          const label = SHADOW_LABELS[i];
-          const o = offsets[i];
-          // Shadow of lark is robin at offset o, and vice versa at -o
-          shadowLabels[larkProto][label] = makeDancerId({
-            dir,
-            role: "robin",
-            offset: o,
-          });
-          shadowLabels[robinProto][label] = makeDancerId({
-            dir,
-            role: "lark",
-            offset: -o,
-          });
-        }
-      }
-
+      // Build each proto dancer
       const state: WorldState = {} as WorldState;
       for (const protoId of ALL_PROTO_IDS) {
         const { dir, role } = parseProtoId(protoId);
-        const partnerId: DancerId = makeDancerId({
+        const partner: DancerId = makeDancerId({
           dir,
           role: otherRole(role),
           offset: 0,
         });
-
         state[protoId] = new Dancer(protoId, {
           pos: positions[protoId],
           facing: NORTH,
           hands: {},
           labels: {
-            partner: partnerId,
-            neighbor: neighborIds[protoId],
-            ...shadowLabels[protoId],
+            partner,
+            neighbor: neighbors[protoId],
+            ...shadows[protoId],
           },
-          recents: [partnerId, neighborIds[protoId], ...extraRecents[protoId]],
+          recents: [partner, neighbors[protoId], ...extraRecents[protoId]],
         });
       }
 
-      // Apply hand connections, ignoring any exceptions
+      // Connect 0-4 random hands, ignoring conflicts
       for (const conn of handConnections) {
         try {
           connectHands(state, conn.id, conn.hand, conn.theirId, conn.theirHand);
@@ -195,22 +191,3 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
       return state;
     },
   );
-
-function fcPos(): fc.Arbitrary<Vector> {
-  return fc
-    .record({
-      x: fc.double({ noNaN: true, min: -4, max: 4 }),
-      y: fc.double({ noNaN: true, min: -30, max: 30 }),
-    })
-    .map(({ x, y }) => new Vector(x, y));
-}
-
-function dirProtos(dir: ProgressionDir): {
-  larkProto: ProtoId;
-  robinProto: ProtoId;
-} {
-  return {
-    larkProto: makeDancerId({ dir, role: "lark", offset: 0 }) as ProtoId,
-    robinProto: makeDancerId({ dir, role: "robin", offset: 0 }) as ProtoId,
-  };
-}
