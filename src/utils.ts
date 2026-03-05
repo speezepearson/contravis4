@@ -122,3 +122,14 @@ export function safeRound(
   }
   return rounded;
 }
+
+export function try_<T>(fn: () => T): T | Error {
+  try {
+    return fn();
+  } catch (e) {
+    if (e instanceof Error) {
+      return e;
+    }
+    return new Error(String(e));
+  }
+}
