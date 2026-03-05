@@ -84,20 +84,25 @@ export type ContraAnimation = {
 };
 
 const DerivedLabelSchema = z.enum([
-  "opposite",
-  "next neighbor",
-  "next x2 neighbor",
-  "next x3 neighbor",
-  "prev neighbor",
-  "prev x2 neighbor",
-  "prev x3 neighbor",
-  "in right hand",
-  "in left hand",
+  "opposite", // = my neighbor's partner
+  "next neighbor", // = my neighbor but offset by 1*(my prog dir sign)
+  "next x2 neighbor", // = my neighbor but offset by 2*(my prog dir sign)
+  "next x3 neighbor", // = my neighbor but offset by 3*(my prog dir sign)
+  "prev neighbor", // = my neighbor but offset by -1*(my prog dir sign)
+  "prev x2 neighbor", // = my neighbor but offset by -2*(my prog dir sign)
+  "prev x3 neighbor", // = my neighbor but offset by -3*(my prog dir sign)
 ]);
 
-export const CalledLabelSchema = z.enum([
+export const SymmetricLabelSchema = z.enum([
   ...BasicLabelSchema.options,
   ...DerivedLabelSchema.options,
+])
+export type SymmetricLabel = z.infer<typeof SymmetricLabelSchema>;
+
+export const CalledLabelSchema = z.enum([
+  ...SymmetricLabelSchema.options,
+  "in right hand",
+  "in left hand",
 ]);
 export type CalledLabel = z.infer<typeof CalledLabelSchema>;
 export function resolveCalledLabel(

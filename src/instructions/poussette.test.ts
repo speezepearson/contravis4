@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
 import { EAST, WEST } from "../geometry";
-import { fcHand,fcRole } from "../testHelpers";
+import { fcHand, fcRole } from "../testHelpers";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type PoussetteInstruction, poussetteSegments } from "./poussette";

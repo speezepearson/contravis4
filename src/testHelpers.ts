@@ -15,6 +15,7 @@ import {
   type ProtoId,
   type Role,
   RoleSchema,
+  ShadowLabelSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
 import { connectHands, Dancer, type WorldState } from "./worldState";
@@ -56,15 +57,6 @@ const fcNonzeroOffset = fc
   .integer({ min: -10, max: 10 })
   .filter((o) => o !== 0);
 
-const SHADOW_LABELS: BasicLabel[] = [
-  "shadow",
-  "shadow 2",
-  "shadow 3",
-  "shadow 4",
-  "shadow 5",
-  "shadow 6",
-];
-
 /** Random symmetric neighbor labels for a (lark, robin) pair in opposite dirs. */
 function fcNeighborPair(
   larkDir: ProgressionDir,
@@ -85,17 +77,17 @@ function fcShadowLabels(
   [Partial<Record<BasicLabel, DancerId>>, Partial<Record<BasicLabel, DancerId>>]
 > {
   return fc
-    .array(fcNonzeroOffset, { minLength: 0, maxLength: 6 })
+    .array(fcNonzeroOffset, { minLength: 0, maxLength: ShadowLabelSchema.options.length })
     .map((offsets) => {
       const larkShadows: Partial<Record<BasicLabel, DancerId>> = {};
       const robinShadows: Partial<Record<BasicLabel, DancerId>> = {};
       for (let i = 0; i < offsets.length; i++) {
-        larkShadows[SHADOW_LABELS[i]] = makeDancerId({
+        larkShadows[ShadowLabelSchema.options[i]] = makeDancerId({
           dir,
           role: "robin",
           offset: offsets[i],
         });
-        robinShadows[SHADOW_LABELS[i]] = makeDancerId({
+        robinShadows[ShadowLabelSchema.options[i]] = makeDancerId({
           dir,
           role: "lark",
           offset: -offsets[i],
