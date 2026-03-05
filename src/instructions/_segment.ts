@@ -63,6 +63,12 @@ export type HandsFn = (
   segInit: WorldState,
 ) => DancerState["hands"];
 
+/** Per-dancer recents function: returns a list of dancers that a dancer interacted with in this segment. */
+export type InteractedWithFn = (
+  id: ProtoId,
+  segInit: WorldState,
+) => DancerId[];
+
 /** A single phase of an animation. */
 export type Segment = {
   dur: Beats;
@@ -70,6 +76,7 @@ export type Segment = {
   facing?: FacingFn; // omit = keep segInit facing
   hands?: HandsFn; // omit = leave hands unchanged
   labels?: LabelsFn; // omit = leave labels unchanged
+  interactedWith?: InteractedWithFn; // omit = leave recents unchanged
 };
 
 // ── Core ────────────────────────────────────────────────────────────────
@@ -93,6 +100,10 @@ export function getSegmentFrameAtFrac(
         for (const [label, theirId] of segment.labels(id, frac, init)) {
           draft[id].labels[label] = theirId;
         }
+      }
+      if (segment.interactedWith) {
+        const newRecents = segment.interactedWith(id, init);
+        draft[id].recents = [...newRecents, ...draft[id].recents.filter(i => !newRecents.includes(i))];
       }
     }
   });
