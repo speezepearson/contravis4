@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
 import { ellipsePosition, TWO_PI } from "../geometry";
-import { getDancer } from "../worldState";
+import { Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -30,7 +30,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
   // Assert all pairs are on the same side of the set
   for (const id of who) {
     const myX = init[id].pos.x;
-    const theirX = getDancer(matches[id], init).pos.x;
+    const theirX = Dancer.get(matches[id], init).pos.x;
     if (Math.sign(myX) !== Math.sign(theirX)) {
       throw new Error(
         `${id} and ${matches[id]} are not on the same side of the set for mad robin`,
@@ -47,7 +47,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
   for (const id of who) {
     if (getRole(id) === instr.whoInFront) {
       const start = init[id].pos;
-      const end = getDancer(matches[id], init).pos;
+      const end = Dancer.get(matches[id], init).pos;
       const semiMajorDir = start.subtract(end).normalize();
       const semiMinorDir = semiMajorDir.rotateByDegrees(90);
       if (Math.sign(semiMinorDir.x) !== Math.sign(start.x)) {
@@ -64,7 +64,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
       dur: instr.beats,
       position: (id, frac, segInit) => {
         const start = segInit[id].pos;
-        const end = getDancer(matches[id], segInit).pos;
+        const end = Dancer.get(matches[id], segInit).pos;
         return ellipsePosition(start, end, semiMinor, phi * frac);
       },
       facing: (id, _frac, segInit) => {

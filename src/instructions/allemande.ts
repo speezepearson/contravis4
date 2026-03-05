@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { type Beats, HandSchema, type ProtoId } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
-import { buildProtoRecord, getDancer } from "../worldState";
+import { buildProtoRecord, Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -63,18 +63,18 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
     [...who].map((id) => [id, resolveMatch(id, instr.cid, init)]),
   );
   const alreadyClose = buildProtoRecord((id) => {
-    const me = getDancer(id, init);
+    const me = Dancer.get(id, init);
     const matchId = matches.get(id);
     if (!matchId) return false;
-    const them = getDancer(matchId, init);
+    const them = Dancer.get(matchId, init);
     return me.pos.subtract(them.pos).length() < 1.2;
   });
 
   let totalDistance = 0;
   let count = 0;
   for (const [id, matchId] of matches) {
-    const me = getDancer(id as ProtoId, init);
-    const them = getDancer(matchId, init);
+    const me = Dancer.get(id as ProtoId, init);
+    const them = Dancer.get(matchId, init);
     totalDistance += me.pos.subtract(them.pos).length();
     count++;
   }
@@ -98,7 +98,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
         if (!matchId) return segInit[id].facing;
         return getDir({
           from: segInit[id].pos,
-          to: getDancer(matchId, segInit).pos,
+          to: Dancer.get(matchId, segInit).pos,
         });
       }),
       hands: (id) =>

@@ -17,7 +17,7 @@ import {
   PI,
   TWO_PI,
 } from "../geometry";
-import { buildProtoRecord, getDancer } from "../worldState";
+import { buildProtoRecord, Dancer } from "../worldState";
 import {
   type CalledIdentifier,
   instructionBaseSchemaFields,
@@ -80,8 +80,8 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
 
   const rollerSides = new Set(
     [...rollerToRollee].map(([rollerId, rolleeId]) => {
-      const roller = getDancer(rollerId, init);
-      const rollee = getDancer(rolleeId, init);
+      const roller = Dancer.get(rollerId, init);
+      const rollee = Dancer.get(rolleeId, init);
       return Math.sign(
         ccwRadsBetween(
           roller.facing,
@@ -109,14 +109,14 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
       position: (id, frac, segInit) => {
         const themId = matches[id];
         const start = segInit[id].pos;
-        const end = getDancer(themId, segInit).pos;
+        const end = Dancer.get(themId, segInit).pos;
         return ellipsePosition(start, end, semiMinor, PI * frac);
       },
       facing: (id, frac, segInit) => {
         const isRoller = getRole(id) === instr.roller;
         const normal = getDir({
           from: segInit[id].pos,
-          to: getDancer(matches[id], segInit).pos,
+          to: Dancer.get(matches[id], segInit).pos,
         }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
         if (isRoller) return lerpFacing(segInit[id].facing, normal, frac);
         const totalRads =

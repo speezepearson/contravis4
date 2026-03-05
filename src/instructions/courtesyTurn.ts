@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { PI, revolve } from "../geometry";
-import { getDancer } from "../worldState";
+import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatch } from "./_base";
 import { hold, type InstructionAnimator, rotateFacingBy } from "./_segment";
 
@@ -23,7 +23,7 @@ export const courtesyTurnSegments: InstructionAnimator<
         roles: "different",
       });
       const myPos = segInit[id].pos;
-      const theirPos = getDancer(them, segInit).pos;
+      const theirPos = Dancer.get(them, segInit).pos;
       const center = myPos.add(theirPos).divide(2);
       return revolve(myPos, { around: center, radians: PI * frac });
     },

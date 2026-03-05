@@ -16,9 +16,8 @@ import {
 } from "../geometry";
 import { lerpVectors } from "../utils";
 import {
-  type Dancer,
+  Dancer,
   type DancerHandPointer,
-  getDancer,
   sanityCheckWorldState,
   type WorldState,
 } from "../worldState";
@@ -240,7 +239,7 @@ export function arc(
   return (id, frac, segInit) => {
     const themId = resolveMatch(id, cid, segInit);
     const start = segInit[id].pos;
-    const end = getDancer(themId, segInit).pos;
+    const end = Dancer.get(themId, segInit).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
   };
 }
@@ -256,7 +255,7 @@ export function orbit(
     const myPos = segInit[id].pos;
     const themId = matches.get(id);
     if (!themId) return myPos;
-    const theirPos = getDancer(themId, segInit).pos;
+    const theirPos = Dancer.get(themId, segInit).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
   };

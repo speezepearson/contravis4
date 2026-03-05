@@ -17,7 +17,7 @@ import {
 import {
   avgPos,
   buildProtoRecord,
-  getDancer,
+  Dancer,
   type WorldState,
 } from "../worldState";
 import {
@@ -75,7 +75,7 @@ export function makeSwingSegments(
   const centers = buildProtoRecord((id) => avgPos(init, id, matches[id]));
 
   const plans = buildProtoRecord((id) => {
-    const me = getDancer(id, init);
+    const me = Dancer.get(id, init);
     const center = centers[id];
     const finalFacing = resolveCardinalDirection(instr.endFacing, center);
 
@@ -124,7 +124,7 @@ export function makeSwingSegments(
   let totalApproachDist = 0;
   let totalSwingRadians = 0;
   for (const id of ALL_PROTO_IDS) {
-    totalApproachDist += getDancer(id, init)
+    totalApproachDist += Dancer.get(id, init)
       .pos.subtract(plans[id].postApproach.pos)
       .length();
     totalSwingRadians += Math.abs(plans[id].numSwingRadians);
