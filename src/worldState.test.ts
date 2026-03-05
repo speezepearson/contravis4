@@ -18,10 +18,7 @@ describe("connectHands", () => {
   it("creates bidirectional hand connections with correct offset adjustment", () => {
     fc.assert(
       fc.property(fcProtoId, fcHand, fcDancerId, fcHand, (p1, h1, d2, h2) => {
-        fc.pre(p1 !== (d2 as string)); // can't connect to yourself
-        // When both dancers share a proto and use the same hand, both sides
-        // of the connection write to the same slot, so the property can't hold.
-        fc.pre(projectDancerIdToProtoId(d2) !== p1 || h1 !== h2);
+        fc.pre(projectDancerIdToProtoId(d2) !== p1);
 
         const state = produce(initFormationStates.improper, (draft) => {
           connectHands(draft, p1, h1, d2, h2);
@@ -36,6 +33,21 @@ describe("connectHands", () => {
           theirId: protoIdToDancerId(p1, -getOffset(d2)),
           theirHand: h1,
         });
+      }),
+    );
+  });
+
+  it("throws when connecting hands between dancers that share a proto", () => {
+    fc.assert(
+      fc.property(fcProtoId, fcHand, fcDancerId, fcHand, (p1, h1, d2, h2) => {
+        fc.pre(projectDancerIdToProtoId(d2) === p1);
+        fc.pre(p1 !== (d2 as string)); // offset !== 0, so they're different dancers
+
+        expect(() => {
+          produce(initFormationStates.improper, (draft) => {
+            connectHands(draft, p1, h1, d2, h2);
+          });
+        }).toThrow();
       }),
     );
   });

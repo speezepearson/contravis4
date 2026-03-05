@@ -66,8 +66,10 @@ export function connectHands(
   theirId: DancerId,
   theirHand: Hand,
 ): void {
-  if (id === theirId) {
-    throw new Error(`Dancer ${id} cannot connect hands to themselves`);
+  if (projectDancerIdToProtoId(theirId) === id) {
+    throw new Error(
+      `Dancer ${id} cannot connect hands to ${theirId} (same proto)`,
+    );
   }
   const holding = state[id].hands[hand];
   if (holding) {
