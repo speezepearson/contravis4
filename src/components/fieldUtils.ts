@@ -103,6 +103,15 @@ export function makeDefaultInstruction(
         };
       case "petronella":
         return { id, type: "petronella", beats: 4 };
+      case "poussette":
+        return {
+          id,
+          type: "poussette",
+          beats: 8,
+          backer: "lark",
+          backerDir: "left",
+          full: false,
+        };
       case "pull_by":
         return {
           id,
