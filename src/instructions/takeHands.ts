@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { type Hand } from "../contraCore";
 import { assertNever } from "../utils";
-import { connectHands, type Dancer, getDancer } from "../worldState";
+import { connectHands, Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
@@ -43,7 +43,7 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
   return [
     makeImmediateSegment(init, (id, draft) => {
       const otherId = matches[id];
-      const other = getDancer(otherId, draft);
+      const other = Dancer.get(otherId, draft);
       switch (instr.hand) {
         case "left":
           connectHands(draft, id, "left", otherId, "left");

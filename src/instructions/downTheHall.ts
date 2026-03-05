@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, type Beats } from "../contraCore";
 import { SOUTH } from "../geometry";
 import { indexOf, must } from "../utils";
-import { connectHands, getDancer, type WorldState } from "../worldState";
+import { connectHands, Dancer, type WorldState } from "../worldState";
 import { instructionBaseSchemaFields, resolveShortLines } from "./_base";
 import {
   type InstructionAnimator,
@@ -34,7 +34,7 @@ export function theHallSegments(
   // Assert all dancers face approximately the correct direction
   for (const protoId of ALL_PROTO_IDS) {
     for (const dancerId of shortLines[protoId]) {
-      const state = getDancer(dancerId, init);
+      const state = Dancer.get(dancerId, init);
       if (state.facing.dot(dir) < 0.7) {
         throw new Error(
           `Dancer ${dancerId} is not facing approximately ${dirName} the hall`,
@@ -51,7 +51,7 @@ export function theHallSegments(
       if (idx < 0) throw new Error(`Proto ${id} not found in its short line`);
       if (idx < 3) {
         const adjId = line[idx + 1];
-        const adjState = getDancer(adjId, draft);
+        const adjState = Dancer.get(adjId, draft);
         const myHand = resolveInsideHand(draft[id], adjState);
         const theirHand = resolveInsideHand(adjState, draft[id]);
         connectHands(draft, id, myHand, adjId, theirHand);

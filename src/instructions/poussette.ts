@@ -14,7 +14,7 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { ellipsePosition, PI } from "../geometry";
-import { getDancer, type WorldState } from "../worldState";
+import { Dancer, type WorldState } from "../worldState";
 import {
   type CalledDirection,
   findDancerInCalledDirection,
@@ -72,7 +72,7 @@ export function makeHalfPoussetteArcPosition(
       }
       arcDests.set(id, {
         start: state[id].pos,
-        end: getDancer(found, facedAcross).pos,
+        end: Dancer.get(found, facedAcross).pos,
       });
     }
   }

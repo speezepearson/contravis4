@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { PI, revolve } from "../geometry";
 import { lerpVectors } from "../utils";
-import { getDancer, type WorldState } from "../worldState";
+import { Dancer, type WorldState } from "../worldState";
 import {
   facesAcross,
   facesOut,
@@ -54,7 +54,7 @@ export const boxCirculateSegments: InstructionAnimator<
               `${id} has nobody on their right to box circulate to`,
             );
           return revolve(segInit[id].pos, {
-            aroundMidpointWith: getDancer(matchId, segInit).pos,
+            aroundMidpointWith: Dancer.get(matchId, segInit).pos,
             radians: -PI * frac,
           });
         } else {
@@ -63,7 +63,7 @@ export const boxCirculateSegments: InstructionAnimator<
             throw new Error(`${id} has nobody in front to box circulate to`);
           return lerpVectors(
             segInit[id].pos,
-            getDancer(matchId, segInit).pos,
+            Dancer.get(matchId, segInit).pos,
             frac,
           );
         }

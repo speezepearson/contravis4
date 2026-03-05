@@ -80,6 +80,10 @@ export class Dancer {
     return this.role === "lark";
   }
 
+  static get(id: DancerId, protos: Record<ProtoId, Dancer>): Dancer {
+    return protos[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
+  }
+
   addOffset(deltaOffset: DancerOffset): Dancer {
     if (deltaOffset === 0) return this;
     return new Dancer(addOffsetToId(this.id, deltaOffset), {
@@ -108,15 +112,8 @@ export function resolveBasicLabel(
   id: DancerId,
   protos: Record<ProtoId, Dancer>,
 ): DancerId | null {
-  const dancer = getDancer(id, protos);
+  const dancer = Dancer.get(id, protos);
   return dancer.labels[label] ?? null;
-}
-
-export function getDancer(
-  id: DancerId,
-  protos: Record<ProtoId, Dancer>,
-): Dancer {
-  return protos[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
 }
 
 export type WorldState = Record<ProtoId, Dancer>;
@@ -142,7 +139,7 @@ export function connectHands(
     );
   }
 
-  const them = getDancer(theirId, state);
+  const them = Dancer.get(theirId, state);
   const themHolding = them.hands[theirHand];
   if (themHolding) {
     if (isEqual(themHolding, { theirId: id, theirHand: hand })) {
@@ -175,7 +172,7 @@ export function disconnectHands(
   if (!holding) throw new Error(`Dancer ${id}'s ${hand} hand is not connected`);
   const { theirId, theirHand } = holding;
 
-  const them = getDancer(theirId, state);
+  const them = Dancer.get(theirId, state);
   const themHolding = them.hands[theirHand];
   if (!(themHolding && isEqual(themHolding, { theirId: id, theirHand: hand })))
     throw new Error(
@@ -214,7 +211,7 @@ export function getDancerSide(
 
 export function avgPos(state: WorldState, ...ids: DancerId[]): Vector {
   return ids
-    .reduce((acc, id) => acc.add(getDancer(id, state).pos), new Vector(0, 0))
+    .reduce((acc, id) => acc.add(Dancer.get(id, state).pos), new Vector(0, 0))
     .divide(ids.length);
 }
 
@@ -250,7 +247,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
     for (const label of BasicLabelSchema.options) {
       const theirId = dancer.labels[label];
       if (!theirId) continue;
-      const theirSymmetricPointer = getDancer(theirId, state).labels[label];
+      const theirSymmetricPointer = Dancer.get(theirId, state).labels[label];
       if (theirSymmetricPointer !== id)
         throw new Error(
           `${id}'s ${label}'s thinks their ${label} is ${theirSymmetricPointer} -- this should never be asymmetric!`,
@@ -260,7 +257,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const theirSymmetricPointer = getDancer(theirId, state).hands[theirHand];
+      const theirSymmetricPointer = Dancer.get(theirId, state).hands[theirHand];
       if (!isEqual(theirSymmetricPointer, { theirId: id, theirHand: hand }))
         throw new Error(
           `${id} thinks their ${hand} hand is holding ${theirId}'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,

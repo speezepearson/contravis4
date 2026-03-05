@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
-import { getDancer } from "../worldState";
+import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatch } from "./_base";
 import { arc, hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
 
@@ -27,7 +27,7 @@ export const californiaTwirlSegments: InstructionAnimator<
         const myRole = parseProtoId(id).role;
         return getDir({
           from: segInit[id].pos,
-          to: getDancer(them, segInit).pos,
+          to: Dancer.get(them, segInit).pos,
         }).rotateByDegrees(90 * (myRole === "lark" ? -1 : 1));
       },
       {

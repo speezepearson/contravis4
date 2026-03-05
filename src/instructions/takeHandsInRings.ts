@@ -7,7 +7,7 @@ import { must } from "../utils";
 import {
   buildProtoRecord,
   connectHands,
-  getDancer,
+  Dancer,
   type WorldState,
 } from "../worldState";
 import {
@@ -55,11 +55,11 @@ export function makeRingSegment(init: WorldState): Segment {
       const { acrossId, alongId } = targets[id];
       const dirToAcross = getDir({
         from: init[id].pos,
-        to: getDancer(acrossId, init).pos,
+        to: Dancer.get(acrossId, init).pos,
       });
       const dirToAlong = getDir({
         from: init[id].pos,
-        to: getDancer(alongId, init).pos,
+        to: Dancer.get(alongId, init).pos,
       });
       draft[id].facing = dirToAcross.add(dirToAlong).normalize();
 

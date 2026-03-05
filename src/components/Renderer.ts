@@ -3,8 +3,7 @@ import type { Vector } from "vecti";
 import type { Beats, Hand } from "../contraCore";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
 import { PI } from "../geometry";
-import type { Dancer, WorldState } from "../worldState";
-import { getDancer } from "../worldState";
+import { Dancer, type WorldState } from "../worldState";
 
 const COLORS: Record<ProtoId, { fill: string; stroke: string; label: string }> =
   {
@@ -35,7 +34,7 @@ function extractHandConnections(
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const targetState = getDancer(theirId, protos);
+      const targetState = Dancer.get(theirId, protos);
 
       // Dedup: use sorted key
       const key = [id, hand, theirId, theirHand].sort().join("|");
@@ -389,7 +388,7 @@ export class Renderer {
       const recentAlpha = 0.8 / (i + 1);
       if (recentAlpha < 0.05) break;
 
-      const recentDancer = getDancer(recents[i], frame);
+      const recentDancer = Dancer.get(recents[i], frame);
       ctx.globalAlpha = recentAlpha;
       const [cx, cy] = this.worldToCanvas(
         recentDancer.pos.x,
