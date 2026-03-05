@@ -12,6 +12,7 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { getDir } from "../geometry";
+import { getSide } from "../utils";
 import { getDancerState } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import {
@@ -85,18 +86,31 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
     }
   });
 
+  // leaderDir is from the leader's perspective, but makePoussetteArcPosition
+  // resolves on_${dir} relative to facing-across. Since lark (west) faces east
+  // and robin (east) faces west, on_right gives opposite spatial directions.
+  // Flip when the leader is on the east side so leaderDir=right consistently
+  // means the same spatial direction regardless of which role leads.
+  const leaderProto = [...who].find((id) => getRole(id) === instr.leader)!;
+  const effectiveDir: Hand =
+    getSide(init[leaderProto].pos) === "east"
+      ? otherHand(instr.leaderDir)
+      : instr.leaderDir;
+
   const segments: Segment[] = [setupSegment];
   let currentState = advanceState([setupSegment], init, who);
   const beatsPerZig = instr.beats / instr.nZigs;
 
   for (let i = 0; i < instr.nZigs; i++) {
-    // Backer alternates each zig; backerDir stays constant
+    // Only the backer role alternates; backerDir stays constant.
+    // Direction alternation happens naturally because backers on opposite
+    // sides of the set face opposite ways, so on_${dir} flips spatially.
     const currentBacker: Role =
       i % 2 === 0 ? instr.leader : otherRole(instr.leader);
 
     const position = makePoussetteArcPosition(
       currentBacker,
-      instr.leaderDir,
+      effectiveDir,
       matches,
       currentState,
       who,

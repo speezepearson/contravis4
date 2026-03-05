@@ -83,9 +83,12 @@ describe("zigZag", () => {
       expect(frame.up_robin_0.hands.left).toBeUndefined();
     });
 
-    it("each pair moves together maintaining displacement", () => {
+    it("each pair moves together at segment boundaries", () => {
       const initDisplacement = init.up_robin_0.pos.subtract(init.up_lark_0.pos);
-      for (const t of [0, instr.beats / 4, instr.beats / 2, instr.beats]) {
+      // Displacement is fully maintained at segment boundaries (frac=0 and frac=1);
+      // it breathes (shrinks slightly) mid-arc.
+      const beatsPerZig = instr.beats / 2;
+      for (const t of [0, beatsPerZig, instr.beats]) {
         const frame = animation.getFrame(t);
         const displacement = frame.up_robin_0.pos.subtract(frame.up_lark_0.pos);
         expect(displacement.x, `x at t=${t}`).toBeCloseTo(initDisplacement.x);

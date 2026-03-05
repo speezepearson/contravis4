@@ -63,10 +63,11 @@ describe("poussette", () => {
       }
     });
 
-    it("each pair moves together maintaining displacement", () => {
-      // The non-backer should always be the same displacement from the backer
+    it("each pair moves together at segment boundaries", () => {
+      // Displacement is fully maintained at segment boundaries (frac=0 and frac=1);
+      // it breathes (shrinks slightly) mid-arc.
       const initDisplacement = init.up_robin_0.pos.subtract(init.up_lark_0.pos);
-      for (const t of [0, instr.beats / 4, instr.beats / 2, instr.beats]) {
+      for (const t of [0, instr.beats]) {
         const frame = animation.getFrame(t);
         const displacement = frame.up_robin_0.pos.subtract(frame.up_lark_0.pos);
         expect(displacement.x, `x displacement at t=${t}`).toBeCloseTo(
@@ -109,20 +110,32 @@ describe("poussette", () => {
     });
   });
 
-  describe("full poussette", () => {
+  describe("full poussette (backer=lark, backerDir=left)", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ full: true });
+    const instr = makeInstr({ full: true, backerDir: "left" });
     const segments = poussetteSegments(instr, init, allProtos);
     const animation = animateSegments(init, allProtos, segments);
     const final = animation.getFrame(animation.dur);
 
-    it("returns dancers to starting positions after full circle", () => {
+    it("returns every dancer to starting position", () => {
       for (const id of ALL_PROTO_IDS) {
-        // After phi=TWO_PI, the arc returns to start
-        // So positions should be back where they started (after facing across)
-        // The setup faces across but doesn't change positions, so check original pos
         expect(final[id].pos.x, `${id} x`).toBeCloseTo(init[id].pos.x);
         expect(final[id].pos.y, `${id} y`).toBeCloseTo(init[id].pos.y);
+      }
+    });
+
+    it("every dancer crosses the center line during the figure", () => {
+      // Each dancer should be at x<0 at some point and x>0 at some point
+      for (const id of ALL_PROTO_IDS) {
+        let seenNegX = false;
+        let seenPosX = false;
+        for (let t = 0; t <= instr.beats; t += 0.25) {
+          const frame = animation.getFrame(t);
+          if (frame[id].pos.x < -0.01) seenNegX = true;
+          if (frame[id].pos.x > 0.01) seenPosX = true;
+        }
+        expect(seenNegX, `${id} should be at x<0 at some point`).toBe(true);
+        expect(seenPosX, `${id} should be at x>0 at some point`).toBe(true);
       }
     });
   });

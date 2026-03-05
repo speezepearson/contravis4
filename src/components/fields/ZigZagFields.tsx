@@ -44,7 +44,7 @@ export function ZigZagFields({
         onChange={(v) => tryCommit({ leader: RoleSchema.parse(v) })}
         getLabel={(v) => v + "s"}
       />
-      {" lead to the "}
+      {" lead out and go "}
       <InlineDropdown
         options={HAND_OPTIONS}
         value={instruction.leaderDir}
@@ -53,10 +53,23 @@ export function ZigZagFields({
       {", "}
       <InlineDropdown
         options={NZIGS_OPTIONS}
+        getLabel={(v) => {
+          switch (v) {
+            case "1":
+              return "zig";
+            case "2":
+              return "zig and zag";
+            case "3":
+              return "zig and zag and zig";
+            case "4":
+              return "zig and zag and zig and zag";
+            default:
+              return `${v} zigs`;
+          }
+        }}
         value={String(instruction.nZigs)}
         onChange={(v) => tryCommit({ nZigs: Number(v) as 1 | 2 | 3 | 4 })}
       />
-      {instruction.nZigs === 1 ? " zig" : " zigs"}
     </>
   );
 }

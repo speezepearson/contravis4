@@ -35,6 +35,13 @@ export function PoussetteFields({
 
   return (
     <>
+      {"("}
+      <InlineDropdown
+        options={["half", "full"]}
+        value={instruction.full ? "full" : "half"}
+        onChange={(v) => tryCommit({ full: v === "full" })}
+      />
+      {")"}
       {": "}
       <InlineDropdown
         options={ROLE_OPTIONS}
@@ -42,17 +49,11 @@ export function PoussetteFields({
         onChange={(v) => tryCommit({ backer: RoleSchema.parse(v) })}
         getLabel={(v) => v + "s"}
       />
-      {" back to the "}
+      {" back up and go "}
       <InlineDropdown
         options={HAND_OPTIONS}
         value={instruction.backerDir}
         onChange={(v) => tryCommit({ backerDir: HandSchema.parse(v) })}
-      />
-      {", "}
-      <InlineDropdown
-        options={["half", "full"]}
-        value={instruction.full ? "full" : "half"}
-        onChange={(v) => tryCommit({ full: v === "full" })}
       />
     </>
   );
