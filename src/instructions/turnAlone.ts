@@ -2,12 +2,11 @@ import { z } from "zod";
 
 import { isLark } from "../contraCore";
 import { PI } from "../geometry";
-import { InstructionIdSchema } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const TurnAloneInstructionSchema = z.object({
-  id: InstructionIdSchema,
-  beats: z.number().int().default(2),
+  ...instructionBaseSchemaFields,
   type: z.literal("turn_alone"),
 });
 export type TurnAloneInstruction = z.infer<typeof TurnAloneInstructionSchema>;

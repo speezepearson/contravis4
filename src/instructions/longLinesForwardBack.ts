@@ -1,12 +1,12 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { BeatsSchema, type DancerId, type ProtoId } from "../contraCore";
+import { type DancerId, type ProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import {
   facesAcross,
   findDancerInCalledDirection,
-  InstructionIdSchema,
+  instructionBaseSchemaFields,
 } from "./_base";
 import {
   hold,
@@ -16,8 +16,7 @@ import {
 } from "./_segment";
 
 export const LongLinesForwardBackInstructionSchema = z.object({
-  id: InstructionIdSchema,
-  beats: BeatsSchema.default(8),
+  ...instructionBaseSchemaFields,
   type: z.literal("long_lines_forward_back"),
 });
 export type LongLinesForwardBackInstruction = z.infer<

@@ -44,7 +44,7 @@ export function SwingFields({
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />
-      {" \u2192 "}
+      {", end facing "}
       <CardinalDirectionDropdown
         value={instruction.endFacing}
         onChange={(f) => tryCommit({ endFacing: f })}

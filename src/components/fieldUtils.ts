@@ -81,12 +81,13 @@ export function makeDefaultInstruction(
           endFacing: "across",
         };
       case "long_line_in_center":
-        return { id, type: "long_line_in_center", role: "lark" };
+        return { id, type: "long_line_in_center", role: "lark", beats: 4 };
       case "long_lines_forward_back":
-        return { id, type: "long_lines_forward_back" };
+        return { id, type: "long_lines_forward_back", beats: 8 };
       case "mad_robin":
         return {
           id,
+          beats: 8,
           type: "mad_robin",
           cid: "neighbor",
           rotations: 1,
@@ -121,7 +122,13 @@ export function makeDefaultInstruction(
       case "right_left_through":
         return { id, type: "right_left_through", beats: 8 };
       case "roll_away":
-        return { id, type: "roll_away", roller: "lark", rollee: "on_right" };
+        return {
+          id,
+          type: "roll_away",
+          roller: "lark",
+          rollee: "on_right",
+          beats: 4,
+        };
       case "rory_o_more":
         return { id, type: "rory_o_more", beats: 4, direction: "right" };
       case "shoulder_round":
@@ -165,15 +172,14 @@ export function makeDefaultInstruction(
           hand: "right",
         };
       case "turn_alone":
-        return { id, type: "turn_alone" };
+        return { id, type: "turn_alone", beats: 2 };
       case "turn_as_a_couple":
         return { id, type: "turn_as_a_couple", beats: 4 };
       case "bend_the_line":
-        return { id, type: "bend_the_line", beats: 4 };
+        return { id, type: "bend_the_line", beats: 2 };
       case "down_the_hall":
-        return { id, type: "down_the_hall", beats: 4 };
       case "up_the_hall":
-        return { id, type: "up_the_hall", beats: 4 };
+        return { id, type, beats: 6, distance: 1.5 };
       default:
         assertNever(type);
     }
@@ -319,29 +325,16 @@ export function calledIdentifierToText(cid: CalledIdentifier): string {
   }
 }
 
-export const DIR_OPTIONS = [
-  "up",
-  "down",
-  "across",
-  "out",
-  "progression",
-  "forward",
-  "back",
-  "right",
-  "left",
-  "partner",
-  "neighbor",
-  "opposite",
-];
+export const DIR_OPTIONS = ["up", "down", "across", "out"] as const;
 
-export const DROP_WHICH_OPTIONS: string[] = [
+export const DROP_WHICH_OPTIONS = [
   "both",
   "left",
   "right",
   "partner",
   "shadow",
   "neighbor",
-];
+] as const;
 export const DROP_WHICH_LABELS: Record<string, string> = {
   both: "both hands",
   left: "left hand",

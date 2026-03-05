@@ -20,7 +20,7 @@ export interface InlineDropdownHandle {
 }
 
 interface Props {
-  options: string[];
+  options: readonly string[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;

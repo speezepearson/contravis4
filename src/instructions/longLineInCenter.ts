@@ -1,14 +1,16 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { BeatsSchema, getRole, RoleSchema } from "../contraCore";
+import { getRole, RoleSchema } from "../contraCore";
 import { EAST, WEST } from "../geometry";
-import { InstructionIdSchema, resolveMatch } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  resolveMatch,
+} from "./_base";
 import { hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
 
 export const LongLineInCenterInstructionSchema = z.object({
-  id: InstructionIdSchema,
-  beats: BeatsSchema.default(4),
+  ...instructionBaseSchemaFields,
   type: z.literal("long_line_in_center"),
   role: RoleSchema,
 });

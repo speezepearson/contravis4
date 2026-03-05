@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   ALL_PROTO_IDS,
   type Beats,
-  BeatsSchema,
   type DancerId,
 } from "../contraCore";
 import { SOUTH } from "../geometry";
@@ -20,8 +19,7 @@ import { resolveInsideHand } from "./takeHands";
 export const DownTheHallInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("down_the_hall"),
-  beats: BeatsSchema.default(6),
-  distance: z.number().default(1.5),
+  distance: z.number(),
 });
 export type DownTheHallInstruction = z.infer<
   typeof DownTheHallInstructionSchema

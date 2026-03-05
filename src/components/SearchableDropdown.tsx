@@ -13,7 +13,7 @@ export interface SearchableDropdownHandle {
 }
 
 interface Props {
-  options: string[];
+  options: readonly string[];
   value: string;
   onChange: (value: string) => void;
   onCommit?: () => void;

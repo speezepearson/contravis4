@@ -1,18 +1,17 @@
 import { z } from "zod";
 
-import { BeatsSchema, getRole, RoleSchema } from "../contraCore";
+import { getRole, RoleSchema } from "../contraCore";
 import { EAST, ellipsePosition, TWO_PI, WEST } from "../geometry";
 import { getDancerState } from "../worldState";
 import {
   CalledIdentifierSchema,
-  InstructionIdSchema,
+  instructionBaseSchemaFields,
   resolveMatches,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
 export const MadRobinInstructionSchema = z.object({
-  id: InstructionIdSchema,
-  beats: BeatsSchema.default(8),
+  ...instructionBaseSchemaFields,
   type: z.literal("mad_robin"),
   cid: CalledIdentifierSchema,
   rotations: z.number(),

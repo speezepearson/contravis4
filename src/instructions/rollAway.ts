@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import {
   BasicLabelSchema,
-  BeatsSchema,
   type DancerId,
   getRole,
   type Hand,
@@ -21,7 +20,7 @@ import {
 import { buildProtoRecord, getDancerState } from "../worldState";
 import {
   type CalledIdentifier,
-  InstructionIdSchema,
+  instructionBaseSchemaFields,
   resolveCalledIdentifier,
 } from "./_base";
 import { hold, type InstructionAnimator } from "./_segment";
@@ -35,8 +34,7 @@ export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;
 undefined as unknown as RolleeSpec satisfies CalledIdentifier; // type assertion
 
 export const RollAwayInstructionSchema = z.object({
-  id: InstructionIdSchema,
-  beats: BeatsSchema.default(2),
+  ...instructionBaseSchemaFields,
   type: z.literal("roll_away"),
   roller: RoleSchema,
   rollee: RolleeSpecSchema,

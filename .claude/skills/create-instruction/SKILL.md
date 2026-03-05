@@ -26,12 +26,12 @@ export const FooInstructionSchema = z.object({
 export type FooInstruction = z.infer<typeof FooInstructionSchema>;
 ```
 
-To set a default for `beats`, override it instead of spreading:
+Some instructions are always instantaneous. To overwrite `beats`:
 
 ```ts
 export const FooInstructionSchema = z.object({
-  id: InstructionIdSchema,
-  beats: BeatsSchema.default(4),
+  ...instructionBaseSchemaFields,
+  beats: z.literal(0),
   type: z.literal("foo"),
   // ...
 });
@@ -218,12 +218,11 @@ Add a case to `makeDefaultInstruction`:
 
 ```ts
 case "foo":
-  return InstructionSchema.parse({
+  return {
     id,
     type: "foo",
     // provide sensible defaults for all fields
-    // beats can be omitted if the schema has .default()
-  });
+  };
 ```
 
 ## Verification
