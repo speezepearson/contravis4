@@ -6,6 +6,7 @@ import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveCalledIdentifier,
+  resolveMatch,
 } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
@@ -35,6 +36,7 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
         });
         return segInit[id].pos.add(dir.multiply(0.2));
       }),
+      interactedWith: (id, segInit) => [resolveMatch(id, instr.cid, segInit)],
     },
     {
       dur: halfBeats,

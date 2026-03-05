@@ -47,7 +47,7 @@ export type DancerState = {
   labels: Partial<Record<BasicLabel, DancerId | undefined>>;
   /** Dancers this dancer has interacted with recently, most recent first. */
   recents: DancerId[];
-}
+};
 
 export function getDancerState(
   id: DancerId,
@@ -161,7 +161,7 @@ export function addOffsetToDancer(
       if (!theirId) return undefined;
       return addOffsetToId(theirId, deltaOffset);
     }),
-    recents: state.recents.map(id => addOffsetToId(id, deltaOffset)),
+    recents: state.recents.map((id) => addOffsetToId(id, deltaOffset)),
   };
 }
 

@@ -114,6 +114,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
         !matches.has(id)
           ? {}
           : hold([instr.handedness, matches.get(id)!, instr.handedness]),
+      interactedWith: (id) => [matches.get(id)!],
     },
   ] satisfies Segment[];
 };

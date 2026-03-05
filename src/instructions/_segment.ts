@@ -64,10 +64,7 @@ export type HandsFn = (
 ) => DancerState["hands"];
 
 /** Per-dancer recents function: returns a list of dancers that a dancer interacted with in this segment. */
-export type InteractedWithFn = (
-  id: ProtoId,
-  segInit: WorldState,
-) => DancerId[];
+export type InteractedWithFn = (id: ProtoId, segInit: WorldState) => DancerId[];
 
 /** A single phase of an animation. */
 export type Segment = {
@@ -103,7 +100,10 @@ export function getSegmentFrameAtFrac(
       }
       if (segment.interactedWith) {
         const newRecents = segment.interactedWith(id, init);
-        draft[id].recents = [...newRecents, ...draft[id].recents.filter(i => !newRecents.includes(i))];
+        draft[id].recents = [
+          ...newRecents,
+          ...draft[id].recents.filter((i) => !newRecents.includes(i)),
+        ];
       }
     }
   });

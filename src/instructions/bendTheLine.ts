@@ -62,6 +62,12 @@ export const bendTheLineSegments: InstructionAnimator<
         const radians = idx <= 1 ? -PI / 2 : PI / 2;
         return segInit[id].facing.rotateByRadians(radians * frac);
       },
+      interactedWith: (id) => {
+        const line = shortLines[id];
+        const idx = line.indexOf(id as DancerId);
+        // Left pair (0,1) and right pair (2,3) bend together
+        return [line[idx ^ 1]];
+      },
     },
   ];
 };
