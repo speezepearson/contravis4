@@ -42,7 +42,9 @@ export class Dancer {
   /** Who's being held in each hand. */
   hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
   /** Labels the dancer has mentally assigned to other dancers, e.g. "partner", "neighbor", "shadow". */
-  labels: Partial<Record<BasicLabel, DancerId | undefined>>;
+  labels: Partial<Record<BasicLabel, DancerId | undefined>> & {
+    neighbor: DancerId;
+  };
   /** Dancers this dancer has interacted with recently, most recent first. */
   recents: DancerId[];
 
@@ -52,7 +54,9 @@ export class Dancer {
       pos: Vector;
       facing: Vector;
       hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
-      labels: Partial<Record<BasicLabel, DancerId | undefined>>;
+      labels: Partial<Record<BasicLabel, DancerId | undefined>> & {
+        neighbor: DancerId;
+      };
       recents: DancerId[];
     },
   ) {
@@ -97,11 +101,14 @@ export class Dancer {
           theirHand: held.theirHand,
         };
       }),
-      labels: buildLabelsRecord((label) => {
-        const theirId = this.labels[label];
-        if (!theirId) return undefined;
-        return addOffsetToId(theirId, deltaOffset);
-      }),
+      labels: {
+        ...buildLabelsRecord((label) => {
+          const theirId = this.labels[label];
+          if (!theirId) return undefined;
+          return addOffsetToId(theirId, deltaOffset);
+        }),
+        neighbor: addOffsetToId(this.labels.neighbor, deltaOffset),
+      },
       recents: this.recents.map((rid) => addOffsetToId(rid, deltaOffset)),
     });
   }
