@@ -1,11 +1,11 @@
 import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   symlinkSync,
-  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
@@ -217,50 +217,16 @@ function generateKeyframesInProcess(): AllResults {
 // Generate keyframes (worktree, via subprocess)
 // ---------------------------------------------------------------------------
 
-const GENERATOR_SCRIPT = `\
-import { enableMapSet } from "immer";
-import { readFileSync } from "node:fs";
-import { generateDanceAnimation } from "../src/generate";
-import { DanceSchema, danceLength, initFormationStates } from "../src/instructions/index";
-
-enableMapSet();
-
-const results = {};
-for (const path of process.argv.slice(2)) {
-  try {
-    const dance = DanceSchema.parse(JSON.parse(readFileSync(path, "utf-8")));
-    const { animation, errors } = generateDanceAnimation(
-      dance.instructions,
-      initFormationStates[dance.initFormation],
-    );
-    if (!animation) {
-      results[path] = {
-        error: errors.map((e) => e.message).join("; ") || "no animation produced",
-      };
-      continue;
-    }
-    const dur = danceLength(dance.instructions);
-    const count = Math.max(1, Math.round(dur * 4));
-    const frames = [];
-    for (let i = 0; i <= count; i++) {
-      const t = (dur * i) / count;
-      frames.push({ t, state: animation.getFrame(t) });
-    }
-    results[path] = { frames };
-  } catch (e) {
-    results[path] = { error: String(e) };
-  }
-}
-process.stdout.write(JSON.stringify(results));
-`;
-
 function generateKeyframesFromWorktree(worktreeDir: string): AllResults {
   const scriptsDir = join(worktreeDir, "scripts");
   mkdirSync(scriptsDir, { recursive: true });
-  writeFileSync(join(scriptsDir, "_gen.ts"), GENERATOR_SCRIPT);
+  copyFileSync(
+    resolve("scripts/verify-noop-gen.ts"),
+    join(scriptsDir, "verify-noop-gen.ts"),
+  );
 
   const tsxBin = resolve("node_modules/.bin/tsx");
-  const genScript = join(scriptsDir, "_gen.ts");
+  const genScript = join(scriptsDir, "verify-noop-gen.ts");
 
   const opts: ExecFileSyncOptions = {
     encoding: "utf-8",
