@@ -72,6 +72,7 @@ import { LongLinesForwardBackFields } from "./fields/LongLinesForwardBackFields"
 import { MadRobinFields } from "./fields/MadRobinFields";
 import { PassByFields } from "./fields/PassByFields";
 import { PetronellaFields } from "./fields/PetronellaFields";
+import { PoussetteFields } from "./fields/PoussetteFields";
 import { PullByFields } from "./fields/PullByFields";
 import { RelabelFields } from "./fields/RelabelFields";
 import { RightLeftThroughFields } from "./fields/RightLeftThroughFields";
@@ -87,6 +88,7 @@ import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
 import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
+import { ZigZagFields } from "./fields/ZigZagFields";
 import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
 import type { InlineDropdownHandle } from "./InlineDropdown";
 import { InlineDropdown } from "./InlineDropdown";
@@ -117,6 +119,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "mad_robin",
   "pass_by",
   "petronella",
+  "poussette",
   "pull_by",
   "relabel",
   "right_left_through",
@@ -132,6 +135,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "turn_alone",
   "turn_as_a_couple",
   "up_the_hall",
+  "zig_zag",
 ];
 const ACTION_LABELS: Record<string, string> = {
   allemande: "allemande",
@@ -154,6 +158,7 @@ const ACTION_LABELS: Record<string, string> = {
   mad_robin: "mad robin",
   pass_by: "pass by",
   petronella: "petronella",
+  poussette: "poussette",
   pull_by: "pull by",
   relabel: "relabel",
   right_left_through: "right & left through",
@@ -169,6 +174,7 @@ const ACTION_LABELS: Record<string, string> = {
   turn_alone: "turn alone",
   turn_as_a_couple: "turn as a couple",
   up_the_hall: "up the hall",
+  zig_zag: "zig zag",
 };
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
@@ -453,6 +459,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "mad_robin":
     case "pass_by":
     case "petronella":
+    case "poussette":
     case "pull_by":
     case "right_left_through":
     case "roll_away":
@@ -464,6 +471,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "turn_alone":
     case "turn_as_a_couple":
     case "up_the_hall":
+    case "zig_zag":
       return true;
     case "drop_hands":
     case "face":
@@ -620,6 +628,8 @@ function InlineForm({
             return <PassByFields {...common} instruction={instruction} />;
           case "petronella":
             return <PetronellaFields {...common} instruction={instruction} />;
+          case "poussette":
+            return <PoussetteFields {...common} instruction={instruction} />;
           case "pull_by":
             return <PullByFields {...common} instruction={instruction} />;
           case "relabel":
@@ -664,6 +674,8 @@ function InlineForm({
             return <DownTheHallFields {...common} instruction={instruction} />;
           case "up_the_hall":
             return <UpTheHallFields {...common} instruction={instruction} />;
+          case "zig_zag":
+            return <ZigZagFields {...common} instruction={instruction} />;
           default:
             assertNever(instruction);
         }

@@ -53,6 +53,7 @@ import {
 import { MadRobinInstructionSchema, madRobinSegments } from "./madRobin";
 import { PassByInstructionSchema, passBySegments } from "./passBy";
 import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
+import { PoussetteInstructionSchema, poussetteSegments } from "./poussette";
 import { PullByInstructionSchema, pullBySegments } from "./pullBy";
 import { RelabelInstructionSchema, relabelSegments } from "./relabel";
 import {
@@ -82,6 +83,7 @@ import {
   turnAsACoupleSegments,
 } from "./turnAsACouple";
 import { UpTheHallInstructionSchema, upTheHallSegments } from "./upTheHall";
+import { ZigZagInstructionSchema, zigZagSegments } from "./zigZag";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
@@ -104,6 +106,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   MadRobinInstructionSchema,
   PassByInstructionSchema,
   PetronellaInstructionSchema,
+  PoussetteInstructionSchema,
   PullByInstructionSchema,
   RelabelInstructionSchema,
   RightLeftThroughInstructionSchema,
@@ -118,6 +121,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   TurnAloneInstructionSchema,
   TurnAsACoupleInstructionSchema,
   UpTheHallInstructionSchema,
+  ZigZagInstructionSchema,
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
@@ -147,6 +151,7 @@ export const atomicSegmentAnimators: {
   mad_robin: madRobinSegments,
   pass_by: passBySegments,
   petronella: petronellaSegments,
+  poussette: poussetteSegments,
   pull_by: pullBySegments,
   relabel: relabelSegments,
   right_left_through: rightLeftThroughSegments,
@@ -161,6 +166,7 @@ export const atomicSegmentAnimators: {
   turn_alone: turnAloneSegments,
   turn_as_a_couple: turnAsACoupleSegments,
   up_the_hall: upTheHallSegments,
+  zig_zag: zigZagSegments,
 };
 
 export function makeAtomicInstructionSegments(
