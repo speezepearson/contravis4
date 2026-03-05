@@ -110,9 +110,6 @@ export function exportGif(
   } = options;
 
   const danceLength = animation.dur;
-  const progressionForCamera = inferredProgression ?? 0;
-  const progressionRate =
-    danceLength > 0 ? -progressionForCamera / danceLength : 0;
   const beatsPerSecond = bpm / 60;
   const beatStep = beatsPerSecond / fps;
   const delayMs = Math.round(1000 / fps);
@@ -129,7 +126,7 @@ export function exportGif(
     const t = Math.min(beat, danceLength);
     const frame = sampleFrame(animation, t, smoothness, inferredProgression);
 
-    renderer.drawFrame(t, frame, progressionRate);
+    renderer.drawFrame(t, frame);
 
     // drawFrame clears to transparent then draws content on top.
     // Fill background behind the rendered content.

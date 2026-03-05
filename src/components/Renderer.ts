@@ -56,7 +56,6 @@ export class Renderer {
   private usableH: number;
   private xRange: number;
   private yRange: number;
-  private cameraY = 0;
   private trails: Partial<Record<ProtoId, { x: number; y: number }[]>> = {};
   private trailLength = 20;
 
@@ -85,20 +84,16 @@ export class Renderer {
 
   private worldToCanvas(wx: number, wy: number): [number, number] {
     const cx = MARGIN + ((wx + this.xRange / 2) / this.xRange) * this.usableW;
-    const cy =
-      MARGIN +
-      ((this.cameraY + this.yRange / 2 - wy) / this.yRange) * this.usableH;
+    const cy = MARGIN + ((this.yRange / 2 - wy) / this.yRange) * this.usableH;
     return [cx, cy];
   }
 
-  drawFrame(t: Beats, frame: WorldState, progressionRate: number) {
+  drawFrame(_t: Beats, frame: WorldState) {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    this.cameraY = progressionRate * t;
-
-    const viewYMin = this.cameraY - this.yRange / 2;
-    const viewYMax = this.cameraY + this.yRange / 2;
+    const viewYMin = -this.yRange / 2;
+    const viewYMax = this.yRange / 2;
 
     // Grid lines (set boundaries at x = ±0.5)
     ctx.strokeStyle = "#222";
@@ -202,8 +197,8 @@ export class Renderer {
     handB: "left" | "right",
   ) {
     const ctx = this.ctx;
-    const viewYMin = this.cameraY - this.yRange / 2;
-    const viewYMax = this.cameraY + this.yRange / 2;
+    const viewYMin = -this.yRange / 2;
+    const viewYMax = this.yRange / 2;
     const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
     const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
     const r = 14;
@@ -231,8 +226,8 @@ export class Renderer {
   ) {
     if (lines.length === 0) return;
     const ctx = this.ctx;
-    const viewYMin = this.cameraY - this.yRange / 2;
-    const viewYMax = this.cameraY + this.yRange / 2;
+    const viewYMin = -this.yRange / 2;
+    const viewYMax = this.yRange / 2;
     const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
     const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
 
@@ -257,8 +252,8 @@ export class Renderer {
     if (frames.length === 0) return;
     const ctx = this.ctx;
 
-    const viewYMin = this.cameraY - this.yRange / 2;
-    const viewYMax = this.cameraY + this.yRange / 2;
+    const viewYMin = -this.yRange / 2;
+    const viewYMax = this.yRange / 2;
     const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
     const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
 
