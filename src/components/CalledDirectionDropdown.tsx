@@ -3,8 +3,7 @@ import { useMemo } from "react";
 import {
   type CalledDirection,
   CalledDirectionSchema,
-  FacingBasedDirectionSchema,
-  PositionBasedDirectionSchema,
+  PureDirectionSchema,
   resolveCalledDirectionTarget,
 } from "../instructions/_base";
 import { parses, try_ } from "../utils";
@@ -28,14 +27,9 @@ export function CalledDirectionDropdown({
     if (!dancerStates) return options;
     const larkState = dancerStates["up_lark_0"];
     return [
-      ...options.filter((o) => parses(PositionBasedDirectionSchema, o)),
-      ...options.filter((o) => parses(FacingBasedDirectionSchema, o)),
+      ...options.filter((o) => parses(PureDirectionSchema, o)),
       ...options
-        .filter(
-          (o) =>
-            !parses(PositionBasedDirectionSchema, o) &&
-            !parses(FacingBasedDirectionSchema, o),
-        )
+        .filter((o) => !parses(PureDirectionSchema, o))
         .sort((a, b) => {
           const aId = try_(() =>
             resolveCalledDirectionTarget("up_lark_0", a, dancerStates),

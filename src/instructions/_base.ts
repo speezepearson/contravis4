@@ -137,13 +137,11 @@ export function resolveLabel(
   }
 }
 
-export const PositionBasedDirectionSchema = z.enum([
+export const PureDirectionSchema = z.enum([
   "across",
   "out",
   "up",
   "down",
-]);
-export const FacingBasedDirectionSchema = z.enum([
   "on_right",
   "on_left",
   "in_front",
@@ -152,11 +150,6 @@ export const FacingBasedDirectionSchema = z.enum([
   "right_diagonal",
   "larks_left_robins_right",
   "larks_right_robins_left",
-]);
-
-export const PureDirectionSchema = z.enum([
-  ...PositionBasedDirectionSchema.options,
-  ...FacingBasedDirectionSchema.options,
 ]);
 export type PureDirection = z.infer<typeof PureDirectionSchema>;
 

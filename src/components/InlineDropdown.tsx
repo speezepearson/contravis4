@@ -7,7 +7,7 @@ import {
 } from "../instructions/_base";
 import { indexOf } from "../utils";
 import { useInstructionEdit } from "./InstructionEditContext";
-import {SearchableDropdown} from "./SearchableDropdown";
+import { SearchableDropdown } from "./SearchableDropdown";
 
 export interface InlineDropdownHandle {
   focus: () => void;
