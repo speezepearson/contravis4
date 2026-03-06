@@ -130,22 +130,6 @@
       "type": "swing",
       "cid": "partner",
       "endFacing": "across"
-    },
-    {
-      "id": "68ca85c4-d754-4991-bde6-d687b9740f69",
-      "beats": 0,
-      "type": "step",
-      "direction": "behind",
-      "distance": 0.15,
-      "facing": "across"
-    },
-    {
-      "id": "207c3fac-419f-41fb-92af-7e8ef2ca6122",
-      "beats": 0,
-      "type": "step",
-      "direction": "on_right",
-      "distance": 0.3,
-      "facing": "across"
     }
   ]
 }

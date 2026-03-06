@@ -355,10 +355,15 @@ export function setLabel(
 
 const NEARBY_HALF_WINDOW = 2 as DancerOffset;
 
+type AtLeastFour<T> = [T, T, T, T, ...T[]];
+function isAtLeastFour<T>(arr: T[]): arr is AtLeastFour<T> {
+  return arr.length >= 4;
+}
+
 export function findNearbyDancers(
   pos: Vector,
   state: WorldState,
-): Record<ProtoId, Dancer[]> {
+): Record<ProtoId, AtLeastFour<Dancer>> {
   return buildProtoRecord((protoId) => {
     const bestOffset = Math.round(
       (pos.y - state[protoId].pos.y) / 2,
@@ -377,6 +382,10 @@ export function findNearbyDancers(
       (a, b) => a.pos.subtract(pos).length() - b.pos.subtract(pos).length(),
     );
 
+    if (!isAtLeastFour(dancers))
+      throw new Error(
+        `findNearbyDancers: expected at least 4 dancers near ${protoId}, but lazily stopped too early somehow, got only ${dancers.length}`,
+      );
     return dancers;
   });
 }

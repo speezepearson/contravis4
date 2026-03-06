@@ -7,7 +7,6 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { getDir } from "../geometry";
-import { assertNever, getSide } from "../utils";
 import { buildProtoRecord, Dancer, getDancerSide } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -92,22 +91,6 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);
 
-  const preferDriftOnWest = (() => {
-    if (instr.endFacing !== "across") return undefined;
-    if (who.size !== 4)
-      throw new Error(
-        `giveAndTakeIntoSwing ending facing across must target all dancers for subtle reasons`,
-      );
-    switch (instr.drawerRole) {
-      case "lark":
-        return getSide(plans.up_lark_0.final.com) === "west" ? "up" : "down";
-      case "robin":
-        return getSide(plans.up_robin_0.final.com) === "west" ? "up" : "down";
-      default:
-        assertNever(instr.drawerRole);
-    }
-  })();
-
   const swingSegments = makeSwingSegments(
     {
       id: instr.id,
@@ -118,7 +101,6 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     },
     postApproach,
     who,
-    { preferDriftOnWest },
   );
 
   return [approachSegment, ...swingSegments];

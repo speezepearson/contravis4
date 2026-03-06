@@ -1,6 +1,6 @@
 import type z from "zod";
 
-import { type SettableLabel,SettableLabelSchema } from "../../contraCore";
+import { type SettableLabel, SettableLabelSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
 import { RelabelInstructionSchema } from "../../instructions/relabel";

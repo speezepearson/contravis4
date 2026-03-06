@@ -107,6 +107,9 @@ export function getOffset(id: DancerId): DancerOffset {
 export function isLark(id: DancerId): boolean {
   return getRole(id) === "lark";
 }
+export function isRobin(id: DancerId): boolean {
+  return getRole(id) === "robin";
+}
 
 export function flipRole<Id extends DancerId>(
   id: Id,

@@ -77,7 +77,6 @@ export function safeThreshold<T>(
   }: { neg: T; pos: T; tol?: number; errMsg?: string },
 ): T {
   if (Math.abs(x) < tol) {
-    console.error(new Error(errMsg ?? "value is too close to zero"));
     throw new Error(errMsg ?? "value is too close to zero");
   }
   return x > 0 ? pos : neg;

@@ -28,7 +28,7 @@ describe("example dances", () => {
 
 const nonDummyFiles = files.filter((f) => !f.includes(".dummy."));
 
-describe.skip("non-dummy dances have valid nonzero progressions", () => {
+describe("non-dummy dances have valid nonzero progressions", () => {
   it.each(nonDummyFiles)("%s", (file: string) => {
     const dance = DanceSchema.parse(
       JSON.parse(readFileSync(resolve(dir, file), "utf-8")),

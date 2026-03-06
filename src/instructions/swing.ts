@@ -1,23 +1,22 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type Beats, isLark, isRobin, type ProtoId } from "../contraCore";
 import {
   ccwRadsBetween,
   getDir,
+  getDist,
   lerpFacing,
+  NORTH,
   revolve,
   TWO_PI,
 } from "../geometry";
-import {
-  getSide,
-  lerpVectors,
-  smallestCrossDyToMakeAlignByMultOfTwo,
-} from "../utils";
+import { getSide, indexOf, lerpVectors, safeThreshold } from "../utils";
 import {
   avgPos,
   buildProtoRecord,
   Dancer,
+  findNearbyDancers,
   type WorldState,
 } from "../worldState";
 import {
@@ -69,7 +68,6 @@ export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
   _who: ReadonlySet<ProtoId>,
-  { preferDriftOnWest }: { preferDriftOnWest?: "up" | "down" } = {},
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
   const centers = buildProtoRecord((id) => avgPos(init, id, matches[id]));
@@ -198,29 +196,47 @@ export function makeSwingSegments(
           `[swing end facing across/out] expected 2 dancers on each side of the set, but got [${westSwingers}] vs [${eastSwingers}]`,
         );
       }
-      const westCoM = avgPos(init, ...westSwingers);
-      const eastCoM = avgPos(init, ...eastSwingers);
-      // Every pair's CoM should end up across the set from another pair's CoM.
-      // We want to choose a dy such that (westCoM.y+dy) and (eastCoM.y-dy) differ by a multiple of 2.
-      const dy = (() => {
+      const [westCoM, eastCoM] = (() => {
+        const westLark = westSwingers.find((id) => isLark(id));
+        const eastRobinProto = eastSwingers.find((id) => isRobin(id));
+        if (!westLark || !eastRobinProto) {
+          throw new Error(
+            `[swing end facing across/out] expected one lark and one robin on each side of the set, but got [${westSwingers}] vs [${eastSwingers}]`,
+          );
+        }
+
+        const [er0, er1] = findNearbyDancers(plans[westLark].center, init)[
+          eastRobinProto
+        ];
+        const wlcom = plans[westLark].center;
+        const er0Com = plans[eastRobinProto].center.add(
+          NORTH.multiply(2 * er0.offset),
+        );
+        const er1Com = plans[eastRobinProto].center.add(
+          NORTH.multiply(2 * er1.offset),
+        );
         try {
-          return smallestCrossDyToMakeAlignByMultOfTwo(westCoM.y, eastCoM.y, {
-            errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
-          });
-        } catch (e) {
-          if (!preferDriftOnWest) throw e;
-          const fudge = preferDriftOnWest === "up" ? 0.2 : -0.2;
-          return (
-            smallestCrossDyToMakeAlignByMultOfTwo(
-              westCoM.y + fudge,
-              eastCoM.y - fudge,
-              {
-                errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
-              },
-            ) + fudge
+          return safeThreshold(
+            getDist(wlcom, er0Com) - getDist(wlcom, er1Com),
+            {
+              neg: [wlcom, er0Com],
+              pos: [wlcom, er1Com],
+              errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
+            },
+          );
+        } catch {
+          const wlRecents = init[westLark].recents;
+          const er0Recency = indexOf(wlRecents, er0.id) ?? Infinity;
+          const er1Recency = indexOf(wlRecents, er1.id) ?? Infinity;
+          if (er0Recency < er1Recency) return [wlcom, er0Com];
+          if (er1Recency < er0Recency) return [wlcom, er1Com];
+          throw new Error(
+            `[swing end facing across/out] ${westLark} isn't sure which other couple to end up across from; candidates are ${er0.id}, ${er1.id}`,
           );
         }
       })();
+
+      const dy = (eastCoM.y - westCoM.y) / 2;
 
       const drifts = buildProtoRecord((id) => {
         const center = centers[id];

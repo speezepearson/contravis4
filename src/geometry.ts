@@ -78,3 +78,7 @@ export function roughlySameDir(
 ): boolean {
   return a.dot(b) > 1 - tol;
 }
+
+export function getDist(a: Vector, b: Vector): number {
+  return a.subtract(b).length();
+}
