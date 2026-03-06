@@ -3,13 +3,13 @@ import { Vector } from "vecti";
 
 import {
   ALL_PROTO_IDS,
-  type BasicLabel,
   type DancerId,
+  type DancerOffset,
+  flipProgDir,
+  flipRole,
   type Hand,
   HandSchema,
   makeDancerId,
-  otherRole,
-  parseProtoId,
   type ProgressionDir,
   ProgressionDirSchema,
   type ProtoId,
@@ -20,7 +20,7 @@ import {
   ShadowLabelSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
-import { connectHands, Dancer, type WorldState } from "./worldState";
+import { connectHands, Dancer, setLabel, type WorldState } from "./worldState";
 
 export const fcProtoId: fc.Arbitrary<ProtoId> = fc.constantFrom(
   ...ALL_PROTO_IDS,
@@ -40,11 +40,16 @@ export const fcSettableLabel: fc.Arbitrary<SettableLabel> = fc.constantFrom(
   ...SettableLabelSchema.options,
 );
 
+export const fcDancerOffset: fc.Arbitrary<DancerOffset> = fc.integer({
+  min: -10,
+  max: 10,
+});
+
 export const fcDancerId: fc.Arbitrary<DancerId> = fc
   .record({
     dir: fcProgressionDir,
     role: fcRole,
-    offset: fc.integer({ min: -10, max: 10 }),
+    offset: fcDancerOffset,
   })
   .map(({ dir, role, offset }) => makeDancerId({ dir, role, offset }));
 
@@ -59,52 +64,7 @@ const fcPos = fc
   })
   .map(({ x, y }) => new Vector(x, y));
 
-export const fcNonzeroOffset = fc
-  .integer({ min: -10, max: 10 })
-  .filter((o) => o !== 0);
-
-/** Random symmetric neighbor labels for a (lark, robin) pair in opposite dirs. */
-function fcNeighborPair(
-  larkDir: ProgressionDir,
-  robinDir: ProgressionDir,
-): fc.Arbitrary<[DancerId, DancerId]> {
-  return fc
-    .integer({ min: -10, max: 10 })
-    .map((offset) => [
-      makeDancerId({ dir: robinDir, role: "robin", offset }),
-      makeDancerId({ dir: larkDir, role: "lark", offset: -offset }),
-    ]);
-}
-
-/** Random symmetric shadow labels for a (lark, robin) pair in the same dir. */
-function fcShadowLabels(
-  dir: ProgressionDir,
-): fc.Arbitrary<
-  [Partial<Record<BasicLabel, DancerId>>, Partial<Record<BasicLabel, DancerId>>]
-> {
-  return fc
-    .array(fcNonzeroOffset, {
-      minLength: 0,
-      maxLength: ShadowLabelSchema.options.length,
-    })
-    .map((offsets) => {
-      const larkShadows: Partial<Record<BasicLabel, DancerId>> = {};
-      const robinShadows: Partial<Record<BasicLabel, DancerId>> = {};
-      for (let i = 0; i < offsets.length; i++) {
-        larkShadows[ShadowLabelSchema.options[i]] = makeDancerId({
-          dir,
-          role: "robin",
-          offset: offsets[i],
-        });
-        robinShadows[ShadowLabelSchema.options[i]] = makeDancerId({
-          dir,
-          role: "lark",
-          offset: -offsets[i],
-        });
-      }
-      return [larkShadows, robinShadows];
-    });
-}
+export const fcNonzeroOffset = fcDancerOffset.filter((o) => o !== 0);
 
 export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
   .record({
@@ -123,10 +83,15 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
       }),
       { minLength: 0, maxLength: 4 },
     ),
-    upNeighbors: fcNeighborPair("up", "down"),
-    downNeighbors: fcNeighborPair("down", "up"),
-    upShadows: fcShadowLabels("up"),
-    downShadows: fcShadowLabels("down"),
+    upLarkNeighbor: fcDancerOffset.map((o) =>
+      makeDancerId({ dir: "down", role: "robin", offset: o }),
+    ),
+    upLarkShadows: fc.array(
+      fcNonzeroOffset.map((o) =>
+        makeDancerId({ dir: "up", role: "robin", offset: o }),
+      ),
+      { minLength: 0, maxLength: ShadowLabelSchema.options.length },
+    ),
     extraRecents: fc.record({
       up_lark_0: fc.array(fcDancerId, { minLength: 0, maxLength: 3 }),
       up_robin_0: fc.array(fcDancerId, { minLength: 0, maxLength: 3 }),
@@ -138,44 +103,27 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
     ({
       positions,
       handConnections,
-      upNeighbors,
-      downNeighbors,
-      upShadows,
-      downShadows,
+      upLarkNeighbor,
+      upLarkShadows,
       extraRecents,
     }) => {
-      const neighbors: Record<ProtoId, DancerId> = {
-        up_lark_0: upNeighbors[0],
-        down_robin_0: upNeighbors[1],
-        up_robin_0: downNeighbors[0],
-        down_lark_0: downNeighbors[1],
-      };
-      const shadows: Record<ProtoId, Partial<Record<BasicLabel, DancerId>>> = {
-        up_lark_0: upShadows[0],
-        up_robin_0: upShadows[1],
-        down_lark_0: downShadows[0],
-        down_robin_0: downShadows[1],
-      };
-
       // Build each proto dancer
       const state: WorldState = {} as WorldState;
       for (const protoId of ALL_PROTO_IDS) {
-        const { dir, role } = parseProtoId(protoId);
-        const partner: DancerId = makeDancerId({
-          dir,
-          role: otherRole(role),
-          offset: 0,
-        });
+        const partner: DancerId = flipRole(protoId);
         state[protoId] = new Dancer(protoId, {
           pos: positions[protoId],
           facing: NORTH,
           hands: {},
           labels: {
             partner,
-            neighbor: neighbors[protoId],
-            ...shadows[protoId],
+            neighbor: flipProgDir(flipRole(protoId)), // we're about to stomp on this with setLabel()
           },
-          recents: [partner, neighbors[protoId], ...extraRecents[protoId]],
+          recents: [
+            partner,
+            flipProgDir(flipRole(protoId)),
+            ...extraRecents[protoId],
+          ],
         });
       }
 
@@ -187,6 +135,16 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
           // SWALLOW_EXCEPTION: randomly generated hand connections will often
           // conflict (same proto, hand already occupied, etc.) — that's expected.
         }
+      }
+
+      setLabel(state, "up_lark_0", "neighbor", upLarkNeighbor);
+      for (let i = 0; i < upLarkShadows.length; i++) {
+        setLabel(
+          state,
+          "up_lark_0",
+          ShadowLabelSchema.options[i],
+          upLarkShadows[i],
+        );
       }
 
       return state;
