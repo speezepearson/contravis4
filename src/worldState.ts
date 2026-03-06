@@ -7,12 +7,13 @@ import {
   ALL_PROTO_IDS,
   type BasicLabel,
   BasicLabelSchema,
-  BasicOtherDirLabelSchema,
-  BasicSameDirLabelSchema,
   buildHandsRecord,
   type DancerId,
   DancerIdSchema,
   type DancerOffset,
+  flipOffset,
+  flipProgDir,
+  flipRole,
   getOffset,
   getRole,
   type Hand,
@@ -28,7 +29,7 @@ import {
   ShadowLabelSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
-import { getSide, isEqual } from "./utils";
+import { assertNever, getSide, isEqual, parses } from "./utils";
 
 export const DancerHandPointerSchema = z.object({
   theirId: DancerIdSchema,
@@ -309,34 +310,47 @@ export function setLabel(
     );
   }
 
-  if (
-    BasicOtherDirLabelSchema.safeParse(label).success &&
-    protoDir === dancerDir
-  ) {
-    throw new Error(
-      `Cannot set other-dir label "${label}" of ${protoId} to same-dir dancer ${dancerId}`,
+  if (label === "neighbor") {
+    if (dancerDir === protoDir) {
+      throw new Error(
+        `Cannot set ${label} of ${protoId} to ${dancerId} (same progression direction)`,
+      );
+    }
+    state[protoId].labels[label] = dancerId;
+    state[flipRole(protoId)].labels[label] = flipRole(dancerId);
+    state[flipProgDir(protoId)].labels[label] = flipOffset(
+      flipProgDir(dancerId),
     );
+    state[flipRole(flipProgDir(protoId))].labels[label] = flipOffset(
+      flipRole(flipProgDir(dancerId)),
+    );
+    return;
   }
 
-  if (
-    BasicSameDirLabelSchema.safeParse(label).success &&
-    protoDir !== dancerDir
-  ) {
-    throw new Error(
-      `Cannot set same-dir label "${label}" of ${protoId} to other-dir dancer ${dancerId}`,
+  if (parses(ShadowLabelSchema, label)) {
+    if (protoDir !== dancerDir) {
+      throw new Error(
+        `Cannot set shadow "${label}" of ${protoId} to ${dancerId} (different progression direction)`,
+      );
+    }
+
+    if (getOffset(dancerId) === getOffset(protoId)) {
+      throw new Error(
+        `${protoId} should know ${dancerId} as their partner, not their ${label}`,
+      );
+    }
+    state[protoId].labels[label] = dancerId;
+    state[flipRole(protoId)].labels[label] = flipOffset(flipRole(dancerId));
+    state[flipProgDir(protoId)].labels[label] = flipOffset(
+      flipProgDir(dancerId),
     );
+    state[flipRole(flipProgDir(protoId))].labels[label] = flipRole(
+      flipProgDir(dancerId),
+    );
+    return;
   }
 
-  if (
-    ShadowLabelSchema.safeParse(label).success &&
-    state[protoId].labels.partner === dancerId
-  ) {
-    throw new Error(
-      `Cannot set shadow "${label}" of ${protoId} to ${dancerId} (already partner)`,
-    );
-  }
-
-  throw new Error("not implemented");
+  assertNever(label);
 }
 
 const NEARBY_HALF_WINDOW = 2 as DancerOffset;

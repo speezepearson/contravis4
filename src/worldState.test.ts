@@ -150,7 +150,7 @@ describe("setLabel", () => {
   });
 
   // These fc tests are red until setLabel is implemented (currently throws "not implemented")
-  it.skip("updates all neighbor labels consistently", () => {
+  it("updates all neighbor labels consistently", () => {
     fc.assert(
       fc.property(fc.integer({ min: -10, max: 10 }), (n) => {
         const state = produce(initFormationStates.improper, (draft) => {
@@ -161,29 +161,45 @@ describe("setLabel", () => {
             `down_robin_${n}` as DancerId,
           );
         });
-        expect(state.up_lark_0.labels.neighbor).toBe(`down_robin_${n}`);
-        expect(state.down_robin_0.labels.neighbor).toBe(`up_lark_${-n}`);
-        expect(state.down_lark_0.labels.neighbor).toBe(`up_robin_${-n}`);
-        expect(state.up_robin_0.labels.neighbor).toBe(`down_lark_${n}`);
+        expect(state.up_lark_0.labels.neighbor, "up_lark_0").toBe(
+          `down_robin_${n}`,
+        );
+        expect(state.down_robin_0.labels.neighbor, "down_robin_0").toBe(
+          `up_lark_${-n}`,
+        );
+        expect(state.down_lark_0.labels.neighbor, "down_lark_0").toBe(
+          `up_robin_${-n}`,
+        );
+        expect(state.up_robin_0.labels.neighbor, "up_robin_0").toBe(
+          `down_lark_${n}`,
+        );
       }),
     );
   });
 
-  it.skip("updates all shadow labels consistently", () => {
+  it("updates all shadow labels consistently", () => {
     fc.assert(
       fc.property(fcNonzeroOffset, (n) => {
         const state = produce(initFormationStates.improper, (draft) => {
           setLabel(draft, "up_lark_0", "shadow", `up_robin_${n}` as DancerId);
         });
-        expect(state.up_lark_0.labels.shadow).toBe(`up_robin_${n}`);
-        expect(state.up_robin_0.labels.shadow).toBe(`up_lark_${-n}`);
-        expect(state.down_lark_0.labels.shadow).toBe(`down_robin_${-n}`);
-        expect(state.down_robin_0.labels.shadow).toBe(`down_lark_${n}`);
+        expect(state.up_lark_0.labels.shadow, "up_lark_0").toBe(
+          `up_robin_${n}`,
+        );
+        expect(state.up_robin_0.labels.shadow, "up_robin_0").toBe(
+          `up_lark_${-n}`,
+        );
+        expect(state.down_lark_0.labels.shadow, "down_lark_0").toBe(
+          `down_robin_${-n}`,
+        );
+        expect(state.down_robin_0.labels.shadow, "down_robin_0").toBe(
+          `down_lark_${n}`,
+        );
       }),
     );
   });
 
-  it.skip("setLabel is a noop when re-applied with the value it already set", () => {
+  it("setLabel is a noop when re-applied with the value it already set", () => {
     fc.assert(
       fc.property(
         fcProtoId,

@@ -108,6 +108,33 @@ export function isLark(id: DancerId): boolean {
   return getRole(id) === "lark";
 }
 
+export function flipRole<Id extends DancerId>(
+  id: Id,
+): Id extends ProtoId ? ProtoId : DancerId {
+  const { dir, role, offset } = parseDancerId(id);
+  if (offset === 0) return makeProtoId({ dir, role: otherRole(role) });
+  return makeDancerId({
+    dir,
+    role: otherRole(role),
+    offset,
+  }) as Id extends ProtoId ? ProtoId : DancerId;
+}
+export function flipProgDir<Id extends DancerId>(
+  id: Id,
+): Id extends ProtoId ? ProtoId : DancerId {
+  const { dir, role, offset } = parseDancerId(id);
+  if (offset === 0) return makeProtoId({ dir: otherDir(dir), role });
+  return makeDancerId({
+    dir: otherDir(dir),
+    role,
+    offset,
+  }) as Id extends ProtoId ? ProtoId : DancerId;
+}
+export function flipOffset(id: DancerId): DancerId {
+  const { dir, role, offset } = parseDancerId(id);
+  return makeDancerId({ dir, role, offset: -offset });
+}
+
 export function protoIdToDancerId(
   proto: ProtoId,
   offset: DancerOffset,
