@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { must } from "../utils";
 import {
   instructionBaseSchemaFields,
   NonLabelCalledIdentifierSchema,
+  resolveCalledIdentifier,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
@@ -22,5 +24,6 @@ export const greetNewNeighborsSegments: InstructionAnimator<
   {
     dur: 0,
     newNeighbors: instr.cid,
+    interactedWith: (id, segInit) => [must(resolveCalledIdentifier(id, instr.cid, segInit))],
   },
 ];
