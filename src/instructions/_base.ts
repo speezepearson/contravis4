@@ -154,27 +154,85 @@ export const FacingBasedDirectionSchema = z.enum([
   "larks_right_robins_left",
 ]);
 
-export const CalledDirectionSchema = z.enum([
+export const PureDirectionSchema = z.enum([
   ...PositionBasedDirectionSchema.options,
   ...FacingBasedDirectionSchema.options,
+]);
+export type PureDirection = z.infer<typeof PureDirectionSchema>;
+
+// ── CalledIdentifier: "the person [X]" — identifies a specific dancer ───
+
+export type PersonInDirection = `person_${PureDirection}`;
+export const PersonInDirectionSchema = z.enum(
+  PureDirectionSchema.options.map((d) => `person_${d}`) as [
+    PersonInDirection,
+    ...PersonInDirection[],
+  ],
+);
+
+export const CalledIdentifierSchema = z.enum([
   ...LabelSchema.options,
+  ...PersonInDirectionSchema.options,
+]);
+export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
+
+// ── CalledDirection: resolves to a direction vector ─────────────────────
+
+type ReplaceSpaces<S extends string> = S extends `${infer L} ${infer R}`
+  ? `${L}_${ReplaceSpaces<R>}`
+  : S;
+
+export type TowardsLabelDirection = `towards_${ReplaceSpaces<Label>}`;
+export const TowardsLabelDirectionSchema = z.enum(
+  LabelSchema.options.map((l) => `towards_${l.replaceAll(" ", "_")}`) as [
+    TowardsLabelDirection,
+    ...TowardsLabelDirection[],
+  ],
+);
+
+export type TowardsPersonDirection = `towards_person_${PureDirection}`;
+export const TowardsPersonDirectionSchema = z.enum(
+  PureDirectionSchema.options.map((d) => `towards_person_${d}`) as [
+    TowardsPersonDirection,
+    ...TowardsPersonDirection[],
+  ],
+);
+
+export const CalledDirectionSchema = z.enum([
+  ...PureDirectionSchema.options,
+  ...TowardsLabelDirectionSchema.options,
+  ...TowardsPersonDirectionSchema.options,
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
-export function resolveCalledDirection(
+
+// ── Lookup maps ─────────────────────────────────────────────────────────
+
+const personInToDir = Object.fromEntries(
+  PureDirectionSchema.options.map((d) => [`person_${d}`, d]),
+) as Record<PersonInDirection, PureDirection>;
+
+const towardsToLabel = Object.fromEntries(
+  LabelSchema.options.map((l) => [`towards_${l.replaceAll(" ", "_")}`, l]),
+) as Record<TowardsLabelDirection, Label>;
+
+const towardsPersonToDir = Object.fromEntries(
+  PureDirectionSchema.options.map((d) => [`towards_person_${d}`, d]),
+) as Record<TowardsPersonDirection, PureDirection>;
+
+// ── Resolution functions ────────────────────────────────────────────────
+
+export function resolvePureDirection(
   id: DancerId,
-  dir: CalledDirection,
+  dir: PureDirection,
   protos: Record<ProtoId, Dancer>,
 ): Vector {
-  if (parses(LabelSchema, dir)) {
-    const themId = resolveLabel(id, dir, protos);
-    if (!themId) throw new Error(`${id} has no ${dir}`);
-    return getDir({
-      from: Dancer.get(id, protos).pos,
-      to: Dancer.get(themId, protos).pos,
-    });
-  }
   const state = Dancer.get(id, protos);
   switch (dir) {
+    case "across":
+    case "out":
+    case "up":
+    case "down":
+      return resolveCardinalDirection(dir, state.pos);
     case "on_right":
       return state.facing.rotateByDegrees(-90);
     case "on_left":
@@ -191,27 +249,41 @@ export function resolveCalledDirection(
       return state.facing.rotateByDegrees(90 * (isLark(id) ? 1 : -1));
     case "larks_right_robins_left":
       return state.facing.rotateByDegrees(-90 * (isLark(id) ? 1 : -1));
-    case "across":
-    case "out":
-    case "up":
-    case "down":
-      return resolveCardinalDirection(dir, state.pos);
     default:
       assertNever(dir);
   }
 }
 
-export const CalledIdentifierSchema = z.enum([
-  ...LabelSchema.options,
-  ...CalledDirectionSchema.options,
-]);
-export const NonLabelCalledIdentifierSchema = z.enum(
-  CalledIdentifierSchema.options.filter((v) => !parses(LabelSchema, v)),
-);
-export type NonLabelCalledIdentifier = z.infer<
-  typeof NonLabelCalledIdentifierSchema
->;
-export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
+export function resolveCalledDirection(
+  id: DancerId,
+  dir: CalledDirection,
+  protos: Record<ProtoId, Dancer>,
+): Vector {
+  if (parses(PureDirectionSchema, dir)) {
+    return resolvePureDirection(id, dir, protos);
+  }
+  if (parses(TowardsLabelDirectionSchema, dir)) {
+    const label = towardsToLabel[dir];
+    const themId = resolveLabel(id, label, protos);
+    if (!themId) throw new Error(`${id} has no ${label}`);
+    return getDir({
+      from: Dancer.get(id, protos).pos,
+      to: Dancer.get(themId, protos).pos,
+    });
+  }
+  if (parses(TowardsPersonDirectionSchema, dir)) {
+    const pureDir = towardsPersonToDir[dir];
+    const pureDirVec = resolvePureDirection(id, pureDir, protos);
+    const themId = findDancerInDirection(protos, id, pureDirVec);
+    if (!themId) throw new Error(`${id} has nobody ${pureDir}`);
+    return getDir({
+      from: Dancer.get(id, protos).pos,
+      to: Dancer.get(themId, protos).pos,
+    });
+  }
+  assertNever(dir);
+}
+
 export function resolveCalledIdentifier(
   id: DancerId,
   cid: CalledIdentifier,
@@ -219,7 +291,8 @@ export function resolveCalledIdentifier(
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | undefined {
   if (parses(LabelSchema, cid)) return resolveLabel(id, cid, protos);
-  const dir = resolveCalledDirection(id, cid, protos);
+  const pureDir = personInToDir[cid as PersonInDirection];
+  const dir = resolvePureDirection(id, pureDir, protos);
   const res = findDancerInDirection(protos, id, dir, { roles });
   if (!res) return undefined;
   if (roles === "same" && getRole(id) !== getRole(res))
@@ -231,6 +304,21 @@ export function resolveCalledIdentifier(
       `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
     );
   return res;
+}
+
+/** For a "towards" CalledDirection, resolves the target person. Returns undefined for pure directions. */
+export function resolveCalledDirectionTarget(
+  id: DancerId,
+  dir: CalledDirection,
+  protos: Record<ProtoId, Dancer>,
+): DancerId | undefined {
+  if (parses(PureDirectionSchema, dir)) return undefined;
+  if (parses(TowardsLabelDirectionSchema, dir)) {
+    return resolveLabel(id, towardsToLabel[dir], protos) ?? undefined;
+  }
+  const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
+  const pureDirVec = resolvePureDirection(id, pureDir, protos);
+  return findDancerInDirection(protos, id, pureDirVec) ?? undefined;
 }
 
 export function inferRoleOfCalledIdentifier(

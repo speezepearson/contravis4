@@ -109,7 +109,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
   init,
   who,
 ) => {
-  const matches = resolveMatches("across", init, { roles: "different" });
+  const matches = resolveMatches("person_across", init, { roles: "different" });
 
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
     draft[id].facing = resolveCardinalDirection("across", draft[id].pos);

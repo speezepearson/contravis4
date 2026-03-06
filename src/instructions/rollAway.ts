@@ -26,8 +26,8 @@ import {
 import { hold, type InstructionAnimator } from "./_segment";
 
 export const RolleeSpecSchema = z.enum([
-  "on_right",
-  "on_left",
+  "person_on_right",
+  "person_on_left",
   ...IrreducibleLabelSchema.options,
 ]);
 export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;

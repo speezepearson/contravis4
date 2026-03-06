@@ -19,7 +19,7 @@ export const courtesyTurnSegments: InstructionAnimator<
   {
     dur: instr.beats,
     position: (id, frac, segInit) => {
-      const them = resolveMatch(id, "larks_right_robins_left", segInit, {
+      const them = resolveMatch(id, "person_larks_right_robins_left", segInit, {
         roles: "different",
       });
       const myPos = segInit[id].pos;
@@ -29,7 +29,7 @@ export const courtesyTurnSegments: InstructionAnimator<
     },
     facing: rotateFacingBy(() => PI),
     hands: (id, _frac, segInit) => {
-      const them = resolveMatch(id, "larks_right_robins_left", segInit, {
+      const them = resolveMatch(id, "person_larks_right_robins_left", segInit, {
         roles: "different",
       });
       return hold(["left", them, "left"], ["right", them, "right"]);

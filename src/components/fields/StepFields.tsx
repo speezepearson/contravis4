@@ -1,7 +1,7 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
+import { CalledDirectionSchema } from "../../instructions/_base";
 import { StepInstructionSchema } from "../../instructions/step";
 import { typedSafeParse } from "../../utils";
 import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
@@ -36,7 +36,7 @@ export function StepFields({
   return (
     <>
       <CalledDirectionDropdown
-        options={CalledIdentifierSchema.options}
+        options={CalledDirectionSchema.options}
         value={instruction.direction}
         onChange={(dir) => tryCommit({ direction: dir })}
       />{" "}
@@ -49,7 +49,7 @@ export function StepFields({
       />
       {" and face "}
       <CalledDirectionDropdown
-        options={CalledIdentifierSchema.options}
+        options={CalledDirectionSchema.options}
         value={instruction.facing}
         onChange={(f) => tryCommit({ facing: f })}
       />

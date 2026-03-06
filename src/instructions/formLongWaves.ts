@@ -58,8 +58,8 @@ export const formLongWavesSegments: InstructionAnimator<
 
   // Every dancer must have somebody on their left and right; resolveMatches
   // throws (via getCycle) if any dancer lacks a match on either side.
-  const leftMatches = resolveMatches("on_left", snappedState);
-  const rightMatches = resolveMatches("on_right", snappedState);
+  const leftMatches = resolveMatches("person_on_left", snappedState);
+  const rightMatches = resolveMatches("person_on_right", snappedState);
 
   return [
     makeImmediateSegment(init, (id, draft) => {

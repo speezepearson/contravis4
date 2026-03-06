@@ -15,7 +15,7 @@ export const StepInstructionSchema = z.object({
   type: z.literal("step"),
   direction: CalledDirectionSchema,
   distance: z.number(),
-  facing: CalledDirectionSchema, // TODO: would be nice to be able to express "the direction towards the the person roughly on your right", which might not be exactly your right
+  facing: CalledDirectionSchema, // e.g. "towards_person_on_right" for "the direction towards the person roughly on your right"
 });
 export type StepInstruction = z.infer<typeof StepInstructionSchema>;
 

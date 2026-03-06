@@ -46,7 +46,13 @@ export const squareThroughSegments: InstructionAnimator<
   // 2. Take right hands with person in front
   append(
     takeHandsSegments(
-      { id, beats: 0, type: "take_hands", cid: "in_front", hand: "right" },
+      {
+        id,
+        beats: 0,
+        type: "take_hands",
+        cid: "person_in_front",
+        hand: "right",
+      },
       state,
       who,
     ),
@@ -55,7 +61,7 @@ export const squareThroughSegments: InstructionAnimator<
   // 3. Balance toward person in front
   append(
     balanceSegments(
-      { id, beats: balanceBeats, type: "balance", cid: "in_front" },
+      { id, beats: balanceBeats, type: "balance", cid: "person_in_front" },
       state,
       who,
     ),
@@ -92,7 +98,7 @@ export const squareThroughSegments: InstructionAnimator<
         id,
         beats: pullByBeats,
         type: "pull_by",
-        cid: "in_front",
+        cid: "person_in_front",
         hand: "left",
       },
       state,

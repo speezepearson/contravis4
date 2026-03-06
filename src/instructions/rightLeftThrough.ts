@@ -36,7 +36,13 @@ export const rightLeftThroughSegments: InstructionAnimator<
   // 1. Pull by right with person across
   append(
     pullBySegments(
-      { id, beats: pullByBeats, type: "pull_by", cid: "across", hand: "right" },
+      {
+        id,
+        beats: pullByBeats,
+        type: "pull_by",
+        cid: "person_across",
+        hand: "right",
+      },
       state,
       who,
     ),

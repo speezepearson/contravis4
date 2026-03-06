@@ -41,11 +41,14 @@ export type TakeHandsInRingsInstruction = z.infer<
 export function makeRingSegment(init: WorldState): Segment {
   const targets = buildProtoRecord((id) => {
     const acrossId = must(
-      resolveCalledIdentifier(id, "across", init, { roles: "different" }),
+      resolveCalledIdentifier(id, "person_across", init, {
+        roles: "different",
+      }),
     );
-    const alongDir = init[id].facing.y >= 0 ? "up" : "down";
+    const alongCid =
+      init[id].facing.y >= 0 ? "person_up" : ("person_down" as const);
     const alongId = must(
-      resolveCalledIdentifier(id, alongDir, init, { roles: "different" }),
+      resolveCalledIdentifier(id, alongCid, init, { roles: "different" }),
     );
     return { acrossId, alongId };
   });

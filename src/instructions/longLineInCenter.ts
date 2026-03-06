@@ -42,8 +42,8 @@ export const longLineInCenterSegments: InstructionAnimator<
       hands: (id, _frac, segInit) => {
         if (getRole(id) !== instr.role) return {};
         return hold(
-          ["left", resolveMatch(id, "on_left", segInit), "left"],
-          ["right", resolveMatch(id, "on_right", segInit), "right"],
+          ["left", resolveMatch(id, "person_on_left", segInit), "left"],
+          ["right", resolveMatch(id, "person_on_right", segInit), "right"],
         );
       },
     },

@@ -7,7 +7,7 @@
       "id": "04a38633-9a5a-44b3-bed0-cb879d63a58b",
       "beats": 0,
       "type": "face",
-      "direction": "partner"
+      "direction": "towards_partner"
     },
     {
       "id": "765e5f1f-9445-4a38-89e8-6d89ffdd8844",
@@ -45,7 +45,7 @@
       "id": "d81b1a4a-b2dc-49e2-9328-06a5b5f2720e",
       "beats": 0,
       "type": "face",
-      "direction": "next neighbor"
+      "direction": "towards_next_neighbor"
     },
     {
       "id": "f328d677-b1c6-4ca5-9433-b09fe8cb9e0f",
@@ -75,7 +75,7 @@
           "id": "06a83f18-4e9c-4f20-bac9-a5fd92f8f9a0",
           "beats": 4,
           "type": "balance",
-          "cid": "on_right"
+          "cid": "person_on_right"
         },
         {
           "id": "4377ab1d-8819-4137-96ab-e169c93527d2",
@@ -117,7 +117,7 @@
           "id": "0d2282d3-97de-4b2a-84f5-6fbb96a55529",
           "beats": 6,
           "type": "shoulder_round",
-          "cid": "in_front",
+          "cid": "person_in_front",
           "handedness": "left",
           "rotations": 1
         }

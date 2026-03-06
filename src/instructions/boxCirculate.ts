@@ -48,7 +48,11 @@ export const boxCirculateSegments: InstructionAnimator<
       dur: instr.beats,
       position: (id: ProtoId, frac: number, segInit: WorldState) => {
         if (outFacers.includes(id)) {
-          const matchId = resolveCalledIdentifier(id, "on_right", segInit);
+          const matchId = resolveCalledIdentifier(
+            id,
+            "person_on_right",
+            segInit,
+          );
           if (!matchId)
             throw new Error(
               `${id} has nobody on their right to box circulate to`,
@@ -58,7 +62,11 @@ export const boxCirculateSegments: InstructionAnimator<
             radians: -PI * frac,
           });
         } else {
-          const matchId = resolveCalledIdentifier(id, "in_front", segInit);
+          const matchId = resolveCalledIdentifier(
+            id,
+            "person_in_front",
+            segInit,
+          );
           if (!matchId)
             throw new Error(`${id} has nobody in front to box circulate to`);
           return lerpVectors(

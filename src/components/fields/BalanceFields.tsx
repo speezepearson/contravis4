@@ -1,7 +1,7 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledDirectionSchema } from "../../instructions/_base";
+import { CalledIdentifierSchema } from "../../instructions/_base";
 import { BalanceInstructionSchema } from "../../instructions/balance";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
@@ -33,7 +33,7 @@ export function BalanceFields({
   return (
     <>
       <CalledIdentifierDropdown
-        options={CalledDirectionSchema.options}
+        options={CalledIdentifierSchema.options}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />

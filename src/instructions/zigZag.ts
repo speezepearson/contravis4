@@ -38,7 +38,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   init,
   who,
 ) => {
-  const matches = resolveMatches("across", init, { roles: "different" });
+  const matches = resolveMatches("person_across", init, { roles: "different" });
 
   // Compute facing: dir from leader to follower, rotated 90° to leaderDir side.
   // Both dancers in each pair face the same direction.

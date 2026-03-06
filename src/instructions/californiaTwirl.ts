@@ -19,11 +19,18 @@ export const californiaTwirlSegments: InstructionAnimator<
 > = (instr) => [
   {
     dur: instr.beats,
-    position: arc("larks_right_robins_left", { semiMinor: 0.25, phi: PI }),
+    position: arc("person_larks_right_robins_left", {
+      semiMinor: 0.25,
+      phi: PI,
+    }),
     facing: lerpFacingTo(
       (id, segInit) => {
         // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
-        const them = resolveMatch(id, "larks_right_robins_left", segInit);
+        const them = resolveMatch(
+          id,
+          "person_larks_right_robins_left",
+          segInit,
+        );
         const myRole = parseProtoId(id).role;
         return getDir({
           from: segInit[id].pos,
@@ -35,13 +42,13 @@ export const californiaTwirlSegments: InstructionAnimator<
       },
     ),
     hands: (id, _frac, segInit) => {
-      const them = resolveMatch(id, "larks_right_robins_left", segInit);
+      const them = resolveMatch(id, "person_larks_right_robins_left", segInit);
       return isLark(id)
         ? hold(["right", them, "left"])
         : hold(["left", them, "right"]);
     },
     interactedWith: (id, segInit) => [
-      resolveMatch(id, "larks_right_robins_left", segInit),
+      resolveMatch(id, "person_larks_right_robins_left", segInit),
     ],
   },
 ];

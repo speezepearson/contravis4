@@ -129,7 +129,7 @@
       "type": "face",
       "direction": "across",
       "distance": 0,
-      "facing": "neighbor",
+      "facing": "towards_neighbor",
       "facingOffset": 0
     },
     {
@@ -145,7 +145,7 @@
       "type": "step",
       "direction": "across",
       "distance": 0,
-      "facing": "partner",
+      "facing": "towards_partner",
       "facingOffset": 0
     },
     {
@@ -174,7 +174,7 @@
       "type": "step",
       "direction": "across",
       "distance": 0,
-      "facing": "neighbor",
+      "facing": "towards_neighbor",
       "facingOffset": 0
     },
     {

@@ -1,7 +1,7 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { NonLabelCalledIdentifierSchema } from "../../instructions/_base";
+import { PersonInDirectionSchema } from "../../instructions/_base";
 import { GreetNewNeighborsInstructionSchema } from "../../instructions/greetNewNeighbors";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
@@ -34,7 +34,7 @@ export function GreetNewNeighborsFields({
     <>
       {": "}
       <CalledIdentifierDropdown
-        options={NonLabelCalledIdentifierSchema.options}
+        options={PersonInDirectionSchema.options}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />

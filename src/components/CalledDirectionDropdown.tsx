@@ -5,9 +5,8 @@ import {
   CalledDirectionSchema,
   FacingBasedDirectionSchema,
   PositionBasedDirectionSchema,
-  resolveCalledIdentifier,
+  resolveCalledDirectionTarget,
 } from "../instructions/_base";
-import type { Label } from "../labels";
 import { parses, try_ } from "../utils";
 import { Dancer } from "../worldState";
 import { calledDirectionToText } from "./fieldUtils";
@@ -38,13 +37,12 @@ export function CalledDirectionDropdown({
             !parses(FacingBasedDirectionSchema, o),
         )
         .sort((a, b) => {
-          a satisfies Label;
           const aId = try_(() =>
-            resolveCalledIdentifier("up_lark_0", a, dancerStates),
+            resolveCalledDirectionTarget("up_lark_0", a, dancerStates),
           );
           if (aId instanceof Error || !aId) return 1;
           const bId = try_(() =>
-            resolveCalledIdentifier("up_lark_0", b, dancerStates),
+            resolveCalledDirectionTarget("up_lark_0", b, dancerStates),
           );
           if (bId instanceof Error || !bId) return -1;
           const targetA = Dancer.get(aId, dancerStates);

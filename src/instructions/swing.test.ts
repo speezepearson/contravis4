@@ -128,7 +128,7 @@ describe("post-swing alignment", () => {
   //   . . | . .
   const base = produce(initFormationStates.improper, (draft) => {
     for (const id of ALL_PROTO_IDS)
-      draft[id].facing = resolveCalledDirection(id, "partner", draft);
+      draft[id].facing = resolveCalledDirection(id, "towards_partner", draft);
     draft.up_robin_0.pos = new Vector(0, draft.up_lark_0.pos.y);
     draft.down_robin_0.pos = new Vector(0, draft.down_lark_0.pos.y);
   });
@@ -169,10 +169,17 @@ describe("post-swing alignment", () => {
   ])(
     "$name: larks draw partners and end facing across → end up across from $expectedAcross",
     ({ init, expectedAcross }) => {
-      const final = swingFinalState(init, { cid: "partner", endFacing: "across" });
+      const final = swingFinalState(init, {
+        cid: "partner",
+        endFacing: "across",
+      });
 
       for (const id of ALL_PROTO_IDS) {
-        const actualAcrossId = resolveCalledIdentifier(id, "across", final);
+        const actualAcrossId = resolveCalledIdentifier(
+          id,
+          "person_across",
+          final,
+        );
         const expectedAcrossId = resolveCalledIdentifier(
           id,
           expectedAcross,

@@ -4,7 +4,7 @@ import { ShadowLabelSchema } from "../labels";
 import { must } from "../utils";
 import {
   instructionBaseSchemaFields,
-  NonLabelCalledIdentifierSchema,
+  PersonInDirectionSchema,
   resolveCalledIdentifier,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
@@ -14,7 +14,7 @@ export const GreetShadowInstructionSchema = z.object({
   type: z.literal("greet_shadow"),
   beats: z.literal(0),
   label: ShadowLabelSchema,
-  cid: NonLabelCalledIdentifierSchema,
+  cid: PersonInDirectionSchema,
 });
 export type GreetShadowInstruction = z.infer<
   typeof GreetShadowInstructionSchema
