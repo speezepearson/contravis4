@@ -8,7 +8,10 @@ import { describe, expect, it } from "vitest";
 import {
   addOffsetToId,
   ALL_PROTO_IDS,
+  BasicLabel,
   BasicOtherDirLabelSchema,
+  BasicSameDirLabelSchema,
+  DancerId,
   parseDancerId,
   parseProtoId,
   type ProtoId,
@@ -16,7 +19,8 @@ import {
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
 import { DanceSchema, initFormationStates } from "./instructions/index";
-import { setLabel, WorldState } from "./worldState";
+import { assertNever, parses } from "./utils";
+import { Dancer, WorldState } from "./worldState";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const exampleDancesDir = resolve(__dirname, "../example-dances");
@@ -31,21 +35,32 @@ function progressInitFormation(state: WorldState): WorldState {
   }
   return produce(state, (draft) => {
     for (const id of ALL_PROTO_IDS) {
-      draft[id].pos = draft[id].pos.add(progressionDelta(id));
-    }
-    // Only call setLabel once per label — it propagates to all 4 protos.
-    // Read from `state` (immutable) to avoid seeing already-shifted values.
-    const representative = ALL_PROTO_IDS[0];
-    for (const label of BasicOtherDirLabelSchema.options) {
-      setLabel(
-        draft,
-        representative,
-        label,
-        addOffsetToId(
-          state[representative].labels[label],
-          parseDancerId(representative).dir === "up" ? 1 : -1,
+      const offset = parseDancerId(id).dir === "up" ? 1 : -1;
+      const incr = (refId: DancerId) => addOffsetToId(refId, offset);
+      draft[id] = new Dancer(id, {
+        pos: draft[id].pos.add(progressionDelta(id)),
+        facing: draft[id].facing,
+        hands: Object.fromEntries(
+          Object.entries(draft[id].hands).map(([hand, theirId]) => [
+            hand,
+            { theirId: incr(theirId.theirId), theirHand: theirId.theirHand },
+          ]),
         ),
-      );
+        labels: Object.fromEntries(
+          Object.entries(draft[id].labels).map(([labelStr, theirId]) => {
+            const label = labelStr as BasicLabel;
+            return [
+              label,
+              parses(BasicSameDirLabelSchema, label)
+                ? theirId
+                : parses(BasicOtherDirLabelSchema, label)
+                  ? incr(theirId)
+                  : assertNever(label),
+            ];
+          }),
+        ) as (typeof draft)[ProtoId]["labels"],
+        recents: draft[id].recents.map((rid) => incr(rid)),
+      });
     }
   });
 }
