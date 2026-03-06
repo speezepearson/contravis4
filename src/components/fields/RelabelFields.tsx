@@ -1,5 +1,6 @@
 import type z from "zod";
 
+import { type SettableLabel,SettableLabelSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { CalledIdentifierSchema } from "../../instructions/_base";
 import { RelabelInstructionSchema } from "../../instructions/relabel";
@@ -7,7 +8,6 @@ import { typedSafeParse } from "../../utils";
 import { BasicLabelDropdown } from "../BasicLabelDropdown";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { SettableLabelSchema, type SettableLabel } from "../../contraCore";
 
 export function RelabelFields({
   instruction,

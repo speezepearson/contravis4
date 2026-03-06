@@ -40,6 +40,45 @@ export default defineConfig([
       ],
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='indexOf']",
+          message:
+            "Use the indexOf helper from utils.ts instead of Array.indexOf directly.",
+        },
+        {
+          selector:
+            "AssignmentExpression[left.object.property.name='labels']",
+          message: "Set labels via the setLabel function in worldState.ts.",
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/utils.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "AssignmentExpression[left.object.property.name='labels']",
+          message: "Set labels via the setLabel function in worldState.ts.",
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/worldState.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='indexOf']",
+          message:
+            "Use the indexOf helper from utils.ts instead of Array.indexOf directly.",
+        },
+      ],
     },
   },
 ]);

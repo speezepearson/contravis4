@@ -10,7 +10,6 @@ import {
   parseDancerId,
   projectDancerIdToProtoId,
   protoIdToDancerId,
-  SettableLabelSchema,
   ShadowLabelSchema,
 } from "./contraCore";
 import { initFormationStates } from "./instructions/index";
@@ -212,7 +211,7 @@ describe("setLabel", () => {
           const { dir: tDir, role: tRole } = parseDancerId(target);
           fc.pre(projectDancerIdToProtoId(target) !== p1);
           fc.pre(tRole !== p1Role);
-          const isOtherDir = SettableLabelSchema.options.indexOf(label) === 0; // "neighbor"
+          const isOtherDir = label === "neighbor";
           fc.pre(isOtherDir ? p1Dir !== tDir : p1Dir === tDir);
           fc.pre(
             !ShadowLabelSchema.safeParse(label).success ||

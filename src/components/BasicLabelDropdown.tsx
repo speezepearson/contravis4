@@ -17,7 +17,7 @@ export function BasicLabelDropdown<T extends CalledLabel>({
       options={options}
       value={value}
       onChange={(v) => {
-        const opt = options.find(o => o === v);
+        const opt = options.find((o) => o === v);
         if (opt) onChange(opt);
         else onInvalid?.();
       }}

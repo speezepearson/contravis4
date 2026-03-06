@@ -134,7 +134,6 @@ export function try_<T>(fn: () => T): T | Error {
   }
 }
 
-// TODO: add a lint rule ensuring that nowhere else uses Array.indexOf
 export function indexOf<T extends string | number>(
   arr: readonly T[],
   x: T,
