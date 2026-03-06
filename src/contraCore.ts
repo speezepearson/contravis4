@@ -1,4 +1,7 @@
+import type { Vector } from "vecti";
 import { z } from "zod";
+
+import { NORTH, SOUTH } from "./geometry";
 
 export const BeatsSchema = z.number().int();
 export type Beats = z.infer<typeof BeatsSchema>;
@@ -104,6 +107,15 @@ export function getRole(id: DancerId): Role {
 export function getOffset(id: DancerId): DancerOffset {
   return parseDancerId(id).offset;
 }
+export function getProgDir(id: DancerId): ProgressionDir {
+  return parseDancerId(id).dir;
+}
+export function getProgDirSign(id: DancerId): number {
+  return { up: 1, down: -1 }[getProgDir(id)];
+}
+export function getProgDirVec(id: DancerId): Vector {
+  return { up: NORTH, down: SOUTH }[getProgDir(id)];
+}
 export function isLark(id: DancerId): boolean {
   return getRole(id) === "lark";
 }
@@ -161,29 +173,3 @@ export function buildHandsRecord<V>(f: (h: Hand) => V): Record<Hand, V> {
     right: f("right"),
   };
 }
-
-export const BasicOtherDirLabelSchema = z.enum(["neighbor"]);
-export const ShadowLabelSchema = z.enum([
-  "shadow",
-  "shadow 2",
-  "shadow 3",
-  "shadow 4",
-  "shadow 5",
-  "shadow 6",
-]);
-export type ShadowLabel = z.infer<typeof ShadowLabelSchema>;
-export const BasicSameDirLabelSchema = z.enum([
-  "partner",
-  ...ShadowLabelSchema.options,
-]);
-export const BasicLabelSchema = z.enum([
-  ...BasicOtherDirLabelSchema.options,
-  ...BasicSameDirLabelSchema.options,
-]);
-export type BasicLabel = z.infer<typeof BasicLabelSchema>;
-
-export const SettableLabelSchema = z.enum([
-  "neighbor",
-  ...ShadowLabelSchema.options,
-]);
-export type SettableLabel = z.infer<typeof SettableLabelSchema>;

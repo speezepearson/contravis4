@@ -1,7 +1,7 @@
-import type { CalledLabel } from "../instructions/_base";
+import type { Label } from "../labels";
 import { InlineDropdown } from "./InlineDropdown";
 
-export function BasicLabelDropdown<T extends CalledLabel>({
+export function BasicLabelDropdown<T extends Label>({
   options,
   value,
   onChange,

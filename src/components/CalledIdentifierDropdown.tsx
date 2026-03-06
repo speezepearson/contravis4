@@ -12,14 +12,16 @@ import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { CalledIdentifierHighlightContext } from "./RelationshipHighlightContext";
 
-export function CalledIdentifierDropdown({
+export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
   options,
   value,
   onChange,
+  onInvalid,
 }: {
-  options: CalledIdentifier[];
-  value: CalledIdentifier;
-  onChange: (value: CalledIdentifier) => void;
+  options: CId[];
+  value: CId;
+  onChange: (value: CId) => void;
+  onInvalid?: () => void;
 }) {
   const highlightRelationship = useContext(CalledIdentifierHighlightContext);
   const { dancerStates } = useInstructionEdit();
@@ -49,8 +51,12 @@ export function CalledIdentifierDropdown({
     <InlineDropdown
       options={sortedOptions}
       value={value}
-      getLabel={(v) => calledIdentifierToText(CalledIdentifierSchema.parse(v))}
-      onChange={(v) => onChange(CalledIdentifierSchema.parse(v))}
+      getLabel={(v) => calledIdentifierToText(CalledIdentifierSchema.parse(v))} // TODO: make InlineDropdown generic so v isn't typed as string here
+      onChange={(v) => {
+        const opt = options.find((o) => o === v);
+        if (opt) onChange(opt);
+        else onInvalid?.();
+      }}
       onHighlight={highlightRelationship}
     />
   );

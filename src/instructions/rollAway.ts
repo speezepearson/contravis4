@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  BasicLabelSchema,
   type DancerId,
   getRole,
   type Hand,
@@ -17,6 +16,7 @@ import {
   PI,
   TWO_PI,
 } from "../geometry";
+import { IrreducibleLabelSchema } from "../labels";
 import { buildProtoRecord, Dancer } from "../worldState";
 import {
   type CalledIdentifier,
@@ -28,7 +28,7 @@ import { hold, type InstructionAnimator } from "./_segment";
 export const RolleeSpecSchema = z.enum([
   "on_right",
   "on_left",
-  ...BasicLabelSchema.options,
+  ...IrreducibleLabelSchema.options,
 ]);
 export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;
 undefined as unknown as RolleeSpec satisfies CalledIdentifier; // type assertion

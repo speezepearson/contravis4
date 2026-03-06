@@ -29,7 +29,7 @@ import {
   instructionDuration,
   InstructionSchema,
 } from "./instructions/index";
-import { initFormationStates } from "./instructions/index";
+import { resolveInitFormation } from "./instructions/index";
 import { isLocalStorageAvailable, try_ } from "./utils";
 import { Dancer, type WorldState } from "./worldState";
 
@@ -153,14 +153,14 @@ export default function App() {
 
   const { animation, errors: generateErrors } = useMemo(
     () =>
-      generateDanceAnimation(instructions, initFormationStates[initFormation]),
+      generateDanceAnimation(instructions, resolveInitFormation(initFormation)),
     [instructions, initFormation],
   );
   const DANCE_LENGTH = useMemo(() => danceLength(instructions), [instructions]);
   const inferredProgression = useMemo(
     () =>
       animation
-        ? inferProgression(animation, initFormationStates[initFormation])
+        ? inferProgression(animation, resolveInitFormation(initFormation))
         : null,
     [animation, initFormation],
   );

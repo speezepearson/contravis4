@@ -10,9 +10,9 @@ import {
   parseDancerId,
   projectDancerIdToProtoId,
   protoIdToDancerId,
-  ShadowLabelSchema,
 } from "./contraCore";
 import { initFormationStates } from "./instructions/index";
+import { ShadowLabelSchema } from "./labels";
 import {
   fcAnyWorldState,
   fcDancerId,
@@ -21,7 +21,31 @@ import {
   fcProtoId,
   fcSettableLabel,
 } from "./testHelpers";
-import { connectHands, findNearbyDancers, setLabel } from "./worldState";
+import { parses } from "./utils";
+import {
+  connectHands,
+  findNearbyDancers,
+  setLabel,
+  WorldStateSchema,
+} from "./worldState";
+
+describe("WorldStateSchema", () => {
+  it("parses JSON.stringify of a WorldState", () => {
+    const ws = initFormationStates.improper;
+    const json = JSON.parse(JSON.stringify(ws));
+    const result = WorldStateSchema.safeParse(json);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    for (const id of ALL_PROTO_IDS) {
+      expect(result.data[id].id).toBe(ws[id].id);
+      expect(result.data[id].pos.x).toBeCloseTo(ws[id].pos.x);
+      expect(result.data[id].pos.y).toBeCloseTo(ws[id].pos.y);
+      expect(result.data[id].facing.x).toBeCloseTo(ws[id].facing.x);
+      expect(result.data[id].facing.y).toBeCloseTo(ws[id].facing.y);
+      expect(result.data[id].labels).toEqual(ws[id].labels);
+    }
+  });
+});
 
 describe("connectHands", () => {
   it("creates bidirectional hand connections with correct offset adjustment", () => {
@@ -214,7 +238,7 @@ describe("setLabel", () => {
           const isOtherDir = label === "neighbor";
           fc.pre(isOtherDir ? p1Dir !== tDir : p1Dir === tDir);
           fc.pre(
-            !ShadowLabelSchema.safeParse(label).success ||
+            !parses(ShadowLabelSchema, label) ||
               initFormationStates.improper[p1].labels.partner !== target,
           );
 

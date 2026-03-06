@@ -8,17 +8,15 @@ import { describe, expect, it } from "vitest";
 import {
   addOffsetToId,
   ALL_PROTO_IDS,
-  BasicLabel,
-  BasicOtherDirLabelSchema,
-  BasicSameDirLabelSchema,
   DancerId,
-  parseDancerId,
+  getProgDirSign,
   parseProtoId,
   type ProtoId,
 } from "./contraCore";
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
-import { DanceSchema, initFormationStates } from "./instructions/index";
+import { DanceSchema, resolveInitFormation } from "./instructions/index";
+import { OtherDirLabelSchema, SameDirLabelSchema } from "./labels";
 import { assertNever, parses } from "./utils";
 import { Dancer, WorldState } from "./worldState";
 
@@ -35,7 +33,7 @@ function progressInitFormation(state: WorldState): WorldState {
   }
   return produce(state, (draft) => {
     for (const id of ALL_PROTO_IDS) {
-      const offset = parseDancerId(id).dir === "up" ? 1 : -1;
+      const offset = getProgDirSign(id);
       const incr = (refId: DancerId) => addOffsetToId(refId, offset);
       draft[id] = new Dancer(id, {
         pos: draft[id].pos.add(progressionDelta(id)),
@@ -48,12 +46,12 @@ function progressInitFormation(state: WorldState): WorldState {
         ),
         labels: Object.fromEntries(
           Object.entries(draft[id].labels).map(([labelStr, theirId]) => {
-            const label = labelStr as BasicLabel;
+            const label = labelStr as keyof (typeof draft)[ProtoId]["labels"];
             return [
               label,
-              parses(BasicSameDirLabelSchema, label)
+              parses(SameDirLabelSchema, label)
                 ? theirId
-                : parses(BasicOtherDirLabelSchema, label)
+                : parses(OtherDirLabelSchema, label)
                   ? incr(theirId)
                   : assertNever(label),
             ];
@@ -80,7 +78,7 @@ describe("progression shift invariance", () => {
     if (dance.instructions.length === 0) continue;
 
     it(`${dance.name ?? file}`, () => {
-      const initState = initFormationStates[dance.initFormation];
+      const initState = resolveInitFormation(dance.initFormation);
       const { animation: origAnim, errors: origErrors } =
         generateDanceAnimation(dance.instructions, initState);
       expect(origErrors).toEqual([]);

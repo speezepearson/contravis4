@@ -3,11 +3,11 @@ import { useMemo } from "react";
 import {
   type CalledDirection,
   CalledDirectionSchema,
-  type CalledLabel,
   FacingBasedDirectionSchema,
   PositionBasedDirectionSchema,
   resolveCalledIdentifier,
 } from "../instructions/_base";
+import type { Label } from "../labels";
 import { parses, try_ } from "../utils";
 import { Dancer } from "../worldState";
 import { calledDirectionToText } from "./fieldUtils";
@@ -38,7 +38,7 @@ export function CalledDirectionDropdown({
             !parses(FacingBasedDirectionSchema, o),
         )
         .sort((a, b) => {
-          a satisfies CalledLabel;
+          a satisfies Label;
           const aId = try_(() =>
             resolveCalledIdentifier("up_lark_0", a, dancerStates),
           );

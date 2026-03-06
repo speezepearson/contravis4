@@ -1,30 +1,30 @@
 import type z from "zod";
 
-import { type SettableLabel, SettableLabelSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
-import { RelabelInstructionSchema } from "../../instructions/relabel";
+import { NonLabelCalledIdentifierSchema } from "../../instructions/_base";
+import { GreetShadowInstructionSchema } from "../../instructions/greetShadow";
+import { type ShadowLabel, ShadowLabelSchema } from "../../labels";
 import { typedSafeParse } from "../../utils";
 import { BasicLabelDropdown } from "../BasicLabelDropdown";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 
-export function RelabelFields({
+export function GreetShadowFields({
   instruction,
   onChange,
   onInvalid,
 }: SubFormProps & {
-  instruction: Extract<AtomicInstruction, { type: "relabel" }>;
+  instruction: Extract<AtomicInstruction, { type: "greet_shadow" }>;
 }) {
   const { id } = instruction;
 
   function tryCommit(
-    overrides: Partial<z.input<typeof RelabelInstructionSchema>>,
+    overrides: Partial<z.input<typeof GreetShadowInstructionSchema>>,
   ) {
-    const result = typedSafeParse(RelabelInstructionSchema, {
+    const result = typedSafeParse(GreetShadowInstructionSchema, {
       id,
       beats: 0,
-      type: "relabel",
+      type: "greet_shadow",
       label: instruction.label,
       cid: instruction.cid,
       ...overrides,
@@ -37,13 +37,13 @@ export function RelabelFields({
     <>
       {": "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options}
+        options={NonLabelCalledIdentifierSchema.options}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />
-      {" is your new "}
-      <BasicLabelDropdown<SettableLabel>
-        options={SettableLabelSchema.options}
+      {" is your "}
+      <BasicLabelDropdown<ShadowLabel>
+        options={ShadowLabelSchema.options}
         value={instruction.label}
         onChange={(label) => tryCommit({ label })}
       />

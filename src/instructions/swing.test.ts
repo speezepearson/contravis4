@@ -2,8 +2,14 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS_SET } from "../contraCore";
+import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getProgDirVec } from "../contraCore";
+import { InfallibleLabel } from "../labels";
 import type { WorldState } from "../worldState";
+import {
+  resolveCalledDirection,
+  resolveCalledIdentifier,
+  resolveLabel,
+} from "./_base";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type SwingInstruction, swingSegments } from "./swing";
@@ -11,21 +17,19 @@ import { type SwingInstruction, swingSegments } from "./swing";
 const allProtos = ALL_PROTO_IDS_SET;
 
 function makeInstr(
-  overrides: Partial<SwingInstruction> = {},
+  overrides: Pick<SwingInstruction, "cid" | "endFacing">,
 ): SwingInstruction {
   return {
     id: "00000000-0000-0000-0000-000000000000",
     beats: 16,
     type: "swing",
-    cid: "partner",
-    endFacing: "up",
     ...overrides,
   };
 }
 
 function swingFinalState(
   init: WorldState,
-  overrides: Partial<SwingInstruction> = {},
+  overrides: Pick<SwingInstruction, "cid" | "endFacing">,
 ) {
   const instr = makeInstr(overrides);
   const segments = swingSegments(instr, init, allProtos);
@@ -48,7 +52,7 @@ describe("swing approach/orbit speed matching", () => {
   for (const distance of [0.25, 0.5, 1.0, 1.5]) {
     it(`velocity is smooth at approach→swing boundary (distance=${distance}m)`, () => {
       const init = initWithPartnerDistance(distance);
-      const instr = makeInstr();
+      const instr = makeInstr({ cid: "partner", endFacing: "up" });
       const segments = swingSegments(instr, init, allProtos);
       const animation = animateSegments(init, allProtos, segments);
 
@@ -107,4 +111,78 @@ describe("swing endFacing=across snaps to half-integer grid", () => {
       }
     });
   }
+});
+
+describe("post-swing alignment", () => {
+  // Improper:
+  //   . . | . .
+  //   . R | L .
+  //   . . | . .
+  //   . L | R .
+  //   . . | . .
+  // This:
+  //   . . | . .
+  //   . . R L .
+  //   . . | . .
+  //   . L R . .
+  //   . . | . .
+  const base = produce(initFormationStates.improper, (draft) => {
+    for (const id of ALL_PROTO_IDS)
+      draft[id].facing = resolveCalledDirection(id, "partner", draft);
+    draft.up_robin_0.pos = new Vector(0, draft.up_lark_0.pos.y);
+    draft.down_robin_0.pos = new Vector(0, draft.down_lark_0.pos.y);
+  });
+
+  const baseWithPreviousNeighborLeadingInRecents = produce(base, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
+      draft[id].recents = [
+        resolveLabel(id, "prev neighbor", base),
+        ...draft[id].recents,
+      ];
+    }
+  });
+  const baseWithPreviousNeighborLeadingInRecentsButCloserToNeighbor = produce(
+    baseWithPreviousNeighborLeadingInRecents,
+    (draft) => {
+      for (const id of ALL_PROTO_IDS) {
+        draft[id].pos = draft[id].pos.add(getProgDirVec(id).multiply(0.2));
+      }
+    },
+  );
+
+  it.each<{
+    name: string;
+    init: WorldState;
+    expectedAcross: InfallibleLabel;
+  }>([
+    { name: "base", init: base, expectedAcross: "neighbor" },
+    {
+      name: "base but with previous neighbor in recents",
+      init: baseWithPreviousNeighborLeadingInRecents,
+      expectedAcross: "prev neighbor",
+    },
+    {
+      name: "base but with previous neighbor in recents but closer to neighbor",
+      init: baseWithPreviousNeighborLeadingInRecentsButCloserToNeighbor,
+      expectedAcross: "neighbor",
+    },
+  ])(
+    "$name: larks draw partners and end facing across → end up across from $expectedAcross",
+    ({ init, expectedAcross }) => {
+      const final = swingFinalState(init, { cid: "partner", endFacing: "across" });
+
+      for (const id of ALL_PROTO_IDS) {
+        const actualAcrossId = resolveCalledIdentifier(id, "across", final);
+        const expectedAcrossId = resolveCalledIdentifier(
+          id,
+          expectedAcross,
+          final,
+        );
+        expect(
+          actualAcrossId,
+          `${id} should end up across from ${expectedAcrossId}, but got ${actualAcrossId}`,
+        ).toBe(expectedAcrossId);
+      }
+    },
+  );
 });

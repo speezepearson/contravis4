@@ -7,14 +7,13 @@ import {
   type DancerId,
   type Hand,
   type ProtoId,
-  type SettableLabel,
-  SettableLabelSchema,
 } from "../contraCore";
 import {
   ellipsePosition,
   lerpFacing as lerpFacingVec,
   revolve,
 } from "../geometry";
+import { type SettableLabel, SettableLabelSchema } from "../labels";
 import { isEqual, lerpVectors } from "../utils";
 import {
   Dancer,

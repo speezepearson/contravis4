@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { type Beats } from "../contraCore";
 import { EAST, NORTH, SOUTH, WEST } from "../geometry";
-import { Dancer, type WorldState } from "../worldState";
+import { Dancer, type WorldState, WorldStateSchema } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
 import { getSplitDuration, SplitSchema } from "./split";
 
@@ -31,10 +31,23 @@ export function danceLength(instructions: Instruction[]): Beats {
   );
 }
 
-export const InitFormationSchema = z.enum(["improper", "beckett"]);
+export const InitFormationNameSchema = z.enum(["improper", "beckett"]);
+export type InitFormationName = z.infer<typeof InitFormationNameSchema>;
+
+export const InitFormationSchema = z.union([
+  InitFormationNameSchema,
+  WorldStateSchema,
+]);
 export type InitFormation = z.infer<typeof InitFormationSchema>;
 
-export const initFormationStates: Record<InitFormation, WorldState> = {
+export function resolveInitFormation(initFormation: InitFormation): WorldState {
+  if (typeof initFormation === "string") {
+    return initFormationStates[initFormation];
+  }
+  return initFormation;
+}
+
+export const initFormationStates: Record<InitFormationName, WorldState> = {
   improper: {
     up_lark_0: new Dancer("up_lark_0", {
       pos: new Vector(-0.5, -0.5),

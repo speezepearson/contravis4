@@ -120,13 +120,20 @@ export function makeDefaultInstruction(
           cid: "partner",
           hand: "right",
         };
-      case "relabel":
+      case "greet_new_neighbors":
         return {
           id,
-          type: "relabel",
+          type: "greet_new_neighbors",
           beats: 0,
-          label: "neighbor",
           cid: "in_front",
+        };
+      case "greet_shadow":
+        return {
+          id,
+          type: "greet_shadow",
+          beats: 0,
+          cid: "in_front",
+          label: "shadow",
         };
       case "right_left_through":
         return { id, type: "right_left_through", beats: 8 };
@@ -269,9 +276,9 @@ export function calledDirectionToText(cid: CalledDirection): string {
       return "towards your shadow 5";
     case "shadow 6":
       return "towards your shadow 6";
-    case "in right hand":
+    case "person in right hand":
       return "towards the person in your right hand";
-    case "in left hand":
+    case "person in left hand":
       return "towards the person in your left hand";
     default:
       assertNever(cid);
@@ -334,9 +341,9 @@ export function calledIdentifierToText(cid: CalledIdentifier): string {
       return "your shadow 5";
     case "shadow 6":
       return "your shadow 6";
-    case "in right hand":
+    case "person in right hand":
       return "the person in your right hand";
-    case "in left hand":
+    case "person in left hand":
       return "the person in your left hand";
     default:
       assertNever(cid);

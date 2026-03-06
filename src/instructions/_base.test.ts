@@ -3,25 +3,100 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS } from "../contraCore";
+import { ALL_PROTO_IDS, DancerId, ProtoId } from "../contraCore";
+import { Label } from "../labels";
 import { fcProtoId } from "../testHelpers";
 import { circularDistance } from "../utils";
-import type { WorldState } from "../worldState";
-import { resolveShortLines } from "./_base";
+import { setLabel, type WorldState } from "../worldState";
+import { resolveLabel, resolveShortLines } from "./_base";
 import { initFormationStates } from "./index";
 
-/** Improper with every dancer displaced 0.5m forward and 0.25m to their right. */
-const OK_BASE: WorldState = produce(initFormationStates.improper, (draft) => {
-  for (const id of ALL_PROTO_IDS) {
-    const facing = draft[id].facing;
-    const right = new Vector(facing.y, -facing.x);
-    draft[id].pos = draft[id].pos
-      .add(facing.multiply(0.5))
-      .add(right.multiply(0.25));
-  }
+describe("resolveLabel", () => {
+  it.each<[DancerId, Label, DancerId]>([
+    ["up_lark_0", "partner", "up_robin_0"],
+    ["up_robin_0", "partner", "up_lark_0"],
+    ["down_lark_0", "partner", "down_robin_0"],
+    ["down_robin_0", "partner", "down_lark_0"],
+
+    ["up_lark_0", "neighbor", "down_robin_0"],
+    ["up_robin_0", "neighbor", "down_lark_0"],
+    ["down_lark_0", "neighbor", "up_robin_0"],
+    ["down_robin_0", "neighbor", "up_lark_0"],
+
+    ["up_lark_0", "opposite", "down_lark_0"],
+    ["up_robin_0", "opposite", "down_robin_0"],
+    ["down_lark_0", "opposite", "up_lark_0"],
+    ["down_robin_0", "opposite", "up_robin_0"],
+  ])(
+    "basic: resolves %s %s = %s correctly in improper: %s %s -> %s",
+    (id, label, expected) => {
+      expect(resolveLabel(id, label, initFormationStates.improper)).toBe(
+        expected,
+      );
+    },
+  );
+
+  it.each<[DancerId, Label, DancerId]>([
+    ["up_lark_0", "next neighbor", "down_robin_1"],
+    ["up_robin_0", "next neighbor", "down_lark_1"],
+    ["down_lark_0", "next neighbor", "up_robin_-1"],
+    ["down_robin_0", "next neighbor", "up_lark_-1"],
+
+    ["up_lark_0", "prev x2 neighbor", "down_robin_-2"],
+    ["up_robin_0", "prev x2 neighbor", "down_lark_-2"],
+    ["down_lark_0", "prev x2 neighbor", "up_robin_2"],
+    ["down_robin_0", "prev x2 neighbor", "up_lark_2"],
+  ])(
+    "resolves next/prev neighbors correctly in improper: %s %s -> %s",
+    (id, label, expected) => {
+      expect(resolveLabel(id, label, initFormationStates.improper)).toBe(
+        expected,
+      );
+    },
+  );
+
+  it.each<[DancerId, Label, DancerId]>([
+    ["up_lark_10", "prev x2 neighbor", "down_robin_8"],
+    ["up_robin_10", "prev x2 neighbor", "down_lark_8"],
+    ["down_lark_10", "prev x2 neighbor", "up_robin_12"],
+    ["down_robin_10", "prev x2 neighbor", "up_lark_12"],
+  ])(
+    "accounts for anchor's offset properly: %s %s -> %s",
+    (id, label, expected) => {
+      expect(resolveLabel(id, label, initFormationStates.improper)).toBe(
+        expected,
+      );
+    },
+  );
+
+  it.each<[ProtoId, DancerId, "->", DancerId, DancerId]>([
+    ["up_lark_0", "up_robin_2", "->", "up_lark_10", "up_robin_12"],
+    ["up_robin_0", "up_lark_2", "->", "up_robin_10", "up_lark_12"],
+    ["down_lark_0", "down_robin_2", "->", "down_lark_10", "down_robin_12"],
+    ["down_robin_0", "down_lark_2", "->", "down_robin_10", "down_lark_12"],
+  ])(
+    "accounts for anchor's offset properly: (%s, %s) %s (%s, %s)",
+    (p, pShadow, _, d, dShadow) => {
+      const state = produce(initFormationStates.improper, (draft) => {
+        setLabel(draft, p, "shadow", pShadow);
+      });
+      expect(resolveLabel(d, "shadow", state)).toBe(dShadow);
+    },
+  );
 });
 
 describe("resolveShortLines", () => {
+  /** Improper with every dancer displaced 0.5m forward and 0.25m to their right. */
+  const OK_BASE: WorldState = produce(initFormationStates.improper, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
+      const facing = draft[id].facing;
+      const right = new Vector(facing.y, -facing.x);
+      draft[id].pos = draft[id].pos
+        .add(facing.multiply(0.5))
+        .add(right.multiply(0.25));
+    }
+  });
+
   it("should throw starting in improper", () => {
     expect(() => resolveShortLines(initFormationStates.improper)).toThrow();
   });

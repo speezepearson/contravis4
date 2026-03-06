@@ -68,7 +68,7 @@ export const squareThroughSegments: InstructionAnimator<
         id,
         beats: pullByBeats,
         type: "pull_by",
-        cid: "in right hand",
+        cid: "person in right hand",
         hand: "right",
       },
       state,

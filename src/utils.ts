@@ -34,12 +34,14 @@ export function isEqual<T>(a: T, b: T): boolean {
 }
 
 export function must<T>(x: T | null | undefined): T {
-  if (x === null || x === undefined)
-    throw new Error("Value is null or undefined");
+  if (x == null) throw new Error("Value is null or undefined");
   return x;
 }
 
-export function parses<T>(schema: z.ZodSchema<T>, x: unknown): x is T {
+export function parses<Schema extends z.ZodEnum>(
+  schema: Schema,
+  x: unknown,
+): x is z.infer<Schema> {
   return schema.safeParse(x).success;
 }
 

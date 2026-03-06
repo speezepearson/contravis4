@@ -15,11 +15,13 @@ import {
   type ProtoId,
   type Role,
   RoleSchema,
+} from "./contraCore";
+import { NORTH } from "./geometry";
+import {
   type SettableLabel,
   SettableLabelSchema,
   ShadowLabelSchema,
-} from "./contraCore";
-import { NORTH } from "./geometry";
+} from "./labels";
 import { connectHands, Dancer, setLabel, type WorldState } from "./worldState";
 
 export const fcProtoId: fc.Arbitrary<ProtoId> = fc.constantFrom(

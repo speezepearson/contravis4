@@ -1,11 +1,5 @@
 import * as Popover from "@radix-ui/react-popover";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   type CalledIdentifier,
@@ -13,131 +7,126 @@ import {
 } from "../instructions/_base";
 import { indexOf } from "../utils";
 import { useInstructionEdit } from "./InstructionEditContext";
-import type { SearchableDropdownHandle } from "./SearchableDropdown";
-import SearchableDropdown from "./SearchableDropdown";
+import {SearchableDropdown} from "./SearchableDropdown";
 
 export interface InlineDropdownHandle {
   focus: () => void;
 }
 
-interface Props {
-  options: readonly string[];
-  value: string;
-  onChange: (value: string) => void;
+interface Props<T extends string> {
+  options: readonly T[];
+  value: T;
+  onChange: (value: T) => void;
   placeholder?: string;
-  getLabel?: (value: string) => string;
+  getLabel?: (value: T) => string;
+  onInvalid?: () => void;
   onHighlight?: (cid: CalledIdentifier | null) => void;
 }
 
-export const InlineDropdown = forwardRef<InlineDropdownHandle, Props>(
-  function InlineDropdown(
-    { options, value, onChange, placeholder, getLabel, onHighlight },
-    ref,
-  ) {
-    const [open, setOpen] = useState(false);
-    const dropdownRef = useRef<SearchableDropdownHandle>(null);
-    const { onPopoverOpen } = useInstructionEdit();
+export function InlineDropdown<T extends string>({
+  options,
+  value,
+  onChange,
+  placeholder,
+  getLabel,
+  onInvalid,
+  onHighlight,
+}: Props<T>) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLUListElement>(null);
+  const { onPopoverOpen } = useInstructionEdit();
 
-    const canCycle = options.length <= 3;
+  const canCycle = options.length <= 3;
 
-    function cycle() {
-      const idx = indexOf(options, value);
-      onChange(options[idx === undefined ? 0 : (idx + 1) % options.length]);
+  function cycle() {
+    const idx = indexOf(options, value);
+    onChange(options[idx === undefined ? 0 : (idx + 1) % options.length]);
+  }
+
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => dropdownRef.current?.focus());
     }
+  }, [open]);
 
-    useImperativeHandle(ref, () => ({
-      focus: () => {
-        if (canCycle) cycle();
-        else setOpen(true);
-      },
-    }));
+  const displayText = value
+    ? getLabel
+      ? getLabel(value)
+      : value
+    : (placeholder ?? "...");
 
-    useEffect(() => {
-      if (open) {
-        requestAnimationFrame(() => dropdownRef.current?.focus());
-      }
-    }, [open]);
+  if (canCycle) {
+    return (
+      <span
+        className={`inline-value${!value ? " inline-value-placeholder" : ""}`}
+        tabIndex={0}
+        role="button"
+        onClick={cycle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            cycle();
+          }
+        }}
+      >
+        {displayText}
+      </span>
+    );
+  }
 
-    const displayText = value
-      ? getLabel
-        ? getLabel(value)
-        : value
-      : (placeholder ?? "...");
+  function handleCommit() {
+    setOpen(false);
+    onHighlight?.(null);
+  }
 
-    if (canCycle) {
-      return (
+  function handleOpenChange(v: boolean) {
+    setOpen(v);
+    if (v) onPopoverOpen?.();
+    if (!v) onHighlight?.(null);
+  }
+
+  return (
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>
         <span
           className={`inline-value${!value ? " inline-value-placeholder" : ""}`}
           tabIndex={0}
           role="button"
-          onClick={cycle}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              cycle();
+              handleOpenChange(!open);
             }
           }}
         >
           {displayText}
         </span>
-      );
-    }
-
-    function handleChange(v: string) {
-      onChange(v);
-    }
-
-    function handleCommit() {
-      setOpen(false);
-      onHighlight?.(null);
-    }
-
-    function handleOpenChange(v: boolean) {
-      setOpen(v);
-      if (v) onPopoverOpen?.();
-      if (!v) onHighlight?.(null);
-    }
-
-    return (
-      <Popover.Root open={open} onOpenChange={handleOpenChange}>
-        <Popover.Trigger asChild>
-          <span
-            className={`inline-value${!value ? " inline-value-placeholder" : ""}`}
-            tabIndex={0}
-            role="button"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleOpenChange(!open);
-              }
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          className="popover-content"
+          sideOffset={4}
+          align="start"
+        >
+          <SearchableDropdown
+            options={options}
+            value={value}
+            onChange={(v) => {
+              const opt = options.find((o) => o === v);
+              if (opt) onChange(opt);
+              else onInvalid?.();
             }}
-          >
-            {displayText}
-          </span>
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            className="popover-content"
-            sideOffset={4}
-            align="start"
-          >
-            <SearchableDropdown
-              ref={dropdownRef}
-              options={options}
-              value={value}
-              onChange={handleChange}
-              onCommit={handleCommit}
-              placeholder={placeholder}
-              selectOnly
-              getLabel={getLabel}
-              onHighlight={(v) => {
-                const cid = CalledIdentifierSchema.safeParse(v);
-                if (cid.success) onHighlight?.(cid.data);
-              }}
-            />
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    );
-  },
-);
+            onCommit={handleCommit}
+            placeholder={placeholder}
+            selectOnly
+            getLabel={getLabel}
+            onHighlight={(v) => {
+              const cid = CalledIdentifierSchema.safeParse(v);
+              if (cid.success) onHighlight?.(cid.data);
+            }}
+          />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}

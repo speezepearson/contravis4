@@ -6,7 +6,7 @@ import { generateDanceAnimation } from "../src/generate";
 import {
   danceLength,
   DanceSchema,
-  initFormationStates,
+  resolveInitFormation,
 } from "../src/instructions/index";
 
 enableMapSet();
@@ -22,7 +22,7 @@ for (const path of process.argv.slice(2)) {
     );
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
-      initFormationStates[dance.initFormation],
+      resolveInitFormation(dance.initFormation),
     );
     if (!animation) {
       results[path] = {

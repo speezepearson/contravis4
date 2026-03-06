@@ -44,14 +44,14 @@ import type {
 } from "../instructions/index";
 import {
   DanceSchema,
-  InitFormationSchema,
-  initFormationStates,
+  InitFormationNameSchema,
   instructionDuration,
   InstructionSchema,
+  resolveInitFormation,
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
 import { assertNever, indexOf } from "../utils";
-import type { Dancer } from "../worldState";
+import { type Dancer, WorldStateSchema } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BalanceTheRingFields } from "./fields/BalanceTheRingFields";
@@ -67,6 +67,8 @@ import { FaceFields } from "./fields/FaceFields";
 import { FormLongWavesFields } from "./fields/FormLongWavesFields";
 import { FormShortWavesFields } from "./fields/FormShortWavesFields";
 import { GiveAndTakeIntoSwingFields } from "./fields/GiveAndTakeIntoSwingFields";
+import { GreetNewNeighborsFields } from "./fields/GreetNewNeighbors";
+import { GreetShadowFields } from "./fields/GreetShadow";
 import { LongLineInCenterFields } from "./fields/LongLineInCenterFields";
 import { LongLinesForwardBackFields } from "./fields/LongLinesForwardBackFields";
 import { MadRobinFields } from "./fields/MadRobinFields";
@@ -74,7 +76,6 @@ import { PassByFields } from "./fields/PassByFields";
 import { PetronellaFields } from "./fields/PetronellaFields";
 import { PoussetteFields } from "./fields/PoussetteFields";
 import { PullByFields } from "./fields/PullByFields";
-import { RelabelFields } from "./fields/RelabelFields";
 import { RightLeftThroughFields } from "./fields/RightLeftThroughFields";
 import { RollAwayFields } from "./fields/RollAwayFields";
 import { RoryOMoreFields } from "./fields/RoryOMoreFields";
@@ -90,7 +91,6 @@ import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
 import { ZigZagFields } from "./fields/ZigZagFields";
 import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
-import type { InlineDropdownHandle } from "./InlineDropdown";
 import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
@@ -114,6 +114,8 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "form_long_waves",
   "form_short_waves",
   "give_and_take_into_swing",
+  "greet_new_neighbors",
+  "greet_shadow",
   "long_line_in_center",
   "long_lines_forward_back",
   "mad_robin",
@@ -121,7 +123,6 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "petronella",
   "poussette",
   "pull_by",
-  "relabel",
   "right_left_through",
   "roll_away",
   "rory_o_more",
@@ -137,7 +138,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "up_the_hall",
   "zig_zag",
 ];
-const ACTION_LABELS: Record<string, string> = {
+const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
   balance: "balance",
   balance_the_ring: "balance the ring",
@@ -160,7 +161,8 @@ const ACTION_LABELS: Record<string, string> = {
   petronella: "petronella",
   poussette: "poussette",
   pull_by: "pull by",
-  relabel: "relabel",
+  greet_new_neighbors: "greet new neighbors",
+  greet_shadow: "greet shadow",
   right_left_through: "right & left through",
   roll_away: "roll away",
   rory_o_more: "Rory O'More",
@@ -477,7 +479,8 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "face":
     case "form_long_waves":
     case "form_short_waves":
-    case "relabel":
+    case "greet_new_neighbors":
+    case "greet_shadow":
     case "take_hands_in_rings":
     case "take_hands":
       return false;
@@ -524,7 +527,6 @@ function BeatGutter({
 function InlineForm({
   instruction,
   onChange,
-  autoFocusAction,
   allowContainers = true,
 }: {
   instruction: Instruction;
@@ -532,12 +534,7 @@ function InlineForm({
   autoFocusAction?: boolean;
   allowContainers?: boolean;
 }) {
-  const actionRef = useRef<InlineDropdownHandle>(null);
   const [valid, setValid] = useState(true);
-
-  useEffect(() => {
-    if (autoFocusAction) actionRef.current?.focus();
-  }, [autoFocusAction]);
 
   const actionOptions = allowContainers
     ? ACTION_OPTIONS
@@ -564,7 +561,6 @@ function InlineForm({
   return (
     <span className={`inline-form${valid ? "" : " invalid"}`}>
       <InlineDropdown
-        ref={actionRef}
         options={actionOptions}
         value={instruction.type}
         onChange={(v) => handleActionChange(v as ActionOptionType)}
@@ -611,6 +607,12 @@ function InlineForm({
                 instruction={instruction}
               />
             );
+          case "greet_new_neighbors":
+            return (
+              <GreetNewNeighborsFields {...common} instruction={instruction} />
+            );
+          case "greet_shadow":
+            return <GreetShadowFields {...common} instruction={instruction} />;
           case "long_line_in_center":
             return (
               <LongLineInCenterFields {...common} instruction={instruction} />
@@ -632,8 +634,6 @@ function InlineForm({
             return <PoussetteFields {...common} instruction={instruction} />;
           case "pull_by":
             return <PullByFields {...common} instruction={instruction} />;
-          case "relabel":
-            return <RelabelFields {...common} instruction={instruction} />;
           case "right_left_through":
             return (
               <RightLeftThroughFields {...common} instruction={instruction} />
@@ -680,6 +680,46 @@ function InlineForm({
             assertNever(instruction);
         }
       })()}
+    </span>
+  );
+}
+
+function CustomFormationInput({
+  onParsed,
+}: {
+  onParsed: (ws: InitFormation) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const text = e.clipboardData.getData("text");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      setError("Invalid JSON");
+      return;
+    }
+    const result = WorldStateSchema.safeParse(parsed);
+    if (!result.success) {
+      setError("Not a valid WorldState");
+      return;
+    }
+    setError(null);
+    onParsed(result.data);
+    e.currentTarget.value = "";
+  }
+
+  return (
+    <span className="custom-formation-input">
+      <input
+        type="text"
+        placeholder="...or paste custom"
+        onPaste={handlePaste}
+        onChange={() => setError(null)}
+        size={15}
+      />
+      {error && <span className="custom-formation-error">{error}</span>}
     </span>
   );
 }
@@ -775,7 +815,7 @@ export default memo(function CommandPane({
 
   const progression = useMemo(() => {
     if (!animation) return null;
-    return inferProgression(animation, initFormationStates[initFormation]);
+    return inferProgression(animation, resolveInitFormation(initFormation));
   }, [animation, initFormation]);
 
   const handleCheckboxClick = useCallback(
@@ -1091,12 +1131,30 @@ export default memo(function CommandPane({
 
       <div className="formation-selector">
         <label>Formation: </label>
-        <InlineDropdown
-          options={InitFormationSchema.options}
-          value={initFormation}
-          onChange={(v) => setInitFormation(InitFormationSchema.parse(v))}
-          getLabel={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
-        />
+        {typeof initFormation === "string" ? (
+          <InlineDropdown
+            options={InitFormationNameSchema.options}
+            value={initFormation}
+            onChange={(v) => setInitFormation(InitFormationNameSchema.parse(v))}
+            getLabel={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
+          />
+        ) : (
+          <span
+            className="inline-value"
+            tabIndex={0}
+            role="button"
+            onClick={() => setInitFormation("improper")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setInitFormation("improper");
+              }
+            }}
+          >
+            Custom
+          </span>
+        )}
+        <CustomFormationInput onParsed={setInitFormation} />
       </div>
 
       <h2>Instructions</h2>

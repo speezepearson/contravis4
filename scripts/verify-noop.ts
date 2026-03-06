@@ -18,9 +18,9 @@ import {
   type Dance,
   danceLength,
   DanceSchema,
-  initFormationStates,
   type Instruction,
   instructionDuration,
+  resolveInitFormation,
 } from "../src/instructions/index";
 
 enableMapSet();
@@ -185,7 +185,7 @@ function generateKeyframesInProcess(): AllResults {
       parsedDances.set(path, dance);
       const { animation, errors } = generateDanceAnimation(
         dance.instructions,
-        initFormationStates[dance.initFormation],
+        resolveInitFormation(dance.initFormation),
       );
       if (!animation) {
         results[path] = {

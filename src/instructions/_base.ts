@@ -4,24 +4,28 @@ import { z } from "zod";
 import {
   addOffsetToId,
   ALL_PROTO_IDS,
-  BasicLabelSchema,
   type Beats,
   BeatsSchema,
   type DancerId,
+  getProgDirSign,
   getRole,
   isLark,
-  parseDancerId,
   type ProtoId,
   protoIdToDancerId,
 } from "../contraCore";
 import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "../geometry";
-import { assertNever, getSide, isNTuple, type NTuple, parses } from "../utils";
 import {
-  buildProtoRecord,
-  Dancer,
-  resolveBasicLabel,
-  type WorldState,
-} from "../worldState";
+  type InfallibleLabel,
+  InfallibleLabelSchema,
+  type Label,
+  LabelSchema,
+  neighborLabelOffsets,
+  OffsetNeighborLabelSchema,
+  type ShadowLabel,
+  ShadowLabelSchema,
+} from "../labels";
+import { assertNever, getSide, isNTuple, type NTuple, parses } from "../utils";
+import { buildProtoRecord, Dancer, type WorldState } from "../worldState";
 
 export const InstructionIdSchema = z.string().uuid();
 export type InstructionId = z.infer<typeof InstructionIdSchema>;
@@ -83,86 +87,53 @@ export type ContraAnimation = {
   getFrame: (t: Beats) => WorldState;
 };
 
-const DerivedLabelSchema = z.enum([
-  "opposite", // = my neighbor's partner
-  "next neighbor", // = my neighbor but offset by 1*(my prog dir sign)
-  "next x2 neighbor", // = my neighbor but offset by 2*(my prog dir sign)
-  "next x3 neighbor", // = my neighbor but offset by 3*(my prog dir sign)
-  "prev neighbor", // = my neighbor but offset by -1*(my prog dir sign)
-  "prev x2 neighbor", // = my neighbor but offset by -2*(my prog dir sign)
-  "prev x3 neighbor", // = my neighbor but offset by -3*(my prog dir sign)
-]);
-
-export const SymmetricLabelSchema = z.enum([
-  ...BasicLabelSchema.options,
-  ...DerivedLabelSchema.options,
-]);
-export type SymmetricLabel = z.infer<typeof SymmetricLabelSchema>;
-
-export const CalledLabelSchema = z.enum([
-  ...SymmetricLabelSchema.options,
-  "in right hand",
-  "in left hand",
-]);
-export type CalledLabel = z.infer<typeof CalledLabelSchema>;
-export function resolveCalledLabel(
-  label: CalledLabel,
+export function resolveLabel(
   id: DancerId,
+  label: InfallibleLabel,
   protos: Record<ProtoId, Dancer>,
-): DancerId | null {
-  if (parses(BasicLabelSchema, label)) {
-    return resolveBasicLabel(label, id, protos);
-  }
-  switch (label) {
-    case "opposite": {
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return resolveBasicLabel("partner", neighbor, protos);
+): DancerId;
+export function resolveLabel(
+  id: DancerId,
+  label: Label,
+  protos: Record<ProtoId, Dancer>,
+): DancerId | undefined;
+export function resolveLabel(
+  id: DancerId,
+  label: Label,
+  protos: Record<ProtoId, Dancer>,
+): DancerId | undefined {
+  if (parses(InfallibleLabelSchema, label)) {
+    switch (label) {
+      case "partner":
+      case "neighbor":
+        return Dancer.get(id, protos).labels[label];
+      case "opposite": {
+        const neighbor = resolveLabel(id, "neighbor", protos);
+        return resolveLabel(neighbor, "partner", protos);
+      }
     }
-    case "next neighbor": {
-      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, 1 * offsetSign);
+
+    label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
+    const neighbor = resolveLabel(id, "neighbor", protos);
+    return addOffsetToId(
+      neighbor,
+      neighborLabelOffsets[label] * getProgDirSign(id),
+    );
+  } else if (parses(ShadowLabelSchema, label)) {
+    return Dancer.get(id, protos).labels[label];
+  } else {
+    const label2 = label satisfies Exclude<
+      Label,
+      InfallibleLabel | ShadowLabel
+    >;
+    switch (label2) {
+      case "person in left hand":
+        return Dancer.get(id, protos).hands["left"]?.theirId;
+      case "person in right hand":
+        return Dancer.get(id, protos).hands["right"]?.theirId;
+      default:
+        assertNever(label2);
     }
-    case "next x2 neighbor": {
-      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, 2 * offsetSign);
-    }
-    case "next x3 neighbor": {
-      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, 3 * offsetSign);
-    }
-    case "prev neighbor": {
-      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, -1 * offsetSign);
-    }
-    case "prev x2 neighbor": {
-      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, -2 * offsetSign);
-    }
-    case "prev x3 neighbor": {
-      const offsetSign = parseDancerId(id).dir === "up" ? 1 : -1;
-      const neighbor = resolveBasicLabel("neighbor", id, protos);
-      if (!neighbor) return null;
-      return addOffsetToId(neighbor, -3 * offsetSign);
-    }
-    case "in right hand": {
-      return Dancer.get(id, protos).hands["right"]?.theirId ?? null;
-    }
-    case "in left hand": {
-      return Dancer.get(id, protos).hands["left"]?.theirId ?? null;
-    }
-    default:
-      assertNever(label);
   }
 }
 
@@ -186,7 +157,7 @@ export const FacingBasedDirectionSchema = z.enum([
 export const CalledDirectionSchema = z.enum([
   ...PositionBasedDirectionSchema.options,
   ...FacingBasedDirectionSchema.options,
-  ...CalledLabelSchema.options,
+  ...LabelSchema.options,
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 export function resolveCalledDirection(
@@ -194,8 +165,8 @@ export function resolveCalledDirection(
   dir: CalledDirection,
   protos: Record<ProtoId, Dancer>,
 ): Vector {
-  if (parses(CalledLabelSchema, dir)) {
-    const themId = resolveCalledLabel(dir, id, protos);
+  if (parses(LabelSchema, dir)) {
+    const themId = resolveLabel(id, dir, protos);
     if (!themId) throw new Error(`${id} has no ${dir}`);
     return getDir({
       from: Dancer.get(id, protos).pos,
@@ -231,21 +202,26 @@ export function resolveCalledDirection(
 }
 
 export const CalledIdentifierSchema = z.enum([
-  ...CalledLabelSchema.options,
+  ...LabelSchema.options,
   ...CalledDirectionSchema.options,
 ]);
+export const NonLabelCalledIdentifierSchema = z.enum(
+  CalledIdentifierSchema.options.filter((v) => !parses(LabelSchema, v)),
+);
+export type NonLabelCalledIdentifier = z.infer<
+  typeof NonLabelCalledIdentifierSchema
+>;
 export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 export function resolveCalledIdentifier(
   id: DancerId,
   cid: CalledIdentifier,
   protos: Record<ProtoId, Dancer>,
   { roles }: { roles?: "same" | "different" } = {},
-): DancerId | null {
-  if (parses(CalledLabelSchema, cid))
-    return resolveCalledLabel(cid, id, protos);
+): DancerId | undefined {
+  if (parses(LabelSchema, cid)) return resolveLabel(id, cid, protos);
   const dir = resolveCalledDirection(id, cid, protos);
   const res = findDancerInDirection(protos, id, dir, { roles });
-  if (!res) return null;
+  if (!res) return undefined;
   if (roles === "same" && getRole(id) !== getRole(res))
     throw new Error(
       `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
@@ -339,7 +315,10 @@ export function resolveRings(
   state: WorldState,
 ): Record<ProtoId, NTuple<4, DancerId>> {
   return buildProtoRecord((id) =>
-    getCycle(id, "in right hand", state, { length: 4, roles: "different" }),
+    getCycle(id, "person in right hand", state, {
+      length: 4,
+      roles: "different",
+    }),
   );
 }
 

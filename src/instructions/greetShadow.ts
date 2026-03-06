@@ -1,26 +1,28 @@
 import { z } from "zod";
 
-import { SettableLabelSchema } from "../contraCore";
+import { ShadowLabelSchema } from "../labels";
 import { must } from "../utils";
 import {
-  CalledIdentifierSchema,
   instructionBaseSchemaFields,
+  NonLabelCalledIdentifierSchema,
   resolveCalledIdentifier,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
-export const RelabelInstructionSchema = z.object({
+export const GreetShadowInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
-  type: z.literal("relabel"),
+  type: z.literal("greet_shadow"),
   beats: z.literal(0),
-  label: SettableLabelSchema,
-  cid: CalledIdentifierSchema,
+  label: ShadowLabelSchema,
+  cid: NonLabelCalledIdentifierSchema,
 });
-export type RelabelInstruction = z.infer<typeof RelabelInstructionSchema>;
+export type GreetShadowInstruction = z.infer<
+  typeof GreetShadowInstructionSchema
+>;
 
-export const relabelSegments: InstructionAnimator<RelabelInstruction> = (
-  instr,
-) => [
+export const greetShadowSegments: InstructionAnimator<
+  GreetShadowInstruction
+> = (instr) => [
   {
     dur: 0,
     labels: (id, _frac, segInit) => {

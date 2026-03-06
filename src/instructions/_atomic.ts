@@ -43,6 +43,14 @@ import {
   giveAndTakeIntoSwingSegments,
 } from "./giveAndTakeIntoSwing";
 import {
+  GreetNewNeighborsInstructionSchema,
+  greetNewNeighborsSegments,
+} from "./greetNewNeighbors";
+import {
+  GreetShadowInstructionSchema,
+  greetShadowSegments,
+} from "./greetShadow";
+import {
   LongLineInCenterInstructionSchema,
   longLineInCenterSegments,
 } from "./longLineInCenter";
@@ -55,7 +63,6 @@ import { PassByInstructionSchema, passBySegments } from "./passBy";
 import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
 import { PoussetteInstructionSchema, poussetteSegments } from "./poussette";
 import { PullByInstructionSchema, pullBySegments } from "./pullBy";
-import { RelabelInstructionSchema, relabelSegments } from "./relabel";
 import {
   RightLeftThroughInstructionSchema,
   rightLeftThroughSegments,
@@ -101,6 +108,8 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   FormLongWavesInstructionSchema,
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
+  GreetNewNeighborsInstructionSchema,
+  GreetShadowInstructionSchema,
   LongLineInCenterInstructionSchema,
   LongLinesForwardBackInstructionSchema,
   MadRobinInstructionSchema,
@@ -108,7 +117,6 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   PetronellaInstructionSchema,
   PoussetteInstructionSchema,
   PullByInstructionSchema,
-  RelabelInstructionSchema,
   RightLeftThroughInstructionSchema,
   RollAwayInstructionSchema,
   RoryOMoreInstructionSchema,
@@ -146,6 +154,8 @@ export const atomicSegmentAnimators: {
   form_long_waves: formLongWavesSegments,
   form_short_waves: formShortWavesSegments,
   give_and_take_into_swing: giveAndTakeIntoSwingSegments,
+  greet_new_neighbors: greetNewNeighborsSegments,
+  greet_shadow: greetShadowSegments,
   long_line_in_center: longLineInCenterSegments,
   long_lines_forward_back: longLinesForwardBackSegments,
   mad_robin: madRobinSegments,
@@ -153,7 +163,6 @@ export const atomicSegmentAnimators: {
   petronella: petronellaSegments,
   poussette: poussetteSegments,
   pull_by: pullBySegments,
-  relabel: relabelSegments,
   right_left_through: rightLeftThroughSegments,
   roll_away: rollAwaySegments,
   rory_o_more: roryOMoreSegments,

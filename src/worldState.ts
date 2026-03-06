@@ -5,8 +5,6 @@ import { z } from "zod";
 import {
   addOffsetToId,
   ALL_PROTO_IDS,
-  type BasicLabel,
-  BasicLabelSchema,
   buildHandsRecord,
   type DancerId,
   DancerIdSchema,
@@ -24,11 +22,15 @@ import {
   type ProtoId,
   protoIdToDancerId,
   type Role,
+} from "./contraCore";
+import { NORTH } from "./geometry";
+import {
+  type IrreducibleLabel,
+  IrreducibleLabelSchema,
   type SettableLabel,
   type ShadowLabel,
   ShadowLabelSchema,
-} from "./contraCore";
-import { NORTH } from "./geometry";
+} from "./labels";
 import { assertNever, getSide, isEqual, parses } from "./utils";
 
 export const DancerHandPointerSchema = z.object({
@@ -126,13 +128,12 @@ export class Dancer {
   }
 }
 
-export function resolveBasicLabel(
-  label: BasicLabel,
+export function resolveIrreducibleLabel(
+  label: IrreducibleLabel,
   id: DancerId,
   protos: Record<ProtoId, Dancer>,
-): DancerId | null {
-  const dancer = Dancer.get(id, protos);
-  return dancer.labels[label] ?? null;
+): DancerId | undefined {
+  return Dancer.get(id, protos).labels[label];
 }
 
 export type WorldState = Record<ProtoId, Dancer>;
@@ -265,7 +266,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
     }
     if (!dancer.labels["neighbor"])
       throw new Error(`dancer ${id} has no neighbor`);
-    for (const label of BasicLabelSchema.options) {
+    for (const label of IrreducibleLabelSchema.options) {
       const theirId = dancer.labels[label];
       if (!theirId) continue;
       const theirSymmetricPointer = Dancer.get(theirId, state).labels[label];
@@ -333,6 +334,12 @@ export function setLabel(
         `Cannot set shadow "${label}" of ${protoId} to ${dancerId} (different progression direction)`,
       );
     }
+    const existingShadow = state[protoId].labels[label];
+    if (existingShadow && existingShadow !== dancerId) {
+      throw new Error(
+        `Shadows should never change: ${protoId} already has shadow ${existingShadow}, can't set to ${dancerId}`,
+      );
+    }
 
     if (getOffset(dancerId) === getOffset(protoId)) {
       throw new Error(
@@ -389,3 +396,50 @@ export function findNearbyDancers(
     return dancers;
   });
 }
+
+const VectorJsonSchema = z
+  .object({ x: z.number(), y: z.number() })
+  .transform((v) => new Vector(v.x, v.y));
+
+const LabelsJsonSchema = z
+  .object({
+    partner: DancerIdSchema,
+    neighbor: DancerIdSchema,
+  })
+  .catchall(DancerIdSchema);
+
+const HandsJsonSchema = z
+  .object({
+    left: DancerHandPointerSchema.optional(),
+    right: DancerHandPointerSchema.optional(),
+  })
+  .default({});
+
+const DancerJsonSchema = z
+  .object({
+    id: DancerIdSchema,
+    pos: VectorJsonSchema,
+    facing: VectorJsonSchema,
+    hands: HandsJsonSchema,
+    labels: LabelsJsonSchema,
+    recents: z.array(DancerIdSchema).default([]),
+  })
+  .transform(
+    (d) =>
+      new Dancer(d.id, {
+        pos: d.pos,
+        facing: d.facing,
+        hands: d.hands,
+        labels: d.labels as Dancer["labels"],
+        recents: d.recents,
+      }),
+  );
+
+export const WorldStateSchema = z
+  .object({
+    up_lark_0: DancerJsonSchema,
+    up_robin_0: DancerJsonSchema,
+    down_lark_0: DancerJsonSchema,
+    down_robin_0: DancerJsonSchema,
+  })
+  .transform((o): WorldState => o);

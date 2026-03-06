@@ -1,4 +1,4 @@
-import { ALL_PROTO_IDS, parseProtoId } from "./contraCore";
+import { ALL_PROTO_IDS, getProgDirSign } from "./contraCore";
 import { NORTH } from "./geometry";
 import type { ContraAnimation } from "./instructions/_base";
 import type { WorldState } from "./worldState";
@@ -19,17 +19,13 @@ export function inferProgression(
 
   const amountsProgressed = new Set<number>();
   for (const id of ALL_PROTO_IDS) {
-    const { dir } = parseProtoId(id);
-    // Progression direction: up dancers progress in +Y (NORTH), down in -Y (SOUTH)
-    const progSign = dir === "up" ? 1 : -1;
-
     const initPos = initState[id].pos;
     const finalPos = finalState[id].pos;
 
     const idealDy = Math.round(finalPos.y - initPos.y);
     const idealProgressedPos = initPos.add(NORTH.multiply(idealDy));
     if (finalPos.subtract(idealProgressedPos).length() > TOLERANCE) return null;
-    amountsProgressed.add(progSign * idealDy);
+    amountsProgressed.add(getProgDirSign(id) * idealDy);
   }
 
   return amountsProgressed.size === 1 ? Array.from(amountsProgressed)[0] : null;

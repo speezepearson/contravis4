@@ -22,9 +22,9 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
   instr,
   init,
 ) => {
-  const cid = ({ left: "in left hand", right: "in right hand" } as const)[
-    instr.direction
-  ];
+  const cid = (
+    { left: "person in left hand", right: "person in right hand" } as const
+  )[instr.direction];
 
   // CW for right, CCW for left
   const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
