@@ -7,6 +7,7 @@ import { typedSafeParse } from "../../utils";
 import { BasicLabelDropdown } from "../BasicLabelDropdown";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
+import { SettableLabelSchema, type SettableLabel } from "../../contraCore";
 
 export function RelabelFields({
   instruction,
@@ -41,7 +42,8 @@ export function RelabelFields({
         onChange={(cid) => tryCommit({ cid })}
       />
       {" is your new "}
-      <BasicLabelDropdown
+      <BasicLabelDropdown<SettableLabel>
+        options={SettableLabelSchema.options}
         value={instruction.label}
         onChange={(label) => tryCommit({ label })}
       />

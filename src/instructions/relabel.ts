@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { BasicLabelSchema } from "../contraCore";
+import { SettableLabelSchema } from "../contraCore";
 import { must } from "../utils";
 import {
   CalledIdentifierSchema,
@@ -13,7 +13,7 @@ export const RelabelInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("relabel"),
   beats: z.literal(0),
-  label: BasicLabelSchema,
+  label: SettableLabelSchema,
   cid: CalledIdentifierSchema,
 });
 export type RelabelInstruction = z.infer<typeof RelabelInstructionSchema>;

@@ -289,6 +289,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
 }
 
 /** Sets a label for all dancers, updating each proto's value for `label` consistently. */
+// TODO: add a lint rule to ensure that labels are only ever set via this function
 export function setLabel(
   state: WorldState,
   protoId: ProtoId,

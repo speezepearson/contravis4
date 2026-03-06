@@ -3,11 +3,12 @@ import type { Vector } from "vecti";
 
 import {
   ALL_PROTO_IDS,
-  type BasicLabel,
   type Beats,
   type DancerId,
   type Hand,
   type ProtoId,
+  type SettableLabel,
+  SettableLabelSchema,
 } from "../contraCore";
 import {
   ellipsePosition,
@@ -19,6 +20,7 @@ import {
   Dancer,
   type DancerHandPointer,
   sanityCheckWorldState,
+  setLabel,
   type WorldState,
 } from "../worldState";
 import {
@@ -53,7 +55,7 @@ export type LabelsFn = (
   id: ProtoId,
   frac: number,
   segInit: WorldState,
-) => Array<[BasicLabel, DancerId]>;
+) => Array<[SettableLabel, DancerId]>;
 
 /** Per-dancer hands function: overwrites *all* the dancer's hands, leaving unmentioned hands unattached. */
 export type HandsFn = (
@@ -96,7 +98,7 @@ function applySegment(
       }
       if (segment.labels) {
         for (const [label, theirId] of segment.labels(id, frac, init)) {
-          draft[id].labels[label] = theirId;
+          setLabel(draft, id, label, theirId);
         }
       }
       if (segment.interactedWith) {
@@ -220,9 +222,11 @@ export function makeImmediateSegment(
     facing: (id) => final[id].facing,
     hands: (id) => final[id].hands,
     labels: (id) => {
-      const entries: Array<[BasicLabel, DancerId]> = [];
+      const entries: Array<[SettableLabel, DancerId]> = [];
       for (const [l, v] of Object.entries(final[id].labels)) {
-        if (v) entries.push([l as BasicLabel, v]);
+        const settable = SettableLabelSchema.safeParse(l);
+        if (!settable.success) continue;
+        if (v) entries.push([settable.data, v]);
       }
       return entries;
     },

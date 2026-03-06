@@ -16,7 +16,7 @@ import {
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
 import { DanceSchema, initFormationStates } from "./instructions/index";
-import { WorldState } from "./worldState";
+import { setLabel, WorldState } from "./worldState";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const exampleDancesDir = resolve(__dirname, "../example-dances");
@@ -33,12 +33,15 @@ function progressInitFormation(state: WorldState): WorldState {
     for (const id of ALL_PROTO_IDS) {
       draft[id].pos = draft[id].pos.add(progressionDelta(id));
       for (const label of BasicOtherDirLabelSchema.options) {
-        const otherId = draft[id].labels[label];
-        if (otherId)
-          draft[id].labels[label] = addOffsetToId(
-            otherId,
+        setLabel(
+          draft,
+          id,
+          label,
+          addOffsetToId(
+            draft[id].labels[label],
             parseDancerId(id).dir === "up" ? 1 : -1,
-          );
+          ),
+        );
       }
     }
   });

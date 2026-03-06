@@ -1,18 +1,26 @@
-import { type BasicLabel, BasicLabelSchema } from "../contraCore";
+import type { CalledLabel } from "../instructions/_base";
 import { InlineDropdown } from "./InlineDropdown";
 
-export function BasicLabelDropdown({
+export function BasicLabelDropdown<T extends CalledLabel>({
+  options,
   value,
   onChange,
+  onInvalid,
 }: {
-  value: BasicLabel;
-  onChange: (value: BasicLabel) => void;
+  options: T[];
+  value: T;
+  onChange: (value: T) => void;
+  onInvalid?: () => void;
 }) {
   return (
     <InlineDropdown
-      options={BasicLabelSchema.options}
+      options={options}
       value={value}
-      onChange={(v) => onChange(BasicLabelSchema.parse(v))}
+      onChange={(v) => {
+        const opt = options.find(o => o === v);
+        if (opt) onChange(opt);
+        else onInvalid?.();
+      }}
     />
   );
 }
