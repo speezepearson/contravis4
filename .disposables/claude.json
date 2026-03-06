@@ -2,6 +2,7 @@
   "numStartups": 1,
   "installMethod": "native",
   "autoUpdates": false,
+  "autoCompactEnabled": false,
   "cachedGrowthBookFeatures": {
     "tengu_event_sampling_config": {},
     "tengu_log_segment_events": false,
