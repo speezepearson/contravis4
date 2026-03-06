@@ -32,17 +32,20 @@ function progressInitFormation(state: WorldState): WorldState {
   return produce(state, (draft) => {
     for (const id of ALL_PROTO_IDS) {
       draft[id].pos = draft[id].pos.add(progressionDelta(id));
-      for (const label of BasicOtherDirLabelSchema.options) {
-        setLabel(
-          draft,
-          id,
-          label,
-          addOffsetToId(
-            draft[id].labels[label],
-            parseDancerId(id).dir === "up" ? 1 : -1,
-          ),
-        );
-      }
+    }
+    // Only call setLabel once per label — it propagates to all 4 protos.
+    // Read from `state` (immutable) to avoid seeing already-shifted values.
+    const representative = ALL_PROTO_IDS[0];
+    for (const label of BasicOtherDirLabelSchema.options) {
+      setLabel(
+        draft,
+        representative,
+        label,
+        addOffsetToId(
+          state[representative].labels[label],
+          parseDancerId(representative).dir === "up" ? 1 : -1,
+        ),
+      );
     }
   });
 }
