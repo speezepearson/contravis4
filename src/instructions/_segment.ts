@@ -15,7 +15,7 @@ import {
   lerpFacing as lerpFacingVec,
   revolve,
 } from "../geometry";
-import { lerpVectors } from "../utils";
+import { isEqual, lerpVectors } from "../utils";
 import {
   Dancer,
   type DancerHandPointer,
@@ -86,7 +86,7 @@ function applySegment(
   who: ReadonlySet<ProtoId>,
   frac: number,
 ): WorldState {
-  return produce(init, (draft) => {
+  const withoutLabels = produce(init, (draft) => {
     for (const id of who) {
       if (segment.position) draft[id].pos = segment.position(id, frac, init);
       if (segment.facing) draft[id].facing = segment.facing(id, frac, init);
@@ -110,6 +110,24 @@ function applySegment(
       }
     }
   });
+  if (!segment.labels) return withoutLabels;
+
+  const labelFn = segment.labels;
+  const possibleResults = [...who].map((id) =>
+    produce(withoutLabels, (draft) => {
+      for (const [label, theirId] of labelFn(id, 1, init)) {
+        setLabel(draft, id, label, theirId);
+      }
+    }),
+  );
+  for (const res of possibleResults) {
+    if (!isEqual(res, possibleResults[0])) {
+      throw new Error(
+        `[applySegment] labels function returned different results for different dancers: ${JSON.stringify(res)} vs ${JSON.stringify(possibleResults[0])}`,
+      );
+    }
+  }
+  return possibleResults[0];
 }
 
 /**
