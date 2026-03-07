@@ -1,13 +1,24 @@
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { z } from "zod";
+import { generateDanceJsonSchemas } from "./dance-json-schema";
 
-import { DanceSchema } from "../src/instructions/index";
+const schemas = generateDanceJsonSchemas();
 
-const jsonSchema = z.toJSONSchema(DanceSchema, { io: "input" });
+const outDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "_generated",
+  "json-schemas",
+);
+mkdirSync(outDir, { recursive: true });
 
-const output = JSON.stringify(jsonSchema, null, 2) + "\n";
+let count = 0;
+for (const [filename, schema] of Object.entries(schemas)) {
+  const path = join(outDir, filename);
+  writeFileSync(path, JSON.stringify(schema, null, 2) + "\n");
+  count++;
+}
 
-const dest = new URL("../dance.schema.json", import.meta.url).pathname;
-writeFileSync(dest, output);
-console.log(`Wrote ${dest}`);
+console.log(`Wrote ${count} schema files to ${outDir}`);

@@ -665,25 +665,25 @@ export function findNearbyDancers(
   });
 }
 
-const VectorJsonSchema = z
+export const VectorJsonSchema = z
   .object({ x: z.number(), y: z.number() })
   .transform((v) => new Vector(v.x, v.y));
 
-const LabelsJsonSchema = z
+export const LabelsJsonSchema = z
   .object({
     partner: DancerIdSchema,
     neighbor: DancerIdSchema,
   })
   .catchall(DancerIdSchema);
 
-const HandsJsonSchema = z
+export const HandsJsonSchema = z
   .object({
     left: DancerHandPointerSchema.optional(),
     right: DancerHandPointerSchema.optional(),
   })
   .default({});
 
-const DancerJsonSchema = z
+export const DancerJsonSchema = z
   .object({
     id: DancerIdSchema,
     pos: VectorJsonSchema,
