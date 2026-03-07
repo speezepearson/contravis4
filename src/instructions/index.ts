@@ -130,6 +130,7 @@ function buildInitFormation(initFormationName: InitFormationName): WorldState {
 }
 
 export const DanceSchema = z.object({
+  url: z.string().optional(),
   name: z.string().optional(),
   author: z.string().optional(),
   initFormation: InitFormationSchema,
