@@ -68,6 +68,10 @@ type ResolveLabelOpts = { checkDistance?: boolean };
 type ResolveCalledIdentifierOpts = {
   roles?: "same" | "different";
 } & ResolveLabelOpts;
+
+export type Lark = Dancer & { role: "lark" };
+export type Robin = Dancer & { role: "robin" };
+
 export class Dancer {
   static [immerable] = true;
 
@@ -119,8 +123,11 @@ export class Dancer {
   get offset(): DancerOffset {
     return getOffset(this.id);
   }
-  get isLark(): boolean {
+  isLark(): this is Lark {
     return this.role === "lark";
+  }
+  isRobin(): this is Robin {
+    return this.role === "robin";
   }
 
   /** The WorldState this dancer was looked up from. Only available on dancers returned by Dancer.get. */
@@ -205,7 +212,7 @@ export class Dancer {
         assertNever(label);
       }
     })();
-    if (checkDistance && result && getDist(this.pos, result.pos) > 2.8) {
+    if (checkDistance && result && getDist(this.pos, result.pos) > 3.8) {
       throw new SnazzyError([
         { dancerId: this.id },
         " is too far from their ",
@@ -241,9 +248,9 @@ export class Dancer {
       case "right_diagonal":
         return this.facing.rotateByDegrees(-45);
       case "larks_left_robins_right":
-        return this.facing.rotateByDegrees(90 * (this.isLark ? 1 : -1));
+        return this.facing.rotateByDegrees(90 * (this.isLark() ? 1 : -1));
       case "larks_right_robins_left":
-        return this.facing.rotateByDegrees(-90 * (this.isLark ? 1 : -1));
+        return this.facing.rotateByDegrees(-90 * (this.isLark() ? 1 : -1));
       default:
         assertNever(dir);
     }

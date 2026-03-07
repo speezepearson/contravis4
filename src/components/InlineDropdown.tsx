@@ -100,6 +100,7 @@ export function InlineDropdown<T extends string>({
             const cid = CalledIdentifierSchema.safeParse(value);
             if (cid.success) onHighlight?.(cid.data);
           }}
+          onMouseLeave={() => onHighlight?.(null)}
         >
           {displayText}
         </span>

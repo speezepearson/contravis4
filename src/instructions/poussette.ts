@@ -1,4 +1,4 @@
-import { produce } from "immer";
+import type { Vector } from "vecti";
 import { z } from "zod";
 
 import {
@@ -12,7 +12,6 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { ellipsePosition, PI } from "../geometry";
-import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
@@ -43,72 +42,35 @@ export type PoussetteInstruction = z.infer<typeof PoussetteInstructionSchema>;
  * The backer traces an elliptical arc; the non-backer maintains displacement.
  * Arc dests are resolved by temporarily facing dancers across.
  */
-export function makeHalfPoussetteArcPosition(
+export function makeHalfPoussetteArcPositionFn(
   backerRole: Role,
   backerDir: Hand,
-  matches: Record<ProtoId, Dancer>,
-  state: WorldState,
-  who: ReadonlySet<ProtoId>,
+  init: WorldState,
 ): PositionFn {
-  // Face across internally for arc dest resolution (on_left/on_right depend on facing)
-  const facedAcross = produce(state, (draft) => {
-    for (const id of ALL_PROTO_IDS) {
-      draft[id].facing = must(
-        resolveCardinalDirection("across", draft[id].pos),
-        [{ dancerId: id }, "too close to center, not sure which way to face"],
-      );
-    }
-  });
-
-  const backerCid = `on_${backerDir}` as const;
-  const arcDests = new Map<
-    ProtoId,
-    { start: typeof state.up_lark_0.pos; end: typeof state.up_lark_0.pos }
-  >();
-  for (const id of who) {
-    if (getRole(id) === backerRole) {
-      const found = Dancer.get(id, facedAcross).findDancerInCalledDirection(
-        backerCid,
-      );
-      if (!found) {
-        throw new SnazzyError([
-          "backer ",
-          { dancerId: id },
-          " has no dancer ",
-          backerCid,
-        ]);
-      }
-      arcDests.set(id, {
-        start: state[id].pos,
-        end: found.pos,
-      });
-    }
+  const arcDests = new Map<ProtoId, { start: Vector; end: Vector }>();
+  for (const id of ALL_PROTO_IDS) {
+    const isBacker = getRole(id) === backerRole;
+    arcDests.set(id, {
+      start: init[id].pos,
+      end: init[id].pos.add(
+        init[id]
+          .resolveCalledDirection("across")
+          .rotateByDegrees(
+            (isBacker ? 1 : -1) * { right: -90, left: 90 }[backerDir],
+          ),
+      ),
+    });
   }
-
-  const nonBackerToBacker = new Map<ProtoId, ProtoId>();
-  for (const id of who) {
-    if (getRole(id) !== backerRole) {
-      nonBackerToBacker.set(id, matches[id].protoId);
-    }
-  }
-
-  const getBackerPos = (id: ProtoId, frac: number) => {
-    const { start, end } = arcDests.get(id)!;
-    // Sign so backer always arcs outward (away from center line x=0)
-    const semiMinorCw = -0.75 * Math.sign(start.x) * Math.sign(end.y - start.y);
-    return ellipsePosition(start, end, semiMinorCw, PI * frac);
-  };
+  // console.log({arcDests})
 
   return (dancer, frac) => {
-    if (getRole(dancer.protoId) === backerRole) {
-      return getBackerPos(dancer.protoId, frac);
-    }
-    const backerProto = nonBackerToBacker.get(dancer.protoId)!;
-    const displacement = dancer.pos
-      .subtract(Dancer.get(backerProto, dancer.state).pos)
-      .multiply(1 - frac * (1 - frac));
-    const backerNow = getBackerPos(backerProto, frac);
-    return backerNow.add(displacement);
+    const { start, end } = arcDests.get(dancer.protoId)!;
+    const semiMinorCw =
+      -0.75 *
+      Math.sign(start.x) *
+      Math.sign(end.y - start.y) *
+      (dancer.role === backerRole ? 1 : -1.3);
+    return ellipsePosition(start, end, semiMinorCw, PI * frac);
   };
 }
 
@@ -143,12 +105,10 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 
   const firstHalf: Segment = {
     dur: halfBeats,
-    position: makeHalfPoussetteArcPosition(
+    position: makeHalfPoussetteArcPositionFn(
       instr.backer,
       instr.backerDir,
-      matches,
       afterSetup,
-      who,
     ),
     hands: handsFn,
     interactedWith: (dancer) => [matches[dancer.protoId].id],
@@ -165,12 +125,10 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
   // bringing the couple back to where it started.
   const secondHalf = {
     dur: halfBeats,
-    position: makeHalfPoussetteArcPosition(
+    position: makeHalfPoussetteArcPositionFn(
       otherRole(instr.backer),
       instr.backerDir,
-      matches,
       afterFirst,
-      who,
     ),
     hands: handsFn,
   };

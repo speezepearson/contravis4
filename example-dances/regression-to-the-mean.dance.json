@@ -1,5 +1,6 @@
 {
   "$schema": "../_generated/json-schemas/Dance.schema.json",
+  "url": "https://contradb.com/dances/3028",
   "name": "Regression to the Mean",
   "author": "Cristy Altamirano",
   "initFormation": "becket",

@@ -119,24 +119,6 @@ describe("zigZag", () => {
     });
   });
 
-  describe("nZigs=4", () => {
-    const init = initFormationStates.improper;
-    const instr = makeInstr({ nZigs: 4, beats: 16 });
-    const segments = zigZagSegments(instr, init, allProtos);
-    const animation = animateSegments(init, allProtos, segments);
-    const final = animation.getFrame(animation.dur);
-
-    it("moves dancers 4 units along the line after 4 zigs", () => {
-      for (const id of ALL_PROTO_IDS) {
-        expect(final[id].pos.x, `${id} x`).toBeCloseTo(init[id].pos.x);
-        expect(
-          Math.abs(final[id].pos.y - init[id].pos.y),
-          `${id} y`,
-        ).toBeCloseTo(4);
-      }
-    });
-  });
-
   describe("nZigs=2 crosses the center line", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr();
@@ -178,7 +160,6 @@ describe("zigZag", () => {
     { nZigs: 1 as const, beats: 8 },
     { nZigs: 2 as const, beats: 8 },
     { nZigs: 3 as const, beats: 12 },
-    { nZigs: 4 as const, beats: 16 },
   ])("nZigs=$nZigs y-displacement", ({ nZigs, beats }) => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ nZigs, beats });

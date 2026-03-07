@@ -75,6 +75,10 @@ import {
   RightLeftThroughInstructionSchema,
   rightLeftThroughSegments,
 } from "./rightLeftThrough";
+import {
+  RobinsChainInstructionSchema,
+  robinsChainSegments,
+} from "./robinsChain";
 import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
 import { RoryOMoreInstructionSchema, roryOMoreSegments } from "./roryOMore";
 import {
@@ -115,6 +119,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   BoxCirculateInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
+  RobinsChainInstructionSchema,
   CircleInstructionSchema,
   DoSiDoInstructionSchema,
   DownTheHallInstructionSchema,
@@ -166,6 +171,7 @@ export const atomicSegmentAnimators: {
   box_circulate: boxCirculateSegments,
   box_the_gnat: boxTheGnatSegments,
   california_twirl: californiaTwirlSegments,
+  robins_chain: robinsChainSegments,
   circle: circleSegments,
   do_si_do: doSiDoSegments,
   down_the_hall: downTheHallSegments,

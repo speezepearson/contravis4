@@ -211,7 +211,11 @@ export function makeSwingSegments(
         (id, globalFrac) => new Vector(xDrifts[id] * globalFrac, 0),
       );
       // Nudge y so that opposite-role pairs end up directly across.
-      return fudgeToAlignY(fudgeToSpaceEvenlyInY(xSnapped, init, who), init, who);
+      return fudgeToAlignY(
+        fudgeToSpaceEvenlyInY(xSnapped, init, who),
+        init,
+        who,
+      );
     }
   }
 

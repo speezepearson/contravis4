@@ -360,7 +360,7 @@ export class Renderer {
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
     const ghostScale = 10 / 14; // ghost is smaller than main dancer
-    const rWide = (0.6 / 2) * PX_PER_METER * ghostScale;
+    const rWide = (0.5 / 2) * PX_PER_METER * ghostScale;
     const rNarrow = (0.3 / 2) * PX_PER_METER * ghostScale;
     const facingAngle = Math.atan2(-facing.y, facing.x);
 
@@ -438,8 +438,8 @@ export class Renderer {
     if (!color) return;
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
-    // Oval: 0.6 units wide (perpendicular to facing) × 0.3 units long (along facing)
-    const rWide = (0.6 / 2) * PX_PER_METER; // half-width perpendicular to facing
+    // Oval: 0.5 units wide (perpendicular to facing) × 0.3 units long (along facing)
+    const rWide = (0.5 / 2) * PX_PER_METER; // half-width perpendicular to facing
     const rNarrow = (0.3 / 2) * PX_PER_METER; // half-length along facing
     // Canvas facing angle (y is flipped)
     const facingAngle = Math.atan2(-facing.y, facing.x);

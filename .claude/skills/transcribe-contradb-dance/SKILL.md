@@ -28,27 +28,30 @@ Given a ContraDB URL (e.g. `https://contradb.com/dances/3010`), the user runs `n
    - "circle left 3" needs no preceding `take_hands_in_rings` — the circle instruction calls `makeRingSegment` internally
    - Role-specific moves (e.g. "gentlespoons allemande left 1½") need a `split` wrapper with the active role's instructions and an empty array for the other role
    - Swings should have `"endFacing": "across"` unless otherwise specified
-   - **⁋ = progression** — this symbol marks where progression happens. Emit a `greet_new_neighbors` instruction (0 beats) at that point, with `"cid"` probably `"person_in_front"`.
+   - **⁋ = progression** — this symbol marks where progression happens. Emit a `greet_new_neighbors` instruction (0 beats) at that point. For Becket dances where the progression is a slice left, `"cid"` is `"person_across"`. Otherwise it's probably `"person_in_front"`. If there are two ⁋ symbols and the second is at the very end of the dance, it just marks the cycle completing — only the first one needs a `greet_new_neighbors`.
+   - "half poussette - ladles pull back then left" = `poussette` with `"backer": "robin"`, `"backerDir": "left"`, `"full": false` (ladles = robins, gentlespoons = larks)
 
 5. **Add `drop_hands` instructions** where needed — swings, allemandes, and other moves leave hands connected. You need `{"beats": 0, "type": "drop_hands", "which": "both"}` before instructions that form new hand connections (like the next swing, circle, or take_hands_in_rings). Check existing dances for the pattern.
 
 6. **Generate valid UUIDs** for all `id` fields — use `node -e "for(let i=0;i<N;i++) console.log(crypto.randomUUID())"`. Do NOT use made-up prefixes like `hb000000-...`; the schema validates UUID format strictly (version 1-8 only).
 
-7. **Create the file** as `example-dances/<kebab-case-name>.dance.json` with `"$schema": "../_generated/json-schemas/Dance.schema.json"`.
+7. **Create the file** as `example-dances/<kebab-case-name>.dance.json` with `"$schema": "../_generated/json-schemas/Dance.schema.json"` and `"url": "<contradb-url>"`.
 
 8. **Run `npm run verify`** and fix errors iteratively. If simulation errors occur, use `npx tsx scripts/trace-dance.ts <dance.json>` to see the dancer state at each instruction boundary — this shows positions, facings, and hand connections, making it easy to identify where things go wrong.
+
+9. **Write notes** to `example-dances/<kebab-case-name>.notes.md` — document key decisions (e.g. progression placement, ambiguous figure interpretations), what caused trouble, and how you fixed it. This helps future transcriptions of similar dances.
 
 ## Common pitfalls
 
 - **UUID validation**: IDs must be valid v1-v8 UUIDs. Random hex strings with invalid version/variant nibbles will fail schema validation.
-- **Hand conflicts**: The simulation tracks hand state precisely. After any instruction that creates hand connections (swing, allemande, circle, take_hands_in_rings), you likely need `drop_hands` before the next instruction that creates new connections.
+- **Hand conflicts**: The simulation tracks hand state precisely. After any instruction that creates hand connections (swing, allemande, circle, take_hands_in_rings, **long_lines_forward_back**, poussette), you likely need `drop_hands` before the next instruction that creates new connections. `long_lines_forward_back` is easy to forget — it leaves dancers holding hands with neighbors along the line.
 - **Ring formation edge cases**: `makeRingSegment` (used by circle, take_hands_in_rings, etc.) needs dancers in positions where it can find both a `person_across` and a `person_up`/`person_down` of different role. After partner swings ending across, dancers face horizontally (facing.y ≈ 0), which can cause the ring algorithm to fail when dancers are at y-extremes. This was fixed with a recency-based tiebreaker, but be aware of it.
 - **Beat counts**: The dance must total 64 beats. The test suite checks this for non-dummy dances.
 - **`cid` for role-specific moves**: In a split, when larks allemande each other, the `cid` is typically `"opposite"` (the other lark across the set), not `"neighbor"` or `"partner"`.
 
 ## Debugging tools
 
-- **`npx tsx scripts/trace-dance.ts <dance.json>`** — prints dancer positions, facings, and hand connections after each instruction. Shows errors inline and a summary at the end. Use this instead of writing throwaway test files.
+- **`npx tsx scripts/trace-dance.ts <dance.json>`** — prints dancer positions, facings, and hand connections after each instruction. Stops at the first error (later instructions would have meaningless state). Use this instead of writing throwaway test files.
 - **`npm run verify-noop -- HEAD`** — after changes, checks that existing dances still produce identical animations.
 
 ## What you may need to ask the user

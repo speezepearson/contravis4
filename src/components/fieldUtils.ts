@@ -60,6 +60,8 @@ export function makeDefaultInstruction(
         return { id, type: "box_the_gnat", beats: 4, cid: "partner" };
       case "california_twirl":
         return { id, type: "california_twirl", beats: 4 };
+      case "robins_chain":
+        return { id, type: "robins_chain", beats: 8, cid: "opposite" };
       case "circle":
         return {
           id,

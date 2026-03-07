@@ -62,6 +62,7 @@ import { BendTheLineFields } from "./fields/BendTheLineFields";
 import { BoxCirculateFields } from "./fields/BoxCirculateFields";
 import { BoxTheGnatFields } from "./fields/BoxTheGnatFields";
 import { CaliforniaTwirlFields } from "./fields/CaliforniaTwirlFields";
+import { RobinsChainFields } from "./fields/ChainFields";
 import { CircleFields } from "./fields/CircleFields";
 import { DoSiDoFields } from "./fields/DoSiDoFields";
 import { DownTheHallFields } from "./fields/DownTheHallFields";
@@ -155,6 +156,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "box_circulate",
   "box_the_gnat",
   "california_twirl",
+  "robins_chain",
   "circle",
   "do_si_do",
   "down_the_hall",
@@ -200,6 +202,7 @@ const ACTION_LABELS: Record<ActionOptionType, string> = {
   box_circulate: "box circulate",
   box_the_gnat: "box the gnat",
   california_twirl: "California twirl",
+  robins_chain: "robins chain",
   circle: "circle",
   do_si_do: "do si do",
   down_the_hall: "down the hall",
@@ -511,6 +514,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "box_circulate":
     case "box_the_gnat":
     case "california_twirl":
+    case "robins_chain":
     case "circle":
     case "do_si_do":
     case "down_the_hall":
@@ -653,6 +657,8 @@ function InlineForm({
             return (
               <CaliforniaTwirlFields {...common} instruction={instruction} />
             );
+          case "robins_chain":
+            return <RobinsChainFields {...common} instruction={instruction} />;
           case "circle":
             return <CircleFields {...common} instruction={instruction} />;
           case "do_si_do":
