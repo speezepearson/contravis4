@@ -14,7 +14,7 @@ export function resolveRings(
   const getRH = (id: DancerId) =>
     must(
       Dancer.get(id, state).resolveCalledIdentifier("person_in_right_hand"),
-      `[rings] ${id} has nobody in their right hand`,
+      [{ dancerId: id }, "has nobody in their right hand"],
     );
   return buildProtoRecord((id) => {
     const r = getRH(id);

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS } from "../contraCore";
 import { resolveShortLines } from "../formations";
-import { PI, revolve } from "../geometry";
+import { PI, revolve, roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
 import { Dancer } from "../worldState";
@@ -27,7 +27,7 @@ export const bendTheLineSegments: InstructionAnimator<
     const line = shortLines[protoId];
     const refFacing = Dancer.get(line[0], init).facing;
     for (const dancerId of line) {
-      if (Dancer.get(dancerId, init).facing.dot(refFacing) < 0.7) {
+      if (!roughlySameDir(Dancer.get(dancerId, init).facing, refFacing)) {
         throw new SnazzyError([
           "Dancers in short line for ",
           { dancerId: protoId },

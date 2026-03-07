@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 import { type Hand } from "../contraCore";
-import { assertNever } from "../utils";
+import { SnazzyError } from "../snazzyError";
+import { assertNever, safeThreshold } from "../utils";
 import { connectHands, Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -15,15 +16,13 @@ export type TakeHand = z.infer<typeof TakeHandSchema>;
 
 /** Determine a dancer's inside hand (the hand closer to the target).
  *  Throws if the target is directly in front of or behind the dancer. */
-export function resolveInsideHand(dancer: Dancer, target: Dancer): Hand {
+export function resolveInsideHand(
+  dancer: Dancer,
+  target: Dancer,
+): Hand | undefined {
   const delta = target.pos.subtract(dancer.pos);
   const cross = dancer.facing.x * delta.y - dancer.facing.y * delta.x;
-  if (Math.abs(cross) < 1e-9) {
-    throw new Error(
-      "Cannot determine inside hand: target is neither to the left nor to the right",
-    );
-  }
-  return cross < 0 ? "right" : "left";
+  return safeThreshold(cross, { neg: "right", pos: "left" });
 }
 
 export const TakeHandsInstructionSchema = z.object({
@@ -52,7 +51,19 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
           break;
         case "inside": {
           const ourHand = resolveInsideHand(draft[id], other);
+          if (!ourHand)
+            throw new SnazzyError([
+              { dancerId: id },
+              " can't determine inside hand with ",
+              { dancerId: other.id },
+            ]);
           const theirHand = resolveInsideHand(other, draft[id]);
+          if (!theirHand)
+            throw new SnazzyError([
+              { dancerId: other.id },
+              " can't determine inside hand with ",
+              { dancerId: id },
+            ]);
           connectHands(draft, id, ourHand, other.id, theirHand);
           break;
         }

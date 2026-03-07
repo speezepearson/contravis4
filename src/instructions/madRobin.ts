@@ -72,10 +72,10 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
         return ellipsePosition(start, end, semiMinor, phi * frac);
       },
       facing: (dancer) => {
-        return must(
-          resolveCardinalDirection("across", dancer.pos),
-          `[mad robin] dancer ${dancer.protoId} is too close to the center, can't resolve facing direction`,
-        );
+        return must(resolveCardinalDirection("across", dancer.pos), [
+          { dancerId: dancer.protoId },
+          "too close to center, not sure which way to face",
+        ]);
       },
       hands: () => ({}),
       interactedWith: (dancer) => [matches[dancer.protoId].id],

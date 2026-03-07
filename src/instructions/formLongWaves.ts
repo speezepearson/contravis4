@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
+import { must, safeThreshold } from "../utils";
 import { connectHands, Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
@@ -35,7 +36,10 @@ export const formLongWavesSegments: InstructionAnimator<
   // Snap facings to across or out (whichever is closer = EAST or WEST)
   const snappedState = produce(init, (draft) => {
     for (const id of ALL_PROTO_IDS) {
-      draft[id].facing = draft[id].facing.x >= 0 ? EAST : WEST;
+      draft[id].facing = must(
+        safeThreshold(draft[id].facing.x, { neg: WEST, pos: EAST }),
+        [{ dancerId: id }, " isn't sure whether to face in or out"],
+      );
     }
   });
 

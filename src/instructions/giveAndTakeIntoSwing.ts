@@ -63,10 +63,10 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
       .divide(2);
 
     const finalCoM = drawer.pos.add(
-      must(
-        resolveCardinalDirection("across", drawer.pos),
-        `[give and take into swing] dancer ${id} is too close to the center, can't tell which way they should end up facing`,
-      )
+      must(resolveCardinalDirection("across", drawer.pos), [
+        { dancerId: id },
+        "too close to center, not sure which way to face",
+      ])
         .multiply(0.5)
         .rotateByDegrees(90 * (instr.drawerRole === "robin" ? 1 : -1)),
     );

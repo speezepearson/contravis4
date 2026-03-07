@@ -74,10 +74,10 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   const isLeader = (id: ProtoId): boolean => {
     const up = isFacingUp(id);
     const leaderOnWest = up ? instr.dir === "left" : instr.dir === "right";
-    const side = must(
-      getSide(init[id].pos),
-      `[zig zag] dancer ${id} is too close to the center`,
-    );
+    const side = must(getSide(init[id].pos), [
+      { dancerId: id },
+      "too close to center, not sure which side is east or west",
+    ]);
     return leaderOnWest ? side === "west" : side === "east";
   };
 
@@ -92,10 +92,10 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
 
   // Inside hands based on position: west dancer's right, east dancer's left
   const insideHand = (id: ProtoId): Hand => {
-    return must(
-      getSide(init[id].pos),
-      `[zig zag] dancer ${id} is too close to the center`,
-    ) === "west"
+    return must(getSide(init[id].pos), [
+      { dancerId: id },
+      "too close to center, not sure which side is east or west",
+    ]) === "west"
       ? "right"
       : "left";
   };

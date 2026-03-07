@@ -75,7 +75,7 @@ export function makeSwingSegments(
     const center = centers[id];
     const finalFacing = must(
       resolveCardinalDirection(instr.endFacing, center),
-      `unable to resolve end facing ${instr.endFacing} for dancer ${id} (final CoM (${center.x}, ${center.y}))`,
+      [{ dancerId: id }, `unable to resolve end facing ${instr.endFacing}`],
     );
 
     const final = {
@@ -200,10 +200,10 @@ export function makeSwingSegments(
       // Snap x to exactly ±0.5 (centers of each side of the set).
       const xDrifts = buildProtoRecord((id) => {
         const center = centers[id];
-        const side = must(
-          getSide(center),
-          `[swing] dancer ${id}'s swing center is too close to the center line`,
-        );
+        const side = must(getSide(center), [
+          { dancerId: id },
+          "too close to center, not sure which side is east or west",
+        ]);
         return { east: 0.5, west: -0.5 }[side] - center.x;
       });
       const xSnapped = addPositionDrift(

@@ -2,6 +2,8 @@ import _ from "lodash";
 import { Vector } from "vecti";
 import { z } from "zod";
 
+import { SnazzyError, type SnazzySegment } from "./snazzyError";
+
 export function isLocalStorageAvailable(): boolean {
   try {
     const key = "__storage_test__";
@@ -33,8 +35,8 @@ export function isEqual<T>(a: T, b: T): boolean {
   return _.isEqual(a, b);
 }
 
-export function must<T>(x: T | null | undefined, msg?: string): T {
-  if (x == null) throw new Error(msg ?? "Value is null or undefined");
+export function must<T>(x: T | null | undefined, msg?: SnazzySegment[]): T {
+  if (x == null) throw new SnazzyError(msg ?? ["Value is null or undefined"]);
   return x;
 }
 

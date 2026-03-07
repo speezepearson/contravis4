@@ -5,7 +5,7 @@ import { ALL_PROTO_IDS, getRole } from "../contraCore";
 import { resolveShortLines } from "../formations";
 import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
-import { indexOf, must } from "../utils";
+import { indexOf, must, safeThreshold } from "../utils";
 import { connectHands, Dancer } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
@@ -34,8 +34,20 @@ export const formShortWavesSegments: InstructionAnimator<
       throw new Error(`dancers in middle of short waves do not have same role`);
     }
     for (let i = 0; i < 3; i++) {
-      const isUp = Dancer.get(line[i], init).facing.y > 0;
-      const nextIsUp = Dancer.get(line[i + 1], init).facing.y > 0;
+      const isUp = must(
+        safeThreshold(Dancer.get(line[i], init).facing.y, {
+          neg: "down",
+          pos: "up",
+        } as const),
+        [{ dancerId: line[i] }, " is not facing up or down"],
+      );
+      const nextIsUp = must(
+        safeThreshold(Dancer.get(line[i + 1], init).facing.y, {
+          neg: "down",
+          pos: "up",
+        } as const),
+        [{ dancerId: line[i + 1] }, " is not facing up or down"],
+      );
       if (isUp === nextIsUp) {
         throw new SnazzyError([
           "short waves should have dancers alternating facing up/down, but ",

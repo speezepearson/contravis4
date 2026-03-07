@@ -48,7 +48,7 @@ import {
   type ShadowLabel,
   ShadowLabelSchema,
 } from "./labels";
-import { SnazzyError } from "./snazzyError";
+import { SnazzyError, type SnazzySegment } from "./snazzyError";
 import { assertNever, getSide, isEqual, must, parses } from "./utils";
 
 export const DancerHandPointerSchema = z.object({
@@ -235,10 +235,10 @@ export class Dancer {
       case "out":
       case "up":
       case "down":
-        return must(
-          resolveCardinalDirection(dir, this.pos),
-          `unable to resolve ${dir} from pos (${this.pos.x}, ${this.pos.y})`,
-        );
+        return must(resolveCardinalDirection(dir, this.pos), [
+          { dancerId: this.id },
+          `unable to resolve ${dir}`,
+        ]);
       case "on_right":
         return this.facing.rotateByDegrees(-90);
       case "on_left":
@@ -317,8 +317,11 @@ export class Dancer {
 
   /** True when this dancer faces roughly away from the center line (x = 0). */
   facesOut({
-    errMsg = `unable to resolve dir 'out' at dancer ${this.id}'s pos`,
-  }: { errMsg?: string } = {}): boolean {
+    errMsg = [
+      { dancerId: this.id },
+      "too close to center, not sure which way is out",
+    ],
+  }: { errMsg?: SnazzySegment[] } = {}): boolean {
     return roughlySameDir(
       this.facing,
       must(resolveCardinalDirection("out", this.pos), errMsg),
@@ -327,8 +330,11 @@ export class Dancer {
 
   /** True when this dancer faces toward the center line (x = 0). */
   facesAcross({
-    errMsg = `unable to resolve dir 'across' at dancer ${this.id}'s pos`,
-  }: { errMsg?: string } = {}): boolean {
+    errMsg = [
+      { dancerId: this.id },
+      "too close to center, not sure which way is across",
+    ],
+  }: { errMsg?: SnazzySegment[] } = {}): boolean {
     return roughlySameDir(
       this.facing,
       must(resolveCardinalDirection("across", this.pos), errMsg),
@@ -547,8 +553,11 @@ export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
 export function getDancerSide(
   dancer: Dancer,
   {
-    errMsg = `dancer ${dancer.id} is too close to the center, refusing to guess which side they're supposed to be on`,
-  }: { errMsg?: string } = {},
+    errMsg = [
+      { dancerId: dancer.id },
+      "too close to center, refusing to guess which side they're supposed to be on",
+    ],
+  }: { errMsg?: SnazzySegment[] } = {},
 ): "east" | "west" {
   return must(getSide(dancer.pos), errMsg);
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, type Beats } from "../contraCore";
 import { resolveShortLines } from "../formations";
-import { SOUTH } from "../geometry";
+import { roughlySameDir, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
 import { connectHands, Dancer, type WorldState } from "../worldState";
@@ -37,7 +37,7 @@ export function theHallSegments(
   for (const protoId of ALL_PROTO_IDS) {
     for (const dancerId of shortLines[protoId]) {
       const state = Dancer.get(dancerId, init);
-      if (state.facing.dot(dir) < 0.7) {
+      if (!roughlySameDir(state.facing, dir)) {
         throw new SnazzyError([
           "Dancer ",
           { dancerId },
@@ -64,7 +64,19 @@ export function theHallSegments(
         const adjId = line[idx + 1];
         const adjState = Dancer.get(adjId, draft);
         const myHand = resolveInsideHand(draft[id], adjState);
+        if (!myHand)
+          throw new SnazzyError([
+            { dancerId: id },
+            " can't determine inside hand with ",
+            { dancerId: adjId },
+          ]);
         const theirHand = resolveInsideHand(adjState, draft[id]);
+        if (!theirHand)
+          throw new SnazzyError([
+            { dancerId: adjId },
+            " can't determine inside hand with ",
+            { dancerId: id },
+          ]);
         connectHands(draft, id, myHand, adjId, theirHand);
       }
     }),

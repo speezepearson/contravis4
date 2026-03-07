@@ -28,10 +28,10 @@ export const longLineInCenterSegments: InstructionAnimator<
       },
       facing: lerpFacingTo((dancer) => {
         if (getRole(dancer.protoId) !== instr.role) return dancer.facing;
-        return must(
-          resolveCardinalDirection("across", dancer.pos),
-          `[long line in center] dancer ${dancer.protoId} is too close to the center, can't tell which way they should move`,
-        );
+        return must(resolveCardinalDirection("across", dancer.pos), [
+          { dancerId: dancer.protoId },
+          "too close to center, not sure which way to move",
+        ]);
       }),
       hands: () => ({}),
     },

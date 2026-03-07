@@ -21,45 +21,45 @@ export function fudgeToAlignY(
     ALL_PROTO_IDS.find(
       (id) =>
         isLark(id) &&
-        must(
-          getSide(Dancer.get(id, finalState).pos),
-          `[fudgeToAlignY] lark ${id} is too close to center`,
-        ) === "west",
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "west",
     ),
-    `[fudgeToAlignY] no lark on the west side`,
+    [`no lark on the west side`],
   );
   const westRobin = must(
     ALL_PROTO_IDS.find(
       (id) =>
         isRobin(id) &&
-        must(
-          getSide(Dancer.get(id, finalState).pos),
-          `[fudgeToAlignY] robin ${id} is too close to center`,
-        ) === "west",
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "west",
     ),
-    `[fudgeToAlignY] no robin on the west side`,
+    ["no robin on the west side"],
   );
   const eastLark = must(
     ALL_PROTO_IDS.find(
       (id) =>
         isLark(id) &&
-        must(
-          getSide(Dancer.get(id, finalState).pos),
-          `[fudgeToAlignY] lark ${id} is too close to center`,
-        ) === "east",
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "east",
     ),
-    `[fudgeToAlignY] no lark on the east side`,
+    ["no lark on the east side"],
   );
   const eastRobin = must(
     ALL_PROTO_IDS.find(
       (id) =>
         isRobin(id) &&
-        must(
-          getSide(Dancer.get(id, finalState).pos),
-          `[fudgeToAlignY] robin ${id} is too close to center`,
-        ) === "east",
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "east",
     ),
-    `[fudgeToAlignY] no robin on the east side`,
+    ["no robin on the east side"],
   );
 
   const westIds: ProtoId[] = [westLark, westRobin];
@@ -134,33 +134,29 @@ function findDyToNearest(
   const dist1 = getDist(fromPos, candidate1.pos);
 
   const chosen = (() => {
-    try {
-      return must(
-        safeThreshold(dist0 - dist1, {
-          neg: candidate0,
-          pos: candidate1,
-        }),
-        `[fudgeToAlignY] can't determine nearest ${toProto} to ${fromProto}`,
-      );
-    } catch {
-      // Tiebreak by recency: prefer the more recently interacted-with candidate
-      const recents = init[fromProto].recents;
-      const recency0 = indexOf(recents, candidate0.id) ?? Infinity;
-      const recency1 = indexOf(recents, candidate1.id) ?? Infinity;
-      if (recency0 < recency1) return candidate0;
-      if (recency1 < recency0) return candidate1;
-      throw new SnazzyError([
-        "[fudgeToAlignY] ",
-        { dancerId: fromProto },
-        " can't determine nearest ",
-        { dancerId: toProto },
-        "; candidates ",
-        { dancerId: candidate0.id },
-        ", ",
-        { dancerId: candidate1.id },
-        " are equidistant and equally recent",
-      ]);
-    }
+    const res = safeThreshold(dist0 - dist1, {
+      neg: candidate0,
+      pos: candidate1,
+    });
+    if (res) return res;
+
+    // Tiebreak by recency: prefer the more recently interacted-with candidate
+    const recents = init[fromProto].recents;
+    const recency0 = indexOf(recents, candidate0.id) ?? Infinity;
+    const recency1 = indexOf(recents, candidate1.id) ?? Infinity;
+    if (recency0 < recency1) return candidate0;
+    if (recency1 < recency0) return candidate1;
+    throw new SnazzyError([
+      "[fudgeToAlignY] ",
+      { dancerId: fromProto },
+      " can't determine nearest copy of ",
+      { dancerId: toProto },
+      "; candidates ",
+      { dancerId: candidate0.id },
+      ", ",
+      { dancerId: candidate1.id },
+      " are equidistant and equally recent",
+    ]);
   })();
 
   return chosen.pos.y - fromPos.y;

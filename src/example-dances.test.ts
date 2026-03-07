@@ -60,7 +60,7 @@ describe("non-dummy dances are 64 beats long", () => {
       dance.instructions,
       initState,
     );
-    expect(errors).toEqual([]);
+    expect(errors).toHaveLength(0);
     expect(animation).not.toBeNull();
     if (!animation) return;
     expect(animation.dur).toBe(64);

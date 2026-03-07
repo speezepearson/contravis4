@@ -3,7 +3,8 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS } from "../contraCore";
 import { ccwRadsBetween, getDir } from "../geometry";
-import { must } from "../utils";
+import { SnazzyError } from "../snazzyError";
+import { must, safeThreshold } from "../utils";
 import {
   buildProtoRecord,
   connectHands,
@@ -42,8 +43,15 @@ export function makeRingSegment(init: WorldState): Segment {
         roles: "different",
       }),
     );
-    const alongCid =
-      init[id].facing.y >= 0 ? "person_up" : ("person_down" as const);
+    const alongCid = safeThreshold(init[id].facing.y, {
+      neg: "person_down",
+      pos: "person_up",
+    } as const);
+    if (!alongCid)
+      throw new SnazzyError([
+        { dancerId: id },
+        " can't determine which direction to face for a ring",
+      ]);
     const along = must(
       d.resolveCalledIdentifier(alongCid, { roles: "different" }),
     );

@@ -2,6 +2,7 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { type ProtoId } from "../contraCore";
+import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import { Dancer, getDancerSide } from "../worldState";
@@ -84,12 +85,13 @@ export const longLinesForwardBackSegments: InstructionAnimator<
   // Assert everybody faces across
   for (const id of who) {
     if (
-      init[id].facing.dot(
-        must(
-          resolveCardinalDirection("across", init[id].pos),
-          `[long lines forward and back] dancer ${id} is too close to the middle, can't tell which way they should move`,
-        ),
-      ) < 0.7
+      !roughlySameDir(
+        init[id].facing,
+        must(resolveCardinalDirection("across", init[id].pos), [
+          { dancerId: id },
+          "is in the middle, can't tell which way to move",
+        ]),
+      )
     ) {
       throw new SnazzyError([
         { dancerId: id },
@@ -152,10 +154,10 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         return new Vector(x, yTargets.get(dancer.protoId)!);
       }),
       facing: lerpFacingTo((dancer) =>
-        must(
-          resolveCardinalDirection("across", dancer.pos),
-          `[long lines forward and back] dancer ${dancer.protoId} is too close to the middle, can't tell which way they should move`,
-        ),
+        must(resolveCardinalDirection("across", dancer.pos), [
+          { dancerId: dancer.protoId },
+          "is in the middle, can't tell which way to move",
+        ]),
       ),
       hands: (dancer) =>
         hold(

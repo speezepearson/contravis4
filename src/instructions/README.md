@@ -17,6 +17,7 @@ This document catalogues every instruction type in the dance animation system.
 - **"shoulder round"** is also called **"gyre"** or **"gypsy"** in some communities.
 - **"next neighbor"** is also called **"2nd neighbor"** (and "next x2 neighbor" is "3rd neighbor)
 - **"roll away"** is also called **"roll away with a half sashay"**
+- **"pass through"** = **`pass_by`** (with `"hand": "right"` by default)
 
 ## Common Fields
 

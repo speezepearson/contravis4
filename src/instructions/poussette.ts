@@ -55,7 +55,7 @@ export function makeHalfPoussetteArcPosition(
     for (const id of ALL_PROTO_IDS) {
       draft[id].facing = must(
         resolveCardinalDirection("across", draft[id].pos),
-        `[poussette] dancer ${id} is too close to the center`,
+        [{ dancerId: id }, "too close to center, not sure which way to face"],
       );
     }
   });
@@ -120,10 +120,10 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
   const matches = resolveMatches("person_across", init, { roles: "different" });
 
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
-    draft[id].facing = must(
-      resolveCardinalDirection("across", draft[id].pos),
-      `[poussette] dancer ${id} is too close to the center`,
-    );
+    draft[id].facing = must(resolveCardinalDirection("across", draft[id].pos), [
+      { dancerId: id },
+      "too close to center, not sure which way to face",
+    ]);
     const match = matches[id];
     draft[id].hands = hold(
       ["left", match.id, "right"],
