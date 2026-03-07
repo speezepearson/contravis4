@@ -42,8 +42,7 @@ export function ZigZagFields({
         options={HAND_OPTIONS}
         value={instruction.dir}
         onChange={(v) => tryCommit({ dir: HandSchema.parse(v) })}
-      />
-      {" "}
+      />{" "}
       <InlineDropdown<(typeof NZIGS_OPTIONS)[number]>
         options={NZIGS_OPTIONS}
         getLabel={(v) => {
