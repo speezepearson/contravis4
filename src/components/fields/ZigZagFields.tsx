@@ -1,6 +1,6 @@
 import type z from "zod";
 
-import { HandSchema } from "../../contraCore";
+import { HandSchema, otherHand } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { ZigZagInstructionSchema } from "../../instructions/zigZag";
 import { typedSafeParse } from "../../utils";
@@ -8,7 +8,8 @@ import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
 
-const NZIGS_OPTIONS = ["1", "2", "3", "4"];
+const NZIGS_OPTIONS = ["1", "2", "3"] as const;
+const safeStringNZigs = { 1: "1", 2: "2", 3: "3" } as const;
 
 export function ZigZagFields({
   instruction,
@@ -43,23 +44,19 @@ export function ZigZagFields({
         onChange={(v) => tryCommit({ dir: HandSchema.parse(v) })}
       />
       {", "}
-      <InlineDropdown
+      <InlineDropdown<(typeof NZIGS_OPTIONS)[number]>
         options={NZIGS_OPTIONS}
         getLabel={(v) => {
           switch (v) {
             case "1":
-              return "zig";
+              return `zig ${instruction.dir} zag ${otherHand(instruction.dir)}`;
             case "2":
-              return "zig and zag";
+              return `zig ${instruction.dir} zag ${otherHand(instruction.dir)} zig ${instruction.dir}`;
             case "3":
-              return "zig and zag and zig";
-            case "4":
-              return "zig and zag and zig and zag";
-            default:
-              return `${v} zigs`;
+              return `zig ${instruction.dir} zag ${otherHand(instruction.dir)} zig ${instruction.dir} zag ${otherHand(instruction.dir)}`;
           }
         }}
-        value={String(instruction.nZigs)}
+        value={safeStringNZigs[instruction.nZigs]}
         onChange={(v) =>
           tryCommit({
             nZigs: ZigZagInstructionSchema.shape.nZigs.parse(Number(v)),

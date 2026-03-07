@@ -26,7 +26,7 @@ export const ZigZagInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("zig_zag"),
   dir: HandSchema,
-  nZigs: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  nZigs: z.union([z.literal(1), z.literal(2), z.literal(3)]),
 });
 export type ZigZagInstruction = z.infer<typeof ZigZagInstructionSchema>;
 
