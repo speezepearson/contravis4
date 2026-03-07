@@ -3,8 +3,19 @@ import { Vector } from "vecti";
 import { ALL_PROTO_IDS, isLark, isRobin, type ProtoId } from "../contraCore";
 import { getDist } from "../geometry";
 import { SnazzyError } from "../snazzyError";
-import { getSide, indexOf, must, safeThreshold } from "../utils";
-import { Dancer, findNearbyDancers, type WorldState } from "../worldState";
+import {
+  circularDistance,
+  getSide,
+  indexOf,
+  must,
+  safeThreshold,
+} from "../utils";
+import {
+  Dancer,
+  findNearbyDancers,
+  getDancerSide,
+  type WorldState,
+} from "../worldState";
 import { addPositionDrift, advanceState, type Segment } from "./_segment";
 
 /**
@@ -113,6 +124,93 @@ export function fudgeToAlignY(
   }
 
   return result;
+}
+
+/**
+ * Adds drift to every dancer's position over the given segments, such that
+ * each side of the set ends with its two dancers at circular distance 1 (mod 2) in y.
+ */
+export function fudgeToSpaceEvenlyInY(
+  segments: Segment[],
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): Segment[] {
+  const finalState = advanceState(segments, init, who);
+
+  // Partition dancers by side
+  const west: ProtoId[] = [];
+  const east: ProtoId[] = [];
+  for (const id of ALL_PROTO_IDS) {
+    const side = getDancerSide(Dancer.get(id, finalState));
+    if (side === "west") west.push(id);
+    else east.push(id);
+  }
+  if (west.length !== 2) {
+    throw new Error(
+      `[fudgeToSpaceEvenlyInY] expected 2 dancers on west, got ${west.length}`,
+    );
+  }
+  if (east.length !== 2) {
+    throw new Error(
+      `[fudgeToSpaceEvenlyInY] expected 2 dancers on east, got ${east.length}`,
+    );
+  }
+
+  const westFudges = computeEvenSpacingFudge(
+    finalState[west[0]].pos.y,
+    finalState[west[1]].pos.y,
+  );
+  const eastFudges = computeEvenSpacingFudge(
+    finalState[east[0]].pos.y,
+    finalState[east[1]].pos.y,
+  );
+
+  const driftMap = new Map<ProtoId, number>();
+  driftMap.set(west[0], westFudges[0]);
+  driftMap.set(west[1], westFudges[1]);
+  driftMap.set(east[0], eastFudges[0]);
+  driftMap.set(east[1], eastFudges[1]);
+
+  const result = addPositionDrift(segments, (id, globalFrac) => {
+    const dy = driftMap.get(id) ?? 0;
+    return new Vector(0, dy * globalFrac);
+  });
+
+  // Verify: each side should have circular distance 1
+  const resultFinalState = advanceState(result, init, who);
+  for (const [label, ids] of [
+    ["west", west],
+    ["east", east],
+  ] as const) {
+    const y0 = resultFinalState[ids[0]].pos.y;
+    const y1 = resultFinalState[ids[1]].pos.y;
+    const dist = circularDistance(y0, y1, 2);
+    if (Math.abs(dist - 1) > 0.01) {
+      throw new Error(
+        `[fudgeToSpaceEvenlyInY] after fudge, ${label} side has circular distance ${dist.toFixed(4)}, expected 1`,
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Given two y-coordinates on one side of the set, compute the dy fudge for each
+ * so that their circular distance (mod 2) becomes exactly 1.
+ * Returns [dy1, dy2] where dy1 + dy2 = 0.
+ */
+export function computeEvenSpacingFudge(
+  y1: number,
+  y2: number,
+): [number, number] {
+  // d = ((y1 - y2) mod 2 + 2) mod 2, i.e. the mod-2 offset from y2 to y1
+  const d = (((y1 - y2) % 2) + 2) % 2;
+  // When d <= 1, circular distance = d, y1 is "ahead" of y2 by d.
+  // When d > 1, circular distance = 2-d, y2 is "ahead" of y1 by 2-d.
+  // In both cases, pushing y1 by +(1-d)/2 and y2 by -(1-d)/2 achieves distance 1.
+  const dy1 = (1 - d) / 2;
+  return [dy1, -dy1];
 }
 
 /**

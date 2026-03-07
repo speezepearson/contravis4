@@ -1,17 +1,17 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { HandSchema, isLark, type ProtoId } from "../contraCore";
+import { HandSchema, isLark } from "../contraCore";
 import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors, must } from "../utils";
-import { connectHands, Dancer, getDancerSide } from "../worldState";
+import { connectHands, getDancerSide } from "../worldState";
 import {
   instructionBaseSchemaFields,
   resolveCardinalDirection,
   resolveMatches,
 } from "./_base";
-import { fudgeToAlignY } from "./_fudge";
+import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
   advanceState,
   type InstructionAnimator,
@@ -69,33 +69,21 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
   const setupSegs = [faceAcross, takeHands];
   const postSetup = advanceState(setupSegs, init, who);
 
-  // Pre-compute each dancer's match, side, and target positions
-  const midTargets = new Map<ProtoId, Vector>();
-  const finalTargets = new Map<ProtoId, Vector>();
-
-  for (const id of who) {
-    const dancer = Dancer.get(id, postSetup);
-
-    const side = getDancerSide(dancer);
-    const initY = dancer.pos.y;
-
-    // Determine y movement: if slicing left and on the west side, move +1 (up);
-    // if slicing left and on the east side, move -1 (down); vice versa for right.
-    const yDelta = (instr.direction === "left") === (side === "west") ? 1 : -1;
-
-    const midX = side === "west" ? -0.3 : 0.3;
-    const finalX = side === "west" ? -1 : 1;
-
-    midTargets.set(id, new Vector(midX, initY + yDelta));
-    finalTargets.set(id, new Vector(finalX, initY + yDelta));
-  }
-
   const halfBeats = instr.beats / 2;
 
   const firstSegment: Segment = {
     dur: halfBeats,
     position: (dancer, frac) => {
-      return lerpVectors(dancer.pos, midTargets.get(dancer.protoId)!, frac);
+      const side = getDancerSide(dancer);
+      const yDelta =
+        (instr.direction === "left") === (side === "west") ? 1 : -1;
+      const midX = side === "west" ? -0.3 : 0.3;
+
+      return lerpVectors(
+        dancer.pos,
+        new Vector(midX, dancer.pos.y + yDelta),
+        frac,
+      );
     },
     facing: lerpFacingTo((dancer) =>
       must(resolveCardinalDirection("across", dancer.pos), [
@@ -108,7 +96,9 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
   const secondSegment: Segment = {
     dur: halfBeats,
     position: (dancer, frac) => {
-      return lerpVectors(dancer.pos, finalTargets.get(dancer.protoId)!, frac);
+      const side = getDancerSide(dancer);
+      const finalX = side === "west" ? -0.5 : 0.5;
+      return lerpVectors(dancer.pos, new Vector(finalX, dancer.pos.y), frac);
     },
     facing: lerpFacingTo((dancer) =>
       must(resolveCardinalDirection("across", dancer.pos), [
@@ -121,7 +111,11 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
 
   return [
     ...setupSegs,
-    ...fudgeToAlignY([firstSegment], postSetup, who),
+    ...fudgeToAlignY(
+      fudgeToSpaceEvenlyInY([firstSegment], postSetup, who),
+      postSetup,
+      who,
+    ),
     secondSegment,
   ];
 };
