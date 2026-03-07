@@ -1,3 +1,24 @@
+/**
+ * Identifier types and resolution.
+ *
+ * A "called identifier" resolves to a specific dancer (not a direction vector).
+ *
+ *   CalledIdentifier = Label | PersonInDirection
+ *     The full set of identifiers that can appear in instruction schemas
+ *     (e.g. as the "cid" field of a swing or allemande).
+ *       - Label ("partner", "neighbor", "shadow_2", …)
+ *           resolved via resolveLabel in _base.ts using relationship tracking.
+ *       - PersonInDirection ("person_on_right", "person_in_front", …)
+ *           finds the nearest dancer in the given PureDirection (see directions.ts).
+ *
+ * The higher-level helpers (getCycle, resolveMatch, resolveMatches, resolveRings)
+ * build on resolveCalledIdentifier to handle common patterns like pairing up
+ * dancers or finding ring formations.
+ *
+ * See also: directions.ts for CalledDirection, which resolves to a direction
+ * vector rather than a specific dancer.
+ */
+
 import { z } from "zod";
 
 import { type DancerId, getRole, type ProtoId } from "./contraCore";

@@ -1,3 +1,29 @@
+/**
+ * Direction types and resolution.
+ *
+ * A "direction" resolves to a direction vector (not a specific dancer).
+ * There are three layers, from concrete to abstract:
+ *
+ *   CardinalDirection — "up", "down", "across", "out"
+ *     Absolute directions determined solely by position on the floor.
+ *
+ *   PureDirection — CardinalDirection + facing-relative directions
+ *     ("on_left", "in_front", "right_diagonal", "larks_left_robins_right", …)
+ *     Resolves to a vector using only the dancer's own position and facing.
+ *
+ *   CalledDirection = PureDirection | TowardsLabelDirection | TowardsPersonDirection
+ *     The full set of directions that can appear in instruction schemas.
+ *     The "towards_" variants resolve by finding a target dancer first, then
+ *     returning the direction from the source dancer to that target:
+ *       - TowardsLabelDirection ("towards_partner", "towards_neighbor", …)
+ *           looks up the target by Label (see labels.ts).
+ *       - TowardsPersonDirection ("towards_person_on_right", …)
+ *           finds the nearest dancer in the given PureDirection.
+ *
+ * See also: identifiers.ts for CalledIdentifier, which resolves to a
+ * specific dancer rather than a direction vector.
+ */
+
 import { Vector } from "vecti";
 import { z } from "zod";
 
