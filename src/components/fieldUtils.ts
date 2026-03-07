@@ -338,7 +338,7 @@ function personInDirectionToText(dir: PureDirection): string {
 export function calledDirectionToText(dir: CalledDirection): string {
   if (parses(PureDirectionSchema, dir)) return pureDirectionToText(dir);
   if (parses(TowardsLabelDirectionSchema, dir)) {
-    const label = dir.slice("towards_".length).replaceAll("_", " ") as Label;
+    const label = dir.slice("towards_".length) as Label;
     return `towards ${labelToIdentifierText(label)}`;
   }
   const pureDir = dir.slice("towards_person_".length) as PureDirection;
