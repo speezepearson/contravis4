@@ -106,6 +106,14 @@ export function makeDefaultInstruction(
           rotations: 1,
           whoInFront: "lark",
         };
+      case "meltdown_swing":
+        return {
+          id,
+          type: "meltdown_swing",
+          beats: 16,
+          cid: "neighbor",
+          endFacing: "across",
+        };
       case "pass_by":
         return {
           id,
@@ -177,7 +185,7 @@ export function makeDefaultInstruction(
           nPullBys: 4,
           firstHand: "right",
           cid1: "neighbor",
-          cid2: "person_in_front",
+          cid2: "partner",
         };
       case "split":
         return { id, type: "split", by: "role", larks: [], robins: [] };

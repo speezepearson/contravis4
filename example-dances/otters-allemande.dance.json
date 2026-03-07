@@ -106,21 +106,12 @@
     },
     {
       "id": "22b579f2-5d01-4c19-876b-0cf3430a6a5d",
-      "beats": 8,
+      "beats": 16,
       "type": "square_through",
       "nPullBys": 4,
       "firstHand": "right",
       "cid1": "neighbor",
-      "cid2": "person_in_front"
-    },
-    {
-      "id": "bf78870c-72c9-4b29-97ff-40739d8fa3c9",
-      "beats": 8,
-      "type": "square_through",
-      "nPullBys": 4,
-      "firstHand": "right",
-      "cid1": "neighbor",
-      "cid2": "person_in_front"
+      "cid2": "partner"
     }
   ]
 }

@@ -9,6 +9,7 @@ This document catalogues every instruction type in the dance animation system.
 - **"gentlespoons" = "larks" = "gents"** — all refer to the same role, represented as `"lark"` in this system.
 - **"ladles" = "robins" = "ladies"** — all refer to the same role, represented as `"robin"` in this system.
 - **"shoulder round"** is also called **"gyre"** or **"gypsy"** in some communities.
+- **"next neighbor"** is also called **"2nd neighbor"** (and "next x2 neighbor" is "3rd neighbor)
 - **Swings** should be assumed to **end facing across** unless otherwise specified.
 - When a dance calls for a **role-specific instruction** (e.g. "larks allemande left 1½"), model it as a **`split`** instruction. Usually one branch of the split is empty, but some dances have calls like "larks X while robins Y", where both branches have instructions.
 - JSON schemas for all types live in `./_generated/`. If missing, regenerate with `npx tsx ./scripts/generate-json-schema.ts`.
@@ -284,6 +285,20 @@ All dancers walk forward toward the center and back.
   "cid": "neighbor",
   "rotations": 1,
   "whoInFront": "lark"
+}
+```
+
+### `meltdown_swing`
+
+Right shoulder round 1.5x (8 beats) followed by a swing (remaining beats). Equivalent to a shoulder round into swing as a single compound instruction.
+
+```json
+{
+  "id": "...",
+  "beats": 16,
+  "type": "meltdown_swing",
+  "cid": "neighbor",
+  "endFacing": "across"
 }
 ```
 

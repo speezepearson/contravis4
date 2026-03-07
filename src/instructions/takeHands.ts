@@ -52,7 +52,8 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
           break;
         case "inside": {
           const ourHand = resolveInsideHand(draft[id], other);
-          connectHands(draft, id, ourHand, other.id, ourHand);
+          const theirHand = resolveInsideHand(other, draft[id]);
+          connectHands(draft, id, ourHand, other.id, theirHand);
           break;
         }
         default:
