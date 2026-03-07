@@ -187,6 +187,14 @@ export function makeDefaultInstruction(
           cid1: "neighbor",
           cid2: "partner",
         };
+      case "star":
+        return {
+          id,
+          type: "star",
+          beats: 8,
+          direction: "left",
+          nPlaces: 4,
+        };
       case "split":
         return { id, type: "split", by: "role", larks: [], robins: [] };
       case "step":

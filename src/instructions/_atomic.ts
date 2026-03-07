@@ -85,6 +85,7 @@ import {
   SquareThroughInstructionSchema,
   squareThroughSegments,
 } from "./squareThrough";
+import { StarInstructionSchema, starSegments } from "./star";
 import { StepInstructionSchema, stepSegments } from "./step";
 import { SwingInstructionSchema, swingSegments } from "./swing";
 import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
@@ -132,6 +133,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   RoryOMoreInstructionSchema,
   ShoulderRoundInstructionSchema,
   SquareThroughInstructionSchema,
+  StarInstructionSchema,
   StepInstructionSchema,
   SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
@@ -180,6 +182,7 @@ export const atomicSegmentAnimators: {
   rory_o_more: roryOMoreSegments,
   shoulder_round: shoulderRoundSegments,
   square_through: squareThroughSegments,
+  star: starSegments,
   step: stepSegments,
   swing: swingSegments,
   take_hands_in_rings: takeHandsInRingsSegments,

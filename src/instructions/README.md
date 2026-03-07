@@ -4,15 +4,19 @@ This document catalogues every instruction type in the dance animation system.
 
 > If you find an example is out of date or incorrect, please update it.
 
-## Terminology
+## Heuristics
+
+- **Swings** (incl. meltdown, give and take) should be assumed to **end facing across** unless otherwise specified.
+- When a dance calls for a **role-specific instruction** (e.g. "larks allemande left 1½"), model it as a **`split`** instruction. Usually one branch of the split is empty, but some dances have calls like "larks X while robins Y", where both branches have instructions.
+- JSON schemas for all types live in `./_generated/`. If missing, regenerate with `npx tsx ./scripts/generate-json-schema.ts`.
+
+## Synonyms
 
 - **"gentlespoons" = "larks" = "gents"** — all refer to the same role, represented as `"lark"` in this system.
 - **"ladles" = "robins" = "ladies"** — all refer to the same role, represented as `"robin"` in this system.
 - **"shoulder round"** is also called **"gyre"** or **"gypsy"** in some communities.
 - **"next neighbor"** is also called **"2nd neighbor"** (and "next x2 neighbor" is "3rd neighbor)
-- **Swings** should be assumed to **end facing across** unless otherwise specified.
-- When a dance calls for a **role-specific instruction** (e.g. "larks allemande left 1½"), model it as a **`split`** instruction. Usually one branch of the split is empty, but some dances have calls like "larks X while robins Y", where both branches have instructions.
-- JSON schemas for all types live in `./_generated/`. If missing, regenerate with `npx tsx ./scripts/generate-json-schema.ts`.
+- **"roll away"** is also called **"roll away with a half sashay"**
 
 ## Common Fields
 
@@ -417,6 +421,23 @@ Also known as "gyre" or "gypsy". Dancers orbit each other without touching.
   "id": "...",
   "beats": 8,
   "type": "square_through"
+}
+```
+
+### `star`
+
+Like a circle, but each dancer's facing is rotated 90° (CCW if left, CW if right) and holds inside hands with the person opposite them in the ring.
+
+- `direction`: `"left"` or `"right"`
+- `nPlaces`: number of places to star
+
+```json
+{
+  "id": "...",
+  "beats": 8,
+  "type": "star",
+  "direction": "left",
+  "nPlaces": 4
 }
 ```
 

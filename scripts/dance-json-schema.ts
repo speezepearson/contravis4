@@ -59,6 +59,7 @@ import { RoryOMoreInstructionSchema } from "../src/instructions/roryOMore";
 import { ShoulderRoundInstructionSchema } from "../src/instructions/shoulderRound";
 import { SplitSchema } from "../src/instructions/split";
 import { SquareThroughInstructionSchema } from "../src/instructions/squareThrough";
+import { StarInstructionSchema } from "../src/instructions/star";
 import { StepInstructionSchema } from "../src/instructions/step";
 import { SwingInstructionSchema } from "../src/instructions/swing";
 import {
@@ -133,6 +134,7 @@ const allSchemas: Record<string, Z.ZodType> = {
   RoryOMore: RoryOMoreInstructionSchema,
   ShoulderRound: ShoulderRoundInstructionSchema,
   SquareThrough: SquareThroughInstructionSchema,
+  Star: StarInstructionSchema,
   Step: StepInstructionSchema,
   Swing: SwingInstructionSchema,
   TakeHands: TakeHandsInstructionSchema,
