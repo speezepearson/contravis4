@@ -34,8 +34,12 @@ import {
   towardsPersonToDir,
   towardsToLabel,
 } from "./directions";
-import { getDir, getDist, NORTH, roughlySameDir } from "./geometry";
-import { type CalledIdentifier, personInToDir } from "./identifiers";
+import { getDir, getDist, lerpFacing, NORTH, roughlySameDir } from "./geometry";
+import {
+  type CalledIdentifier,
+  type PersonInDirection,
+  personInToDir,
+} from "./identifiers";
 import {
   type InfallibleLabel,
   InfallibleLabelSchema,
@@ -389,14 +393,23 @@ export class Dancer {
 
   // ── Identifier resolution ──────────────────────────────────────────
 
+  static readonly dirFudges: Partial<Record<PersonInDirection, number>> = {
+    person_on_right: 0.2,
+    person_on_left: 0.2,
+    person_larks_left_robins_right: 0.2,
+    person_larks_right_robins_left: 0.2,
+  };
   resolveCalledIdentifier(
     cid: CalledIdentifier,
     { roles, ...opts }: ResolveCalledIdentifierOpts = {},
   ): Dancer | undefined {
     if (parses(LabelSchema, cid))
       return this.resolveLabel(cid, opts) ?? undefined;
-    const pureDir = personInToDir[cid];
-    const dir = this.resolvePureDirection(pureDir);
+    const pureDir = this.resolvePureDirection(personInToDir[cid]);
+
+    // If the caller says "on your right" dancers will intuitively resolve that to "the person 60deg to my right" more than "the person 120deg to my right"
+    // even though those are the same angle from "my right". So, for "right" and "left", special case, we fudge a bit towards the dancer's facing dir.
+    const dir = lerpFacing(pureDir, this.facing, Dancer.dirFudges[cid] ?? 0);
     const res = this.findDancerInDirection(dir, { roles });
     if (!res) return undefined;
     if (roles === "same" && res.role !== this.role)
