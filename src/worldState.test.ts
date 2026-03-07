@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALL_PROTO_IDS,
-  type DancerId,
+  DancerIdSchema,
   getOffset,
   parseDancerId,
   projectDancerIdToProtoId,
@@ -21,7 +21,7 @@ import {
   fcProtoId,
   fcSettableLabel,
 } from "./testHelpers";
-import { parses } from "./utils";
+import { must, parses } from "./utils";
 import {
   connectHands,
   findNearbyDancers,
@@ -74,7 +74,7 @@ describe("connectHands", () => {
     fc.assert(
       fc.property(fcProtoId, fcHand, fcDancerId, fcHand, (p1, h1, d2, h2) => {
         fc.pre(projectDancerIdToProtoId(d2) === p1);
-        fc.pre(p1 !== (d2 as string)); // offset !== 0, so they're different dancers
+        fc.pre(p1 !== d2); // offset !== 0, so they're different dancers
 
         expect(() => {
           produce(initFormationStates.improper, (draft) => {
@@ -181,7 +181,7 @@ describe("setLabel", () => {
             draft,
             "up_lark_0",
             "neighbor",
-            `down_robin_${n}` as DancerId,
+            DancerIdSchema.parse(`down_robin_${n}`),
           );
         });
         expect(state.up_lark_0.labels.neighbor, "up_lark_0").toBe(
@@ -204,7 +204,12 @@ describe("setLabel", () => {
     fc.assert(
       fc.property(fcNonzeroOffset, (n) => {
         const state = produce(initFormationStates.improper, (draft) => {
-          setLabel(draft, "up_lark_0", "shadow", `up_robin_${n}` as DancerId);
+          setLabel(
+            draft,
+            "up_lark_0",
+            "shadow",
+            DancerIdSchema.parse(`up_robin_${n}`),
+          );
         });
         expect(state.up_lark_0.labels.shadow, "up_lark_0").toBe(
           `up_robin_${n}`,
@@ -244,11 +249,8 @@ describe("setLabel", () => {
 
           const state = produce(initFormationStates.improper, (draft) => {
             setLabel(draft, p1, label, target);
-            const p2Label =
-              draft[p2].labels[
-                label as keyof (typeof draft)[typeof p2]["labels"]
-              ];
-            setLabel(draft, p2, label, p2Label as DancerId);
+            const p2Label = must(draft[p2].labels[label]);
+            setLabel(draft, p2, label, p2Label);
           });
 
           const state2 = produce(initFormationStates.improper, (draft) => {

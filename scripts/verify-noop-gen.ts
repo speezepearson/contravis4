@@ -18,6 +18,7 @@ const results: Record<
 for (const path of process.argv.slice(2)) {
   try {
     const dance = DanceSchema.parse(
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, narrowing to unknown for schema parse
       JSON.parse(readFileSync(path, "utf-8")) as unknown,
     );
     const { animation, errors } = generateDanceAnimation(

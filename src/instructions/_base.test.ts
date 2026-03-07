@@ -143,7 +143,7 @@ describe("resolveShortLines", () => {
           });
 
           const res = resolveShortLines(state);
-          const values = Object.values(res) as string[][];
+          const values = Object.values(res);
 
           for (const arr1 of values) {
             for (const arr2 of values) {

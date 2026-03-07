@@ -22,7 +22,13 @@ import {
   SettableLabelSchema,
   ShadowLabelSchema,
 } from "./labels";
-import { connectHands, Dancer, setLabel, type WorldState } from "./worldState";
+import {
+  buildProtoRecord,
+  connectHands,
+  Dancer,
+  setLabel,
+  type WorldState,
+} from "./worldState";
 
 export const fcProtoId: fc.Arbitrary<ProtoId> = fc.constantFrom(
   ...ALL_PROTO_IDS,
@@ -110,10 +116,9 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
       extraRecents,
     }) => {
       // Build each proto dancer
-      const state: WorldState = {} as WorldState;
-      for (const protoId of ALL_PROTO_IDS) {
+      const state: WorldState = buildProtoRecord((protoId) => {
         const partner: DancerId = flipRole(protoId);
-        state[protoId] = new Dancer(protoId, {
+        return new Dancer(protoId, {
           pos: positions[protoId],
           facing: NORTH,
           hands: {},
@@ -127,7 +132,7 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
             ...extraRecents[protoId],
           ],
         });
-      }
+      });
 
       // Connect 0-4 random hands, ignoring conflicts
       for (const conn of handConnections) {

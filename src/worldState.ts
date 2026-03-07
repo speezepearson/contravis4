@@ -30,17 +30,12 @@ import {
   PureDirectionSchema,
   resolveCardinalDirection,
   TowardsLabelDirectionSchema,
-  type TowardsPersonDirection,
   TowardsPersonDirectionSchema,
   towardsPersonToDir,
   towardsToLabel,
 } from "./directions";
 import { getDir, NORTH, roughlySameDir } from "./geometry";
-import {
-  type CalledIdentifier,
-  type PersonInDirection,
-  personInToDir,
-} from "./identifiers";
+import { type CalledIdentifier, personInToDir } from "./identifiers";
 import {
   type InfallibleLabel,
   InfallibleLabelSchema,
@@ -270,7 +265,7 @@ export class Dancer {
     if (parses(TowardsLabelDirectionSchema, dir)) {
       return this.resolveLabel(towardsToLabel[dir]) ?? undefined;
     }
-    const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
+    const pureDir = towardsPersonToDir[dir];
     const pureDirVec = this.resolvePureDirection(pureDir);
     return this.findDancerInDirection(pureDirVec) ?? undefined;
   }
@@ -357,7 +352,7 @@ export class Dancer {
     { roles }: { roles?: "same" | "different" } = {},
   ): Dancer | undefined {
     if (parses(LabelSchema, cid)) return this.resolveLabel(cid) ?? undefined;
-    const pureDir = personInToDir[cid as PersonInDirection];
+    const pureDir = personInToDir[cid];
     const dir = this.resolvePureDirection(pureDir);
     const res = this.findDancerInDirection(dir, { roles });
     if (!res) return undefined;
@@ -480,14 +475,6 @@ export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
     down_lark_0: f("down_lark_0"),
     down_robin_0: f("down_robin_0"),
   };
-}
-export function mapProtos(
-  protos: WorldState,
-  f: (dancer: Dancer) => Dancer,
-): WorldState {
-  return Object.fromEntries(
-    ALL_PROTO_IDS.map((id) => [id, f(protos[id])] as const),
-  ) as WorldState;
 }
 
 export function getDancerSide(
@@ -628,7 +615,7 @@ export function setLabel(
   assertNever(label);
 }
 
-const NEARBY_HALF_WINDOW = 2 as DancerOffset;
+const NEARBY_HALF_WINDOW: DancerOffset = 2;
 
 type AtLeastFour<T> = [T, T, T, T, ...T[]];
 function isAtLeastFour<T>(arr: T[]): arr is AtLeastFour<T> {
@@ -640,9 +627,9 @@ export function findNearbyDancers(
   state: WorldState,
 ): Record<ProtoId, AtLeastFour<Dancer>> {
   return buildProtoRecord((protoId) => {
-    const bestOffset = Math.round(
+    const bestOffset: DancerOffset = Math.round(
       (pos.y - state[protoId].pos.y) / 2,
-    ) as DancerOffset;
+    );
 
     const dancers: Dancer[] = [];
     for (
@@ -698,7 +685,7 @@ export const DancerJsonSchema = z
         pos: d.pos,
         facing: d.facing,
         hands: d.hands,
-        labels: d.labels as Dancer["labels"],
+        labels: d.labels,
         recents: d.recents,
       }),
   );

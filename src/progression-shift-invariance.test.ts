@@ -44,8 +44,10 @@ function progressInitFormation(state: WorldState): WorldState {
             { theirId: incr(theirId.theirId), theirHand: theirId.theirHand },
           ]),
         ),
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- rebuilding labels record with dynamic keys
         labels: Object.fromEntries(
           Object.entries(draft[id].labels).map(([labelStr, theirId]) => {
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic label key from Object.entries
             const label = labelStr as keyof (typeof draft)[ProtoId]["labels"];
             return [
               label,

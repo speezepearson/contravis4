@@ -68,7 +68,11 @@ export function ZigZagFields({
           }
         }}
         value={String(instruction.nZigs)}
-        onChange={(v) => tryCommit({ nZigs: Number(v) as 1 | 2 | 3 | 4 })}
+        onChange={(v) =>
+          tryCommit({
+            nZigs: ZigZagInstructionSchema.shape.nZigs.parse(Number(v)),
+          })
+        }
       />
     </>
   );

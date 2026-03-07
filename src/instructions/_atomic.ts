@@ -189,6 +189,7 @@ export function makeAtomicInstructionSegments(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): Segment[] {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- narrowing discriminated union lookup
   const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<
     typeof instr
   >;

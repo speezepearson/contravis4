@@ -187,6 +187,7 @@ export function generateDanceJsonSchemas(): SchemaBundle {
     reg.add(schema, { id: `${name}.schema.json` });
   }
 
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod's toJSONSchema return type doesn't expose .schemas
   const bundle = z.toJSONSchema(reg, { io: "input" }) as unknown as {
     schemas: Record<string, Record<string, unknown>>;
   };

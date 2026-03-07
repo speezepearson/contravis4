@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type DancerId } from "../contraCore";
+import { ALL_PROTO_IDS } from "../contraCore";
 import { resolveShortLines } from "../formations";
 import { PI, revolve } from "../geometry";
 import { indexOf, must } from "../utils";
@@ -39,7 +39,7 @@ export const bendTheLineSegments: InstructionAnimator<
       dur: instr.beats,
       position: (dancer, frac) => {
         const line = shortLines[dancer.protoId];
-        const idx = must(indexOf(line, dancer.protoId as DancerId));
+        const idx = must(indexOf(line, dancer.protoId));
         if (idx === 0) {
           // Left end: arc CW around neighbor
           const center = Dancer.get(line[1], dancer.state).pos;
