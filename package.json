@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "verify": "npm run format && npm run lint -- --fix && npm run typecheck && npm run test",
-    "verify-noop": "tsx scripts/verify-noop.ts"
+    "verify-noop": "tsx scripts/verify-noop.ts",
+    "generate-json-schema": "tsx scripts/generate-json-schema.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
