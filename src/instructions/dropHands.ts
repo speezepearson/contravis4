@@ -6,7 +6,6 @@ import {
   type CalledIdentifier,
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveMatch,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
@@ -51,8 +50,7 @@ export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
         {
           dur: 0,
           hands: (dancer) => {
-            const matchId = resolveMatch(
-              dancer,
+            const matchId = dancer.resolveMatch(
               instr.which as CalledIdentifier,
             );
             const result: Dancer["hands"] = {};

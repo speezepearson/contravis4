@@ -4,7 +4,6 @@ import {
   type ProtoId,
   protoIdToDancerId,
 } from "./contraCore";
-import { resolveCalledIdentifier } from "./identifiers";
 import { must, type NTuple } from "./utils";
 import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
 
@@ -13,7 +12,7 @@ export function resolveRings(
 ): Record<ProtoId, NTuple<4, DancerId>> {
   const getRH = (id: DancerId) =>
     must(
-      resolveCalledIdentifier(id, "person_in_right_hand", state),
+      Dancer.get(id, state).resolveCalledIdentifier("person_in_right_hand"),
       `[rings] ${id} has nobody in their right hand`,
     );
   return buildProtoRecord((id) => {

@@ -1,11 +1,7 @@
 import { z } from "zod";
 
 import { TWO_PI } from "../geometry";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-  resolveMatch,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { arc, type InstructionAnimator } from "./_segment";
 
 export const DoSiDoInstructionSchema = z.object({
@@ -25,6 +21,6 @@ export const doSiDoSegments: InstructionAnimator<DoSiDoInstruction> = (
       semiMinor: 0.25,
       phi: TWO_PI * instr.rotations,
     }),
-    interactedWith: (dancer) => [resolveMatch(dancer, instr.cid)],
+    interactedWith: (dancer) => [dancer.resolveMatch(instr.cid)],
   },
 ];

@@ -3,11 +3,7 @@ import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
 import { must } from "../utils";
-import {
-  instructionBaseSchemaFields,
-  resolveCardinalDirection,
-  resolveMatch,
-} from "./_base";
+import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
 import { hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
 
 export const LongLineInCenterInstructionSchema = z.object({
@@ -44,8 +40,8 @@ export const longLineInCenterSegments: InstructionAnimator<
       hands: (dancer) => {
         if (getRole(dancer.protoId) !== instr.role) return {};
         return hold(
-          ["left", resolveMatch(dancer, "person_on_left"), "left"],
-          ["right", resolveMatch(dancer, "person_on_right"), "right"],
+          ["left", dancer.resolveMatch("person_on_left"), "left"],
+          ["right", dancer.resolveMatch("person_on_right"), "right"],
         );
       },
     },

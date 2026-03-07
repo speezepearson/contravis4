@@ -24,12 +24,29 @@ import {
   protoIdToDancerId,
   type Role,
 } from "./contraCore";
-import { NORTH } from "./geometry";
+import {
+  type CalledDirection,
+  type PureDirection,
+  PureDirectionSchema,
+  resolveCardinalDirection,
+  TowardsLabelDirectionSchema,
+  type TowardsPersonDirection,
+  TowardsPersonDirectionSchema,
+  towardsPersonToDir,
+  towardsToLabel,
+} from "./directions";
+import { getDir, NORTH, roughlySameDir } from "./geometry";
+import {
+  type CalledIdentifier,
+  type PersonInDirection,
+  personInToDir,
+} from "./identifiers";
 import {
   type InfallibleLabel,
   InfallibleLabelSchema,
   IrreducibleLabelSchema,
   type Label,
+  LabelSchema,
   neighborLabelOffsets,
   OffsetNeighborLabelSchema,
   type SettableLabel,
@@ -190,9 +207,205 @@ export class Dancer {
       }
     }
   }
+
+  // ── Direction resolution ────────────────────────────────────────────
+
+  resolvePureDirection(dir: PureDirection): Vector {
+    switch (dir) {
+      case "across":
+      case "out":
+      case "up":
+      case "down":
+        return must(
+          resolveCardinalDirection(dir, this.pos),
+          `unable to resolve ${dir} from pos (${this.pos.x}, ${this.pos.y})`,
+        );
+      case "on_right":
+        return this.facing.rotateByDegrees(-90);
+      case "on_left":
+        return this.facing.rotateByDegrees(90);
+      case "in_front":
+        return this.facing;
+      case "behind":
+        return this.facing.multiply(-1);
+      case "left_diagonal":
+        return this.facing.rotateByDegrees(45);
+      case "right_diagonal":
+        return this.facing.rotateByDegrees(-45);
+      case "larks_left_robins_right":
+        return this.facing.rotateByDegrees(90 * (this.isLark ? 1 : -1));
+      case "larks_right_robins_left":
+        return this.facing.rotateByDegrees(-90 * (this.isLark ? 1 : -1));
+      default:
+        assertNever(dir);
+    }
+  }
+
+  resolveCalledDirection(dir: CalledDirection): Vector {
+    if (parses(PureDirectionSchema, dir)) {
+      return this.resolvePureDirection(dir);
+    }
+    if (parses(TowardsLabelDirectionSchema, dir)) {
+      const label = towardsToLabel[dir];
+      const them = this.resolveLabel(label);
+      if (!them) throw new Error(`${this.id} has no ${label}`);
+      return getDir({ from: this.pos, to: them.pos });
+    }
+    if (parses(TowardsPersonDirectionSchema, dir)) {
+      const pureDir = towardsPersonToDir[dir];
+      const pureDirVec = this.resolvePureDirection(pureDir);
+      const themId = this.findDancerInDirection(pureDirVec);
+      if (!themId) throw new Error(`${this.id} has nobody ${pureDir}`);
+      return getDir({
+        from: this.pos,
+        to: Dancer.get(themId, this.state).pos,
+      });
+    }
+    assertNever(dir);
+  }
+
+  /** For a "towards" CalledDirection, resolves the target person. Returns undefined for pure directions. */
+  resolveCalledDirectionTarget(dir: CalledDirection): DancerId | undefined {
+    if (parses(PureDirectionSchema, dir)) return undefined;
+    if (parses(TowardsLabelDirectionSchema, dir)) {
+      return this.resolveLabel(towardsToLabel[dir])?.id ?? undefined;
+    }
+    const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
+    const pureDirVec = this.resolvePureDirection(pureDir);
+    return this.findDancerInDirection(pureDirVec) ?? undefined;
+  }
+
+  /** Find the dancer best described by "the person to your [...]", if any. */
+  findDancerInCalledDirection(
+    side: CalledDirection,
+    { roles }: { roles?: "same" | "different" } = {},
+  ): DancerId | null {
+    const dir = this.resolveCalledDirection(side);
+    return this.findDancerInDirection(dir, { roles });
+  }
+
+  /** True when this dancer faces roughly away from the center line (x = 0). */
+  facesOut({
+    errMsg = `unable to resolve dir 'out' at dancer ${this.id}'s pos`,
+  }: { errMsg?: string } = {}): boolean {
+    return roughlySameDir(
+      this.facing,
+      must(resolveCardinalDirection("out", this.pos), errMsg),
+    );
+  }
+
+  /** True when this dancer faces toward the center line (x = 0). */
+  facesAcross({
+    errMsg = `unable to resolve dir 'across' at dancer ${this.id}'s pos`,
+  }: { errMsg?: string } = {}): boolean {
+    return roughlySameDir(
+      this.facing,
+      must(resolveCardinalDirection("across", this.pos), errMsg),
+    );
+  }
+
+  // ── Dancer lookup ───────────────────────────────────────────────────
+
+  /** Find the nearest dancer in a given direction vector. */
+  findDancerInDirection(
+    dir: Vector,
+    { roles }: { roles?: "same" | "different" } = {},
+  ): DancerId | null {
+    dir = dir.normalize();
+    const protos = this.state;
+
+    let bestScore = Infinity;
+    let bestTarget: DancerId | null = null;
+
+    for (const otherProtoId of ALL_PROTO_IDS) {
+      if (otherProtoId === this.id) continue;
+      if (roles === "same" && getRole(otherProtoId) !== getRole(this.id))
+        continue;
+      if (roles === "different" && getRole(otherProtoId) === getRole(this.id))
+        continue;
+
+      const otherProto = protos[otherProtoId];
+      const dyBase = otherProto.pos.y - this.pos.y;
+      const oBest = Math.round(-dyBase / 2);
+      for (let o = oBest - 2; o <= oBest + 2; o++) {
+        const targetId = protoIdToDancerId(otherProtoId, o);
+        const target = Dancer.get(targetId, protos);
+        const disp = target.pos.subtract(this.pos);
+        const r = disp.length();
+        if (r > 1.8 || r < 1e-9) continue;
+
+        const cosTheta = dir.dot(disp) / r;
+        if (cosTheta < 0) continue;
+        const cos2Theta = 2 * cosTheta * cosTheta - 1;
+        if (cos2Theta < 0.01) continue;
+
+        const score = r / cos2Theta;
+        if (score < bestScore) {
+          bestScore = score;
+          bestTarget = targetId;
+        }
+      }
+    }
+
+    return bestTarget;
+  }
+
+  // ── Identifier resolution ──────────────────────────────────────────
+
+  resolveCalledIdentifier(
+    cid: CalledIdentifier,
+    { roles }: { roles?: "same" | "different" } = {},
+  ): DancerId | undefined {
+    if (parses(LabelSchema, cid))
+      return this.resolveLabel(cid)?.id ?? undefined;
+    const pureDir = personInToDir[cid as PersonInDirection];
+    const dir = this.resolvePureDirection(pureDir);
+    const res = this.findDancerInDirection(dir, { roles });
+    if (!res) return undefined;
+    if (roles === "same" && getRole(this.id) !== getRole(res))
+      throw new Error(
+        `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
+      );
+    if (roles === "different" && getRole(this.id) === getRole(res))
+      throw new Error(
+        `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
+      );
+    return res;
+  }
+
+  /** Resolves this dancer's "match" for a figure where dancers pair up. */
+  resolveMatch(
+    cid: CalledIdentifier,
+    { roles }: { roles?: "same" | "different" } = {},
+  ): DancerId {
+    const res = must(
+      this.resolveCalledIdentifier(cid, { roles }),
+      `${this.id} can't find ${JSON.stringify(cid)}`,
+    );
+    const symm = must(
+      Dancer.get(res, this.state).resolveCalledIdentifier(cid, { roles }),
+      `${res} can't find ${JSON.stringify(cid)}`,
+    );
+    if (symm !== this.id)
+      throw new Error(
+        `asymmetry pairing dancers up: ${this.id} thinks ${JSON.stringify(symm)} is ${res}, but ${res} thinks ${JSON.stringify(this.id)} is ${symm}`,
+      );
+    return res;
+  }
 }
 
 export type WorldState = Record<ProtoId, Dancer>;
+
+/** Resolves all dancers' "matches" for a figure where dancers pair up. */
+export function resolveMatches(
+  cid: CalledIdentifier,
+  state: WorldState,
+  { roles }: { roles?: "same" | "different" } = {},
+): Record<ProtoId, DancerId> {
+  return buildProtoRecord((id) =>
+    Dancer.get(id, state).resolveMatch(cid, { roles }),
+  );
+}
 
 /** Connects two hands of two dancers. Throws an error if the hands are already in use, unless they are already paired with each other. */
 export function connectHands(

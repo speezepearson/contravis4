@@ -3,11 +3,7 @@ import { z } from "zod";
 import { type Beats, HandSchema, type ProtoId } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
 import { buildProtoRecord, Dancer } from "../worldState";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-  resolveMatch,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import {
   arc,
   hold,
@@ -60,7 +56,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
   const matches = new Map(
-    [...who].map((id) => [id, resolveMatch(Dancer.get(id, init), instr.cid)]),
+    [...who].map((id) => [id, Dancer.get(id, init).resolveMatch(instr.cid)]),
   );
   const alreadyClose = buildProtoRecord((id) => {
     const me = Dancer.get(id, init);

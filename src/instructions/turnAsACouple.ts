@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { ccwRadsBetween, PI } from "../geometry";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, resolveMatch } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 import { californiaTwirlSegments } from "./californiaTwirl";
 
@@ -19,8 +19,7 @@ export const turnAsACoupleSegments: InstructionAnimator<
 > = (instr, init, who) => {
   const checked = new Set<string>();
   for (const id of who) {
-    const themId = resolveMatch(
-      Dancer.get(id, init),
+    const themId = Dancer.get(id, init).resolveMatch(
       "person_larks_right_robins_left",
     );
     const pairKey = [id, themId].sort().join(",");

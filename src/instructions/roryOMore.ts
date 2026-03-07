@@ -3,7 +3,7 @@ import { z } from "zod";
 import { HandSchema, otherHand } from "../contraCore";
 import { TWO_PI } from "../geometry";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, resolveMatch } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import {
   hold,
   type InstructionAnimator,
@@ -33,7 +33,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
     {
       dur: instr.beats,
       position: linearTo((dancer) => {
-        const them = resolveMatch(dancer, cid);
+        const them = dancer.resolveMatch(cid);
         return Dancer.get(them, dancer.state).pos;
       }),
       facing: rotateFacingBy(() => rotationRadians),
@@ -43,7 +43,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
       dur: 0,
       // Resolve against init (not segInit) because the first segment drops hands
       hands: (dancer) => {
-        const them = resolveMatch(Dancer.get(dancer.protoId, init), cid);
+        const them = Dancer.get(dancer.protoId, init).resolveMatch(cid);
         return hold([
           otherHand(instr.direction),
           them,
