@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { EAST, WEST } from "../geometry";
-import { type WorldState } from "../worldState";
+import { Dancer, type WorldState } from "../worldState";
 import { getSegmentFrameAtFrac } from "./_segment";
 import {
   type BoxCirculateInstruction,
@@ -96,17 +96,17 @@ describe("boxCirculate", () => {
 
     // At frac=0.5, out-facing dancers should be at the 90° CW point of the semicircle
     // down_robin_0: (-0.5,0.5)→(-0.5,1.5), center=(-0.5,1.0), at frac=0.5 → (-1.0, 1.0)
-    const drPos = seg.position!("down_robin_0", 0.5, wavesState);
+    const drPos = seg.position!(Dancer.get("down_robin_0", wavesState), 0.5);
     expect(drPos.x).toBeCloseTo(-1.0, 10);
     expect(drPos.y).toBeCloseTo(1.0, 10);
 
     // up_robin_0: (0.5,-0.5)→(0.5,-1.5), center=(0.5,-1.0), at frac=0.5 → (1.0, -1.0)
-    const urPos = seg.position!("up_robin_0", 0.5, wavesState);
+    const urPos = seg.position!(Dancer.get("up_robin_0", wavesState), 0.5);
     expect(urPos.x).toBeCloseTo(1.0, 10);
     expect(urPos.y).toBeCloseTo(-1.0, 10);
 
     // Across-facing dancers should still be at the linear midpoint
-    const ulPos = seg.position!("up_lark_0", 0.5, wavesState);
+    const ulPos = seg.position!(Dancer.get("up_lark_0", wavesState), 0.5);
     expect(ulPos.x).toBeCloseTo(0.0, 10);
     expect(ulPos.y).toBeCloseTo(-0.5, 10);
   });

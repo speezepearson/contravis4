@@ -24,8 +24,8 @@ export const greetNewNeighborsSegments: InstructionAnimator<
   {
     dur: 0,
     newNeighbors: instr.cid,
-    interactedWith: (id, segInit) => [
-      must(resolveCalledIdentifier(id, instr.cid, segInit)),
+    interactedWith: (dancer) => [
+      must(resolveCalledIdentifier(dancer.protoId, instr.cid, dancer.state)),
     ],
   },
 ];

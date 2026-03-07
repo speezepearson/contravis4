@@ -63,19 +63,19 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
   return [
     {
       dur: instr.beats,
-      position: (id, frac, segInit) => {
-        const start = segInit[id].pos;
-        const end = Dancer.get(matches[id], segInit).pos;
+      position: (dancer, frac) => {
+        const start = dancer.pos;
+        const end = Dancer.get(matches[dancer.protoId], dancer.state).pos;
         return ellipsePosition(start, end, semiMinor, phi * frac);
       },
-      facing: (id, _frac, segInit) => {
+      facing: (dancer) => {
         return must(
-          resolveCardinalDirection("across", segInit[id].pos),
-          `[mad robin] dancer ${id} is too close to the center, can't resolve facing direction`,
+          resolveCardinalDirection("across", dancer.pos),
+          `[mad robin] dancer ${dancer.protoId} is too close to the center, can't resolve facing direction`,
         );
       },
       hands: () => ({}),
-      interactedWith: (id) => [matches[id]],
+      interactedWith: (dancer) => [matches[dancer.protoId]],
     },
   ];
 };

@@ -75,10 +75,13 @@ export function makeRingSegment(init: WorldState): Segment {
 
   return {
     dur: 0,
-    position: (id) => final[id].pos,
-    facing: (id) => final[id].facing,
-    hands: (id) => final[id].hands,
-    interactedWith: (id) => [targets[id].acrossId, targets[id].alongId],
+    position: (dancer) => final[dancer.protoId].pos,
+    facing: (dancer) => final[dancer.protoId].facing,
+    hands: (dancer) => final[dancer.protoId].hands,
+    interactedWith: (dancer) => [
+      targets[dancer.protoId].acrossId,
+      targets[dancer.protoId].alongId,
+    ],
   };
 }
 

@@ -65,9 +65,9 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   const followerInsideHand: Hand = instr.leaderDir;
 
   function makeHandsFn(leaderRole: Role) {
-    return (id: ProtoId) => {
-      const matchId = matches[id];
-      if (getRole(id) === leaderRole) {
+    return (dancer: Dancer) => {
+      const matchId = matches[dancer.protoId];
+      if (getRole(dancer.protoId) === leaderRole) {
         return hold([leaderInsideHand, matchId, followerInsideHand]);
       }
       return hold([followerInsideHand, matchId, leaderInsideHand]);
@@ -125,7 +125,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       dur: beatsPerZig,
       position,
       hands: makeHandsFn(instr.leader),
-      interactedWith: (id) => [matches[id]],
+      interactedWith: (dancer) => [matches[dancer.protoId]],
     };
 
     segments.push(zigSegment);

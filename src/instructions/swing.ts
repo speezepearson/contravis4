@@ -145,44 +145,55 @@ export function makeSwingSegments(
   );
   const swingBeats = instr.beats - approachBeats - DISENGAGE_BEATS;
 
-  const swingHands: HandsFn = (id) =>
+  const swingHands: HandsFn = (dancer) =>
     hold(
-      isLark(id)
-        ? ["right", matches[id], "left"]
-        : ["left", matches[id], "right"],
+      isLark(dancer.protoId)
+        ? ["right", matches[dancer.protoId], "left"]
+        : ["left", matches[dancer.protoId], "right"],
     );
 
   const segments: Segment[] = [
     {
       dur: approachBeats,
-      position: (id, frac, segInit) =>
-        lerpVectors(segInit[id].pos, plans[id].postApproach.pos, frac),
-      facing: (id, frac, segInit) =>
-        lerpFacing(segInit[id].facing, plans[id].postApproach.facing, frac),
+      position: (dancer, frac) =>
+        lerpVectors(dancer.pos, plans[dancer.protoId].postApproach.pos, frac),
+      facing: (dancer, frac) =>
+        lerpFacing(
+          dancer.facing,
+          plans[dancer.protoId].postApproach.facing,
+          frac,
+        ),
       hands: () => ({}),
-      interactedWith: (id) => [matches[id]],
+      interactedWith: (dancer) => [matches[dancer.protoId]],
     },
     {
       dur: swingBeats,
-      position: (id, frac) =>
-        revolve(plans[id].postApproach.pos, {
-          around: plans[id].center,
-          radians: plans[id].numSwingRadians * frac,
+      position: (dancer, frac) =>
+        revolve(plans[dancer.protoId].postApproach.pos, {
+          around: plans[dancer.protoId].center,
+          radians: plans[dancer.protoId].numSwingRadians * frac,
         }),
-      facing: (id, frac) =>
-        plans[id].postApproach.facing.rotateByRadians(
-          plans[id].numSwingRadians * frac,
+      facing: (dancer, frac) =>
+        plans[dancer.protoId].postApproach.facing.rotateByRadians(
+          plans[dancer.protoId].numSwingRadians * frac,
         ),
       hands: swingHands,
     },
     {
       dur: DISENGAGE_BEATS,
-      position: (id, frac) =>
-        lerpVectors(plans[id].postSwing.pos, plans[id].final.pos, frac),
-      facing: (id, frac) =>
-        plans[id].postSwing.facing.rotateByRadians(
-          (ccwRadsBetween(plans[id].postSwing.facing, plans[id].final.facing) -
-            (isLark(id) ? 0 : TWO_PI)) *
+      position: (dancer, frac) =>
+        lerpVectors(
+          plans[dancer.protoId].postSwing.pos,
+          plans[dancer.protoId].final.pos,
+          frac,
+        ),
+      facing: (dancer, frac) =>
+        plans[dancer.protoId].postSwing.facing.rotateByRadians(
+          (ccwRadsBetween(
+            plans[dancer.protoId].postSwing.facing,
+            plans[dancer.protoId].final.facing,
+          ) -
+            (isLark(dancer.protoId) ? 0 : TWO_PI)) *
             frac,
         ),
       hands: swingHands,

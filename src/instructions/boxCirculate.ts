@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { PI, revolve } from "../geometry";
 import { lerpVectors } from "../utils";
-import { Dancer, type WorldState } from "../worldState";
+import { Dancer } from "../worldState";
 import {
   facesAcross,
   facesOut,
@@ -46,42 +46,44 @@ export const boxCirculateSegments: InstructionAnimator<
   return [
     {
       dur: instr.beats,
-      position: (id: ProtoId, frac: number, segInit: WorldState) => {
-        if (outFacers.includes(id)) {
+      position: (dancer, frac) => {
+        if (outFacers.includes(dancer.protoId)) {
           const matchId = resolveCalledIdentifier(
-            id,
+            dancer.protoId,
             "person_on_right",
-            segInit,
+            dancer.state,
           );
           if (!matchId)
             throw new Error(
-              `${id} has nobody on their right to box circulate to`,
+              `${dancer.protoId} has nobody on their right to box circulate to`,
             );
-          return revolve(segInit[id].pos, {
-            aroundMidpointWith: Dancer.get(matchId, segInit).pos,
+          return revolve(dancer.pos, {
+            aroundMidpointWith: Dancer.get(matchId, dancer.state).pos,
             radians: -PI * frac,
           });
         } else {
           const matchId = resolveCalledIdentifier(
-            id,
+            dancer.protoId,
             "person_in_front",
-            segInit,
+            dancer.state,
           );
           if (!matchId)
-            throw new Error(`${id} has nobody in front to box circulate to`);
+            throw new Error(
+              `${dancer.protoId} has nobody in front to box circulate to`,
+            );
           return lerpVectors(
-            segInit[id].pos,
-            Dancer.get(matchId, segInit).pos,
+            dancer.pos,
+            Dancer.get(matchId, dancer.state).pos,
             frac,
           );
         }
       },
       facing: lerpFacingTo(
-        (id: ProtoId, segInit: WorldState) => {
-          if (outFacers.includes(id)) {
-            return segInit[id].facing.rotateByRadians(PI);
+        (dancer) => {
+          if (outFacers.includes(dancer.protoId)) {
+            return dancer.facing.rotateByRadians(PI);
           }
-          return segInit[id].facing;
+          return dancer.facing;
         },
         { forceDir: () => "cw" },
       ),

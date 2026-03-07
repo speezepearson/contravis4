@@ -106,26 +106,26 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
   return [
     {
       dur: instr.beats,
-      position: (id, frac, segInit) => {
-        const themId = matches[id];
-        const start = segInit[id].pos;
-        const end = Dancer.get(themId, segInit).pos;
+      position: (dancer, frac) => {
+        const themId = matches[dancer.protoId];
+        const start = dancer.pos;
+        const end = Dancer.get(themId, dancer.state).pos;
         return ellipsePosition(start, end, semiMinor, PI * frac);
       },
-      facing: (id, frac, segInit) => {
-        const isRoller = getRole(id) === instr.roller;
+      facing: (dancer, frac) => {
+        const isRoller = getRole(dancer.protoId) === instr.roller;
         const normal = getDir({
-          from: segInit[id].pos,
-          to: Dancer.get(matches[id], segInit).pos,
+          from: dancer.pos,
+          to: Dancer.get(matches[dancer.protoId], dancer.state).pos,
         }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
-        if (isRoller) return lerpFacing(segInit[id].facing, normal, frac);
+        if (isRoller) return lerpFacing(dancer.facing, normal, frac);
         const totalRads =
-          ccwRadsBetween(segInit[id].facing, normal) + rolleeRotation;
-        return segInit[id].facing.rotateByRadians(totalRads * frac);
+          ccwRadsBetween(dancer.facing, normal) + rolleeRotation;
+        return dancer.facing.rotateByRadians(totalRads * frac);
       },
-      hands: (id, frac) => {
-        const isRoller = getRole(id) === instr.roller;
-        const themId = matches[id];
+      hands: (dancer, frac) => {
+        const isRoller = getRole(dancer.protoId) === instr.roller;
+        const themId = matches[dancer.protoId];
 
         const firstHalf = frac < 0.5;
         const myHand: Hand = isRoller
@@ -145,7 +145,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
 
         return hold([myHand, themId, theirHand]);
       },
-      interactedWith: (id) => [matches[id]],
+      interactedWith: (dancer) => [matches[dancer.protoId]],
     },
   ];
 };
