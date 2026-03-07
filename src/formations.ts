@@ -4,6 +4,7 @@ import {
   type ProtoId,
   protoIdToDancerId,
 } from "./contraCore";
+import { SnazzyError } from "./snazzyError";
 import { isNTuple, must, type NTuple } from "./utils";
 import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
 
@@ -21,15 +22,36 @@ export function resolveRings(
     const rrr = getRH(rr.id);
     const rrrr = getRH(rrr.id);
     if (rrrr.id !== id)
-      throw new Error(
-        `[rings] following right hands: ${id} -> ${r.id} -> ${rr.id} -> ${rrr.id} -> ${rrrr.id} !== ${id}`,
-      );
+      throw new SnazzyError([
+        "[rings] following right hands: ",
+        { dancerId: id },
+        " -> ",
+        { dancerId: r.id },
+        " -> ",
+        { dancerId: rr.id },
+        " -> ",
+        { dancerId: rrr.id },
+        " -> ",
+        { dancerId: rrrr.id },
+        " !== ",
+        { dancerId: id },
+      ]);
 
     const ring: NTuple<4, DancerId> = [id, r.id, rr.id, rrr.id];
     if (!(new Set(ring).size === 4))
-      throw new Error(
-        `[rings] following right hands: ${id} -> ${r.id} -> ${rr.id} -> ${rrr.id} -> ${rrrr.id} -> ... does not contain 4 people`,
-      );
+      throw new SnazzyError([
+        "[rings] following right hands: ",
+        { dancerId: id },
+        " -> ",
+        { dancerId: r.id },
+        " -> ",
+        { dancerId: rr.id },
+        " -> ",
+        { dancerId: rrr.id },
+        " -> ",
+        { dancerId: rrrr.id },
+        " -> ... does not contain 4 people",
+      ]);
     return ring;
   });
 }
