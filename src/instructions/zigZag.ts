@@ -8,9 +8,8 @@ import {
   otherRole,
   type ProtoId,
   type Role,
-  RoleSchema,
 } from "../contraCore";
-import { getDir } from "../geometry";
+import { NORTH, SOUTH } from "../geometry";
 import { getSide, must } from "../utils";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
@@ -26,8 +25,7 @@ import { makeHalfPoussetteArcPosition } from "./poussette";
 export const ZigZagInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("zig_zag"),
-  leader: RoleSchema,
-  leaderDir: HandSchema,
+  dir: HandSchema,
   nZigs: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 export type ZigZagInstruction = z.infer<typeof ZigZagInstructionSchema>;
@@ -37,80 +35,91 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   init,
   who,
 ) => {
+  if (who.size !== 4) {
+    throw new Error(`[zig zag] expected 4 dancers, got ${who.size}`);
+  }
+
   const matches = resolveMatches("person_across", init, { roles: "different" });
 
-  // Compute facing: dir from leader to follower, rotated 90° to leaderDir side.
-  // Both dancers in each pair face the same direction.
-  const facingByProto = new Map<ProtoId, typeof init.up_lark_0.facing>();
+  // Assert all dancers face roughly up or down, and same direction as person across
   for (const id of who) {
-    let leader: Dancer, follower: Dancer;
-    if (getRole(id) === instr.leader) {
-      leader = Dancer.get(id, init);
-      follower = matches[id];
-    } else {
-      follower = Dancer.get(id, init);
-      leader = matches[id];
+    const facing = init[id].facing;
+    if (Math.abs(facing.y) <= Math.abs(facing.x)) {
+      throw new Error(
+        `[zig zag] dancer ${id} is not facing roughly up or down`,
+      );
     }
-    const leaderPos = leader.pos;
-    const followerPos = follower.pos;
-    const dirToFollower = getDir({ from: leaderPos, to: followerPos });
-    const rotation = instr.leaderDir === "left" ? 90 : -90;
-    facingByProto.set(id, dirToFollower.rotateByDegrees(rotation));
+    const matchId = matches[id].protoId;
+    const matchFacing = init[matchId].facing;
+    if (Math.sign(facing.y) !== Math.sign(matchFacing.y)) {
+      throw new Error(
+        `[zig zag] dancer ${id} and ${matchId} face different vertical directions`,
+      );
+    }
   }
 
-  // Inside hands: leaderDir="left" → leader's right, follower's left
-  //               leaderDir="right" → leader's left, follower's right
-  const leaderInsideHand: Hand = otherHand(instr.leaderDir);
-  const followerInsideHand: Hand = instr.leaderDir;
+  const isFacingUp = (id: ProtoId) => init[id].facing.y > 0;
 
-  function makeHandsFn(leaderRole: Role) {
-    return (dancer: Dancer) => {
-      const match = matches[dancer.protoId];
-      if (getRole(dancer.protoId) === leaderRole) {
-        return hold([leaderInsideHand, match.id, followerInsideHand]);
-      }
-      return hold([followerInsideHand, match.id, leaderInsideHand]);
-    };
+  // Determine leader per dancer based on dir and facing:
+  //   facing up + dir=left  → leader on west
+  //   facing up + dir=right → leader on east
+  //   facing down → flipped
+  const isLeader = (id: ProtoId): boolean => {
+    const up = isFacingUp(id);
+    const leaderOnWest = up ? instr.dir === "left" : instr.dir === "right";
+    const side = must(
+      getSide(init[id].pos),
+      `[zig zag] dancer ${id} is too close to the center`,
+    );
+    return leaderOnWest ? side === "west" : side === "east";
+  };
+
+  // All leaders must be the same role
+  const leaderProto = [...who].find(isLeader)!;
+  const leaderRole: Role = getRole(leaderProto);
+  for (const id of who) {
+    if (isLeader(id) !== (getRole(id) === leaderRole)) {
+      throw new Error(`[zig zag] inconsistent leader roles`);
+    }
   }
 
-  // Setup: face zigzag direction, take inside hands
+  // Inside hands based on position: west dancer's right, east dancer's left
+  const insideHand = (id: ProtoId): Hand => {
+    return must(
+      getSide(init[id].pos),
+      `[zig zag] dancer ${id} is too close to the center`,
+    ) === "west"
+      ? "right"
+      : "left";
+  };
+
+  // Setup: face exactly up or down, take inside hands
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
-    const facing = facingByProto.get(id);
-    if (facing) draft[id].facing = facing;
+    draft[id].facing = isFacingUp(id) ? NORTH : SOUTH;
     const match = matches[id];
-    if (getRole(id) === instr.leader) {
-      draft[id].hands = hold([leaderInsideHand, match.id, followerInsideHand]);
-    } else {
-      draft[id].hands = hold([followerInsideHand, match.id, leaderInsideHand]);
-    }
+    const myHand = insideHand(id);
+    const theirHand = otherHand(myHand);
+    draft[id].hands = hold([myHand, match.id, theirHand]);
   });
 
-  // leaderDir is from the leader's perspective, but makeHalfPoussetteArcPosition
-  // resolves on_${dir} relative to facing-across. Since lark (west) faces east
-  // and robin (east) faces west, on_right gives opposite spatial directions.
-  // Flip when the leader is on the east side so leaderDir=right consistently
-  // means the same spatial direction regardless of which role leads.
-  const leaderProto = [...who].find((id) => getRole(id) === instr.leader)!;
-  const effectiveDir: Hand =
-    must(
-      getSide(init[leaderProto].pos),
-      `[zig zag] leader ${leaderProto} is too close to the center`,
-    ) === "east"
-      ? otherHand(instr.leaderDir)
-      : instr.leaderDir;
+  const makeHandsFn = () => (dancer: Dancer) => {
+    const match = matches[dancer.protoId];
+    const myHand = insideHand(dancer.protoId);
+    const theirHand = otherHand(myHand);
+    return hold([myHand, match.id, theirHand]);
+  };
 
   const segments: Segment[] = [setupSegment];
   let currentState = advanceState([setupSegment], init, who);
   const beatsPerZig = instr.beats / instr.nZigs;
 
   for (let i = 0; i < instr.nZigs; i++) {
-    // Backer alternates each zig for the lateral zig-zag motion.
-    // effectiveDir also flips so that on_${dir} resolves to the SAME
-    // spatial direction — every zig progresses along the line.
+    // Backer alternates each zig for lateral zig-zag motion.
+    // Dir also alternates so that each zig progresses in the same
+    // spatial direction along the line.
     const currentBacker: Role =
-      i % 2 === 0 ? instr.leader : otherRole(instr.leader);
-    const currentDir: Hand =
-      i % 2 === 0 ? effectiveDir : otherHand(effectiveDir);
+      i % 2 === 0 ? leaderRole : otherRole(leaderRole);
+    const currentDir: Hand = i % 2 === 0 ? instr.dir : otherHand(instr.dir);
 
     const position = makeHalfPoussetteArcPosition(
       currentBacker,
@@ -123,7 +132,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
     const zigSegment: Segment = {
       dur: beatsPerZig,
       position,
-      hands: makeHandsFn(instr.leader),
+      hands: makeHandsFn(),
       interactedWith: (dancer) => [matches[dancer.protoId].id],
     };
 

@@ -1,11 +1,11 @@
 import type z from "zod";
 
-import { HandSchema, RoleSchema } from "../../contraCore";
+import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { ZigZagInstructionSchema } from "../../instructions/zigZag";
 import { typedSafeParse } from "../../utils";
 import type { SubFormProps } from "../fieldUtils";
-import { HAND_OPTIONS, ROLE_OPTIONS } from "../fieldUtils";
+import { HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
 
 const NZIGS_OPTIONS = ["1", "2", "3", "4"];
@@ -26,8 +26,7 @@ export function ZigZagFields({
       id,
       type: "zig_zag",
       beats: instruction.beats,
-      leader: instruction.leader,
-      leaderDir: instruction.leaderDir,
+      dir: instruction.dir,
       nZigs: instruction.nZigs,
       ...overrides,
     });
@@ -37,18 +36,11 @@ export function ZigZagFields({
 
   return (
     <>
-      {": "}
-      <InlineDropdown
-        options={ROLE_OPTIONS}
-        value={instruction.leader}
-        onChange={(v) => tryCommit({ leader: RoleSchema.parse(v) })}
-        getLabel={(v) => v + "s"}
-      />
-      {" lead out and go "}
+      {": go "}
       <InlineDropdown
         options={HAND_OPTIONS}
-        value={instruction.leaderDir}
-        onChange={(v) => tryCommit({ leaderDir: HandSchema.parse(v) })}
+        value={instruction.dir}
+        onChange={(v) => tryCommit({ dir: HandSchema.parse(v) })}
       />
       {", "}
       <InlineDropdown

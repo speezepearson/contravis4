@@ -2,7 +2,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getRole } from "../contraCore";
-import { fcHand, fcRole } from "../testHelpers";
+import { fcHand } from "../testHelpers";
 import { advanceState, animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type ZigZagInstruction, zigZagSegments } from "./zigZag";
@@ -16,15 +16,14 @@ function makeInstr(
     id: "00000000-0000-0000-0000-000000000000",
     beats: 8,
     type: "zig_zag",
-    leader: "lark",
-    leaderDir: "right",
+    dir: "left",
     nZigs: 2,
     ...overrides,
   };
 }
 
 describe("zigZag", () => {
-  describe("nZigs=2 (leader=lark, leaderDir=right)", () => {
+  describe("nZigs=2 (dir=left)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr();
     const segments = zigZagSegments(instr, init, allProtos);
@@ -74,15 +73,15 @@ describe("zigZag", () => {
 
     it("only inside hands are held", () => {
       const frame = animation.getFrame(instr.beats / 2);
-      // leaderDir=right → leader's inside hand = left, follower's inside = right
-      // up_lark (leader): left hand holds up_robin's right
-      expect(frame.up_lark_0.hands.left?.theirId).toBe("up_robin_0");
-      expect(frame.up_lark_0.hands.left?.theirHand).toBe("right");
-      expect(frame.up_lark_0.hands.right).toBeUndefined();
-      // up_robin (follower): right hand holds up_lark's left
-      expect(frame.up_robin_0.hands.right?.theirId).toBe("up_lark_0");
-      expect(frame.up_robin_0.hands.right?.theirHand).toBe("left");
-      expect(frame.up_robin_0.hands.left).toBeUndefined();
+      // dir=left, improper: leader=lark (west side), inside hands = west's right + east's left
+      // up_lark (west): right hand holds up_robin's left
+      expect(frame.up_lark_0.hands.right?.theirId).toBe("up_robin_0");
+      expect(frame.up_lark_0.hands.right?.theirHand).toBe("left");
+      expect(frame.up_lark_0.hands.left).toBeUndefined();
+      // up_robin (east): left hand holds up_lark's right
+      expect(frame.up_robin_0.hands.left?.theirId).toBe("up_lark_0");
+      expect(frame.up_robin_0.hands.left?.theirHand).toBe("right");
+      expect(frame.up_robin_0.hands.right).toBeUndefined();
     });
 
     it("each pair moves together at segment boundaries", () => {
@@ -101,7 +100,7 @@ describe("zigZag", () => {
     it("moves along the line at mid-zig", () => {
       // At 1/4 through (mid-first-zig), couple should have moved along the line
       const quarter = animation.getFrame(instr.beats / 4);
-      // up_lark should have moved in y (south for leaderDir=right)
+      // up_lark should have moved in y
       expect(quarter.up_lark_0.pos.y).not.toBeCloseTo(init.up_lark_0.pos.y);
     });
   });
@@ -115,7 +114,7 @@ describe("zigZag", () => {
 
     it("moves dancers one unit along the line", () => {
       // Same as a half poussette
-      expect(final.up_lark_0.pos.y).toBeCloseTo(init.up_lark_0.pos.y - 1);
+      expect(final.up_lark_0.pos.y).toBeCloseTo(init.up_lark_0.pos.y + 1);
       expect(final.up_lark_0.pos.x).toBeCloseTo(init.up_lark_0.pos.x);
     });
   });
@@ -159,21 +158,18 @@ describe("zigZag", () => {
     });
   });
 
-  describe("zig-and-zag then opposite-hand zig-and-zag returns to start", () => {
+  describe("dir=left and dir=right progress in the same direction", () => {
     const init = initFormationStates.improper;
-    const instr1 = makeInstr({ leaderDir: "left" });
-    const segs1 = zigZagSegments(instr1, init, allProtos);
-    const afterFirst = advanceState(segs1, init, allProtos);
+    const instrL = makeInstr({ dir: "left", nZigs: 1 });
+    const instrR = makeInstr({ dir: "right", nZigs: 1 });
+    const segsL = zigZagSegments(instrL, init, allProtos);
+    const segsR = zigZagSegments(instrR, init, allProtos);
+    const finalL = advanceState(segsL, init, allProtos);
+    const finalR = advanceState(segsR, init, allProtos);
 
-    const instr2 = makeInstr({ leaderDir: "right" });
-    const segs2 = zigZagSegments(instr2, afterFirst, allProtos);
-    const animation2 = animateSegments(afterFirst, allProtos, segs2);
-    const final = animation2.getFrame(animation2.dur);
-
-    it("every dancer ends where they started", () => {
+    it("both dir values move each dancer to the same final y", () => {
       for (const id of ALL_PROTO_IDS) {
-        expect(final[id].pos.x, `${id} x`).toBeCloseTo(init[id].pos.x);
-        expect(final[id].pos.y, `${id} y`).toBeCloseTo(init[id].pos.y);
+        expect(finalL[id].pos.y, `${id} y`).toBeCloseTo(finalR[id].pos.y);
       }
     });
   });
@@ -203,16 +199,20 @@ describe("zigZag", () => {
   describe("leader moves outward, follower moves inward (fast-check)", () => {
     it("at a quarter beat, leader abs(x) > init abs(x) and follower abs(x) < init abs(x)", () => {
       fc.assert(
-        fc.property(fcRole, fcHand, (leader, leaderDir) => {
+        fc.property(fcHand, (dir) => {
           const init = initFormationStates.improper;
-          const instr = makeInstr({ leader, leaderDir, nZigs: 1 });
+          const instr = makeInstr({ dir, nZigs: 1 });
           const segments = zigZagSegments(instr, init, allProtos);
           const animation = animateSegments(init, allProtos, segments);
           const frame = animation.getFrame(0.25);
+
+          // Determine leader role: dir=left → lark, dir=right → robin (in improper)
+          const leaderRole = dir === "left" ? "lark" : "robin";
+
           for (const id of ALL_PROTO_IDS) {
             const initAbsX = Math.abs(init[id].pos.x);
             const frameAbsX = Math.abs(frame[id].pos.x);
-            if (getRole(id) === leader) {
+            if (getRole(id) === leaderRole) {
               if (frameAbsX <= initAbsX) {
                 return false;
               }
@@ -228,21 +228,30 @@ describe("zigZag", () => {
     });
   });
 
-  describe("leaderDir=left", () => {
+  describe("dir=right", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ leaderDir: "left", nZigs: 1 });
+    const instr = makeInstr({ dir: "right", nZigs: 1 });
     const segments = zigZagSegments(instr, init, allProtos);
     const animation = animateSegments(init, allProtos, segments);
     const final = animation.getFrame(animation.dur);
 
-    it("moves in the opposite direction compared to leaderDir=right", () => {
-      // leaderDir=left: up_lark faces east, on_left=north, moves north
+    it("progresses the same direction as dir=left (north for up-facing)", () => {
+      // Both dir values progress north; dir only affects which side leads
       expect(final.up_lark_0.pos.y).toBeCloseTo(init.up_lark_0.pos.y + 1);
     });
 
-    it("only inside hands are held (mirrored)", () => {
+    it("leader is robin (east side) when dir=right", () => {
+      const frame = animation.getFrame(instr.beats / 4);
+      // dir=right → leader on east = robin; leader moves outward
+      const initAbsX = Math.abs(init.up_robin_0.pos.x);
+      const frameAbsX = Math.abs(frame.up_robin_0.pos.x);
+      expect(frameAbsX).toBeGreaterThan(initAbsX);
+    });
+
+    it("only inside hands are held", () => {
       const frame = animation.getFrame(0);
-      // leaderDir=left → leader's inside hand = right, follower's inside = left
+      // Inside hands are position-based: west dancer's right, east dancer's left
+      // up_lark (west): right hand holds up_robin's left
       expect(frame.up_lark_0.hands.right?.theirId).toBe("up_robin_0");
       expect(frame.up_lark_0.hands.right?.theirHand).toBe("left");
       expect(frame.up_lark_0.hands.left).toBeUndefined();

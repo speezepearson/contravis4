@@ -201,8 +201,7 @@ export function makeDefaultInstruction(
           id,
           type: "zig_zag",
           beats: 8,
-          leader: "lark",
-          leaderDir: "left",
+          dir: "left",
           nZigs: 2,
         };
       case "bend_the_line":
