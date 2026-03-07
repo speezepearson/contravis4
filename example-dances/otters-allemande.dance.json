@@ -104,85 +104,14 @@
       "which": "both"
     },
     {
-      "id": "b2000000-0000-4000-a000-000000000001",
-      "beats": 0,
-      "type": "take_hands",
-      "cid": "partner",
-      "hand": "right"
+      "id": "22b579f2-5d01-4c19-876b-0cf3430a6a5d",
+      "beats": 8,
+      "type": "square_through"
     },
     {
-      "id": "b2000000-0000-4000-a000-000000000002",
-      "beats": 4,
-      "type": "balance",
-      "cid": "partner"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000003",
-      "beats": 2,
-      "type": "pull_by",
-      "cid": "partner",
-      "hand": "right"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000005",
-      "beats": 0,
-      "type": "face",
-      "direction": "across",
-      "distance": 0,
-      "facing": "towards_neighbor",
-      "facingOffset": 0
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000006",
-      "beats": 2,
-      "type": "pull_by",
-      "cid": "neighbor",
-      "hand": "left"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000008",
-      "beats": 0,
-      "type": "step",
-      "direction": "across",
-      "distance": 0,
-      "facing": "towards_partner",
-      "facingOffset": 0
-    },
-    {
-      "id": "b2000000-0000-4000-a000-000000000009",
-      "beats": 0,
-      "type": "take_hands",
-      "cid": "partner",
-      "hand": "right"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-00000000000a",
-      "beats": 4,
-      "type": "balance",
-      "cid": "partner"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-00000000000b",
-      "beats": 2,
-      "type": "pull_by",
-      "cid": "partner",
-      "hand": "right"
-    },
-    {
-      "id": "b2000000-0000-4000-a000-00000000000d",
-      "beats": 0,
-      "type": "step",
-      "direction": "across",
-      "distance": 0,
-      "facing": "towards_neighbor",
-      "facingOffset": 0
-    },
-    {
-      "id": "b2000000-0000-4000-a000-00000000000e",
-      "beats": 2,
-      "type": "pull_by",
-      "cid": "neighbor",
-      "hand": "left"
+      "id": "22b579f2-5d01-4c19-876b-0cf3430a6a5d",
+      "beats": 8,
+      "type": "square_through"
     }
   ]
 }
