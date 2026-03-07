@@ -341,7 +341,7 @@ function personInDirectionToText(dir: PureDirection): string {
     case "across":
       return "the person across from you";
     case "out":
-      return "the person on the other side of the room";
+      return "the person out the set from you";
     case "up":
       return "the person above you";
     case "down":
