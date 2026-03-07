@@ -1,4 +1,5 @@
 {
+  "$schema": "../dance.schema.json",
   "name": "(dummy) Box the Gnat",
   "initFormation": "improper",
   "instructions": [
