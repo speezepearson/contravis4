@@ -21,7 +21,7 @@ import {
   makeImmediateSegment,
   type Segment,
 } from "./_segment";
-import { makeHalfPoussetteArcPosition } from "./poussette";
+import { makeHalfPoussetteArcPositionFn } from "./poussette";
 
 export const ZigZagInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -128,12 +128,10 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       i % 2 === 0 ? leaderRole : otherRole(leaderRole);
     const currentDir: Hand = i % 2 === 0 ? instr.dir : otherHand(instr.dir);
 
-    const position = makeHalfPoussetteArcPosition(
+    const position = makeHalfPoussetteArcPositionFn(
       currentBacker,
       currentDir,
-      matches,
       currentState,
-      who,
     );
 
     const zigSegment: Segment = {

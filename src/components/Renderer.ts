@@ -359,7 +359,10 @@ export class Renderer {
     if (!color) return;
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
-    const r = 10;
+    const ghostScale = 10 / 14; // ghost is smaller than main dancer
+    const rWide = (0.6 / 2) * PX_PER_METER * ghostScale;
+    const rNarrow = (0.3 / 2) * PX_PER_METER * ghostScale;
+    const facingAngle = Math.atan2(-facing.y, facing.x);
 
     ctx.globalAlpha = alpha;
 
@@ -367,12 +370,12 @@ export class Renderer {
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, PI * 2);
+    ctx.ellipse(cx, cy, rNarrow, rWide, facingAngle, 0, PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    const ax = cx + facing.x * (r + 4);
-    const ay = cy - facing.y * (r + 4);
+    const ax = cx + facing.x * (rNarrow + 4);
+    const ay = cy - facing.y * (rNarrow + 4);
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -435,7 +438,11 @@ export class Renderer {
     if (!color) return;
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
-    const r = 14;
+    // Oval: 0.6 units wide (perpendicular to facing) × 0.3 units long (along facing)
+    const rWide = (0.6 / 2) * PX_PER_METER; // half-width perpendicular to facing
+    const rNarrow = (0.3 / 2) * PX_PER_METER; // half-length along facing
+    // Canvas facing angle (y is flipped)
+    const facingAngle = Math.atan2(-facing.y, facing.x);
 
     ctx.globalAlpha = alpha;
 
@@ -443,12 +450,12 @@ export class Renderer {
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, PI * 2);
+    ctx.ellipse(cx, cy, rNarrow, rWide, facingAngle, 0, PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    const ax = cx + facing.x * (r + 6);
-    const ay = cy - facing.y * (r + 6);
+    const ax = cx + facing.x * (rNarrow + 6);
+    const ay = cy - facing.y * (rNarrow + 6);
     ctx.strokeStyle = color.stroke;
     ctx.lineWidth = 2;
     ctx.beginPath();
