@@ -2,13 +2,13 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, getRole } from "../contraCore";
+import { resolveShortLines } from "../formations";
 import { NORTH, SOUTH } from "../geometry";
 import { indexOf, must } from "../utils";
 import { connectHands, Dancer } from "../worldState";
 import {
   findDancerInCalledDirection,
   instructionBaseSchemaFields,
-  resolveShortLines,
 } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 

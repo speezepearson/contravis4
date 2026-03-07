@@ -11,9 +11,8 @@
  *       - PersonInDirection ("person_on_right", "person_in_front", …)
  *           finds the nearest dancer in the given PureDirection (see directions.ts).
  *
- * The higher-level helpers (getCycle, resolveMatch, resolveMatches, resolveRings)
- * build on resolveCalledIdentifier to handle common patterns like pairing up
- * dancers or finding ring formations.
+ * The higher-level helpers (resolveMatch, resolveMatches)
+ * build on resolveCalledIdentifier to handle pairing up dancers.
  *
  * See also: directions.ts for CalledDirection, which resolves to a direction
  * vector rather than a specific dancer.
@@ -29,7 +28,7 @@ import {
 } from "./directions";
 import { findDancerInDirection, resolveLabel } from "./instructions/_base";
 import { LabelSchema } from "./labels";
-import { isNTuple, type NTuple, parses } from "./utils";
+import { must, parses } from "./utils";
 import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
 
 // ── CalledIdentifier: "the person [X]" — identifies a specific dancer ───
@@ -103,41 +102,6 @@ export function inferRoleOfCalledIdentifier(
   return null;
 }
 
-export function getCycle<N extends number>(
-  id: DancerId,
-  cid: CalledIdentifier,
-  protos: Record<ProtoId, Dancer>,
-  { length, roles }: { length: N; roles?: "same" | "different" },
-): NTuple<N, DancerId> {
-  const seen = new Set<DancerId>();
-  const cycle: DancerId[] = [];
-  let current: DancerId = id;
-  while (!seen.has(current)) {
-    if (cycle.length > 10)
-      throw new Error(
-        `"${cid}"-cycle starting at ${id} seems to go on forever: ${cycle.join(", ")}`,
-      );
-    seen.add(current);
-    cycle.push(current);
-    const next = resolveCalledIdentifier(current, cid, protos, { roles });
-    if (!next) {
-      throw new Error(
-        `${cid} does not form a cycle including ${id}: ${[...cycle, "null"].join(", ")}`,
-      );
-    }
-    current = next;
-  }
-  if (current !== id)
-    throw new Error(
-      `"${cid}"-cycle starting at ${id} does not return to ${id}: ${cycle.join(", ")}`,
-    );
-  if (!isNTuple(cycle, length))
-    throw new Error(
-      `"${cid}"-cycle starting at ${id} has length ${cycle.length} instead of ${length}: ${cycle.join(", ")}`,
-    );
-  return cycle;
-}
-
 /** Resolves a dancer's "match" for a figure where dancers pair up. */
 export function resolveMatch(
   id: DancerId,
@@ -145,7 +109,19 @@ export function resolveMatch(
   state: WorldState,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId {
-  return getCycle(id, cid, state, { length: 2, roles })[1];
+  const res = must(
+    resolveCalledIdentifier(id, cid, state, { roles }),
+    `${id} can't find ${JSON.stringify(cid)}`,
+  );
+  const symm = must(
+    resolveCalledIdentifier(res, cid, state, { roles }),
+    `${res} can't find ${JSON.stringify(cid)}`,
+  );
+  if (symm !== id)
+    throw new Error(
+      `asymmetry pairing dancers up: ${id} thinks ${JSON.stringify(symm)} is ${res}, but ${res} thinks ${JSON.stringify(id)} is ${symm}`,
+    );
+  return res;
 }
 /** Resolves all dancers' "matches" for a figure where dancers pair up. */
 export function resolveMatches(
@@ -154,15 +130,4 @@ export function resolveMatches(
   { roles }: { roles?: "same" | "different" } = {},
 ): Record<ProtoId, DancerId> {
   return buildProtoRecord((id) => resolveMatch(id, cid, state, { roles }));
-}
-
-export function resolveRings(
-  state: WorldState,
-): Record<ProtoId, NTuple<4, DancerId>> {
-  return buildProtoRecord((id) =>
-    getCycle(id, "person_in_right_hand", state, {
-      length: 4,
-      roles: "different",
-    }),
-  );
 }

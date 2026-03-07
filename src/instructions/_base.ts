@@ -21,8 +21,8 @@ import {
   type ShadowLabel,
   ShadowLabelSchema,
 } from "../labels";
-import { assertNever, type NTuple, parses } from "../utils";
-import { buildProtoRecord, Dancer, type WorldState } from "../worldState";
+import { assertNever, parses } from "../utils";
+import { Dancer, type WorldState } from "../worldState";
 
 export const InstructionIdSchema = z.string().uuid();
 export type InstructionId = z.infer<typeof InstructionIdSchema>;
@@ -96,17 +96,17 @@ export function resolveLabel(
   } else if (parses(ShadowLabelSchema, label)) {
     return Dancer.get(id, protos).labels[label];
   } else {
-    const label2 = label satisfies Exclude<
+    const handLabel = label satisfies Exclude<
       Label,
       InfallibleLabel | ShadowLabel
     >;
-    switch (label2) {
+    switch (handLabel) {
       case "person_in_left_hand":
         return Dancer.get(id, protos).hands["left"]?.theirId;
       case "person_in_right_hand":
         return Dancer.get(id, protos).hands["right"]?.theirId;
       default:
-        assertNever(label2);
+        assertNever(handLabel);
     }
   }
 }
@@ -219,47 +219,6 @@ export function findClosestDancer(
   return bestId;
 }
 
-export function resolveShortLines(
-  state: WorldState,
-): Record<ProtoId, NTuple<4, DancerId>> {
-  return buildProtoRecord((protoId) => {
-    const protoY = state[protoId].pos.y;
-
-    const line: { id: DancerId; x: number }[] = [];
-
-    for (const otherProtoId of ALL_PROTO_IDS) {
-      const dyBase = state[otherProtoId].pos.y - protoY;
-      const oBest = Math.round(-dyBase / 2);
-
-      // Find the offset copy closest in y
-      let bestId: DancerId | null = null;
-      let bestYDist = Infinity;
-      let bestX = 0;
-      for (let o = oBest - 1; o <= oBest + 1; o++) {
-        const id = protoIdToDancerId(otherProtoId, o);
-        const target = Dancer.get(id, state);
-        const yDist = Math.abs(target.pos.y - protoY);
-        if (yDist < bestYDist) {
-          bestId = id;
-          bestYDist = yDist;
-          bestX = target.pos.x;
-        }
-      }
-
-      if (bestYDist > 0.5) {
-        throw new Error(
-          `resolveShortLines: closest copy of ${otherProtoId} is ${bestYDist.toFixed(3)} away in y from ${protoId} (max 0.5)`,
-        );
-      }
-
-      line.push({ id: bestId!, x: bestX });
-    }
-
-    line.sort((a, b) => a.x - b.x);
-    return line.map((c) => c.id) as NTuple<4, DancerId>;
-  });
-}
-
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
   if (segments.length === 0) {
     throw new Error("chainAnimations requires at least one segment");
@@ -301,15 +260,14 @@ export {
   type TowardsPersonDirection,
   TowardsPersonDirectionSchema,
 } from "../directions";
+export { resolveRings, resolveShortLines } from "../formations";
 export {
   type CalledIdentifier,
   CalledIdentifierSchema,
-  getCycle,
   inferRoleOfCalledIdentifier,
   type PersonInDirection,
   PersonInDirectionSchema,
   resolveCalledIdentifier,
   resolveMatch,
   resolveMatches,
-  resolveRings,
 } from "../identifiers";

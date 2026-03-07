@@ -2,10 +2,11 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, type Beats } from "../contraCore";
+import { resolveShortLines } from "../formations";
 import { SOUTH } from "../geometry";
 import { indexOf, must } from "../utils";
 import { connectHands, Dancer, type WorldState } from "../worldState";
-import { instructionBaseSchemaFields, resolveShortLines } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import {
   type InstructionAnimator,
   makeImmediateSegment,
