@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ShadowLabelSchema } from "../labels";
 import { must } from "../utils";
 import { instructionBaseSchemaFields, PersonInDirectionSchema } from "./_base";
-import { type InstructionAnimator } from "./_segment";
+import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetShadowInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,7 +18,7 @@ export type GreetShadowInstruction = z.infer<
 
 export const greetShadowSegments: InstructionAnimator<
   GreetShadowInstruction
-> = (instr) => [
+> = (instr): Segment[] => [
   {
     dur: 0,
     labels: (dancer, _frac) => {

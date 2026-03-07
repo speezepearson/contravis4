@@ -96,6 +96,10 @@ export function InlineDropdown<T extends string>({
               handleOpenChange(!open);
             }
           }}
+          onMouseEnter={() => {
+            const cid = CalledIdentifierSchema.safeParse(value);
+            if (cid.success) onHighlight?.(cid.data);
+        }}
         >
           {displayText}
         </span>

@@ -182,22 +182,23 @@ export class Dancer {
       const s = this.state;
       // Intermediate lookups skip the distance check; only the final result is checked.
       const noCheck: ResolveLabelOpts = { checkDistance: false };
-      if (label === 'partner') {return Dancer.get(this.labels.partner, s);}
-      else if (parses(NeighborLabelSchema, label)) {
+      if (label === "partner") {
+        return Dancer.get(this.labels.partner, s);
+      } else if (parses(NeighborLabelSchema, label)) {
         return Dancer.get(this.labels.neighbor, s).addOffset(
           neighborLabelOffsets[label] * getProgDirSign(this.id),
         );
       } else if (parses(OppositeLabelSchema, label)) {
-        return Dancer.get(this.labels.neighbor, s).addOffset(
-          neighborLabelOffsets[label] * getProgDirSign(this.id),
-        ).resolveLabel("partner", noCheck);
+        return Dancer.get(this.labels.neighbor, s)
+          .addOffset(neighborLabelOffsets[label] * getProgDirSign(this.id))
+          .resolveLabel("partner", noCheck);
       } else if (parses(ShadowLabelSchema, label)) {
         if (!this.labels[label]) return undefined;
         return Dancer.get(this.labels[label], s);
-      } else if (label === 'person_in_left_hand'){
-            if (!this.hands["left"]) return undefined;
-            return Dancer.get(this.hands["left"].theirId, s);
-      } else if (label === 'person_in_right_hand'){
+      } else if (label === "person_in_left_hand") {
+        if (!this.hands["left"]) return undefined;
+        return Dancer.get(this.hands["left"].theirId, s);
+      } else if (label === "person_in_right_hand") {
         if (!this.hands["right"]) return undefined;
         return Dancer.get(this.hands["right"].theirId, s);
       } else {

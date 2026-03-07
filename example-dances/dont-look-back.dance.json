@@ -41,6 +41,12 @@
       "type": "california_twirl"
     },
     {
+      "id": "3c0a20e5-e00c-4776-a5f3-7084aa513306",
+      "beats": 0,
+      "type": "greet_new_neighbors",
+      "cid": "person_in_front"
+    },
+    {
       "id": "e872e0b4-b56d-4063-9cd1-d39bd9cae727",
       "beats": 0,
       "type": "take_hands_in_rings"

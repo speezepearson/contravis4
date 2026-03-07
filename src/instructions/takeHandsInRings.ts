@@ -73,7 +73,11 @@ export function makeRingSegment(init: WorldState): Segment {
         } else {
           throw new SnazzyError([
             { dancerId: id },
-            " can't determine which direction to face for a ring",
+            " can't determine which direction to face for a ring: up set is ",
+            { dancerId: up.id },
+            ` (recency ${upRecency}) and down set is `,
+            { dancerId: down.id },
+            ` (recency ${downRecency})`,
           ]);
         }
       } else {

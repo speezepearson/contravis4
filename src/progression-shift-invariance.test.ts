@@ -9,6 +9,7 @@ import {
   addOffsetToId,
   ALL_PROTO_IDS,
   DancerId,
+  getProgDir,
   getProgDirSign,
   parseProtoId,
   type ProtoId,
@@ -59,7 +60,7 @@ function progressInitFormation(state: WorldState): WorldState {
             ];
           }),
         ) as (typeof draft)[ProtoId]["labels"],
-        recents: draft[id].recents.map((rid) => incr(rid)),
+        recents: draft[id].recents.map((rid) => getProgDir(rid)===getProgDir(id) ? rid : incr(rid)),
       });
     }
   });

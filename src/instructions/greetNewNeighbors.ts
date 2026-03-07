@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { must } from "../utils";
 import { instructionBaseSchemaFields, PersonInDirectionSchema } from "./_base";
-import { type InstructionAnimator } from "./_segment";
+import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetNewNeighborsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -16,10 +16,15 @@ export type GreetNewNeighborsInstruction = z.infer<
 
 export const greetNewNeighborsSegments: InstructionAnimator<
   GreetNewNeighborsInstruction
-> = (instr) => [
+> = (instr): Segment[] => [
   {
     dur: 0,
-    newNeighbors: instr.cid,
+    labels: (dancer) => [['neighbor', must(dancer.resolveCalledIdentifier(instr.cid)?.id, [
+      {dancerId: dancer.id},
+      ' has no ',
+      {cid: instr.cid},
+      ' to mark as their new neighbor'
+    ])]],
     interactedWith: (dancer) => [
       must(dancer.resolveCalledIdentifier(instr.cid)).id,
     ],

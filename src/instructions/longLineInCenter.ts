@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getRole, RoleSchema } from "../contraCore";
 import { must } from "../utils";
 import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
-import { hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
+import { hold, type InstructionAnimator, lerpFacingTo, type Segment } from "./_segment";
 
 export const LongLineInCenterInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -17,7 +17,7 @@ export type LongLineInCenterInstruction = z.infer<
 
 export const longLineInCenterSegments: InstructionAnimator<
   LongLineInCenterInstruction
-> = (instr) => {
+> = (instr): Segment[] => {
   return [
     {
       dur: instr.beats,

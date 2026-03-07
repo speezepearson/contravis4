@@ -3,7 +3,7 @@ import { z } from "zod";
 import { lerpFacing } from "../geometry";
 import { lerpVectors } from "../utils";
 import { CalledDirectionSchema, instructionBaseSchemaFields } from "./_base";
-import { type InstructionAnimator } from "./_segment";
+import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const StepInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -14,7 +14,7 @@ export const StepInstructionSchema = z.object({
 });
 export type StepInstruction = z.infer<typeof StepInstructionSchema>;
 
-export const stepSegments: InstructionAnimator<StepInstruction> = (instr) => [
+export const stepSegments: InstructionAnimator<StepInstruction> = (instr): Segment[] => [
   {
     dur: instr.beats,
     position: (dancer, frac) => {

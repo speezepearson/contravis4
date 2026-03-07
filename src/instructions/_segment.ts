@@ -14,6 +14,7 @@ import {
   revolve,
 } from "../geometry";
 import { type SettableLabel, SettableLabelSchema } from "../labels";
+import { SnazzyError } from "../snazzyError";
 import { isEqual, lerpVectors } from "../utils";
 import {
   Dancer,
@@ -138,6 +139,35 @@ export function advanceState(
   return s;
 }
 
+const MAX_SPEED_PER_BEAT = 1.0;
+const VELOCITY_CHECK_STEP: Beats = 0.25;
+
+function checkVelocity(
+  animation: ContraAnimation,
+  who: ReadonlySet<ProtoId>,
+): void {
+  if (animation.dur === 0) return;
+
+  let prevState = animation.getFrame(0);
+  const nSteps = Math.floor(animation.dur / VELOCITY_CHECK_STEP);
+  for (let i = 1; i <= nSteps; i++) {
+    const t = Math.min(i * VELOCITY_CHECK_STEP, animation.dur);
+    const dt = t - (i - 1) * VELOCITY_CHECK_STEP;
+    const state = animation.getFrame(t);
+    for (const id of who) {
+      const dist = state[id].pos.subtract(prevState[id].pos).length();
+      const speed = dist / dt;
+      if (speed > MAX_SPEED_PER_BEAT) {
+        throw new SnazzyError([
+          { dancerId: id },
+          ` is moving too fast (${speed.toFixed(2)} units/beat, max ${MAX_SPEED_PER_BEAT}) at beat ${t.toFixed(2)}`,
+        ]);
+      }
+    }
+    prevState = state;
+  }
+}
+
 /**
  * Core composer. Takes init state, a `who` set, and array of segments, returns a ContraAnimation.
  * Handles all boilerplate:
@@ -157,7 +187,7 @@ export function animateSegments(
 
   const totalDur = segments.reduce((sum, s) => sum + s.dur, 0);
 
-  return {
+  const animation: ContraAnimation = {
     dur: totalDur,
     getFrame(t) {
       if (segments.length === 0) return init;
@@ -178,6 +208,10 @@ export function animateSegments(
       );
     },
   };
+
+  checkVelocity(animation, who);
+
+  return animation;
 }
 
 /**
