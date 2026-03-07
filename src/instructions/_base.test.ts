@@ -37,15 +37,15 @@ describe("resolveLabel", () => {
   );
 
   it.each<[DancerId, Label, DancerId]>([
-    ["up_lark_0", "next neighbor", "down_robin_1"],
-    ["up_robin_0", "next neighbor", "down_lark_1"],
-    ["down_lark_0", "next neighbor", "up_robin_-1"],
-    ["down_robin_0", "next neighbor", "up_lark_-1"],
+    ["up_lark_0", "next_neighbor", "down_robin_1"],
+    ["up_robin_0", "next_neighbor", "down_lark_1"],
+    ["down_lark_0", "next_neighbor", "up_robin_-1"],
+    ["down_robin_0", "next_neighbor", "up_lark_-1"],
 
-    ["up_lark_0", "prev x2 neighbor", "down_robin_-2"],
-    ["up_robin_0", "prev x2 neighbor", "down_lark_-2"],
-    ["down_lark_0", "prev x2 neighbor", "up_robin_2"],
-    ["down_robin_0", "prev x2 neighbor", "up_lark_2"],
+    ["up_lark_0", "prev_x2_neighbor", "down_robin_-2"],
+    ["up_robin_0", "prev_x2_neighbor", "down_lark_-2"],
+    ["down_lark_0", "prev_x2_neighbor", "up_robin_2"],
+    ["down_robin_0", "prev_x2_neighbor", "up_lark_2"],
   ])(
     "resolves next/prev neighbors correctly in improper: %s %s -> %s",
     (id, label, expected) => {
@@ -56,10 +56,10 @@ describe("resolveLabel", () => {
   );
 
   it.each<[DancerId, Label, DancerId]>([
-    ["up_lark_10", "prev x2 neighbor", "down_robin_8"],
-    ["up_robin_10", "prev x2 neighbor", "down_lark_8"],
-    ["down_lark_10", "prev x2 neighbor", "up_robin_12"],
-    ["down_robin_10", "prev x2 neighbor", "up_lark_12"],
+    ["up_lark_10", "prev_x2_neighbor", "down_robin_8"],
+    ["up_robin_10", "prev_x2_neighbor", "down_lark_8"],
+    ["down_lark_10", "prev_x2_neighbor", "up_robin_12"],
+    ["down_robin_10", "prev_x2_neighbor", "up_lark_12"],
   ])(
     "accounts for anchor's offset properly: %s %s -> %s",
     (id, label, expected) => {

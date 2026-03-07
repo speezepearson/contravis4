@@ -266,31 +266,31 @@ function labelToIdentifierText(label: Label): string {
       return "your shadow";
     case "opposite":
       return "your opposite";
-    case "next neighbor":
+    case "next_neighbor":
       return "your next neighbor";
-    case "next x2 neighbor":
+    case "next_x2_neighbor":
       return "your next x2 neighbor";
-    case "next x3 neighbor":
+    case "next_x3_neighbor":
       return "your next x3 neighbor";
-    case "prev neighbor":
+    case "prev_neighbor":
       return "your prev neighbor";
-    case "prev x2 neighbor":
+    case "prev_x2_neighbor":
       return "your prev x2 neighbor";
-    case "prev x3 neighbor":
+    case "prev_x3_neighbor":
       return "your prev x3 neighbor";
-    case "shadow 2":
+    case "shadow_2":
       return "your shadow 2";
-    case "shadow 3":
+    case "shadow_3":
       return "your shadow 3";
-    case "shadow 4":
+    case "shadow_4":
       return "your shadow 4";
-    case "shadow 5":
+    case "shadow_5":
       return "your shadow 5";
-    case "shadow 6":
+    case "shadow_6":
       return "your shadow 6";
-    case "person in right hand":
+    case "person_in_right_hand":
       return "the person in your right hand";
-    case "person in left hand":
+    case "person_in_left_hand":
       return "the person in your left hand";
     default:
       assertNever(label);

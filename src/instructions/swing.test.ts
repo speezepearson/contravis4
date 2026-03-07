@@ -136,7 +136,7 @@ describe("post-swing alignment", () => {
   const baseWithPreviousNeighborLeadingInRecents = produce(base, (draft) => {
     for (const id of ALL_PROTO_IDS) {
       draft[id].recents = [
-        resolveLabel(id, "prev neighbor", base),
+        resolveLabel(id, "prev_neighbor", base),
         ...draft[id].recents,
       ];
     }
@@ -159,7 +159,7 @@ describe("post-swing alignment", () => {
     {
       name: "base but with previous neighbor in recents",
       init: baseWithPreviousNeighborLeadingInRecents,
-      expectedAcross: "prev neighbor",
+      expectedAcross: "prev_neighbor",
     },
     {
       name: "base but with previous neighbor in recents but closer to neighbor",

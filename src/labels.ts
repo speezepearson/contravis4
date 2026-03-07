@@ -2,28 +2,28 @@ import z from "zod";
 
 export const ShadowLabelSchema = z.enum([
   "shadow",
-  "shadow 2",
-  "shadow 3",
-  "shadow 4",
-  "shadow 5",
-  "shadow 6",
+  "shadow_2",
+  "shadow_3",
+  "shadow_4",
+  "shadow_5",
+  "shadow_6",
 ]);
 
 export const OffsetNeighborLabelSchema = z.enum([
-  "next neighbor",
-  "next x2 neighbor",
-  "next x3 neighbor",
-  "prev neighbor",
-  "prev x2 neighbor",
-  "prev x3 neighbor",
+  "next_neighbor",
+  "next_x2_neighbor",
+  "next_x3_neighbor",
+  "prev_neighbor",
+  "prev_x2_neighbor",
+  "prev_x3_neighbor",
 ]);
 export const neighborLabelOffsets = Object.freeze({
-  "next neighbor": 1,
-  "next x2 neighbor": 2,
-  "next x3 neighbor": 3,
-  "prev neighbor": -1,
-  "prev x2 neighbor": -2,
-  "prev x3 neighbor": -3,
+  next_neighbor: 1,
+  next_x2_neighbor: 2,
+  next_x3_neighbor: 3,
+  prev_neighbor: -1,
+  prev_x2_neighbor: -2,
+  prev_x3_neighbor: -3,
 }) satisfies Record<z.infer<typeof OffsetNeighborLabelSchema>, number>;
 
 export const NeighborLabelSchema = z.enum([
@@ -35,8 +35,8 @@ export const LabelSchema = z.enum([
   ...NeighborLabelSchema.options,
   ...ShadowLabelSchema.options,
   "opposite", // = my neighbor's partner
-  "person in right hand",
-  "person in left hand",
+  "person_in_right_hand",
+  "person_in_left_hand",
 ]);
 
 export const InfallibleLabelSchema = z.enum([

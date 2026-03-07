@@ -127,9 +127,9 @@ export function resolveLabel(
       InfallibleLabel | ShadowLabel
     >;
     switch (label2) {
-      case "person in left hand":
+      case "person_in_left_hand":
         return Dancer.get(id, protos).hands["left"]?.theirId;
-      case "person in right hand":
+      case "person_in_right_hand":
         return Dancer.get(id, protos).hands["right"]?.theirId;
       default:
         assertNever(label2);
@@ -171,13 +171,9 @@ export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 
 // ── CalledDirection: resolves to a direction vector ─────────────────────
 
-type ReplaceSpaces<S extends string> = S extends `${infer L} ${infer R}`
-  ? `${L}_${ReplaceSpaces<R>}`
-  : S;
-
-export type TowardsLabelDirection = `towards_${ReplaceSpaces<Label>}`;
+export type TowardsLabelDirection = `towards_${Label}`;
 export const TowardsLabelDirectionSchema = z.enum(
-  LabelSchema.options.map((l) => `towards_${l.replaceAll(" ", "_")}`) as [
+  LabelSchema.options.map((l) => `towards_${l}`) as [
     TowardsLabelDirection,
     ...TowardsLabelDirection[],
   ],
@@ -205,7 +201,7 @@ const personInToDir = Object.fromEntries(
 ) as Record<PersonInDirection, PureDirection>;
 
 const towardsToLabel = Object.fromEntries(
-  LabelSchema.options.map((l) => [`towards_${l.replaceAll(" ", "_")}`, l]),
+  LabelSchema.options.map((l) => [`towards_${l}`, l]),
 ) as Record<TowardsLabelDirection, Label>;
 
 const towardsPersonToDir = Object.fromEntries(
@@ -319,19 +315,19 @@ export function inferRoleOfCalledIdentifier(
 ): "same" | "different" | null {
   switch (cid) {
     case "neighbor":
-    case "next neighbor":
-    case "next x2 neighbor":
-    case "next x3 neighbor":
-    case "prev neighbor":
-    case "prev x2 neighbor":
-    case "prev x3 neighbor":
+    case "next_neighbor":
+    case "next_x2_neighbor":
+    case "next_x3_neighbor":
+    case "prev_neighbor":
+    case "prev_x2_neighbor":
+    case "prev_x3_neighbor":
     case "partner":
     case "shadow":
-    case "shadow 2":
-    case "shadow 3":
-    case "shadow 4":
-    case "shadow 5":
-    case "shadow 6":
+    case "shadow_2":
+    case "shadow_3":
+    case "shadow_4":
+    case "shadow_5":
+    case "shadow_6":
       return "different";
     case "opposite":
       return "same";
@@ -396,7 +392,7 @@ export function resolveRings(
   state: WorldState,
 ): Record<ProtoId, NTuple<4, DancerId>> {
   return buildProtoRecord((id) =>
-    getCycle(id, "person in right hand", state, {
+    getCycle(id, "person_in_right_hand", state, {
       length: 4,
       roles: "different",
     }),

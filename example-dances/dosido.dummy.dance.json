@@ -13,7 +13,7 @@
       "id": "5fa548d6-394b-4b27-b4b2-ebbaba5f0bbf",
       "beats": 2,
       "type": "pass_by",
-      "cid": "next neighbor",
+      "cid": "next_neighbor",
       "hand": "left"
     }
   ]

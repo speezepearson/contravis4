@@ -14,7 +14,7 @@
       "id": "8eb0b31e-602b-419c-b25c-80b51afb8677",
       "beats": 8,
       "type": "shoulder_round",
-      "cid": "next neighbor",
+      "cid": "next_neighbor",
       "handedness": "left",
       "rotations": 0.75
     },

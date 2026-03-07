@@ -17,7 +17,7 @@
       "id": "6cd402b8-1821-4ecf-9e52-1893c379a607",
       "beats": 2,
       "type": "pull_by",
-      "cid": "prev neighbor",
+      "cid": "prev_neighbor",
       "hand": "right"
     }
   ]
