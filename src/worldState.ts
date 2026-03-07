@@ -119,9 +119,10 @@ export class Dancer {
   get state(): WorldState {
     const s = dancerStates.get(this);
     if (!s)
-      throw new Error(
-        `Dancer ${this.id} has no associated state (use Dancer.get to look up dancers)`,
-      );
+      throw new SnazzyError([
+        { dancerId: this.id },
+        " has no associated state (use Dancer.get to look up dancers)",
+      ]);
     return s;
   }
 
@@ -168,9 +169,12 @@ export class Dancer {
   resolveLabel(label: Label): Dancer | undefined {
     const result = resolveLabelUnchecked(this, label);
     if (result && getDist(this.pos, result.pos) > 2.8) {
-      throw new Error(
-        `${this.id} is too far from their ${label} to resolve them clearly`,
-      );
+      throw new SnazzyError([
+        { dancerId: this.id },
+        " is too far from their ",
+        { cid: label },
+        " to resolve them clearly",
+      ]);
     }
     return result;
   }

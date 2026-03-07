@@ -83,9 +83,13 @@ export function resolveShortLines(
       }
 
       if (bestYDist > 0.5) {
-        throw new Error(
-          `resolveShortLines: closest copy of ${otherProtoId} is ${bestYDist.toFixed(3)} away in y from ${protoId} (max 0.5)`,
-        );
+        throw new SnazzyError([
+          "resolveShortLines: closest copy of ",
+          { dancerId: otherProtoId },
+          ` is ${bestYDist.toFixed(3)} away in y from `,
+          { dancerId: protoId },
+          " (max 0.5)",
+        ]);
       }
 
       line.push({ id: bestId!, x: bestX });
