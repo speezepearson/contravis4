@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 import { type DancerId, isRobin } from "../contraCore";
+import { getDir, lerpFacing } from "../geometry";
 import { must } from "../utils";
 import type { Lark, Robin } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  resolveCardinalDirection,
 } from "./_base";
-import { type InstructionAnimator, lerpFacingTo, linearTo } from "./_segment";
+import { type InstructionAnimator, linearTo } from "./_segment";
 
 export const RobinsChainInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -65,20 +65,24 @@ export const robinsChainSegments: InstructionAnimator<
         const them = dancer.resolveMatch(instr.cid);
         return them.pos;
       }),
-      facing: lerpFacingTo((dancer) => {
-        if (!isRobin(dancer.id)) {
-          return must(resolveCardinalDirection("across", dancer.pos), [
-            "cannot resolve across facing for ",
-            { dancerId: dancer.id },
-          ]);
+      facing: (dancer, frac) => {
+        if (dancer.isRobin()) {
+          const them = getRobinMatch(dancer);
+          return lerpFacing(
+            dancer.facing,
+            them.resolvePureDirection("across"),
+            frac,
+          );
+        } else if (dancer.isLark()) {
+          return lerpFacing(
+            getDir({ from: dancer.pos, to: getSendee(dancer).pos }),
+            dancer.resolvePureDirection("across"),
+            Math.max(0, 4 * frac - 3),
+          );
+        } else {
+          throw new Error("programming error");
         }
-        const them = dancer.resolveMatch(instr.cid);
-        return must(resolveCardinalDirection("across", them.pos), [
-          "cannot resolve across facing for ",
-          { dancerId: dancer.id },
-          " at target position",
-        ]);
-      }),
+      },
       hands: () => ({}),
       interactedWith: (dancer): DancerId[] => {
         if (dancer.isRobin()) {
