@@ -108,8 +108,8 @@ const initFormationPosFacings: Record<
   proper: {
     up_lark_0: { pos: new Vector(-0.5, -0.5), facing: NORTH },
     up_robin_0: { pos: new Vector(0.5, -0.5), facing: NORTH },
-    down_lark_0: { pos: new Vector(0.5, 0.5), facing: SOUTH },
-    down_robin_0: { pos: new Vector(-0.5, 0.5), facing: SOUTH },
+    down_lark_0: { pos: new Vector(-0.5, 0.5), facing: SOUTH },
+    down_robin_0: { pos: new Vector(0.5, 0.5), facing: SOUTH },
   },
 };
 
