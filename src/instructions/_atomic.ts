@@ -63,6 +63,10 @@ import {
   longLinesForwardBackSegments,
 } from "./longLinesForwardBack";
 import { MadRobinInstructionSchema, madRobinSegments } from "./madRobin";
+import {
+  MeltdownSwingInstructionSchema,
+  meltdownSwingSegments,
+} from "./meltdownSwing";
 import { PassByInstructionSchema, passBySegments } from "./passBy";
 import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
 import { PoussetteInstructionSchema, poussetteSegments } from "./poussette";
@@ -118,6 +122,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   LongLineInCenterInstructionSchema,
   LongLinesForwardBackInstructionSchema,
   MadRobinInstructionSchema,
+  MeltdownSwingInstructionSchema,
   PassByInstructionSchema,
   PetronellaInstructionSchema,
   PoussetteInstructionSchema,
@@ -165,6 +170,7 @@ export const atomicSegmentAnimators: {
   long_line_in_center: longLineInCenterSegments,
   long_lines_forward_back: longLinesForwardBackSegments,
   mad_robin: madRobinSegments,
+  meltdown_swing: meltdownSwingSegments,
   pass_by: passBySegments,
   petronella: petronellaSegments,
   poussette: poussetteSegments,

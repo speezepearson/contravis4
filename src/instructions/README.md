@@ -287,6 +287,20 @@ All dancers walk forward toward the center and back.
 }
 ```
 
+### `meltdown_swing`
+
+Right shoulder round 1.5x (8 beats) followed by a swing (remaining beats). Equivalent to a shoulder round into swing as a single compound instruction.
+
+```json
+{
+  "id": "...",
+  "beats": 16,
+  "type": "meltdown_swing",
+  "cid": "neighbor",
+  "endFacing": "across"
+}
+```
+
 ### `pass_by`
 
 ```json

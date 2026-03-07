@@ -106,6 +106,14 @@ export function makeDefaultInstruction(
           rotations: 1,
           whoInFront: "lark",
         };
+      case "meltdown_swing":
+        return {
+          id,
+          type: "meltdown_swing",
+          beats: 16,
+          cid: "neighbor",
+          endFacing: "across",
+        };
       case "pass_by":
         return {
           id,
