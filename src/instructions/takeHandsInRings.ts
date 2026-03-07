@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS } from "../contraCore";
 import { ccwRadsBetween, getDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
-import { must, safeThreshold } from "../utils";
+import { indexOf, must, safeThreshold } from "../utils";
 import {
   buildProtoRecord,
   connectHands,
@@ -47,14 +47,42 @@ export function makeRingSegment(init: WorldState): Segment {
       neg: "person_down",
       pos: "person_up",
     } as const);
-    if (!alongCid)
-      throw new SnazzyError([
-        { dancerId: id },
-        " can't determine which direction to face for a ring",
-      ]);
-    const along = must(
-      d.resolveCalledIdentifier(alongCid, { roles: "different" }),
-    );
+    let along: Dancer;
+    if (alongCid) {
+      along = must(d.resolveCalledIdentifier(alongCid, { roles: "different" }));
+    } else {
+      // Facing exactly across — use recency as tiebreaker.
+      const up = d.resolveCalledIdentifier("person_up", {
+        roles: "different",
+      });
+      const down = d.resolveCalledIdentifier("person_down", {
+        roles: "different",
+      });
+      if (up && !down) {
+        along = up;
+      } else if (down && !up) {
+        along = down;
+      } else if (up && down) {
+        // Lower index = more recent. undefined means not found (least recent).
+        const upRecency = indexOf(d.recents, up.id) ?? Infinity;
+        const downRecency = indexOf(d.recents, down.id) ?? Infinity;
+        if (upRecency < downRecency) {
+          along = up;
+        } else if (downRecency < upRecency) {
+          along = down;
+        } else {
+          throw new SnazzyError([
+            { dancerId: id },
+            " can't determine which direction to face for a ring",
+          ]);
+        }
+      } else {
+        throw new SnazzyError([
+          { dancerId: id },
+          " can't determine which direction to face for a ring",
+        ]);
+      }
+    }
     return { across, along };
   });
 
