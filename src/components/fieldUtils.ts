@@ -185,7 +185,7 @@ export function makeDefaultInstruction(
           nPullBys: 4,
           firstHand: "right",
           cid1: "neighbor",
-          cid2: "person_in_front",
+          cid2: "partner",
         };
       case "split":
         return { id, type: "split", by: "role", larks: [], robins: [] };
