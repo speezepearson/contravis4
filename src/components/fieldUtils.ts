@@ -16,7 +16,7 @@ import {
   type InstructionId,
   InstructionSchema,
 } from "../instructions/index";
-import type { Label } from "../labels";
+import { type Label, LabelSchema } from "../labels";
 import { assertNever, parses } from "../utils";
 import type { ActionOptionType } from "./CommandPane";
 
@@ -339,19 +339,21 @@ function personInDirectionToText(dir: PureDirection): string {
 export function calledDirectionToText(dir: CalledDirection): string {
   if (parses(PureDirectionSchema, dir)) return pureDirectionToText(dir);
   if (parses(TowardsLabelDirectionSchema, dir)) {
-    const label = dir.slice("towards_".length) as Label;
+    const label = LabelSchema.parse(dir.slice("towards_".length));
     return `towards ${labelToIdentifierText(label)}`;
   }
-  const pureDir = dir.slice("towards_person_".length) as PureDirection;
+  const pureDir = PureDirectionSchema.parse(
+    dir.slice("towards_person_".length),
+  );
   return `towards ${personInDirectionToText(pureDir)}`;
 }
 
 export function calledIdentifierToText(cid: CalledIdentifier): string {
   if (parses(PersonInDirectionSchema, cid)) {
-    const pureDir = cid.slice("person_".length) as PureDirection;
+    const pureDir = PureDirectionSchema.parse(cid.slice("person_".length));
     return personInDirectionToText(pureDir);
   }
-  return labelToIdentifierText(cid as Label);
+  return labelToIdentifierText(LabelSchema.parse(cid));
 }
 
 export const DIR_OPTIONS = ["up", "down", "across", "out"] as const;
