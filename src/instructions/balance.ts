@@ -36,7 +36,9 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
         });
         return segInit[id].pos.add(dir.multiply(0.2));
       }),
-      interactedWith: (id, segInit) => [resolveMatch(id, instr.cid, segInit)],
+      interactedWith: (id, segInit) => [
+        resolveMatch(Dancer.get(id, segInit), instr.cid),
+      ],
     },
     {
       dur: halfBeats,

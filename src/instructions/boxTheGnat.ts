@@ -23,16 +23,18 @@ export const boxTheGnatSegments: InstructionAnimator<BoxTheGnatInstruction> = (
     dur: instr.beats,
     position: arc(instr.cid, { semiMinor: 0.25, phi: PI }),
     facing: lerpFacingTo((id, segInit) => {
-      const them = resolveMatch(id, instr.cid, segInit);
+      const them = resolveMatch(Dancer.get(id, segInit), instr.cid);
       return getDir({
         from: Dancer.get(them, segInit).pos,
         to: segInit[id].pos,
       });
     }),
     hands: (id, _frac, segInit) => {
-      const them = resolveMatch(id, instr.cid, segInit);
+      const them = resolveMatch(Dancer.get(id, segInit), instr.cid);
       return hold(["right", them, "right"]);
     },
-    interactedWith: (id, segInit) => [resolveMatch(id, instr.cid, segInit)],
+    interactedWith: (id, segInit) => [
+      resolveMatch(Dancer.get(id, segInit), instr.cid),
+    ],
   },
 ];

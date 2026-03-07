@@ -60,7 +60,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
   const matches = new Map(
-    [...who].map((id) => [id, resolveMatch(id, instr.cid, init)]),
+    [...who].map((id) => [id, resolveMatch(Dancer.get(id, init), instr.cid)]),
   );
   const alreadyClose = buildProtoRecord((id) => {
     const me = Dancer.get(id, init);

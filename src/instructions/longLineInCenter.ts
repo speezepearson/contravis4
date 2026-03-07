@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
 import { must } from "../utils";
+import { Dancer } from "../worldState";
 import {
   instructionBaseSchemaFields,
   resolveCardinalDirection,
@@ -46,8 +47,16 @@ export const longLineInCenterSegments: InstructionAnimator<
       hands: (id, _frac, segInit) => {
         if (getRole(id) !== instr.role) return {};
         return hold(
-          ["left", resolveMatch(id, "person_on_left", segInit), "left"],
-          ["right", resolveMatch(id, "person_on_right", segInit), "right"],
+          [
+            "left",
+            resolveMatch(Dancer.get(id, segInit), "person_on_left"),
+            "left",
+          ],
+          [
+            "right",
+            resolveMatch(Dancer.get(id, segInit), "person_on_right"),
+            "right",
+          ],
         );
       },
     },

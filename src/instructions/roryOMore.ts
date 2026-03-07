@@ -33,7 +33,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
     {
       dur: instr.beats,
       position: linearTo((id, segInit) => {
-        const them = resolveMatch(id, cid, segInit);
+        const them = resolveMatch(Dancer.get(id, segInit), cid);
         return Dancer.get(them, segInit).pos;
       }),
       facing: rotateFacingBy(() => rotationRadians),
@@ -43,7 +43,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
       dur: 0,
       // Resolve against init (not segInit) because the first segment drops hands
       hands: (id) => {
-        const them = resolveMatch(id, cid, init);
+        const them = resolveMatch(Dancer.get(id, init), cid);
         return hold([
           otherHand(instr.direction),
           them,

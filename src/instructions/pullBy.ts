@@ -27,17 +27,19 @@ export const pullBySegments: InstructionAnimator<PullByInstruction> = (
       dur: instr.beats,
       position: arc(instr.cid, { semiMinor, phi: PI }),
       facing: (id, _frac, segInit) => {
-        const them = resolveMatch(id, instr.cid, segInit);
+        const them = resolveMatch(Dancer.get(id, segInit), instr.cid);
         return Dancer.get(them, segInit)
           .pos.subtract(segInit[id].pos)
           .normalize();
       },
       hands: (id, frac, segInit) => {
         if (frac >= 0.5) return {};
-        const them = resolveMatch(id, instr.cid, segInit);
+        const them = resolveMatch(Dancer.get(id, segInit), instr.cid);
         return hold([instr.hand, them, instr.hand]);
       },
-      interactedWith: (id, segInit) => [resolveMatch(id, instr.cid, segInit)],
+      interactedWith: (id, segInit) => [
+        resolveMatch(Dancer.get(id, segInit), instr.cid),
+      ],
     },
   ];
 };

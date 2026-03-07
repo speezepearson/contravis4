@@ -19,7 +19,10 @@ export const turnAsACoupleSegments: InstructionAnimator<
 > = (instr, init, who) => {
   const checked = new Set<string>();
   for (const id of who) {
-    const themId = resolveMatch(id, "person_larks_right_robins_left", init);
+    const themId = resolveMatch(
+      Dancer.get(id, init),
+      "person_larks_right_robins_left",
+    );
     const pairKey = [id, themId].sort().join(",");
     if (checked.has(pairKey)) continue;
     checked.add(pairKey);

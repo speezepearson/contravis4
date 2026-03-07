@@ -27,9 +27,8 @@ export const californiaTwirlSegments: InstructionAnimator<
       (id, segInit) => {
         // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
         const them = resolveMatch(
-          id,
+          Dancer.get(id, segInit),
           "person_larks_right_robins_left",
-          segInit,
         );
         const myRole = parseProtoId(id).role;
         return getDir({
@@ -42,13 +41,16 @@ export const californiaTwirlSegments: InstructionAnimator<
       },
     ),
     hands: (id, _frac, segInit) => {
-      const them = resolveMatch(id, "person_larks_right_robins_left", segInit);
+      const them = resolveMatch(
+        Dancer.get(id, segInit),
+        "person_larks_right_robins_left",
+      );
       return isLark(id)
         ? hold(["right", them, "left"])
         : hold(["left", them, "right"]);
     },
     interactedWith: (id, segInit) => [
-      resolveMatch(id, "person_larks_right_robins_left", segInit),
+      resolveMatch(Dancer.get(id, segInit), "person_larks_right_robins_left"),
     ],
   },
 ];

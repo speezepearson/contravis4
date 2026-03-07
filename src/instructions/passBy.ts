@@ -28,7 +28,7 @@ export const passBySegments: InstructionAnimator<PassByInstruction> = (
       phi: PI,
     }),
     facing: (id, _frac, segInit) => {
-      const them = resolveMatch(id, instr.cid, segInit);
+      const them = resolveMatch(Dancer.get(id, segInit), instr.cid);
       return Dancer.get(them, segInit)
         .pos.subtract(segInit[id].pos)
         .normalize();

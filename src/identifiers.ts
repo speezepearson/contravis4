@@ -105,22 +105,22 @@ export function inferRoleOfCalledIdentifier(
 
 /** Resolves a dancer's "match" for a figure where dancers pair up. */
 export function resolveMatch(
-  id: DancerId,
+  dancer: Dancer,
   cid: CalledIdentifier,
-  state: WorldState,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId {
+  const s = dancer.state;
   const res = must(
-    resolveCalledIdentifier(id, cid, state, { roles }),
-    `${id} can't find ${JSON.stringify(cid)}`,
+    resolveCalledIdentifier(dancer.id, cid, s, { roles }),
+    `${dancer.id} can't find ${JSON.stringify(cid)}`,
   );
   const symm = must(
-    resolveCalledIdentifier(res, cid, state, { roles }),
+    resolveCalledIdentifier(res, cid, s, { roles }),
     `${res} can't find ${JSON.stringify(cid)}`,
   );
-  if (symm !== id)
+  if (symm !== dancer.id)
     throw new Error(
-      `asymmetry pairing dancers up: ${id} thinks ${JSON.stringify(symm)} is ${res}, but ${res} thinks ${JSON.stringify(id)} is ${symm}`,
+      `asymmetry pairing dancers up: ${dancer.id} thinks ${JSON.stringify(symm)} is ${res}, but ${res} thinks ${JSON.stringify(dancer.id)} is ${symm}`,
     );
   return res;
 }
@@ -130,5 +130,7 @@ export function resolveMatches(
   state: WorldState,
   { roles }: { roles?: "same" | "different" } = {},
 ): Record<ProtoId, DancerId> {
-  return buildProtoRecord((id) => resolveMatch(id, cid, state, { roles }));
+  return buildProtoRecord((id) =>
+    resolveMatch(Dancer.get(id, state), cid, { roles }),
+  );
 }

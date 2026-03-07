@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ALL_HANDS } from "../contraCore";
+import { Dancer } from "../worldState";
 import {
   type CalledIdentifier,
   CalledIdentifierSchema,
@@ -45,9 +46,8 @@ export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
           dur: 0,
           hands: (id, _frac, segInit) => {
             const matchId = resolveMatch(
-              id,
+              Dancer.get(id, segInit),
               instr.which as CalledIdentifier,
-              segInit,
             );
             const result: (typeof segInit)[typeof id]["hands"] = {};
             for (const hand of ALL_HANDS) {

@@ -258,7 +258,7 @@ export function arc(
   opts: { semiMinor: number; phi: number },
 ): PositionFn {
   return (id, frac, segInit) => {
-    const themId = resolveMatch(id, cid, segInit);
+    const themId = resolveMatch(Dancer.get(id, segInit), cid);
     const start = segInit[id].pos;
     const end = Dancer.get(themId, segInit).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
