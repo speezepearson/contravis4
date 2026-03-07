@@ -11,6 +11,7 @@ import {
 import { animateSegments } from "./instructions/_segment";
 import { type Instruction, instructionDuration } from "./instructions/index";
 import { type Split, splitAnimator } from "./instructions/split";
+import { SnazzyError, type SnazzySegment } from "./snazzyError";
 import { assertNever } from "./utils";
 import type { WorldState } from "./worldState";
 
@@ -18,17 +19,20 @@ export class GenerateError extends Error {
   public instructionId: InstructionId;
   public message: string;
   public initState: WorldState;
+  public segments: SnazzySegment[];
   constructor(
     instructionId: InstructionId,
     message: string,
     initState: WorldState,
     cause?: Error,
+    segments?: SnazzySegment[],
   ) {
     super(message);
     this.instructionId = instructionId;
     this.message = message;
     this.initState = initState;
     this.cause = cause;
+    this.segments = segments ?? [message];
   }
 }
 
@@ -77,6 +81,7 @@ export function generateDanceAnimation(
           e instanceof Error ? e.message : String(e),
           currentState,
           e instanceof Error ? e : undefined,
+          e instanceof SnazzyError ? e.segments : undefined,
         ),
       );
       // Hold at currentState for the failed instruction's duration

@@ -48,6 +48,7 @@ import {
   type ShadowLabel,
   ShadowLabelSchema,
 } from "./labels";
+import { SnazzyError } from "./snazzyError";
 import { assertNever, getSide, isEqual, must, parses } from "./utils";
 
 export const DancerHandPointerSchema = z.object({
@@ -243,14 +244,20 @@ export class Dancer {
     if (parses(TowardsLabelDirectionSchema, dir)) {
       const label = towardsToLabel[dir];
       const them = this.resolveLabel(label);
-      if (!them) throw new Error(`${this.id} has no ${label}`);
+      if (!them)
+        throw new SnazzyError([
+          { dancerId: this.id },
+          " has no ",
+          { cid: label },
+        ]);
       return getDir({ from: this.pos, to: them.pos });
     }
     if (parses(TowardsPersonDirectionSchema, dir)) {
       const pureDir = towardsPersonToDir[dir];
       const pureDirVec = this.resolvePureDirection(pureDir);
       const them = this.findDancerInDirection(pureDirVec);
-      if (!them) throw new Error(`${this.id} has nobody ${pureDir}`);
+      if (!them)
+        throw new SnazzyError([{ dancerId: this.id }, " has nobody ", pureDir]);
       return getDir({
         from: this.pos,
         to: them.pos,
@@ -357,13 +364,17 @@ export class Dancer {
     const res = this.findDancerInDirection(dir, { roles });
     if (!res) return undefined;
     if (roles === "same" && res.role !== this.role)
-      throw new Error(
-        `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
-      );
+      throw new SnazzyError([
+        "it's crazy to ask for somebody's ",
+        { cid },
+        ` with the ${roles} role`,
+      ]);
     if (roles === "different" && res.role === this.role)
-      throw new Error(
-        `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
-      );
+      throw new SnazzyError([
+        "it's crazy to ask for somebody's ",
+        { cid },
+        ` with the ${roles} role`,
+      ]);
     return res;
   }
 
@@ -372,18 +383,27 @@ export class Dancer {
     cid: CalledIdentifier,
     { roles }: { roles?: "same" | "different" } = {},
   ): Dancer {
-    const res = must(
-      this.resolveCalledIdentifier(cid, { roles }),
-      `${this.id} can't find ${JSON.stringify(cid)}`,
-    );
-    const symm = must(
-      res.resolveCalledIdentifier(cid, { roles }),
-      `${res.id} can't find ${JSON.stringify(cid)}`,
-    );
+    const res = this.resolveCalledIdentifier(cid, { roles });
+    if (!res)
+      throw new SnazzyError([{ dancerId: this.id }, " can't find ", { cid }]);
+    const symm = res.resolveCalledIdentifier(cid, { roles });
+    if (!symm)
+      throw new SnazzyError([{ dancerId: res.id }, " can't find ", { cid }]);
     if (symm.id !== this.id)
-      throw new Error(
-        `asymmetry pairing dancers up: ${this.id} thinks ${JSON.stringify(symm.id)} is ${res.id}, but ${res.id} thinks ${JSON.stringify(this.id)} is ${symm.id}`,
-      );
+      throw new SnazzyError([
+        "asymmetry pairing dancers up: ",
+        { dancerId: this.id },
+        " thinks ",
+        { dancerId: symm.id },
+        " is ",
+        { dancerId: res.id },
+        ", but ",
+        { dancerId: res.id },
+        " thinks ",
+        { dancerId: this.id },
+        " is ",
+        { dancerId: symm.id },
+      ]);
     return res;
   }
 }
@@ -410,18 +430,26 @@ export function connectHands(
   theirHand: Hand,
 ): void {
   if (projectDancerIdToProtoId(theirId) === id) {
-    throw new Error(
-      `Dancer ${id} cannot connect hands to ${theirId} (same proto)`,
-    );
+    throw new SnazzyError([
+      { dancerId: id },
+      " cannot connect hands to ",
+      { dancerId: theirId },
+      " (same proto)",
+    ]);
   }
   const holding = state[id].hands[hand];
   if (holding) {
     if (isEqual(holding, { theirId, theirHand })) {
       return;
     }
-    throw new Error(
-      `${id}'s ${hand} hand is already holding ${holding.theirId}'s ${holding.theirHand}, so can't grab ${theirId}'s ${theirHand} hand`,
-    );
+    throw new SnazzyError([
+      { dancerId: id },
+      `'s ${hand} hand is already holding `,
+      { dancerId: holding.theirId },
+      `'s ${holding.theirHand}, so can't grab `,
+      { dancerId: theirId },
+      `'s ${theirHand} hand`,
+    ]);
   }
 
   const them = Dancer.get(theirId, state);
@@ -430,9 +458,14 @@ export function connectHands(
     if (isEqual(themHolding, { theirId: id, theirHand: hand })) {
       return;
     }
-    throw new Error(
-      `${theirId}'s ${theirHand} hand is already holding ${themHolding.theirId}'s ${themHolding.theirHand}, so ${id} can't grab it in their ${hand}`,
-    );
+    throw new SnazzyError([
+      { dancerId: theirId },
+      `'s ${theirHand} hand is already holding `,
+      { dancerId: themHolding.theirId },
+      `'s ${themHolding.theirHand}, so `,
+      { dancerId: id },
+      ` can't grab it in their ${hand}`,
+    ]);
   }
 
   state[id].hands[hand] = { theirId, theirHand };
@@ -454,7 +487,11 @@ export function disconnectHands(
   }
 
   const holding = state[id].hands[hand];
-  if (!holding) throw new Error(`Dancer ${id}'s ${hand} hand is not connected`);
+  if (!holding)
+    throw new SnazzyError([
+      { dancerId: id },
+      `'s ${hand} hand is not connected`,
+    ]);
   const { theirId, theirHand } = holding;
 
   const them = Dancer.get(theirId, state);
@@ -501,9 +538,10 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
         Math.abs(dancer.facing.length() - 1) < 0.01
       )
     ) {
-      throw new Error(
-        `dancer ${id} has a crazy facing: ${dancer.facing.x}, ${dancer.facing.y}`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        ` has a crazy facing: ${dancer.facing.x}, ${dancer.facing.y}`,
+      ]);
     }
     if (
       !(
@@ -515,20 +553,30 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
         dancer.pos.y < 30
       )
     ) {
-      throw new Error(
-        `dancer ${id} has a crazy position: ${dancer.pos.x}, ${dancer.pos.y}`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        ` has a crazy position: ${dancer.pos.x}, ${dancer.pos.y}`,
+      ]);
     }
     if (!dancer.labels["neighbor"])
-      throw new Error(`dancer ${id} has no neighbor`);
+      throw new SnazzyError([
+        { dancerId: id },
+        " has no ",
+        { cid: "neighbor" },
+      ]);
     for (const label of IrreducibleLabelSchema.options) {
       const theirId = dancer.labels[label];
       if (!theirId) continue;
       const theirSymmetricPointer = Dancer.get(theirId, state).labels[label];
       if (theirSymmetricPointer !== id)
-        throw new Error(
-          `${id}'s ${label}'s thinks their ${label} is ${theirSymmetricPointer} -- this should never be asymmetric!`,
-        );
+        throw new SnazzyError([
+          { dancerId: id },
+          "'s ",
+          { cid: label },
+          " thinks their ",
+          { cid: label },
+          ` is ${theirSymmetricPointer} -- this should never be asymmetric!`,
+        ]);
     }
     for (const hand of HandSchema.options) {
       const holding = dancer.hands[hand];
@@ -536,9 +584,12 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
       const { theirId, theirHand } = holding;
       const theirSymmetricPointer = Dancer.get(theirId, state).hands[theirHand];
       if (!isEqual(theirSymmetricPointer, { theirId: id, theirHand: hand }))
-        throw new Error(
-          `${id} thinks their ${hand} hand is holding ${theirId}'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
-        );
+        throw new SnazzyError([
+          { dancerId: id },
+          ` thinks their ${hand} hand is holding `,
+          { dancerId: theirId },
+          `'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
+        ]);
     }
   }
   return state;
@@ -555,22 +606,40 @@ export function setLabel(
   const { dir: dancerDir, role: dancerRole } = parseDancerId(dancerId);
 
   if (projectDancerIdToProtoId(dancerId) === protoId) {
-    throw new Error(
-      `Cannot set ${label} of ${protoId} to ${dancerId} (same proto)`,
-    );
+    throw new SnazzyError([
+      "Cannot set ",
+      { cid: label },
+      " of ",
+      { dancerId: protoId },
+      " to ",
+      { dancerId },
+      " (same proto)",
+    ]);
   }
 
   if (dancerRole === protoRole) {
-    throw new Error(
-      `Cannot set ${label} of ${protoId} to ${dancerId} (same role)`,
-    );
+    throw new SnazzyError([
+      "Cannot set ",
+      { cid: label },
+      " of ",
+      { dancerId: protoId },
+      " to ",
+      { dancerId },
+      " (same role)",
+    ]);
   }
 
   if (label === "neighbor") {
     if (dancerDir === protoDir) {
-      throw new Error(
-        `Cannot set ${label} of ${protoId} to ${dancerId} (same progression direction)`,
-      );
+      throw new SnazzyError([
+        "Cannot set ",
+        { cid: label },
+        " of ",
+        { dancerId: protoId },
+        " to ",
+        { dancerId },
+        " (same progression direction)",
+      ]);
     }
     state[protoId].labels[label] = dancerId;
     state[flipRole(protoId)].labels[label] = flipRole(dancerId);
@@ -585,21 +654,38 @@ export function setLabel(
 
   if (parses(ShadowLabelSchema, label)) {
     if (protoDir !== dancerDir) {
-      throw new Error(
-        `Cannot set shadow "${label}" of ${protoId} to ${dancerId} (different progression direction)`,
-      );
+      throw new SnazzyError([
+        "Cannot set ",
+        { cid: label },
+        " of ",
+        { dancerId: protoId },
+        " to ",
+        { dancerId },
+        " (different progression direction)",
+      ]);
     }
     const existingShadow = state[protoId].labels[label];
     if (existingShadow && existingShadow !== dancerId) {
-      throw new Error(
-        `Shadows should never change: ${protoId} already has shadow ${existingShadow}, can't set to ${dancerId}`,
-      );
+      throw new SnazzyError([
+        "Shadows should never change: ",
+        { dancerId: protoId },
+        " already has ",
+        { cid: label },
+        ` ${existingShadow}, can't set to `,
+        { dancerId },
+      ]);
     }
 
     if (getOffset(dancerId) === getOffset(protoId)) {
-      throw new Error(
-        `${protoId} should know ${dancerId} as their partner, not their ${label}`,
-      );
+      throw new SnazzyError([
+        { dancerId: protoId },
+        " should know ",
+        { dancerId },
+        " as their ",
+        { cid: "partner" },
+        ", not their ",
+        { cid: label },
+      ]);
     }
     state[protoId].labels[label] = dancerId;
     state[flipRole(protoId)].labels[label] = flipOffset(flipRole(dancerId));

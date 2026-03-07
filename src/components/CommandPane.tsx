@@ -19,6 +19,7 @@ import {
   Fragment,
   memo,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -26,7 +27,7 @@ import {
 } from "react";
 import { z } from "zod";
 
-import type { ProtoId } from "../contraCore";
+import { projectDancerIdToProtoId, type ProtoId } from "../contraCore";
 import { sortedExampleDances } from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
@@ -50,6 +51,7 @@ import {
   resolveInitFormation,
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
+import type { SnazzySegment } from "../snazzyError";
 import { assertNever, indexOf } from "../utils";
 import { type Dancer, WorldStateSchema } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
@@ -95,7 +97,48 @@ import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
+import {
+  CalledIdentifierHighlightContext,
+  DancerHighlightContext,
+} from "./RelationshipHighlightContext";
 import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
+
+function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
+  const highlightRel = useContext(CalledIdentifierHighlightContext);
+  const highlightDancer = useContext(DancerHighlightContext);
+
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (typeof seg === "string") return <Fragment key={i}>{seg}</Fragment>;
+        if ("dancerId" in seg) {
+          return (
+            <span
+              key={i}
+              className="snazzy-dancer"
+              onMouseEnter={() =>
+                highlightDancer(projectDancerIdToProtoId(seg.dancerId))
+              }
+              onMouseLeave={() => highlightDancer(null)}
+            >
+              {seg.dancerId}
+            </span>
+          );
+        }
+        return (
+          <span
+            key={i}
+            className="snazzy-cid"
+            onMouseEnter={() => highlightRel(seg.cid)}
+            onMouseLeave={() => highlightRel(null)}
+          >
+            {seg.cid}
+          </span>
+        );
+      })}
+    </>
+  );
+}
 
 export type ActionOptionType = Instruction["type"];
 
@@ -1103,7 +1146,7 @@ export default memo(function CommandPane({
         </div>
         {errorById.has(instr.id) && (
           <div className="instruction-error">
-            {errorById.get(instr.id)!.message}
+            <SnazzyErrorMessage segments={errorById.get(instr.id)!.segments} />
           </div>
         )}
       </InstructionEditContext.Provider>

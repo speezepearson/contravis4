@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { averageFrames, shiftFrameByProgression } from "./averageFrames";
 import CommandPane from "./components/CommandPane";
-import { CalledIdentifierHighlightContext } from "./components/RelationshipHighlightContext";
+import {
+  CalledIdentifierHighlightContext,
+  DancerHighlightContext,
+} from "./components/RelationshipHighlightContext";
 import { Renderer } from "./components/Renderer";
 import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { exportGif } from "./exportGif";
@@ -200,6 +203,10 @@ export default function App() {
   const highlightedRelRef = useRef<CalledIdentifier | null>(null);
   const highlightRelRafRef = useRef(0);
 
+  // Dancer highlight from snazzy errors: ref-based to avoid re-renders
+  const highlightedDancerRef = useRef<ProtoId | null>(null);
+  const highlightDancerRafRef = useRef(0);
+
   const lastFrameWarnRef = useRef(0);
 
   const draw = useCallback(() => {
@@ -296,6 +303,12 @@ export default function App() {
         renderer.drawRelationshipLines(lines);
       }
 
+      // Draw dancer highlight ring (from snazzy error hover)
+      const highlightedDancer = highlightedDancerRef.current;
+      if (highlightedDancer) {
+        renderer.drawDancerHighlight(frame[highlightedDancer]);
+      }
+
       // Draw preview keyframes overlay
       if (previewFrames.length > 0) {
         renderer.drawPreviewKeyframes(previewFrames);
@@ -333,6 +346,14 @@ export default function App() {
     },
     [],
   );
+
+  const setHighlightedDancer = useCallback((id: ProtoId | null) => {
+    highlightedDancerRef.current = id;
+    cancelAnimationFrame(highlightDancerRafRef.current);
+    highlightDancerRafRef.current = requestAnimationFrame(() =>
+      drawRef.current(),
+    );
+  }, []);
 
   const downloadGif = useCallback(() => {
     if (!animation) return;
@@ -622,95 +643,102 @@ export default function App() {
     <CalledIdentifierHighlightContext.Provider
       value={setHighlightedRelationship}
     >
-      <div className="app-layout">
-        {localStorageError && (
-          <div className="localstorage-error">
-            <strong>Could not load saved dance from localStorage:</strong>
-            <pre>{localStorageError}</pre>
-            <button onClick={() => setLocalStorageError(null)}>Dismiss</button>
+      <DancerHighlightContext.Provider value={setHighlightedDancer}>
+        <div className="app-layout">
+          {localStorageError && (
+            <div className="localstorage-error">
+              <strong>Could not load saved dance from localStorage:</strong>
+              <pre>{localStorageError}</pre>
+              <button onClick={() => setLocalStorageError(null)}>
+                Dismiss
+              </button>
+            </div>
+          )}
+          <div className="vis-column">
+            <div className="canvas-container" ref={canvasContainerRef}>
+              <canvas ref={canvasRef} />
+            </div>
           </div>
-        )}
-        <div className="vis-column">
-          <div className="canvas-container" ref={canvasContainerRef}>
-            <canvas ref={canvasRef} />
-          </div>
-        </div>
 
-        {/* Desktop sidebar */}
-        <div className="sidebar-column">
-          <div className="sidebar-instructions">
-            <CommandPane {...commandPaneProps} />
+          {/* Desktop sidebar */}
+          <div className="sidebar-column">
+            <div className="sidebar-instructions">
+              <CommandPane {...commandPaneProps} />
+            </div>
+            <div className="sidebar-controls">{desktopControlsBlock}</div>
           </div>
-          <div className="sidebar-controls">{desktopControlsBlock}</div>
-        </div>
 
-        {/* Mobile: compact controls bar */}
-        <div className="mobile-controls">
-          <div className="controls">
-            <button onClick={togglePlay}>
-              {playing ? "\u23F8 Pause" : "\u25B6 Play"}
-            </button>
-            <label>
+          {/* Mobile: compact controls bar */}
+          <div className="mobile-controls">
+            <div className="controls">
+              <button onClick={togglePlay}>
+                {playing ? "\u23F8 Pause" : "\u25B6 Play"}
+              </button>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={looping}
+                  onChange={(e) => setLooping(e.target.checked)}
+                />{" "}
+                Loop
+              </label>
               <input
-                type="checkbox"
-                checked={looping}
-                onChange={(e) => setLooping(e.target.checked)}
-              />{" "}
-              Loop
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={1000}
-              value={scrubberValue}
-              onChange={(e) => scrub(Number(e.target.value))}
-            />
-            <div className="beat-display">Beat {beat.toFixed(1)}</div>
-          </div>
-          <div className="controls">
-            <span className="speed-display">{bpm} BPM</span>
-            <input
-              type="range"
-              min={60}
-              max={120}
-              value={bpm}
-              onChange={(e) => setBpm(Number(e.target.value))}
-            />
-          </div>
-          <div className="controls">
-            <span className="speed-display">
-              Smooth {smoothness.toFixed(1)}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={2}
-              step={0.1}
-              value={smoothness}
-              onChange={(e) => setSmoothness(Number(e.target.value))}
-            />
-          </div>
-          <button onClick={downloadGif} disabled={exporting || !animation}>
-            {exporting ? "..." : "GIF"}
-          </button>
-          <button className="drawer-toggle" onClick={() => setDrawerOpen(true)}>
-            {"\u25B2 Edit Instructions"}
-          </button>
-        </div>
-
-        {/* Mobile: full-screen instruction editor */}
-        {drawerOpen && (
-          <div className="instruction-drawer open">
+                type="range"
+                min={0}
+                max={1000}
+                value={scrubberValue}
+                onChange={(e) => scrub(Number(e.target.value))}
+              />
+              <div className="beat-display">Beat {beat.toFixed(1)}</div>
+            </div>
+            <div className="controls">
+              <span className="speed-display">{bpm} BPM</span>
+              <input
+                type="range"
+                min={60}
+                max={120}
+                value={bpm}
+                onChange={(e) => setBpm(Number(e.target.value))}
+              />
+            </div>
+            <div className="controls">
+              <span className="speed-display">
+                Smooth {smoothness.toFixed(1)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={2}
+                step={0.1}
+                value={smoothness}
+                onChange={(e) => setSmoothness(Number(e.target.value))}
+              />
+            </div>
+            <button onClick={downloadGif} disabled={exporting || !animation}>
+              {exporting ? "..." : "GIF"}
+            </button>
             <button
               className="drawer-toggle"
-              onClick={() => setDrawerOpen(false)}
+              onClick={() => setDrawerOpen(true)}
             >
-              {"\u25BC Back to Visualization"}
+              {"\u25B2 Edit Instructions"}
             </button>
-            <CommandPane {...commandPaneProps} />
           </div>
-        )}
-      </div>
+
+          {/* Mobile: full-screen instruction editor */}
+          {drawerOpen && (
+            <div className="instruction-drawer open">
+              <button
+                className="drawer-toggle"
+                onClick={() => setDrawerOpen(false)}
+              >
+                {"\u25BC Back to Visualization"}
+              </button>
+              <CommandPane {...commandPaneProps} />
+            </div>
+          )}
+        </div>
+      </DancerHighlightContext.Provider>
     </CalledIdentifierHighlightContext.Provider>
   );
 }
