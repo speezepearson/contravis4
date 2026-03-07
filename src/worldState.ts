@@ -411,12 +411,12 @@ export class Dancer {
   /** Resolves this dancer's "match" for a figure where dancers pair up. */
   resolveMatch(
     cid: CalledIdentifier,
-    { roles, ...opts }: ResolveCalledIdentifierOpts = {},
+    opts: ResolveCalledIdentifierOpts = {},
   ): Dancer {
-    const res = this.resolveCalledIdentifier(cid, { roles, ...opts });
+    const res = this.resolveCalledIdentifier(cid, opts);
     if (!res)
       throw new SnazzyError([{ dancerId: this.id }, " can't find ", { cid }]);
-    const symm = res.resolveCalledIdentifier(cid, { roles, ...opts });
+    const symm = res.resolveCalledIdentifier(cid, opts);
     if (!symm)
       throw new SnazzyError([{ dancerId: res.id }, " can't find ", { cid }]);
     if (symm.id !== this.id)
