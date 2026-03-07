@@ -37,36 +37,36 @@ export const bendTheLineSegments: InstructionAnimator<
   return [
     {
       dur: instr.beats,
-      position: (id, frac, segInit) => {
-        const line = shortLines[id];
-        const idx = must(indexOf(line, id as DancerId));
+      position: (dancer, frac) => {
+        const line = shortLines[dancer.protoId];
+        const idx = must(indexOf(line, dancer.protoId as DancerId));
         if (idx === 0) {
           // Left end: arc CW around neighbor
-          const center = Dancer.get(line[1], segInit).pos;
-          return revolve(segInit[id].pos, {
+          const center = Dancer.get(line[1], dancer.state).pos;
+          return revolve(dancer.pos, {
             around: center,
             radians: (-PI / 2) * frac,
           });
         } else if (idx === 3) {
           // Right end: arc CCW around neighbor
-          const center = Dancer.get(line[2], segInit).pos;
-          return revolve(segInit[id].pos, {
+          const center = Dancer.get(line[2], dancer.state).pos;
+          return revolve(dancer.pos, {
             around: center,
             radians: (PI / 2) * frac,
           });
         }
-        return segInit[id].pos;
+        return dancer.pos;
       },
-      facing: (id, frac, segInit) => {
-        const line = shortLines[id];
-        const idx = must(indexOf(line, id));
+      facing: (dancer, frac) => {
+        const line = shortLines[dancer.protoId];
+        const idx = must(indexOf(line, dancer.protoId));
         // Left pair rotates CW, right pair rotates CCW
         const radians = idx <= 1 ? -PI / 2 : PI / 2;
-        return segInit[id].facing.rotateByRadians(radians * frac);
+        return dancer.facing.rotateByRadians(radians * frac);
       },
-      interactedWith: (id) => {
-        const line = shortLines[id];
-        const idx = must(indexOf(line, id));
+      interactedWith: (dancer) => {
+        const line = shortLines[dancer.protoId];
+        const idx = must(indexOf(line, dancer.protoId));
         // Left pair (0,1) and right pair (2,3) bend together
         return [line[idx ^ 1]];
       },

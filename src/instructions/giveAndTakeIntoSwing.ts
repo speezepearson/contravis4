@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-import {
-  ALL_PROTO_IDS,
-  parseProtoId,
-  type ProtoId,
-  RoleSchema,
-} from "../contraCore";
+import { ALL_PROTO_IDS, parseProtoId, RoleSchema } from "../contraCore";
 import { getDir } from "../geometry";
 import { must } from "../utils";
 import { buildProtoRecord, Dancer, getDancerSide } from "../worldState";
@@ -88,9 +83,9 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 
   const approachSegment = {
     dur: approachDur,
-    position: linearTo((id) => plans[id].postApproach.pos),
-    facing: lerpFacingTo((id) => plans[id].postApproach.facing),
-    interactedWith: (id: ProtoId) => [matches[id]],
+    position: linearTo((dancer) => plans[dancer.protoId].postApproach.pos),
+    facing: lerpFacingTo((dancer) => plans[dancer.protoId].postApproach.facing),
+    interactedWith: (dancer: Dancer) => [matches[dancer.protoId]],
   };
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);

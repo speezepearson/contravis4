@@ -95,13 +95,13 @@ export function makeHalfPoussetteArcPosition(
     return ellipsePosition(start, end, semiMinorCw, PI * frac);
   };
 
-  return (id, frac, segInit) => {
-    if (getRole(id) === backerRole) {
-      return getBackerPos(id, frac);
+  return (dancer, frac) => {
+    if (getRole(dancer.protoId) === backerRole) {
+      return getBackerPos(dancer.protoId, frac);
     }
-    const backerProto = nonBackerToBacker.get(id)!;
-    const displacement = segInit[id].pos
-      .subtract(segInit[backerProto].pos)
+    const backerProto = nonBackerToBacker.get(dancer.protoId)!;
+    const displacement = dancer.pos
+      .subtract(Dancer.get(backerProto, dancer.state).pos)
       .multiply(1 - frac * (1 - frac));
     const backerNow = getBackerPos(backerProto, frac);
     return backerNow.add(displacement);
@@ -129,8 +129,11 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 
   const afterSetup = advanceState([setupSegment], init, who);
 
-  const handsFn = (id: ProtoId) =>
-    hold(["left", matches[id], "right"], ["right", matches[id], "left"]);
+  const handsFn = (dancer: Dancer) =>
+    hold(
+      ["left", matches[dancer.protoId], "right"],
+      ["right", matches[dancer.protoId], "left"],
+    );
 
   const halfBeats = instr.full ? instr.beats / 2 : instr.beats;
 
@@ -144,7 +147,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
       who,
     ),
     hands: handsFn,
-    interactedWith: (id) => [matches[id]],
+    interactedWith: (dancer) => [matches[dancer.protoId]],
   };
 
   if (!instr.full) {

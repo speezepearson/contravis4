@@ -41,7 +41,7 @@ export const petronellaSegments: InstructionAnimator<PetronellaInstruction> = (
   return [
     {
       dur: instr.beats,
-      position: linearTo((id) => targets[id].targetPos),
+      position: linearTo((dancer) => targets[dancer.protoId].targetPos),
       facing: rotateFacingBy((id) => targets[id].cwAngle),
       hands: () => ({}),
     },

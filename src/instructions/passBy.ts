@@ -27,10 +27,10 @@ export const passBySegments: InstructionAnimator<PassByInstruction> = (
       semiMinor: 0.25 * { left: -1, right: 1 }[instr.hand],
       phi: PI,
     }),
-    facing: (id, _frac, segInit) => {
-      const them = resolveMatch(Dancer.get(id, segInit), instr.cid);
-      return Dancer.get(them, segInit)
-        .pos.subtract(segInit[id].pos)
+    facing: (dancer) => {
+      const them = resolveMatch(dancer, instr.cid);
+      return Dancer.get(them, dancer.state)
+        .pos.subtract(dancer.pos)
         .normalize();
     },
     hands: () => ({}),

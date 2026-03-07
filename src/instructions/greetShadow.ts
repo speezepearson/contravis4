@@ -25,8 +25,10 @@ export const greetShadowSegments: InstructionAnimator<
 > = (instr) => [
   {
     dur: 0,
-    labels: (id, _frac, segInit) => {
-      const theirId = must(resolveCalledIdentifier(id, instr.cid, segInit));
+    labels: (dancer, _frac) => {
+      const theirId = must(
+        resolveCalledIdentifier(dancer.id, instr.cid, dancer.state),
+      );
       return [[instr.label, theirId]];
     },
   },

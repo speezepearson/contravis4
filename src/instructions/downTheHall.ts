@@ -61,8 +61,8 @@ export function theHallSegments(
     // Walk down/up the hall
     {
       dur: instr.beats,
-      position: (id, frac, segInit) =>
-        segInit[id].pos.add(dir.multiply(instr.distance * frac)),
+      position: (dancer, frac) =>
+        dancer.pos.add(dir.multiply(instr.distance * frac)),
     },
   ];
 }

@@ -31,12 +31,14 @@ export const balanceTheRingSegments: InstructionAnimator<
   return [
     {
       dur: halfBeats,
-      position: linearTo((id) => init[id].pos.add(centers[id]).divide(2)),
-      interactedWith: (id) => rings[id].slice(1),
+      position: linearTo((dancer) =>
+        init[dancer.protoId].pos.add(centers[dancer.protoId]).divide(2),
+      ),
+      interactedWith: (dancer) => rings[dancer.protoId].slice(1),
     },
     {
       dur: halfBeats,
-      position: linearTo((id) => init[id].pos),
+      position: linearTo((dancer) => init[dancer.protoId].pos),
     },
   ];
 };

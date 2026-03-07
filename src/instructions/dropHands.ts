@@ -27,14 +27,20 @@ export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
       return [
         {
           dur: 0,
-          hands: (id) => ({ left: undefined, right: init[id].hands.right }),
+          hands: (dancer) => ({
+            left: undefined,
+            right: init[dancer.protoId].hands.right,
+          }),
         },
       ];
     case "right":
       return [
         {
           dur: 0,
-          hands: (id) => ({ right: undefined, left: init[id].hands.left }),
+          hands: (dancer) => ({
+            right: undefined,
+            left: init[dancer.protoId].hands.left,
+          }),
         },
       ];
     case "both":
@@ -44,14 +50,14 @@ export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
       return [
         {
           dur: 0,
-          hands: (id, _frac, segInit) => {
+          hands: (dancer) => {
             const matchId = resolveMatch(
-              Dancer.get(id, segInit),
+              dancer,
               instr.which as CalledIdentifier,
             );
-            const result: (typeof segInit)[typeof id]["hands"] = {};
+            const result: Dancer["hands"] = {};
             for (const hand of ALL_HANDS) {
-              const existing = segInit[id].hands[hand];
+              const existing = dancer.hands[hand];
               if (existing && existing.theirId !== matchId) {
                 result[hand] = existing;
               }

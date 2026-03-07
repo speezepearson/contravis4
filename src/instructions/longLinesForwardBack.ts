@@ -143,28 +143,28 @@ export const longLinesForwardBackSegments: InstructionAnimator<
     // Walk forward: take inside hands, move to x=±0.2, y=assigned slot
     {
       dur: halfBeats,
-      position: linearTo((id) => {
-        const x = Math.sign(init[id].pos.x) * 0.2;
-        return new Vector(x, yTargets.get(id)!);
+      position: linearTo((dancer) => {
+        const x = Math.sign(init[dancer.protoId].pos.x) * 0.2;
+        return new Vector(x, yTargets.get(dancer.protoId)!);
       }),
-      facing: lerpFacingTo((id, segInit) =>
+      facing: lerpFacingTo((dancer) =>
         must(
-          resolveCardinalDirection("across", segInit[id].pos),
-          `[long lines forward and back] dancer ${id} is too close to the middle, can't tell which way they should move`,
+          resolveCardinalDirection("across", dancer.pos),
+          `[long lines forward and back] dancer ${dancer.protoId} is too close to the middle, can't tell which way they should move`,
         ),
       ),
-      hands: (id) =>
+      hands: (dancer) =>
         hold(
-          ["left", leftPartners.get(id)!, "right"],
-          ["right", rightPartners.get(id)!, "left"],
+          ["left", leftPartners.get(dancer.protoId)!, "right"],
+          ["right", rightPartners.get(dancer.protoId)!, "left"],
         ),
     },
     // Step back out: x=±0.5, keep y, keep hands
     {
       dur: halfBeats,
-      position: linearTo((id, segInit) => {
-        const x = Math.sign(segInit[id].pos.x) * 0.5;
-        return new Vector(x, segInit[id].pos.y);
+      position: linearTo((dancer) => {
+        const x = Math.sign(dancer.pos.x) * 0.5;
+        return new Vector(x, dancer.pos.y);
       }),
     },
   ];

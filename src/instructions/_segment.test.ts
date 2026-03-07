@@ -16,8 +16,7 @@ describe("makeAnimation", () => {
     const segments: Segment[] = [
       {
         dur: 4,
-        position: (id, frac, segInit) =>
-          segInit[id].pos.add(new Vector(frac, 0)),
+        position: (dancer, frac) => dancer.pos.add(new Vector(frac, 0)),
       },
       {
         dur: 0,

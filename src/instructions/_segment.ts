@@ -35,36 +35,23 @@ export type InstructionAnimator<T> = (
   who: ReadonlySet<ProtoId>,
 ) => Segment[];
 
-/** Per-dancer position function: given dancer id, progress fraction [0,1], and segment initial state, returns position. */
-export type PositionFn = (
-  id: ProtoId,
-  frac: number,
-  segInit: WorldState,
-) => Vector;
+/** Per-dancer position function: given dancer (bound to segInit state) and progress fraction [0,1], returns position. */
+export type PositionFn = (dancer: Dancer, frac: number) => Vector;
 
 /** Per-dancer facing function: same signature, returns facing unit vector. */
-export type FacingFn = (
-  id: ProtoId,
-  frac: number,
-  segInit: WorldState,
-) => Vector;
+export type FacingFn = (dancer: Dancer, frac: number) => Vector;
 
 /** Per-dancer labels function: overwrites *just the returned labels*, leaving others unchanged. */
 export type LabelsFn = (
-  id: ProtoId,
+  dancer: Dancer,
   frac: number,
-  segInit: WorldState,
 ) => Array<[SettableLabel, DancerId]>;
 
 /** Per-dancer hands function: overwrites *all* the dancer's hands, leaving unmentioned hands unattached. */
-export type HandsFn = (
-  id: ProtoId,
-  frac: number,
-  segInit: WorldState,
-) => Dancer["hands"];
+export type HandsFn = (dancer: Dancer, frac: number) => Dancer["hands"];
 
 /** Per-dancer recents function: returns a list of dancers that a dancer interacted with in this segment. */
-export type InteractedWithFn = (id: ProtoId, segInit: WorldState) => DancerId[];
+export type InteractedWithFn = (dancer: Dancer) => DancerId[];
 
 /** A single phase of an animation. */
 export type Segment = {
@@ -87,21 +74,23 @@ function applySegment(
 ): WorldState {
   const withoutLabels = produce(init, (draft) => {
     for (const id of who) {
-      if (segment.position) draft[id].pos = segment.position(id, frac, init);
-      if (segment.facing) draft[id].facing = segment.facing(id, frac, init);
+      const d = Dancer.get(id, init);
+      if (segment.position) draft[id].pos = segment.position(d, frac);
+      if (segment.facing) draft[id].facing = segment.facing(d, frac);
     }
     for (const id of who) {
+      const d = Dancer.get(id, init);
       if (segment.hands) {
         draft[id].hands = {};
-        draft[id].hands = segment.hands(id, frac, init);
+        draft[id].hands = segment.hands(d, frac);
       }
       if (segment.labels) {
-        for (const [label, theirId] of segment.labels(id, frac, init)) {
+        for (const [label, theirId] of segment.labels(d, frac)) {
           setLabel(draft, id, label, theirId);
         }
       }
       if (segment.interactedWith) {
-        const newRecents = segment.interactedWith(id, init);
+        const newRecents = segment.interactedWith(d);
         draft[id].recents = [
           ...newRecents,
           ...draft[id].recents.filter((i) => !newRecents.includes(i)),
@@ -114,7 +103,7 @@ function applySegment(
   const labelFn = segment.labels;
   const possibleResults = [...who].map((id) =>
     produce(withoutLabels, (draft) => {
-      for (const [label, theirId] of labelFn(id, 1, init)) {
+      for (const [label, theirId] of labelFn(Dancer.get(id, init), 1)) {
         setLabel(draft, id, label, theirId);
       }
     }),
@@ -212,13 +201,11 @@ export function addPositionDrift(
     const origPosition = seg.position;
     return {
       ...seg,
-      position: (id: ProtoId, frac: number, segInit: WorldState): Vector => {
+      position: (dancer: Dancer, frac: number): Vector => {
         const globalFrac =
           totalDur > 0 ? (segStart + frac * seg.dur) / totalDur : 1;
-        const base = origPosition
-          ? origPosition(id, frac, segInit)
-          : segInit[id].pos;
-        return base.add(drift(id, globalFrac));
+        const base = origPosition ? origPosition(dancer, frac) : dancer.pos;
+        return base.add(drift(dancer.protoId, globalFrac));
       },
     };
   });
@@ -235,12 +222,12 @@ export function makeImmediateSegment(
   });
   return {
     dur: 0,
-    position: (id) => final[id].pos,
-    facing: (id) => final[id].facing,
-    hands: (id) => final[id].hands,
-    labels: (id) => {
+    position: (dancer) => final[dancer.protoId].pos,
+    facing: (dancer) => final[dancer.protoId].facing,
+    hands: (dancer) => final[dancer.protoId].hands,
+    labels: (dancer) => {
       const entries: Array<[SettableLabel, DancerId]> = [];
-      for (const [l, v] of Object.entries(final[id].labels)) {
+      for (const [l, v] of Object.entries(final[dancer.protoId].labels)) {
         const settable = SettableLabelSchema.safeParse(l);
         if (!settable.success) continue;
         if (v) entries.push([settable.data, v]);
@@ -257,10 +244,10 @@ export function arc(
   cid: CalledIdentifier,
   opts: { semiMinor: number; phi: number },
 ): PositionFn {
-  return (id, frac, segInit) => {
-    const themId = resolveMatch(Dancer.get(id, segInit), cid);
-    const start = segInit[id].pos;
-    const end = Dancer.get(themId, segInit).pos;
+  return (dancer, frac) => {
+    const themId = resolveMatch(dancer, cid);
+    const start = dancer.pos;
+    const end = Dancer.get(themId, dancer.state).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
   };
 }
@@ -271,23 +258,21 @@ export function orbit(
   opts: { radians: number },
   who?: ReadonlySet<ProtoId>,
 ): PositionFn {
-  return (id, frac, segInit) => {
-    if (who && !who.has(id)) return segInit[id].pos;
-    const myPos = segInit[id].pos;
-    const themId = matches.get(id);
+  return (dancer, frac) => {
+    if (who && !who.has(dancer.protoId)) return dancer.pos;
+    const myPos = dancer.pos;
+    const themId = matches.get(dancer.protoId);
     if (!themId) return myPos;
-    const theirPos = Dancer.get(themId, segInit).pos;
+    const theirPos = Dancer.get(themId, dancer.state).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
   };
 }
 
 /** Linear interpolation to a target position. */
-export function linearTo(
-  target: (id: ProtoId, segInit: WorldState) => Vector,
-): PositionFn {
-  return (id, frac, segInit) => {
-    return lerpVectors(segInit[id].pos, target(id, segInit), frac);
+export function linearTo(target: (dancer: Dancer) => Vector): PositionFn {
+  return (dancer, frac) => {
+    return lerpVectors(dancer.pos, target(dancer), frac);
   };
 }
 
@@ -295,7 +280,7 @@ export function linearTo(
 
 /** Lerp facing toward a target direction via the short arc (or forced direction). */
 export function lerpFacingTo(
-  target: (id: ProtoId, segInit: WorldState) => Vector,
+  target: (dancer: Dancer) => Vector,
   {
     forceDir,
     forceDirTolerance = 0.1,
@@ -305,10 +290,10 @@ export function lerpFacingTo(
   } = {},
   who?: ReadonlySet<ProtoId>,
 ): FacingFn {
-  return (id, frac, segInit) => {
-    if (who && !who.has(id)) return segInit[id].facing;
-    return lerpFacingVec(segInit[id].facing, target(id, segInit), frac, {
-      forceDir: forceDir?.(id),
+  return (dancer, frac) => {
+    if (who && !who.has(dancer.protoId)) return dancer.facing;
+    return lerpFacingVec(dancer.facing, target(dancer), frac, {
+      forceDir: forceDir?.(dancer.protoId),
       forceDirTolerance,
     });
   };
@@ -316,8 +301,8 @@ export function lerpFacingTo(
 
 /** Rotate facing by a fixed number of radians over the segment. */
 export function rotateFacingBy(radiansFn: (id: ProtoId) => number): FacingFn {
-  return (id, frac, segInit) => {
-    return segInit[id].facing.rotateByRadians(radiansFn(id) * frac);
+  return (dancer, frac) => {
+    return dancer.facing.rotateByRadians(radiansFn(dancer.protoId) * frac);
   };
 }
 

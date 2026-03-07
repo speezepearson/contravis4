@@ -18,8 +18,8 @@ export type FaceInstruction = z.infer<typeof FaceInstructionSchema>;
 export const faceSegments: InstructionAnimator<FaceInstruction> = (instr) => [
   {
     dur: instr.beats,
-    facing: (id, _frac, segInit) => {
-      return resolveCalledDirection(id, instr.direction, segInit);
+    facing: (dancer, _frac) => {
+      return resolveCalledDirection(dancer.id, instr.direction, dancer.state);
     },
   },
 ];
