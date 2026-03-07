@@ -178,7 +178,15 @@ export function makeDefaultInstruction(
           rotations: 1,
         };
       case "square_through":
-        return { id, type: "square_through", beats: 8 };
+        return {
+          id,
+          type: "square_through",
+          beats: 8,
+          nPullBys: 4,
+          firstHand: "right",
+          cid1: "neighbor",
+          cid2: "person_in_front",
+        };
       case "split":
         return { id, type: "split", by: "role", larks: [], robins: [] };
       case "step":

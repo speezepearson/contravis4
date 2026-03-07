@@ -11,60 +11,74 @@ import {
 
 const allProtos = ALL_PROTO_IDS_SET;
 
-const instr: SquareThroughInstruction = {
+const baseInstr = {
   id: "00000000-0000-0000-0000-000000000001",
+  type: "square_through" as const,
+  firstHand: "right" as const,
+  cid1: "neighbor" as const,
+  cid2: "person_in_front" as const,
+};
+
+const instr4: SquareThroughInstruction = {
+  ...baseInstr,
   beats: 8,
-  type: "square_through",
+  nPullBys: 4,
+};
+
+const instr3: SquareThroughInstruction = {
+  ...baseInstr,
+  beats: 6,
+  nPullBys: 3,
+};
+
+const instr2: SquareThroughInstruction = {
+  ...baseInstr,
+  beats: 8,
+  nPullBys: 2,
 };
 
 describe("squareThrough", () => {
-  it("segment durations sum to total beats", () => {
-    const init = initFormationStates.improper;
-    const segments = squareThroughSegments(instr, init, allProtos);
-    const totalDur = segments.reduce((sum, s) => sum + s.dur, 0);
-    expect(totalDur).toBe(8);
-  });
+  describe.each([
+    { label: "n=4", instr: instr4 },
+    { label: "n=3", instr: instr3 },
+    { label: "n=2", instr: instr2 },
+  ])("$label", ({ instr }) => {
+    it("segment durations sum to total beats", () => {
+      const init = initFormationStates.improper;
+      const segments = squareThroughSegments(instr, init, allProtos);
+      const totalDur = segments.reduce((sum, s) => sum + s.dur, 0);
+      expect(totalDur).toBe(instr.beats);
+    });
 
-  it("produces a valid animation from improper", () => {
-    const init = initFormationStates.improper;
-    const segments = squareThroughSegments(instr, init, allProtos);
+    it("produces a valid animation from improper", () => {
+      const init = initFormationStates.improper;
+      const segments = squareThroughSegments(instr, init, allProtos);
 
-    // Should not throw when building and evaluating the animation
-    const anim = animateSegments(init, allProtos, segments);
-    expect(anim.dur).toBe(8);
+      const anim = animateSegments(init, allProtos, segments);
+      expect(anim.dur).toBe(instr.beats);
 
-    // Sample frames across the animation — should not throw
-    for (let t = 0; t <= anim.dur; t += 0.5) {
-      anim.getFrame(t);
-    }
-  });
+      for (let t = 0; t <= anim.dur; t += 0.5) {
+        anim.getFrame(t);
+      }
+    });
 
-  it("ends with all dancers having swapped across and progressed along set", () => {
-    const init = initFormationStates.improper;
-    const segments = squareThroughSegments(instr, init, allProtos);
+    it("ends with all dancers having moved from starting position", () => {
+      const init = initFormationStates.improper;
+      const segments = squareThroughSegments(instr, init, allProtos);
 
-    // Thread through all segments to get final state
-    let state: WorldState = init;
-    for (const seg of segments) {
-      state = getSegmentFrameAtFrac(seg, state, allProtos, 1);
-    }
+      let state: WorldState = init;
+      for (const seg of segments) {
+        state = getSegmentFrameAtFrac(seg, state, allProtos, 1);
+      }
 
-    // After square through from improper:
-    // 1. Face across: all face EAST/WEST toward center
-    // 2. Take right hands + balance + pull by right: dancers swap across the set
-    // 3. Turn larks_right_robins_left: all face up/down the set
-    // 4. Pull by left: dancers pass the person in front along the set
-    //
-    // up_lark_0: (-0.5,-0.5) → across to (0.5,-0.5) → pull by left south to (0.5, -1.5)?
-    // Actually the exact positions depend on pull-by arc endpoints.
-    // Just verify they moved from their starting positions.
-    for (const id of ALL_PROTO_IDS) {
-      const moved =
-        Math.abs(state[id].pos.x - init[id].pos.x) > 0.1 ||
-        Math.abs(state[id].pos.y - init[id].pos.y) > 0.1;
-      expect(moved, `${id} should have moved from starting position`).toBe(
-        true,
-      );
-    }
+      for (const id of ALL_PROTO_IDS) {
+        const moved =
+          Math.abs(state[id].pos.x - init[id].pos.x) > 0.1 ||
+          Math.abs(state[id].pos.y - init[id].pos.y) > 0.1;
+        expect(moved, `${id} should have moved from starting position`).toBe(
+          true,
+        );
+      }
+    });
   });
 });

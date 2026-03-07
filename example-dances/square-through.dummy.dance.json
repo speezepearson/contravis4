@@ -6,12 +6,20 @@
     {
       "id": "e927993b-3243-4c47-820d-be321715a023",
       "beats": 8,
-      "type": "square_through"
+      "type": "square_through",
+      "nPullBys": 4,
+      "firstHand": "right",
+      "cid1": "neighbor",
+      "cid2": "person_in_front"
     },
     {
       "id": "623181bf-a1fe-4a13-8a2e-613a4b4340eb",
       "beats": 8,
-      "type": "square_through"
+      "type": "square_through",
+      "nPullBys": 4,
+      "firstHand": "right",
+      "cid1": "neighbor",
+      "cid2": "person_in_front"
     }
   ]
 }
