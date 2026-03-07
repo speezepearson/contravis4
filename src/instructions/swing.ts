@@ -1,28 +1,19 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import {
-  ALL_PROTO_IDS,
-  type Beats,
-  isLark,
-  isRobin,
-  type ProtoId,
-} from "../contraCore";
+import { ALL_PROTO_IDS, type Beats, isLark, type ProtoId } from "../contraCore";
 import {
   ccwRadsBetween,
   getDir,
-  getDist,
   lerpFacing,
-  NORTH,
   revolve,
   TWO_PI,
 } from "../geometry";
-import { getSide, indexOf, lerpVectors, must, safeThreshold } from "../utils";
+import { getSide, lerpVectors, must } from "../utils";
 import {
   avgPos,
   buildProtoRecord,
   Dancer,
-  findNearbyDancers,
   type WorldState,
 } from "../worldState";
 import {
@@ -32,6 +23,7 @@ import {
   resolveCardinalDirection,
   resolveMatches,
 } from "./_base";
+import { fudgeToAlignY } from "./_fudge";
 import {
   addPositionDrift,
   type HandsFn,
@@ -203,79 +195,21 @@ export function makeSwingSegments(
   switch (instr.endFacing) {
     case "across":
     case "out": {
-      // Empirically, ~every "swing, end facing across/out" instruction I've heard
-      // has had *everybody* swinging, and ending with every pair facing across to another pair.
-      const westSwingers = ALL_PROTO_IDS.filter(
-        (id) =>
-          must(
-            getSide(plans[id].center),
-            `[swing] dancer ${id}'s swing center is too close to the center line`,
-          ) === "west",
-      );
-      const eastSwingers = ALL_PROTO_IDS.filter(
-        (id) =>
-          must(
-            getSide(plans[id].center),
-            `[swing] dancer ${id}'s swing center is too close to the center line`,
-          ) === "east",
-      );
-      if (westSwingers.length !== eastSwingers.length) {
-        throw new Error(
-          `[swing end facing across/out] expected 2 dancers on each side of the set, but got [${westSwingers}] vs [${eastSwingers}]`,
-        );
-      }
-      const [westCoM, eastCoM] = (() => {
-        const westLark = westSwingers.find((id) => isLark(id));
-        const eastRobinProto = eastSwingers.find((id) => isRobin(id));
-        if (!westLark || !eastRobinProto) {
-          throw new Error(
-            `[swing end facing across/out] expected one lark and one robin on each side of the set, but got [${westSwingers}] vs [${eastSwingers}]`,
-          );
-        }
-
-        const [er0, er1] = findNearbyDancers(plans[westLark].center, init)[
-          eastRobinProto
-        ];
-        const wlcom = plans[westLark].center;
-        const er0Com = plans[eastRobinProto].center.add(
-          NORTH.multiply(2 * er0.offset),
-        );
-        const er1Com = plans[eastRobinProto].center.add(
-          NORTH.multiply(2 * er1.offset),
-        );
-        try {
-          return must(
-            safeThreshold(getDist(wlcom, er0Com) - getDist(wlcom, er1Com), {
-              neg: [wlcom, er0Com],
-              pos: [wlcom, er1Com],
-            }),
-            `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
-          );
-        } catch {
-          const wlRecents = init[westLark].recents;
-          const er0Recency = indexOf(wlRecents, er0.id) ?? Infinity;
-          const er1Recency = indexOf(wlRecents, er1.id) ?? Infinity;
-          if (er0Recency < er1Recency) return [wlcom, er0Com];
-          if (er1Recency < er0Recency) return [wlcom, er1Com];
-          throw new Error(
-            `[swing end facing across/out] ${westLark} isn't sure which other couple to end up across from; candidates are ${er0.id}, ${er1.id}`,
-          );
-        }
-      })();
-
-      const dy = (eastCoM.y - westCoM.y) / 2;
-
-      const drifts = buildProtoRecord((id) => {
+      // Snap x to exactly ±0.5 (centers of each side of the set).
+      const xDrifts = buildProtoRecord((id) => {
         const center = centers[id];
-        const finalCenter = new Vector(
-          { east: 0.5, west: -0.5 }[must(getSide(center))],
-          center.y + dy * (westSwingers.includes(id) ? 1 : -1),
+        const side = must(
+          getSide(center),
+          `[swing] dancer ${id}'s swing center is too close to the center line`,
         );
-        return finalCenter.subtract(center);
+        return { east: 0.5, west: -0.5 }[side] - center.x;
       });
-      return addPositionDrift(segments, (id, globalFrac) =>
-        drifts[id].multiply(globalFrac),
+      const xSnapped = addPositionDrift(
+        segments,
+        (id, globalFrac) => new Vector(xDrifts[id] * globalFrac, 0),
       );
+      // Nudge y so that opposite-role pairs end up directly across.
+      return fudgeToAlignY(xSnapped, init, _who);
     }
   }
 
