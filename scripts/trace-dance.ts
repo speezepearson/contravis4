@@ -108,6 +108,10 @@ for (const [i, instr] of dance.instructions.entries()) {
     console.log(`    ERROR: ${msg}`);
     console.log(`    State at failure:`);
     printState(state);
+    console.log(
+      `\n    (stopping trace — later instructions are meaningless after an error)`,
+    );
+    break;
   }
 
   beat += dur;
