@@ -17,6 +17,7 @@ import {
   TWO_PI,
 } from "../geometry";
 import { IrreducibleLabelSchema } from "../labels";
+import { SnazzyError } from "../snazzyError";
 import type { AssertExtends } from "../utils";
 import { buildProtoRecord, Dancer } from "../worldState";
 import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
@@ -53,15 +54,23 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
       roles: "different",
     });
     if (!rollee) {
-      throw new Error(
-        `${id} has no opposite-role ${instr.rollee} to roll away`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        " has no opposite-role ",
+        { cid: instr.rollee },
+        " to roll away",
+      ]);
     }
     rollerToRollee.set(id, rollee.id);
     if (rolleeToRoller.has(rollee.id)) {
-      throw new Error(
-        `rollers ${rolleeToRoller.get(rollee.id)} and ${id} both grabbed the same rollee ${rollee.id}`,
-      );
+      throw new SnazzyError([
+        "rollers ",
+        { dancerId: rolleeToRoller.get(rollee.id)! },
+        " and ",
+        { dancerId: id },
+        " both grabbed the same rollee ",
+        { dancerId: rollee.id },
+      ]);
     }
     rolleeToRoller.set(rollee.id, id);
   }
@@ -71,7 +80,8 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
       getRole(id) === instr.roller
         ? rollerToRollee.get(id)
         : rolleeToRoller.get(id);
-    if (!res) throw new Error(`dancer ${id} has no match`);
+    if (!res)
+      throw new SnazzyError(["dancer ", { dancerId: id }, " has no match"]);
     return res;
   });
 

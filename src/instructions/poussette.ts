@@ -12,6 +12,7 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { ellipsePosition, PI } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
@@ -70,7 +71,12 @@ export function makeHalfPoussetteArcPosition(
         backerCid,
       );
       if (!found) {
-        throw new Error(`backer ${id} has no dancer ${backerCid}`);
+        throw new SnazzyError([
+          "backer ",
+          { dancerId: id },
+          " has no dancer ",
+          backerCid,
+        ]);
       }
       arcDests.set(id, {
         start: state[id].pos,

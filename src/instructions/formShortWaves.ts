@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, getRole } from "../contraCore";
 import { resolveShortLines } from "../formations";
 import { NORTH, SOUTH } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
 import { connectHands, Dancer } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
@@ -36,9 +37,14 @@ export const formShortWavesSegments: InstructionAnimator<
       const isUp = Dancer.get(line[i], init).facing.y > 0;
       const nextIsUp = Dancer.get(line[i + 1], init).facing.y > 0;
       if (isUp === nextIsUp) {
-        throw new Error(
-          `short waves should have dancers alternating facing up/down, but ${line[i]} and ${line[i + 1]} are both facing ${isUp ? "up" : "down"}`,
-        );
+        throw new SnazzyError([
+          "short waves should have dancers alternating facing up/down, but ",
+          { dancerId: line[i] },
+          " and ",
+          { dancerId: line[i + 1] },
+          " are both facing ",
+          isUp ? "up" : "down",
+        ]);
       }
     }
   }

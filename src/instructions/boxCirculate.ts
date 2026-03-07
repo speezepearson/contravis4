@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
 import { PI, revolve } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { lerpVectors } from "../utils";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
@@ -29,7 +30,7 @@ export const boxCirculateSegments: InstructionAnimator<
     } else if (Dancer.get(id, init).facesAcross()) {
       acrossFacers.push(id);
     } else {
-      throw new Error(`${id} is not facing out or across`);
+      throw new SnazzyError([{ dancerId: id }, " is not facing out or across"]);
     }
   }
   if (!(outFacers.length === 2 && acrossFacers.length === 2)) {
@@ -45,9 +46,10 @@ export const boxCirculateSegments: InstructionAnimator<
         if (outFacers.includes(dancer.protoId)) {
           const match = dancer.resolveCalledIdentifier("person_on_right");
           if (!match)
-            throw new Error(
-              `${dancer.protoId} has nobody on their right to box circulate to`,
-            );
+            throw new SnazzyError([
+              { dancerId: dancer.protoId },
+              " has nobody on their right to box circulate to",
+            ]);
           return revolve(dancer.pos, {
             aroundMidpointWith: match.pos,
             radians: -PI * frac,
@@ -55,9 +57,10 @@ export const boxCirculateSegments: InstructionAnimator<
         } else {
           const match = dancer.resolveCalledIdentifier("person_in_front");
           if (!match)
-            throw new Error(
-              `${dancer.protoId} has nobody in front to box circulate to`,
-            );
+            throw new SnazzyError([
+              { dancerId: dancer.protoId },
+              " has nobody in front to box circulate to",
+            ]);
           return lerpVectors(dancer.pos, match.pos, frac);
         }
       },

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS, type Beats } from "../contraCore";
 import { resolveShortLines } from "../formations";
 import { SOUTH } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
 import { connectHands, Dancer, type WorldState } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
@@ -37,9 +38,13 @@ export function theHallSegments(
     for (const dancerId of shortLines[protoId]) {
       const state = Dancer.get(dancerId, init);
       if (state.facing.dot(dir) < 0.7) {
-        throw new Error(
-          `Dancer ${dancerId} is not facing approximately ${dirName} the hall`,
-        );
+        throw new SnazzyError([
+          "Dancer ",
+          { dancerId },
+          " is not facing approximately ",
+          dirName,
+          " the hall",
+        ]);
       }
     }
   }
@@ -49,7 +54,12 @@ export function theHallSegments(
     makeImmediateSegment(init, (id, draft) => {
       const line = shortLines[id];
       const idx = must(indexOf(line, id));
-      if (idx < 0) throw new Error(`Proto ${id} not found in its short line`);
+      if (idx < 0)
+        throw new SnazzyError([
+          "Proto ",
+          { dancerId: id },
+          " not found in its short line",
+        ]);
       if (idx < 3) {
         const adjId = line[idx + 1];
         const adjState = Dancer.get(adjId, draft);

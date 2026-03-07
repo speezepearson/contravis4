@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
 import { ellipsePosition, TWO_PI } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import {
   CalledIdentifierSchema,
@@ -32,9 +33,12 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
     const myX = init[id].pos.x;
     const theirX = matches[id].pos.x;
     if (Math.sign(myX) !== Math.sign(theirX)) {
-      throw new Error(
-        `${id} and ${matches[id].id} are not on the same side of the set for mad robin`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        " and ",
+        { dancerId: matches[id].id },
+        " are not on the same side of the set for mad robin",
+      ]);
     }
   }
 

@@ -2,6 +2,7 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { type ProtoId } from "../contraCore";
+import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import { Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
@@ -90,7 +91,10 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         ),
       ) < 0.7
     ) {
-      throw new Error(`${id} must face across for long lines forward and back`);
+      throw new SnazzyError([
+        { dancerId: id },
+        " must face across for long lines forward and back",
+      ]);
     }
   }
 
@@ -102,9 +106,10 @@ export const longLinesForwardBackSegments: InstructionAnimator<
       roles: "different",
     });
     if (!left) {
-      throw new Error(
-        `${id} has no opposite-role dancer on their left for long lines forward and back`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        " has no opposite-role dancer on their left for long lines forward and back",
+      ]);
     }
     leftPartners.set(id, left);
 
@@ -112,9 +117,10 @@ export const longLinesForwardBackSegments: InstructionAnimator<
       roles: "different",
     });
     if (!right) {
-      throw new Error(
-        `${id} has no opposite-role dancer on their right for long lines forward and back`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        " has no opposite-role dancer on their right for long lines forward and back",
+      ]);
     }
     rightPartners.set(id, right);
   }

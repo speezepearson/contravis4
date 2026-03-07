@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ALL_PROTO_IDS } from "../contraCore";
 import { resolveShortLines } from "../formations";
 import { PI, revolve } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
@@ -27,9 +28,11 @@ export const bendTheLineSegments: InstructionAnimator<
     const refFacing = Dancer.get(line[0], init).facing;
     for (const dancerId of line) {
       if (Dancer.get(dancerId, init).facing.dot(refFacing) < 0.7) {
-        throw new Error(
-          `Dancers in short line for ${protoId} are not all facing approximately the same direction`,
-        );
+        throw new SnazzyError([
+          "Dancers in short line for ",
+          { dancerId: protoId },
+          " are not all facing approximately the same direction",
+        ]);
       }
     }
   }

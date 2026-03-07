@@ -10,6 +10,7 @@ import {
   type Role,
 } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { getSide, must } from "../utils";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
@@ -45,16 +46,22 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   for (const id of who) {
     const facing = init[id].facing;
     if (Math.abs(facing.y) <= Math.abs(facing.x)) {
-      throw new Error(
-        `[zig zag] dancer ${id} is not facing roughly up or down`,
-      );
+      throw new SnazzyError([
+        "[zig zag] dancer ",
+        { dancerId: id },
+        " is not facing roughly up or down",
+      ]);
     }
     const matchId = matches[id].protoId;
     const matchFacing = init[matchId].facing;
     if (Math.sign(facing.y) !== Math.sign(matchFacing.y)) {
-      throw new Error(
-        `[zig zag] dancer ${id} and ${matchId} face different vertical directions`,
-      );
+      throw new SnazzyError([
+        "[zig zag] dancer ",
+        { dancerId: id },
+        " and ",
+        { dancerId: matchId },
+        " face different vertical directions",
+      ]);
     }
   }
 

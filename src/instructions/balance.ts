@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { getDir } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
@@ -23,9 +24,12 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
       position: linearTo((dancer) => {
         const other = dancer.resolveCalledIdentifier(instr.cid);
         if (!other)
-          throw new Error(
-            `${dancer.protoId} has no ${instr.cid} to balance with`,
-          );
+          throw new SnazzyError([
+            { dancerId: dancer.protoId },
+            " has no ",
+            { cid: instr.cid },
+            " to balance with",
+          ]);
         const dir = getDir({
           from: dancer.pos,
           to: other.pos,

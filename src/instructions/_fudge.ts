@@ -2,6 +2,7 @@ import { Vector } from "vecti";
 
 import { ALL_PROTO_IDS, isLark, isRobin, type ProtoId } from "../contraCore";
 import { getDist } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { getSide, indexOf, must, safeThreshold } from "../utils";
 import { Dancer, findNearbyDancers, type WorldState } from "../worldState";
 import { addPositionDrift, advanceState, type Segment } from "./_segment";
@@ -101,9 +102,13 @@ export function fudgeToAlignY(
       roles: "different",
     });
     if (Math.abs(dancer.pos.y - match.pos.y) > 0.01) {
-      throw new Error(
-        `[fudgeToAlignY] after fudge, ${id} at y=${dancer.pos.y} is not aligned with across-match ${match.id} at y=${match.pos.y}`,
-      );
+      throw new SnazzyError([
+        "[fudgeToAlignY] after fudge, ",
+        { dancerId: id },
+        ` at y=${dancer.pos.y} is not aligned with across-match `,
+        { dancerId: match.id },
+        ` at y=${match.pos.y}`,
+      ]);
     }
   }
 
@@ -144,9 +149,17 @@ function findDyToNearest(
       const recency1 = indexOf(recents, candidate1.id) ?? Infinity;
       if (recency0 < recency1) return candidate0;
       if (recency1 < recency0) return candidate1;
-      throw new Error(
-        `[fudgeToAlignY] ${fromProto} can't determine nearest ${toProto}; candidates ${candidate0.id}, ${candidate1.id} are equidistant and equally recent`,
-      );
+      throw new SnazzyError([
+        "[fudgeToAlignY] ",
+        { dancerId: fromProto },
+        " can't determine nearest ",
+        { dancerId: toProto },
+        "; candidates ",
+        { dancerId: candidate0.id },
+        ", ",
+        { dancerId: candidate1.id },
+        " are equidistant and equally recent",
+      ]);
     }
   })();
 

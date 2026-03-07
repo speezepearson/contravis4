@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ccwRadsBetween, PI } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator } from "./_segment";
@@ -27,9 +28,12 @@ export const turnAsACoupleSegments: InstructionAnimator<
     checked.add(pairKey);
     const angleDiff = Math.abs(ccwRadsBetween(init[id].facing, them.facing));
     if (angleDiff > PI / 4) {
-      throw new Error(
-        `${id} and ${them.id} are not facing the same direction for turn_as_a_couple`,
-      );
+      throw new SnazzyError([
+        { dancerId: id },
+        " and ",
+        { dancerId: them.id },
+        " are not facing the same direction for turn_as_a_couple",
+      ]);
     }
   }
 

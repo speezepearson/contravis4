@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId, RoleSchema } from "../contraCore";
 import { getDir } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import { buildProtoRecord, Dancer, getDancerSide } from "../worldState";
 import {
@@ -40,7 +41,13 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     const me = Dancer.get(id, init);
     const them = matches[id];
     if (getDancerSide(me) === getDancerSide(them)) {
-      throw new Error(`dancers ${id} and ${them.id} are on the same side`);
+      throw new SnazzyError([
+        "dancers ",
+        { dancerId: id },
+        " and ",
+        { dancerId: them.id },
+        " are on the same side",
+      ]);
     }
   }
 
