@@ -1,16 +1,22 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { HandSchema, type ProtoId } from "../contraCore";
+import { HandSchema, isLark, type ProtoId } from "../contraCore";
 import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors, must } from "../utils";
-import { Dancer, getDancerSide } from "../worldState";
-import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
+import { connectHands, Dancer, getDancerSide } from "../worldState";
+import {
+  instructionBaseSchemaFields,
+  resolveCardinalDirection,
+  resolveMatches,
+} from "./_base";
 import { fudgeToAlignY } from "./_fudge";
 import {
+  advanceState,
   type InstructionAnimator,
   lerpFacingTo,
+  makeImmediateSegment,
   type Segment,
 } from "./_segment";
 
@@ -40,14 +46,35 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
     }
   }
 
+  // Immediate: snap facing to exactly across
+  const faceAcross: Segment = {
+    dur: 0,
+    facing: (dancer) =>
+      must(resolveCardinalDirection("across", dancer.pos), [
+        { dancerId: dancer.protoId },
+        "is in the middle, can't tell which way is across",
+      ]),
+  };
+
+  // Immediate: take hands with person_larks_right_robins_left
+  const matches = resolveMatches(cid, init);
+  const takeHands: Segment = makeImmediateSegment(init, (id, draft) => {
+    const them = matches[id];
+    // Lark's match is to their right, robin's match is to their left
+    const myHand = isLark(id) ? "right" : "left";
+    const theirHand = isLark(id) ? "left" : "right";
+    connectHands(draft, id, myHand, them.id, theirHand);
+  });
+
+  const setupSegs = [faceAcross, takeHands];
+  const postSetup = advanceState(setupSegs, init, who);
+
   // Pre-compute each dancer's match, side, and target positions
   const midTargets = new Map<ProtoId, Vector>();
   const finalTargets = new Map<ProtoId, Vector>();
 
   for (const id of who) {
-    const dancer = Dancer.get(id, init);
-    // Resolve match to validate pairing
-    dancer.resolveMatch(cid);
+    const dancer = Dancer.get(id, postSetup);
 
     const side = getDancerSide(dancer);
     const initY = dancer.pos.y;
@@ -76,7 +103,6 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
         "is in the middle, can't tell which way is across",
       ]),
     ),
-    hands: () => ({}),
   };
 
   const secondSegment: Segment = {
@@ -90,7 +116,12 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
         "is in the middle, can't tell which way is across",
       ]),
     ),
+    hands: () => ({}),
   };
 
-  return [...fudgeToAlignY([firstSegment], init, who), secondSegment];
+  return [
+    ...setupSegs,
+    ...fudgeToAlignY([firstSegment], postSetup, who),
+    secondSegment,
+  ];
 };
