@@ -3,7 +3,7 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, DancerId, ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, DancerId, getProgDirVec, ProtoId } from "../contraCore";
 import { Label } from "../labels";
 import { fcProtoId } from "../testHelpers";
 import { circularDistance } from "../utils";
@@ -41,25 +41,37 @@ describe("resolveLabel", () => {
     ["up_robin_0", "next_neighbor", "down_lark_1"],
     ["down_lark_0", "next_neighbor", "up_robin_-1"],
     ["down_robin_0", "next_neighbor", "up_lark_-1"],
+  ])(
+    "resolves next neighbors correctly in progressed improper: %s %s -> %s",
+    (id, label, expected) => {
+      const init = produce(initFormationStates.improper, (draft) => {
+        // gotta move all the dancers the right way so they're close enough to their neighbors to see them
+        draft[id].pos = draft[id].pos.add(getProgDirVec(id));
+      });
+      expect(Dancer.get(id, init).resolveLabel(label)?.id).toBe(expected);
+    },
+  );
 
+  it.each<[DancerId, Label, DancerId]>([
     ["up_lark_0", "prev_x2_neighbor", "down_robin_-2"],
     ["up_robin_0", "prev_x2_neighbor", "down_lark_-2"],
     ["down_lark_0", "prev_x2_neighbor", "up_robin_2"],
     ["down_robin_0", "prev_x2_neighbor", "up_lark_2"],
   ])(
-    "resolves next/prev neighbors correctly in improper: %s %s -> %s",
+    "resolves prev neighbors correctly in anti-progressed improper: %s %s -> %s",
     (id, label, expected) => {
-      expect(
-        Dancer.get(id, initFormationStates.improper).resolveLabel(label)?.id,
-      ).toBe(expected);
+      const init = produce(initFormationStates.improper, (draft) => {
+        draft[id].pos = draft[id].pos.add(getProgDirVec(id).multiply(-1));
+      });
+      expect(Dancer.get(id, init).resolveLabel(label)?.id).toBe(expected);
     },
   );
 
   it.each<[DancerId, Label, DancerId]>([
-    ["up_lark_10", "prev_x2_neighbor", "down_robin_8"],
-    ["up_robin_10", "prev_x2_neighbor", "down_lark_8"],
-    ["down_lark_10", "prev_x2_neighbor", "up_robin_12"],
-    ["down_robin_10", "prev_x2_neighbor", "up_lark_12"],
+    ["up_lark_10", "prev_neighbor", "down_robin_9"],
+    ["up_robin_10", "prev_neighbor", "down_lark_9"],
+    ["down_lark_10", "prev_neighbor", "up_robin_11"],
+    ["down_robin_10", "prev_neighbor", "up_lark_11"],
   ])(
     "accounts for anchor's offset properly: %s %s -> %s",
     (id, label, expected) => {
@@ -70,10 +82,10 @@ describe("resolveLabel", () => {
   );
 
   it.each<[ProtoId, DancerId, "->", DancerId, DancerId]>([
-    ["up_lark_0", "up_robin_2", "->", "up_lark_10", "up_robin_12"],
-    ["up_robin_0", "up_lark_2", "->", "up_robin_10", "up_lark_12"],
-    ["down_lark_0", "down_robin_2", "->", "down_lark_10", "down_robin_12"],
-    ["down_robin_0", "down_lark_2", "->", "down_robin_10", "down_lark_12"],
+    ["up_lark_0", "up_robin_1", "->", "up_lark_10", "up_robin_11"],
+    ["up_robin_0", "up_lark_1", "->", "up_robin_10", "up_lark_11"],
+    ["down_lark_0", "down_robin_1", "->", "down_lark_10", "down_robin_11"],
+    ["down_robin_0", "down_lark_1", "->", "down_robin_10", "down_lark_11"],
   ])(
     "accounts for anchor's offset properly: (%s, %s) %s (%s, %s)",
     (p, pShadow, _, d, dShadow) => {

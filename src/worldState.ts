@@ -34,7 +34,7 @@ import {
   towardsPersonToDir,
   towardsToLabel,
 } from "./directions";
-import { getDir, NORTH, roughlySameDir } from "./geometry";
+import { getDir, getDist, NORTH, roughlySameDir } from "./geometry";
 import { type CalledIdentifier, personInToDir } from "./identifiers";
 import {
   type InfallibleLabel,
@@ -165,42 +165,13 @@ export class Dancer {
   resolveLabel(label: InfallibleLabel): Dancer;
   resolveLabel(label: Label): Dancer | undefined;
   resolveLabel(label: Label): Dancer | undefined {
-    const s = this.state;
-    if (parses(InfallibleLabelSchema, label)) {
-      switch (label) {
-        case "partner":
-        case "neighbor":
-          return Dancer.get(this.labels[label], s);
-        case "opposite": {
-          return this.resolveLabel("neighbor")?.resolveLabel("partner");
-        }
-      }
-
-      label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
-      const neighbor = this.resolveLabel("neighbor");
-      if (!neighbor) return undefined;
-      return neighbor.addOffset(
-        neighborLabelOffsets[label] * getProgDirSign(this.id),
+    const result = resolveLabelUnchecked(this, label);
+    if (result && getDist(this.pos, result.pos) > 2.8) {
+      throw new Error(
+        `${this.id} is too far from their ${label} to resolve them clearly`,
       );
-    } else if (parses(ShadowLabelSchema, label)) {
-      if (!this.labels[label]) return undefined;
-      return Dancer.get(this.labels[label], s);
-    } else {
-      const handLabel = label satisfies Exclude<
-        Label,
-        InfallibleLabel | ShadowLabel
-      >;
-      switch (handLabel) {
-        case "person_in_left_hand":
-          if (!this.hands["left"]) return undefined;
-          return Dancer.get(this.hands["left"].theirId, s);
-        case "person_in_right_hand":
-          if (!this.hands["right"]) return undefined;
-          return Dancer.get(this.hands["right"].theirId, s);
-        default:
-          assertNever(handLabel);
-      }
     }
+    return result;
   }
 
   // ── Direction resolution ────────────────────────────────────────────
@@ -385,6 +356,55 @@ export class Dancer {
         `asymmetry pairing dancers up: ${this.id} thinks ${JSON.stringify(symm.id)} is ${res.id}, but ${res.id} thinks ${JSON.stringify(this.id)} is ${symm.id}`,
       );
     return res;
+  }
+}
+
+function resolveLabelUnchecked(dancer: Dancer, label: InfallibleLabel): Dancer;
+function resolveLabelUnchecked(
+  dancer: Dancer,
+  label: Label,
+): Dancer | undefined;
+function resolveLabelUnchecked(
+  dancer: Dancer,
+  label: Label,
+): Dancer | undefined {
+  const s = dancer.state;
+  if (parses(InfallibleLabelSchema, label)) {
+    switch (label) {
+      case "partner":
+      case "neighbor":
+        return Dancer.get(dancer.labels[label], s);
+      case "opposite": {
+        const neighbor = resolveLabelUnchecked(dancer, "neighbor");
+        if (!neighbor) return undefined;
+        return resolveLabelUnchecked(neighbor, "partner");
+      }
+    }
+
+    label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
+    const neighbor = resolveLabelUnchecked(dancer, "neighbor");
+    if (!neighbor) return undefined;
+    return neighbor.addOffset(
+      neighborLabelOffsets[label] * getProgDirSign(dancer.id),
+    );
+  } else if (parses(ShadowLabelSchema, label)) {
+    if (!dancer.labels[label]) return undefined;
+    return Dancer.get(dancer.labels[label], s);
+  } else {
+    const handLabel = label satisfies Exclude<
+      Label,
+      InfallibleLabel | ShadowLabel
+    >;
+    switch (handLabel) {
+      case "person_in_left_hand":
+        if (!dancer.hands["left"]) return undefined;
+        return Dancer.get(dancer.hands["left"].theirId, s);
+      case "person_in_right_hand":
+        if (!dancer.hands["right"]) return undefined;
+        return Dancer.get(dancer.hands["right"].theirId, s);
+      default:
+        assertNever(handLabel);
+    }
   }
 }
 
