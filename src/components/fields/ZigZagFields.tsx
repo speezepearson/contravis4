@@ -37,23 +37,23 @@ export function ZigZagFields({
 
   return (
     <>
-      {": go "}
+      {": zig "}
       <InlineDropdown
         options={HAND_OPTIONS}
         value={instruction.dir}
         onChange={(v) => tryCommit({ dir: HandSchema.parse(v) })}
       />
-      {", "}
+      {" "}
       <InlineDropdown<(typeof NZIGS_OPTIONS)[number]>
         options={NZIGS_OPTIONS}
         getLabel={(v) => {
           switch (v) {
             case "1":
-              return `zig ${instruction.dir} zag ${otherHand(instruction.dir)}`;
+              return `zag ${otherHand(instruction.dir)}`;
             case "2":
-              return `zig ${instruction.dir} zag ${otherHand(instruction.dir)} zig ${instruction.dir}`;
+              return `zag ${otherHand(instruction.dir)} zig ${instruction.dir}`;
             case "3":
-              return `zig ${instruction.dir} zag ${otherHand(instruction.dir)} zig ${instruction.dir} zag ${otherHand(instruction.dir)}`;
+              return `zag ${otherHand(instruction.dir)} zig ${instruction.dir} zag ${otherHand(instruction.dir)}`;
           }
         }}
         value={safeStringNZigs[instruction.nZigs]}
