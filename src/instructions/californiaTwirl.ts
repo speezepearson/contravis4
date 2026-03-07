@@ -24,33 +24,27 @@ export const californiaTwirlSegments: InstructionAnimator<
       phi: PI,
     }),
     facing: lerpFacingTo(
-      (id, segInit) => {
+      (dancer) => {
         // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
-        const them = resolveMatch(
-          Dancer.get(id, segInit),
-          "person_larks_right_robins_left",
-        );
-        const myRole = parseProtoId(id).role;
+        const them = resolveMatch(dancer, "person_larks_right_robins_left");
+        const myRole = parseProtoId(dancer.protoId).role;
         return getDir({
-          from: segInit[id].pos,
-          to: Dancer.get(them, segInit).pos,
+          from: dancer.pos,
+          to: Dancer.get(them, dancer.state).pos,
         }).rotateByDegrees(90 * (myRole === "lark" ? -1 : 1));
       },
       {
         forceDir: (id) => (isLark(id) ? "cw" : "ccw"),
       },
     ),
-    hands: (id, _frac, segInit) => {
-      const them = resolveMatch(
-        Dancer.get(id, segInit),
-        "person_larks_right_robins_left",
-      );
-      return isLark(id)
+    hands: (dancer) => {
+      const them = resolveMatch(dancer, "person_larks_right_robins_left");
+      return isLark(dancer.protoId)
         ? hold(["right", them, "left"])
         : hold(["left", them, "right"]);
     },
-    interactedWith: (id, segInit) => [
-      resolveMatch(Dancer.get(id, segInit), "person_larks_right_robins_left"),
+    interactedWith: (dancer) => [
+      resolveMatch(dancer, "person_larks_right_robins_left"),
     ],
   },
 ];

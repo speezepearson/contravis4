@@ -26,23 +26,27 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
   return [
     {
       dur: halfBeats,
-      position: linearTo((id, segInit) => {
-        const otherId = resolveCalledIdentifier(id, instr.cid, segInit);
+      position: linearTo((dancer) => {
+        const otherId = resolveCalledIdentifier(
+          dancer.id,
+          instr.cid,
+          dancer.state,
+        );
         if (!otherId)
-          throw new Error(`${id} has no ${instr.cid} to balance with`);
+          throw new Error(
+            `${dancer.protoId} has no ${instr.cid} to balance with`,
+          );
         const dir = getDir({
-          from: segInit[id].pos,
-          to: Dancer.get(otherId, segInit).pos,
+          from: dancer.pos,
+          to: Dancer.get(otherId, dancer.state).pos,
         });
-        return segInit[id].pos.add(dir.multiply(0.2));
+        return dancer.pos.add(dir.multiply(0.2));
       }),
-      interactedWith: (id, segInit) => [
-        resolveMatch(Dancer.get(id, segInit), instr.cid),
-      ],
+      interactedWith: (dancer) => [resolveMatch(dancer, instr.cid)],
     },
     {
       dur: halfBeats,
-      position: linearTo((id) => init[id].pos),
+      position: linearTo((dancer) => init[dancer.protoId].pos),
     },
   ];
 };

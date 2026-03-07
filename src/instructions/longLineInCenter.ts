@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
 import { must } from "../utils";
-import { Dancer } from "../worldState";
 import {
   instructionBaseSchemaFields,
   resolveCardinalDirection,
@@ -26,37 +25,27 @@ export const longLineInCenterSegments: InstructionAnimator<
   return [
     {
       dur: instr.beats,
-      position: (id, frac, segInit) => {
-        if (getRole(id) !== instr.role) return segInit[id].pos;
-        const target = new Vector(0, segInit[id].pos.y);
-        return segInit[id].pos.add(
-          target.subtract(segInit[id].pos).multiply(frac),
-        );
+      position: (dancer, frac) => {
+        if (getRole(dancer.protoId) !== instr.role) return dancer.pos;
+        const target = new Vector(0, dancer.pos.y);
+        return dancer.pos.add(target.subtract(dancer.pos).multiply(frac));
       },
-      facing: lerpFacingTo((id, segInit) => {
-        if (getRole(id) !== instr.role) return segInit[id].facing;
+      facing: lerpFacingTo((dancer) => {
+        if (getRole(dancer.protoId) !== instr.role) return dancer.facing;
         return must(
-          resolveCardinalDirection("across", segInit[id].pos),
-          `[long line in center] dancer ${id} is too close to the center, can't tell which way they should move`,
+          resolveCardinalDirection("across", dancer.pos),
+          `[long line in center] dancer ${dancer.protoId} is too close to the center, can't tell which way they should move`,
         );
       }),
       hands: () => ({}),
     },
     {
       dur: 0,
-      hands: (id, _frac, segInit) => {
-        if (getRole(id) !== instr.role) return {};
+      hands: (dancer) => {
+        if (getRole(dancer.protoId) !== instr.role) return {};
         return hold(
-          [
-            "left",
-            resolveMatch(Dancer.get(id, segInit), "person_on_left"),
-            "left",
-          ],
-          [
-            "right",
-            resolveMatch(Dancer.get(id, segInit), "person_on_right"),
-            "right",
-          ],
+          ["left", resolveMatch(dancer, "person_on_left"), "left"],
+          ["right", resolveMatch(dancer, "person_on_right"), "right"],
         );
       },
     },

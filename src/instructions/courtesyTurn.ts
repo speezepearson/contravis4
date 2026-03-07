@@ -18,28 +18,20 @@ export const courtesyTurnSegments: InstructionAnimator<
 > = (instr) => [
   {
     dur: instr.beats,
-    position: (id, frac, segInit) => {
-      const them = resolveMatch(
-        Dancer.get(id, segInit),
-        "person_larks_right_robins_left",
-        {
-          roles: "different",
-        },
-      );
-      const myPos = segInit[id].pos;
-      const theirPos = Dancer.get(them, segInit).pos;
+    position: (dancer, frac) => {
+      const them = resolveMatch(dancer, "person_larks_right_robins_left", {
+        roles: "different",
+      });
+      const myPos = dancer.pos;
+      const theirPos = Dancer.get(them, dancer.state).pos;
       const center = myPos.add(theirPos).divide(2);
       return revolve(myPos, { around: center, radians: PI * frac });
     },
     facing: rotateFacingBy(() => PI),
-    hands: (id, _frac, segInit) => {
-      const them = resolveMatch(
-        Dancer.get(id, segInit),
-        "person_larks_right_robins_left",
-        {
-          roles: "different",
-        },
-      );
+    hands: (dancer) => {
+      const them = resolveMatch(dancer, "person_larks_right_robins_left", {
+        roles: "different",
+      });
       return hold(["left", them, "left"], ["right", them, "right"]);
     },
   },

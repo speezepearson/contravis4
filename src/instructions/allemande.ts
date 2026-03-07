@@ -93,28 +93,36 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
         semiMinor: -ALLEMANDE_RADIUS * rotationSign,
         phi: APPROACH_ELLIPSE_RADIANS,
       }),
-      facing: lerpFacingTo((id, segInit) => {
-        const matchId = matches.get(id);
-        if (!matchId) return segInit[id].facing;
+      facing: lerpFacingTo((dancer) => {
+        const matchId = matches.get(dancer.protoId);
+        if (!matchId) return dancer.facing;
         return getDir({
-          from: segInit[id].pos,
-          to: Dancer.get(matchId, segInit).pos,
+          from: dancer.pos,
+          to: Dancer.get(matchId, dancer.state).pos,
         });
       }),
-      hands: (id) =>
-        alreadyClose[id]
-          ? hold([instr.handedness, matches.get(id)!, instr.handedness])
+      hands: (dancer) =>
+        alreadyClose[dancer.protoId]
+          ? hold([
+              instr.handedness,
+              matches.get(dancer.protoId)!,
+              instr.handedness,
+            ])
           : {},
     },
     {
       dur: circlingBeats,
       position: orbit(matches, { radians: numAllemandeRadians }, who),
       facing: rotateFacingBy(() => numAllemandeRadians),
-      hands: (id) =>
-        !matches.has(id)
+      hands: (dancer) =>
+        !matches.has(dancer.protoId)
           ? {}
-          : hold([instr.handedness, matches.get(id)!, instr.handedness]),
-      interactedWith: (id) => [matches.get(id)!],
+          : hold([
+              instr.handedness,
+              matches.get(dancer.protoId)!,
+              instr.handedness,
+            ]),
+      interactedWith: (dancer) => [matches.get(dancer.protoId)!],
     },
   ] satisfies Segment[];
 };
