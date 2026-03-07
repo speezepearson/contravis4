@@ -44,6 +44,14 @@ export function makeDefaultInstruction(
         };
       case "balance":
         return { id, type: "balance", beats: 4, cid: "partner" };
+      case "balance_and_swing":
+        return {
+          id,
+          type: "balance_and_swing",
+          beats: 16,
+          cid: "partner",
+          endFacing: "across",
+        };
       case "balance_the_ring":
         return { id, type: "balance_the_ring", beats: 4 };
       case "box_circulate":
