@@ -68,7 +68,7 @@ export function makeSwingSegments(
   _who: ReadonlySet<ProtoId>,
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
-  const centers = buildProtoRecord((id) => avgPos(init, id, matches[id]));
+  const centers = buildProtoRecord((id) => avgPos(init, id, matches[id].id));
 
   const plans = buildProtoRecord((id) => {
     const me = Dancer.get(id, init);
@@ -140,8 +140,8 @@ export function makeSwingSegments(
   const swingHands: HandsFn = (dancer) =>
     hold(
       isLark(dancer.protoId)
-        ? ["right", matches[dancer.protoId], "left"]
-        : ["left", matches[dancer.protoId], "right"],
+        ? ["right", matches[dancer.protoId].id, "left"]
+        : ["left", matches[dancer.protoId].id, "right"],
     );
 
   const segments: Segment[] = [
@@ -156,7 +156,7 @@ export function makeSwingSegments(
           frac,
         ),
       hands: () => ({}),
-      interactedWith: (dancer) => [matches[dancer.protoId]],
+      interactedWith: (dancer) => [matches[dancer.protoId].id],
     },
     {
       dur: swingBeats,

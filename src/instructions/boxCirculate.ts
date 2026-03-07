@@ -43,26 +43,22 @@ export const boxCirculateSegments: InstructionAnimator<
       dur: instr.beats,
       position: (dancer, frac) => {
         if (outFacers.includes(dancer.protoId)) {
-          const matchId = dancer.resolveCalledIdentifier("person_on_right");
-          if (!matchId)
+          const match = dancer.resolveCalledIdentifier("person_on_right");
+          if (!match)
             throw new Error(
               `${dancer.protoId} has nobody on their right to box circulate to`,
             );
           return revolve(dancer.pos, {
-            aroundMidpointWith: Dancer.get(matchId, dancer.state).pos,
+            aroundMidpointWith: match.pos,
             radians: -PI * frac,
           });
         } else {
-          const matchId = dancer.resolveCalledIdentifier("person_in_front");
-          if (!matchId)
+          const match = dancer.resolveCalledIdentifier("person_in_front");
+          if (!match)
             throw new Error(
               `${dancer.protoId} has nobody in front to box circulate to`,
             );
-          return lerpVectors(
-            dancer.pos,
-            Dancer.get(matchId, dancer.state).pos,
-            frac,
-          );
+          return lerpVectors(dancer.pos, match.pos, frac);
         }
       },
       facing: lerpFacingTo(

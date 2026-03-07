@@ -21,6 +21,6 @@ export const doSiDoSegments: InstructionAnimator<DoSiDoInstruction> = (
       semiMinor: 0.25,
       phi: TWO_PI * instr.rotations,
     }),
-    interactedWith: (dancer) => [dancer.resolveMatch(instr.cid)],
+    interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
   },
 ];

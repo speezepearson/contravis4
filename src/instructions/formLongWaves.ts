@@ -72,8 +72,8 @@ export const formLongWavesSegments: InstructionAnimator<
   return [
     makeImmediateSegment(init, (id, draft) => {
       draft[id].facing = snappedState[id].facing;
-      connectHands(draft, id, "left", leftMatches[id], "left");
-      connectHands(draft, id, "right", rightMatches[id], "right");
+      connectHands(draft, id, "left", leftMatches[id].id, "left");
+      connectHands(draft, id, "right", rightMatches[id].id, "right");
     }),
   ];
 };

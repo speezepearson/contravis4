@@ -50,13 +50,11 @@ export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
         {
           dur: 0,
           hands: (dancer) => {
-            const matchId = dancer.resolveMatch(
-              instr.which as CalledIdentifier,
-            );
+            const match = dancer.resolveMatch(instr.which as CalledIdentifier);
             const result: Dancer["hands"] = {};
             for (const hand of ALL_HANDS) {
               const existing = dancer.hands[hand];
-              if (existing && existing.theirId !== matchId) {
+              if (existing && existing.theirId !== match.id) {
                 result[hand] = existing;
               }
             }

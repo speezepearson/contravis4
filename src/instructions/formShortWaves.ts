@@ -56,8 +56,8 @@ export const formShortWavesSegments: InstructionAnimator<
       const onRight = Dancer.get(id, draft).findDancerInCalledDirection(
         "on_right",
       );
-      if (onLeft) connectHands(draft, id, "left", onLeft, "left");
-      if (onRight) connectHands(draft, id, "right", onRight, "right");
+      if (onLeft) connectHands(draft, id, "left", onLeft.id, "left");
+      if (onRight) connectHands(draft, id, "right", onRight.id, "right");
     }),
   ];
 };

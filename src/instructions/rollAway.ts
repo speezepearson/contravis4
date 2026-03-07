@@ -48,24 +48,21 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
   const rolleeToRoller = new Map<DancerId, ProtoId>();
   for (const id of who) {
     if (getRole(id) !== instr.roller) continue;
-    const rolleeId = Dancer.get(id, init).resolveCalledIdentifier(
-      instr.rollee,
-      {
-        roles: "different",
-      },
-    );
-    if (!rolleeId) {
+    const rollee = Dancer.get(id, init).resolveCalledIdentifier(instr.rollee, {
+      roles: "different",
+    });
+    if (!rollee) {
       throw new Error(
         `${id} has no opposite-role ${instr.rollee} to roll away`,
       );
     }
-    rollerToRollee.set(id, rolleeId);
-    if (rolleeToRoller.has(rolleeId)) {
+    rollerToRollee.set(id, rollee.id);
+    if (rolleeToRoller.has(rollee.id)) {
       throw new Error(
-        `rollers ${rolleeToRoller.get(rolleeId)} and ${id} both grabbed the same rollee ${rolleeId}`,
+        `rollers ${rolleeToRoller.get(rollee.id)} and ${id} both grabbed the same rollee ${rollee.id}`,
       );
     }
-    rolleeToRoller.set(rolleeId, id);
+    rolleeToRoller.set(rollee.id, id);
   }
 
   const matches = buildProtoRecord((id) => {

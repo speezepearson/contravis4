@@ -38,16 +38,16 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
   const matches = resolveMatches(instr.cid, init, { roles: "different" });
   for (const id of ALL_PROTO_IDS) {
     const me = Dancer.get(id, init);
-    const them = Dancer.get(matches[id], init);
+    const them = matches[id];
     if (getDancerSide(me) === getDancerSide(them)) {
-      throw new Error(`dancers ${id} and ${matches[id]} are on the same side`);
+      throw new Error(`dancers ${id} and ${them.id} are on the same side`);
     }
   }
 
   const plans = buildProtoRecord((id) => {
     const amDrawer = parseProtoId(id).role === instr.drawerRole;
-    const drawer = Dancer.get(amDrawer ? id : matches[id], init);
-    const drawee = Dancer.get(amDrawer ? matches[id] : id, init);
+    const drawer = amDrawer ? Dancer.get(id, init) : matches[id];
+    const drawee = amDrawer ? matches[id] : Dancer.get(id, init);
 
     const postApproachDrawerPos = drawer.pos;
     const postApproachDraweePos = drawer.pos.add(drawee.pos).divide(2);
@@ -85,7 +85,7 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     dur: approachDur,
     position: linearTo((dancer) => plans[dancer.protoId].postApproach.pos),
     facing: lerpFacingTo((dancer) => plans[dancer.protoId].postApproach.facing),
-    interactedWith: (dancer: Dancer) => [matches[dancer.protoId]],
+    interactedWith: (dancer: Dancer) => [matches[dancer.protoId].id],
   };
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);

@@ -1,7 +1,7 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { type DancerId, type ProtoId } from "../contraCore";
+import { type ProtoId } from "../contraCore";
 import { must } from "../utils";
 import { Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
@@ -95,8 +95,8 @@ export const longLinesForwardBackSegments: InstructionAnimator<
   }
 
   // Pre-compute opposite-role neighbors on each side, asserting they exist
-  const leftPartners = new Map<ProtoId, DancerId>();
-  const rightPartners = new Map<ProtoId, DancerId>();
+  const leftPartners = new Map<ProtoId, Dancer>();
+  const rightPartners = new Map<ProtoId, Dancer>();
   for (const id of who) {
     const left = Dancer.get(id, init).findDancerInCalledDirection("on_left", {
       roles: "different",
@@ -153,8 +153,8 @@ export const longLinesForwardBackSegments: InstructionAnimator<
       ),
       hands: (dancer) =>
         hold(
-          ["left", leftPartners.get(dancer.protoId)!, "right"],
-          ["right", rightPartners.get(dancer.protoId)!, "left"],
+          ["left", leftPartners.get(dancer.protoId)!.id, "right"],
+          ["right", rightPartners.get(dancer.protoId)!.id, "left"],
         ),
     },
     // Step back out: x=±0.5, keep y, keep hands

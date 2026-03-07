@@ -29,16 +29,14 @@ export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
     if (!dancerStates) return options;
     const larkState = dancerStates["up_lark_0"];
     return [...options].sort((a, b) => {
-      const aId = try_(() =>
+      const targetA = try_(() =>
         Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(a),
       );
-      if (aId instanceof Error || !aId) return 1;
-      const bId = try_(() =>
+      if (targetA instanceof Error || !targetA) return 1;
+      const targetB = try_(() =>
         Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(b),
       );
-      if (bId instanceof Error || !bId) return -1;
-      const targetA = Dancer.get(aId, dancerStates);
-      const targetB = Dancer.get(bId, dancerStates);
+      if (targetB instanceof Error || !targetB) return -1;
       const distA = larkState.pos.subtract(targetA.pos).length();
       const distB = larkState.pos.subtract(targetB.pos).length();
       if (Math.abs(distA - distB) > 1e-6) return distA - distB;

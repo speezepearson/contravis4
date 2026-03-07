@@ -280,12 +280,12 @@ export default function App() {
           toY: number;
         }> = [];
         for (const id of ALL_PROTO_IDS) {
-          const targetId = try_(() =>
+          const target = try_(() =>
             Dancer.get(id, frame).resolveCalledIdentifier(highlightedRel),
           );
-          if (targetId instanceof Error || !targetId) continue;
+          if (target instanceof Error || !target) continue;
           const from = frame[id];
-          const to = Dancer.get(targetId, frame);
+          const to = target;
           lines.push({
             fromX: from.pos.x,
             fromY: from.pos.y,

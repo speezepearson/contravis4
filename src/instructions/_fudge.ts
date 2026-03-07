@@ -97,13 +97,12 @@ export function fudgeToAlignY(
   const resultFinalState = advanceState(result, init, who);
   for (const id of ALL_PROTO_IDS) {
     const dancer = Dancer.get(id, resultFinalState);
-    const matchId = dancer.resolveMatch("person_across", {
+    const match = dancer.resolveMatch("person_across", {
       roles: "different",
     });
-    const matchPos = Dancer.get(matchId, resultFinalState).pos;
-    if (Math.abs(dancer.pos.y - matchPos.y) > 0.01) {
+    if (Math.abs(dancer.pos.y - match.pos.y) > 0.01) {
       throw new Error(
-        `[fudgeToAlignY] after fudge, ${id} at y=${dancer.pos.y} is not aligned with across-match ${matchId} at y=${matchPos.y}`,
+        `[fudgeToAlignY] after fudge, ${id} at y=${dancer.pos.y} is not aligned with across-match ${match.id} at y=${match.pos.y}`,
       );
     }
   }

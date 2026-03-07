@@ -37,36 +37,36 @@ export type TakeHandsInRingsInstruction = z.infer<
 export function makeRingSegment(init: WorldState): Segment {
   const targets = buildProtoRecord((id) => {
     const d = Dancer.get(id, init);
-    const acrossId = must(
+    const across = must(
       d.resolveCalledIdentifier("person_across", {
         roles: "different",
       }),
     );
     const alongCid =
       init[id].facing.y >= 0 ? "person_up" : ("person_down" as const);
-    const alongId = must(
+    const along = must(
       d.resolveCalledIdentifier(alongCid, { roles: "different" }),
     );
-    return { acrossId, alongId };
+    return { across, along };
   });
 
   const final = produce(init, (draft) => {
     for (const id of ALL_PROTO_IDS) {
-      const { acrossId, alongId } = targets[id];
+      const { across, along } = targets[id];
       const dirToAcross = getDir({
         from: init[id].pos,
-        to: Dancer.get(acrossId, init).pos,
+        to: across.pos,
       });
       const dirToAlong = getDir({
         from: init[id].pos,
-        to: Dancer.get(alongId, init).pos,
+        to: along.pos,
       });
       draft[id].facing = dirToAcross.add(dirToAlong).normalize();
 
-      const onRightId =
-        ccwRadsBetween(draft[id].facing, dirToAlong) > 0 ? acrossId : alongId;
+      const onRight =
+        ccwRadsBetween(draft[id].facing, dirToAlong) > 0 ? across : along;
 
-      connectHands(draft, id, "right", onRightId, "left");
+      connectHands(draft, id, "right", onRight.id, "left");
     }
   });
 
@@ -76,8 +76,8 @@ export function makeRingSegment(init: WorldState): Segment {
     facing: (dancer) => final[dancer.protoId].facing,
     hands: (dancer) => final[dancer.protoId].hands,
     interactedWith: (dancer) => [
-      targets[dancer.protoId].acrossId,
-      targets[dancer.protoId].alongId,
+      targets[dancer.protoId].across.id,
+      targets[dancer.protoId].along.id,
     ],
   };
 }

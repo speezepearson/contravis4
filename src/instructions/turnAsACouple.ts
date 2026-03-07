@@ -19,18 +19,16 @@ export const turnAsACoupleSegments: InstructionAnimator<
 > = (instr, init, who) => {
   const checked = new Set<string>();
   for (const id of who) {
-    const themId = Dancer.get(id, init).resolveMatch(
+    const them = Dancer.get(id, init).resolveMatch(
       "person_larks_right_robins_left",
     );
-    const pairKey = [id, themId].sort().join(",");
+    const pairKey = [id, them.id].sort().join(",");
     if (checked.has(pairKey)) continue;
     checked.add(pairKey);
-    const angleDiff = Math.abs(
-      ccwRadsBetween(init[id].facing, Dancer.get(themId, init).facing),
-    );
+    const angleDiff = Math.abs(ccwRadsBetween(init[id].facing, them.facing));
     if (angleDiff > PI / 4) {
       throw new Error(
-        `${id} and ${themId} are not facing the same direction for turn_as_a_couple`,
+        `${id} and ${them.id} are not facing the same direction for turn_as_a_couple`,
       );
     }
   }

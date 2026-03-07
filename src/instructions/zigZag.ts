@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  type DancerId,
   getRole,
   type Hand,
   HandSchema,
@@ -44,16 +43,16 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   // Both dancers in each pair face the same direction.
   const facingByProto = new Map<ProtoId, typeof init.up_lark_0.facing>();
   for (const id of who) {
-    let leaderId: DancerId, followerId: DancerId;
+    let leader: Dancer, follower: Dancer;
     if (getRole(id) === instr.leader) {
-      leaderId = id;
-      followerId = matches[id];
+      leader = Dancer.get(id, init);
+      follower = matches[id];
     } else {
-      followerId = id;
-      leaderId = matches[id];
+      follower = Dancer.get(id, init);
+      leader = matches[id];
     }
-    const leaderPos = Dancer.get(leaderId, init).pos;
-    const followerPos = Dancer.get(followerId, init).pos;
+    const leaderPos = leader.pos;
+    const followerPos = follower.pos;
     const dirToFollower = getDir({ from: leaderPos, to: followerPos });
     const rotation = instr.leaderDir === "left" ? 90 : -90;
     facingByProto.set(id, dirToFollower.rotateByDegrees(rotation));
@@ -66,11 +65,11 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
 
   function makeHandsFn(leaderRole: Role) {
     return (dancer: Dancer) => {
-      const matchId = matches[dancer.protoId];
+      const match = matches[dancer.protoId];
       if (getRole(dancer.protoId) === leaderRole) {
-        return hold([leaderInsideHand, matchId, followerInsideHand]);
+        return hold([leaderInsideHand, match.id, followerInsideHand]);
       }
-      return hold([followerInsideHand, matchId, leaderInsideHand]);
+      return hold([followerInsideHand, match.id, leaderInsideHand]);
     };
   }
 
@@ -78,11 +77,11 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
     const facing = facingByProto.get(id);
     if (facing) draft[id].facing = facing;
-    const matchId = matches[id];
+    const match = matches[id];
     if (getRole(id) === instr.leader) {
-      draft[id].hands = hold([leaderInsideHand, matchId, followerInsideHand]);
+      draft[id].hands = hold([leaderInsideHand, match.id, followerInsideHand]);
     } else {
-      draft[id].hands = hold([followerInsideHand, matchId, leaderInsideHand]);
+      draft[id].hands = hold([followerInsideHand, match.id, leaderInsideHand]);
     }
   });
 
@@ -125,7 +124,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       dur: beatsPerZig,
       position,
       hands: makeHandsFn(instr.leader),
-      interactedWith: (dancer) => [matches[dancer.protoId]],
+      interactedWith: (dancer) => [matches[dancer.protoId].id],
     };
 
     segments.push(zigSegment);

@@ -22,8 +22,8 @@ export const greetShadowSegments: InstructionAnimator<
   {
     dur: 0,
     labels: (dancer, _frac) => {
-      const theirId = must(dancer.resolveCalledIdentifier(instr.cid));
-      return [[instr.label, theirId]];
+      const them = must(dancer.resolveCalledIdentifier(instr.cid));
+      return [[instr.label, them.id]];
     },
   },
 ];

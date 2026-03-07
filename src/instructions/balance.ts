@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { getDir } from "../geometry";
-import { Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
@@ -22,18 +21,18 @@ export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
     {
       dur: halfBeats,
       position: linearTo((dancer) => {
-        const otherId = dancer.resolveCalledIdentifier(instr.cid);
-        if (!otherId)
+        const other = dancer.resolveCalledIdentifier(instr.cid);
+        if (!other)
           throw new Error(
             `${dancer.protoId} has no ${instr.cid} to balance with`,
           );
         const dir = getDir({
           from: dancer.pos,
-          to: Dancer.get(otherId, dancer.state).pos,
+          to: other.pos,
         });
         return dancer.pos.add(dir.multiply(0.2));
       }),
-      interactedWith: (dancer) => [dancer.resolveMatch(instr.cid)],
+      interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
     },
     {
       dur: halfBeats,

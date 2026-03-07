@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { getDir, PI } from "../geometry";
-import { Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { arc, hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
 
@@ -21,14 +20,14 @@ export const boxTheGnatSegments: InstructionAnimator<BoxTheGnatInstruction> = (
     facing: lerpFacingTo((dancer) => {
       const them = dancer.resolveMatch(instr.cid);
       return getDir({
-        from: Dancer.get(them, dancer.state).pos,
+        from: them.pos,
         to: dancer.pos,
       });
     }),
     hands: (dancer) => {
       const them = dancer.resolveMatch(instr.cid);
-      return hold(["right", them, "right"]);
+      return hold(["right", them.id, "right"]);
     },
-    interactedWith: (dancer) => [dancer.resolveMatch(instr.cid)],
+    interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
   },
 ];

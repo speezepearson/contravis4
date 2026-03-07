@@ -60,18 +60,16 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
   );
   const alreadyClose = buildProtoRecord((id) => {
     const me = Dancer.get(id, init);
-    const matchId = matches.get(id);
-    if (!matchId) return false;
-    const them = Dancer.get(matchId, init);
-    return me.pos.subtract(them.pos).length() < 1.2;
+    const match = matches.get(id);
+    if (!match) return false;
+    return me.pos.subtract(match.pos).length() < 1.2;
   });
 
   let totalDistance = 0;
   let count = 0;
-  for (const [id, matchId] of matches) {
+  for (const [id, match] of matches) {
     const me = Dancer.get(id as ProtoId, init);
-    const them = Dancer.get(matchId, init);
-    totalDistance += me.pos.subtract(them.pos).length();
+    totalDistance += me.pos.subtract(match.pos).length();
     count++;
   }
   const avgDistance = totalDistance / count;
@@ -90,18 +88,18 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
         phi: APPROACH_ELLIPSE_RADIANS,
       }),
       facing: lerpFacingTo((dancer) => {
-        const matchId = matches.get(dancer.protoId);
-        if (!matchId) return dancer.facing;
+        const match = matches.get(dancer.protoId);
+        if (!match) return dancer.facing;
         return getDir({
           from: dancer.pos,
-          to: Dancer.get(matchId, dancer.state).pos,
+          to: match.pos,
         });
       }),
       hands: (dancer) =>
         alreadyClose[dancer.protoId]
           ? hold([
               instr.handedness,
-              matches.get(dancer.protoId)!,
+              matches.get(dancer.protoId)!.id,
               instr.handedness,
             ])
           : {},
@@ -115,10 +113,10 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
           ? {}
           : hold([
               instr.handedness,
-              matches.get(dancer.protoId)!,
+              matches.get(dancer.protoId)!.id,
               instr.handedness,
             ]),
-      interactedWith: (dancer) => [matches.get(dancer.protoId)!],
+      interactedWith: (dancer) => [matches.get(dancer.protoId)!.id],
     },
   ] satisfies Segment[];
 };

@@ -3,12 +3,10 @@ import { z } from "zod";
 
 import {
   ALL_PROTO_IDS,
-  type DancerId,
   getRole,
   type Hand,
   HandSchema,
   otherRole,
-  projectDancerIdToProtoId,
   type ProtoId,
   type Role,
   RoleSchema,
@@ -48,7 +46,7 @@ export type PoussetteInstruction = z.infer<typeof PoussetteInstructionSchema>;
 export function makeHalfPoussetteArcPosition(
   backerRole: Role,
   backerDir: Hand,
-  matches: Record<ProtoId, DancerId>,
+  matches: Record<ProtoId, Dancer>,
   state: WorldState,
   who: ReadonlySet<ProtoId>,
 ): PositionFn {
@@ -77,7 +75,7 @@ export function makeHalfPoussetteArcPosition(
       }
       arcDests.set(id, {
         start: state[id].pos,
-        end: Dancer.get(found, facedAcross).pos,
+        end: found.pos,
       });
     }
   }
@@ -85,7 +83,7 @@ export function makeHalfPoussetteArcPosition(
   const nonBackerToBacker = new Map<ProtoId, ProtoId>();
   for (const id of who) {
     if (getRole(id) !== backerRole) {
-      nonBackerToBacker.set(id, projectDancerIdToProtoId(matches[id]));
+      nonBackerToBacker.set(id, matches[id].protoId);
     }
   }
 
@@ -121,10 +119,10 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
       resolveCardinalDirection("across", draft[id].pos),
       `[poussette] dancer ${id} is too close to the center`,
     );
-    const matchId = matches[id];
+    const match = matches[id];
     draft[id].hands = hold(
-      ["left", matchId, "right"],
-      ["right", matchId, "left"],
+      ["left", match.id, "right"],
+      ["right", match.id, "left"],
     );
   });
 
@@ -132,8 +130,8 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 
   const handsFn = (dancer: Dancer) =>
     hold(
-      ["left", matches[dancer.protoId], "right"],
-      ["right", matches[dancer.protoId], "left"],
+      ["left", matches[dancer.protoId].id, "right"],
+      ["right", matches[dancer.protoId].id, "left"],
     );
 
   const halfBeats = instr.full ? instr.beats / 2 : instr.beats;
@@ -148,7 +146,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
       who,
     ),
     hands: handsFn,
-    interactedWith: (dancer) => [matches[dancer.protoId]],
+    interactedWith: (dancer) => [matches[dancer.protoId].id],
   };
 
   if (!instr.full) {

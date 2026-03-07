@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
 import { PI } from "../geometry";
-import { Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { arc, type InstructionAnimator } from "./_segment";
 
@@ -25,9 +24,7 @@ export const passBySegments: InstructionAnimator<PassByInstruction> = (
     }),
     facing: (dancer) => {
       const them = dancer.resolveMatch(instr.cid);
-      return Dancer.get(them, dancer.state)
-        .pos.subtract(dancer.pos)
-        .normalize();
+      return them.pos.subtract(dancer.pos).normalize();
     },
     hands: () => ({}),
   },

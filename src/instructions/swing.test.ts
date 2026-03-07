@@ -172,16 +172,17 @@ describe("post-swing alignment", () => {
       });
 
       for (const id of ALL_PROTO_IDS) {
-        const actualAcrossId = Dancer.get(id, final).resolveCalledIdentifier(
+        const actualAcross = Dancer.get(id, final).resolveCalledIdentifier(
           "person_across",
         );
-        const expectedAcrossId = Dancer.get(id, final).resolveCalledIdentifier(
-          expectedAcross,
-        );
+        const expectedAcrossDancer = Dancer.get(
+          id,
+          final,
+        ).resolveCalledIdentifier(expectedAcross);
         expect(
-          actualAcrossId,
-          `${id} should end up across from ${expectedAcrossId}, but got ${actualAcrossId}`,
-        ).toBe(expectedAcrossId);
+          actualAcross?.id,
+          `${id} should end up across from ${expectedAcrossDancer?.id}, but got ${actualAcross?.id}`,
+        ).toBe(expectedAcrossDancer?.id);
       }
     },
   );

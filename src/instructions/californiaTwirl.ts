@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
-import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
 import { arc, hold, type InstructionAnimator, lerpFacingTo } from "./_segment";
 
@@ -30,7 +29,7 @@ export const californiaTwirlSegments: InstructionAnimator<
         const myRole = parseProtoId(dancer.protoId).role;
         return getDir({
           from: dancer.pos,
-          to: Dancer.get(them, dancer.state).pos,
+          to: them.pos,
         }).rotateByDegrees(90 * (myRole === "lark" ? -1 : 1));
       },
       {
@@ -40,11 +39,11 @@ export const californiaTwirlSegments: InstructionAnimator<
     hands: (dancer) => {
       const them = dancer.resolveMatch("person_larks_right_robins_left");
       return isLark(dancer.protoId)
-        ? hold(["right", them, "left"])
-        : hold(["left", them, "right"]);
+        ? hold(["right", them.id, "left"])
+        : hold(["left", them.id, "right"]);
     },
     interactedWith: (dancer) => [
-      dancer.resolveMatch("person_larks_right_robins_left"),
+      dancer.resolveMatch("person_larks_right_robins_left").id,
     ],
   },
 ];

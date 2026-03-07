@@ -17,18 +17,18 @@ export function resolveRings(
     );
   return buildProtoRecord((id) => {
     const r = getRH(id);
-    const rr = getRH(r);
-    const rrr = getRH(rr);
-    const rrrr = getRH(rrr);
-    if (rrrr !== id)
+    const rr = getRH(r.id);
+    const rrr = getRH(rr.id);
+    const rrrr = getRH(rrr.id);
+    if (rrrr.id !== id)
       throw new Error(
-        `[rings] following right hands: ${id} -> ${r} -> ${rr} -> ${rrr} -> ${rrrr} !== ${id}`,
+        `[rings] following right hands: ${id} -> ${r.id} -> ${rr.id} -> ${rrr.id} -> ${rrrr.id} !== ${id}`,
       );
 
-    const ring: NTuple<4, DancerId> = [id, r, rr, rrr];
+    const ring: NTuple<4, DancerId> = [id, r.id, rr.id, rrr.id];
     if (!(new Set(ring).size === 4))
       throw new Error(
-        `[rings] following right hands: ${id} -> ${r} -> ${rr} -> ${rrr} -> ${rrrr} -> ... does not contain 4 people`,
+        `[rings] following right hands: ${id} -> ${r.id} -> ${rr.id} -> ${rrr.id} -> ${rrrr.id} -> ... does not contain 4 people`,
       );
     return ring;
   });

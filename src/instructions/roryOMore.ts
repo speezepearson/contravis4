@@ -34,7 +34,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
       dur: instr.beats,
       position: linearTo((dancer) => {
         const them = dancer.resolveMatch(cid);
-        return Dancer.get(them, dancer.state).pos;
+        return them.pos;
       }),
       facing: rotateFacingBy(() => rotationRadians),
       hands: () => ({}),
@@ -46,7 +46,7 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
         const them = Dancer.get(dancer.protoId, init).resolveMatch(cid);
         return hold([
           otherHand(instr.direction),
-          them,
+          them.id,
           otherHand(instr.direction),
         ]);
       },

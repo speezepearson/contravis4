@@ -42,18 +42,17 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
   const matches = resolveMatches(instr.cid, init);
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const otherId = matches[id];
-      const other = Dancer.get(otherId, draft);
+      const other = matches[id];
       switch (instr.hand) {
         case "left":
-          connectHands(draft, id, "left", otherId, "left");
+          connectHands(draft, id, "left", other.id, "left");
           break;
         case "right":
-          connectHands(draft, id, "right", otherId, "right");
+          connectHands(draft, id, "right", other.id, "right");
           break;
         case "inside": {
           const ourHand = resolveInsideHand(draft[id], other);
-          connectHands(draft, id, ourHand, otherId, ourHand);
+          connectHands(draft, id, ourHand, other.id, ourHand);
           break;
         }
         default:

@@ -254,21 +254,21 @@ export class Dancer {
     if (parses(TowardsPersonDirectionSchema, dir)) {
       const pureDir = towardsPersonToDir[dir];
       const pureDirVec = this.resolvePureDirection(pureDir);
-      const themId = this.findDancerInDirection(pureDirVec);
-      if (!themId) throw new Error(`${this.id} has nobody ${pureDir}`);
+      const them = this.findDancerInDirection(pureDirVec);
+      if (!them) throw new Error(`${this.id} has nobody ${pureDir}`);
       return getDir({
         from: this.pos,
-        to: Dancer.get(themId, this.state).pos,
+        to: them.pos,
       });
     }
     assertNever(dir);
   }
 
   /** For a "towards" CalledDirection, resolves the target person. Returns undefined for pure directions. */
-  resolveCalledDirectionTarget(dir: CalledDirection): DancerId | undefined {
+  resolveCalledDirectionTarget(dir: CalledDirection): Dancer | undefined {
     if (parses(PureDirectionSchema, dir)) return undefined;
     if (parses(TowardsLabelDirectionSchema, dir)) {
-      return this.resolveLabel(towardsToLabel[dir])?.id ?? undefined;
+      return this.resolveLabel(towardsToLabel[dir]) ?? undefined;
     }
     const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
     const pureDirVec = this.resolvePureDirection(pureDir);
@@ -279,7 +279,7 @@ export class Dancer {
   findDancerInCalledDirection(
     side: CalledDirection,
     { roles }: { roles?: "same" | "different" } = {},
-  ): DancerId | null {
+  ): Dancer | null {
     const dir = this.resolveCalledDirection(side);
     return this.findDancerInDirection(dir, { roles });
   }
@@ -310,12 +310,12 @@ export class Dancer {
   findDancerInDirection(
     dir: Vector,
     { roles }: { roles?: "same" | "different" } = {},
-  ): DancerId | null {
+  ): Dancer | null {
     dir = dir.normalize();
     const protos = this.state;
 
     let bestScore = Infinity;
-    let bestTarget: DancerId | null = null;
+    let bestTarget: Dancer | null = null;
 
     for (const otherProtoId of ALL_PROTO_IDS) {
       if (otherProtoId === this.id) continue;
@@ -342,7 +342,7 @@ export class Dancer {
         const score = r / cos2Theta;
         if (score < bestScore) {
           bestScore = score;
-          bestTarget = targetId;
+          bestTarget = target;
         }
       }
     }
@@ -355,18 +355,17 @@ export class Dancer {
   resolveCalledIdentifier(
     cid: CalledIdentifier,
     { roles }: { roles?: "same" | "different" } = {},
-  ): DancerId | undefined {
-    if (parses(LabelSchema, cid))
-      return this.resolveLabel(cid)?.id ?? undefined;
+  ): Dancer | undefined {
+    if (parses(LabelSchema, cid)) return this.resolveLabel(cid) ?? undefined;
     const pureDir = personInToDir[cid as PersonInDirection];
     const dir = this.resolvePureDirection(pureDir);
     const res = this.findDancerInDirection(dir, { roles });
     if (!res) return undefined;
-    if (roles === "same" && getRole(this.id) !== getRole(res))
+    if (roles === "same" && res.role !== this.role)
       throw new Error(
         `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
       );
-    if (roles === "different" && getRole(this.id) === getRole(res))
+    if (roles === "different" && res.role === this.role)
       throw new Error(
         `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
       );
@@ -377,18 +376,18 @@ export class Dancer {
   resolveMatch(
     cid: CalledIdentifier,
     { roles }: { roles?: "same" | "different" } = {},
-  ): DancerId {
+  ): Dancer {
     const res = must(
       this.resolveCalledIdentifier(cid, { roles }),
       `${this.id} can't find ${JSON.stringify(cid)}`,
     );
     const symm = must(
-      Dancer.get(res, this.state).resolveCalledIdentifier(cid, { roles }),
-      `${res} can't find ${JSON.stringify(cid)}`,
+      res.resolveCalledIdentifier(cid, { roles }),
+      `${res.id} can't find ${JSON.stringify(cid)}`,
     );
-    if (symm !== this.id)
+    if (symm.id !== this.id)
       throw new Error(
-        `asymmetry pairing dancers up: ${this.id} thinks ${JSON.stringify(symm)} is ${res}, but ${res} thinks ${JSON.stringify(this.id)} is ${symm}`,
+        `asymmetry pairing dancers up: ${this.id} thinks ${JSON.stringify(symm.id)} is ${res.id}, but ${res.id} thinks ${JSON.stringify(this.id)} is ${symm.id}`,
       );
     return res;
   }
@@ -401,7 +400,7 @@ export function resolveMatches(
   cid: CalledIdentifier,
   state: WorldState,
   { roles }: { roles?: "same" | "different" } = {},
-): Record<ProtoId, DancerId> {
+): Record<ProtoId, Dancer> {
   return buildProtoRecord((id) =>
     Dancer.get(id, state).resolveMatch(cid, { roles }),
   );

@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
 import { PI } from "../geometry";
-import { Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { arc, hold, type InstructionAnimator } from "./_segment";
 
@@ -24,16 +23,14 @@ export const pullBySegments: InstructionAnimator<PullByInstruction> = (
       position: arc(instr.cid, { semiMinor, phi: PI }),
       facing: (dancer, _frac) => {
         const them = dancer.resolveMatch(instr.cid);
-        return Dancer.get(them, dancer.state)
-          .pos.subtract(dancer.pos)
-          .normalize();
+        return them.pos.subtract(dancer.pos).normalize();
       },
       hands: (dancer, frac) => {
         if (frac >= 0.5) return {};
         const them = dancer.resolveMatch(instr.cid);
-        return hold([instr.hand, them, instr.hand]);
+        return hold([instr.hand, them.id, instr.hand]);
       },
-      interactedWith: (dancer) => [dancer.resolveMatch(instr.cid)],
+      interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
     },
   ];
 };

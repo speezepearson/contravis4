@@ -241,25 +241,25 @@ export function arc(
   opts: { semiMinor: number; phi: number },
 ): PositionFn {
   return (dancer, frac) => {
-    const themId = dancer.resolveMatch(cid);
+    const them = dancer.resolveMatch(cid);
     const start = dancer.pos;
-    const end = Dancer.get(themId, dancer.state).pos;
+    const end = them.pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);
   };
 }
 
 /** Orbit around midpoint with counterpart. */
 export function orbit(
-  matches: Map<ProtoId, DancerId>,
+  matches: Map<ProtoId, Dancer>,
   opts: { radians: number },
   who?: ReadonlySet<ProtoId>,
 ): PositionFn {
   return (dancer, frac) => {
     if (who && !who.has(dancer.protoId)) return dancer.pos;
     const myPos = dancer.pos;
-    const themId = matches.get(dancer.protoId);
-    if (!themId) return myPos;
-    const theirPos = Dancer.get(themId, dancer.state).pos;
+    const them = matches.get(dancer.protoId);
+    if (!them) return myPos;
+    const theirPos = Dancer.get(them.id, dancer.state).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
   };
