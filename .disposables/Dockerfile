@@ -1,12 +1,15 @@
 FROM node:22-bookworm
 
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
         git \
         curl \
         sudo \
         jq \
+        chromium \
     && rm -rf /var/lib/apt/lists/*
+
+ENV ROD_CHROME_BIN=/usr/bin/chromium
 
 RUN useradd -m -s /bin/bash -u 60000 dev && \
     echo 'dev ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/dev && \
@@ -17,6 +20,7 @@ USER dev
 WORKDIR /home/dev
 
 ENV PATH="/home/dev/.local/bin:$PATH"
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
 COPY .disposables/claude.json /home/dev/.claude.json
