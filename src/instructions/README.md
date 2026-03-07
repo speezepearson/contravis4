@@ -398,6 +398,21 @@ Slide sideways (typically from waves).
 }
 ```
 
+### `slice`
+
+Dancers slide sideways (left or right) while facing across, stepping forward to the center and then back out.
+
+- `direction`: `"left"` or `"right"`
+
+```json
+{
+  "id": "...",
+  "beats": 8,
+  "type": "slice",
+  "direction": "left"
+}
+```
+
 ### `shoulder_round`
 
 Also known as "gyre" or "gypsy". Dancers orbit each other without touching.

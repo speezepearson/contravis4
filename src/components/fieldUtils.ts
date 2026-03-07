@@ -168,6 +168,8 @@ export function makeDefaultInstruction(
         };
       case "rory_o_more":
         return { id, type: "rory_o_more", beats: 4, direction: "right" };
+      case "slice":
+        return { id, type: "slice", beats: 8, direction: "left" };
       case "shoulder_round":
         return {
           id,

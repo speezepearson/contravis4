@@ -81,6 +81,7 @@ import {
   ShoulderRoundInstructionSchema,
   shoulderRoundSegments,
 } from "./shoulderRound";
+import { SliceInstructionSchema, sliceSegments } from "./slice";
 import {
   SquareThroughInstructionSchema,
   squareThroughSegments,
@@ -132,6 +133,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   RollAwayInstructionSchema,
   RoryOMoreInstructionSchema,
   ShoulderRoundInstructionSchema,
+  SliceInstructionSchema,
   SquareThroughInstructionSchema,
   StarInstructionSchema,
   StepInstructionSchema,
@@ -181,6 +183,7 @@ export const atomicSegmentAnimators: {
   roll_away: rollAwaySegments,
   rory_o_more: roryOMoreSegments,
   shoulder_round: shoulderRoundSegments,
+  slice: sliceSegments,
   square_through: squareThroughSegments,
   star: starSegments,
   step: stepSegments,
