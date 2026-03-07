@@ -189,6 +189,14 @@ export function makeDefaultInstruction(
           cid1: "neighbor",
           cid2: "partner",
         };
+      case "single_file_promenade":
+        return {
+          id,
+          type: "single_file_promenade",
+          beats: 8,
+          direction: "left",
+          nPlaces: 4,
+        };
       case "star":
         return {
           id,

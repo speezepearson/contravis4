@@ -84,6 +84,7 @@ import { RightLeftThroughFields } from "./fields/RightLeftThroughFields";
 import { RollAwayFields } from "./fields/RollAwayFields";
 import { RoryOMoreFields } from "./fields/RoryOMoreFields";
 import { ShoulderRoundFields } from "./fields/ShoulderRoundFields";
+import { SingleFilePromenadeFields } from "./fields/SingleFilePromenadeFields";
 import { SliceFields } from "./fields/SliceFields";
 import { SplitFields } from "./fields/SplitFields";
 import { SquareThroughFields } from "./fields/SquareThroughFields";
@@ -176,6 +177,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "roll_away",
   "rory_o_more",
   "shoulder_round",
+  "single_file_promenade",
   "slice",
   "square_through",
   "star",
@@ -220,6 +222,7 @@ const ACTION_LABELS: Record<ActionOptionType, string> = {
   roll_away: "roll away",
   rory_o_more: "Rory O'More",
   shoulder_round: "shoulder round",
+  single_file_promenade: "single file promenade",
   slice: "slice",
   square_through: "square through",
   star: "star",
@@ -524,6 +527,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "roll_away":
     case "rory_o_more":
     case "shoulder_round":
+    case "single_file_promenade":
     case "slice":
     case "square_through":
     case "star":
@@ -720,6 +724,13 @@ function InlineForm({
           case "square_through":
             return (
               <SquareThroughFields {...common} instruction={instruction} />
+            );
+          case "single_file_promenade":
+            return (
+              <SingleFilePromenadeFields
+                {...common}
+                instruction={instruction}
+              />
             );
           case "star":
             return <StarFields {...common} instruction={instruction} />;

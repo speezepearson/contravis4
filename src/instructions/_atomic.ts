@@ -81,6 +81,10 @@ import {
   ShoulderRoundInstructionSchema,
   shoulderRoundSegments,
 } from "./shoulderRound";
+import {
+  SingleFilePromenadeInstructionSchema,
+  singleFilePromenadeSegments,
+} from "./singleFilePromenade";
 import { SliceInstructionSchema, sliceSegments } from "./slice";
 import {
   SquareThroughInstructionSchema,
@@ -133,6 +137,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   RollAwayInstructionSchema,
   RoryOMoreInstructionSchema,
   ShoulderRoundInstructionSchema,
+  SingleFilePromenadeInstructionSchema,
   SliceInstructionSchema,
   SquareThroughInstructionSchema,
   StarInstructionSchema,
@@ -183,6 +188,7 @@ export const atomicSegmentAnimators: {
   roll_away: rollAwaySegments,
   rory_o_more: roryOMoreSegments,
   shoulder_round: shoulderRoundSegments,
+  single_file_promenade: singleFilePromenadeSegments,
   slice: sliceSegments,
   square_through: squareThroughSegments,
   star: starSegments,

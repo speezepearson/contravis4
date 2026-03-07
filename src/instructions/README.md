@@ -440,6 +440,23 @@ Also known as "gyre" or "gypsy". Dancers orbit each other without touching.
 }
 ```
 
+### `single_file_promenade`
+
+Like a star, but without hands. Dancers orbit in single file around the ring.
+
+- `direction`: `"left"` or `"right"`
+- `nPlaces`: number of places to promenade
+
+```json
+{
+  "id": "...",
+  "beats": 8,
+  "type": "single_file_promenade",
+  "direction": "left",
+  "nPlaces": 4
+}
+```
+
 ### `star`
 
 Like a circle, but each dancer's facing is rotated 90° (CCW if left, CW if right) and holds inside hands with the person opposite them in the ring.
