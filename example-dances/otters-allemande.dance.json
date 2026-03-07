@@ -1,5 +1,5 @@
 {
-  "$schema": "../dance.schema.json",
+  "$schema": "../_generated/json-schemas/Dance.schema.json",
   "name": "Otter's Allemande",
   "author": "Ramya Rajan",
   "initFormation": "improper",
@@ -106,8 +106,12 @@
     },
     {
       "id": "22b579f2-5d01-4c19-876b-0cf3430a6a5d",
-      "beats": 8,
-      "type": "square_through"
+      "beats": 16,
+      "type": "square_through",
+      "nPullBys": 4,
+      "firstHand": "right",
+      "cid1": "neighbor",
+      "cid2": "partner"
     }
   ]
 }
