@@ -1,13 +1,10 @@
 import { type z as Z, z } from "zod";
 
 import {
-  BeatsSchema,
   DancerIdSchema,
   DancerOffsetSchema,
-  HandSchema,
   ProgressionDirSchema,
   ProtoIdSchema,
-  RoleSchema,
 } from "../src/contraCore";
 import {
   CalledDirectionSchema,
@@ -147,10 +144,7 @@ const allSchemas: Record<string, Z.ZodType> = {
 
   // Shared field types
   InstructionId: InstructionIdSchema,
-  Beats: BeatsSchema,
-  Hand: HandSchema,
   TakeHand: TakeHandSchema,
-  Role: RoleSchema,
   RolleeSpec: RolleeSpecSchema,
   ProgressionDir: ProgressionDirSchema,
   DancerOffset: DancerOffsetSchema,
