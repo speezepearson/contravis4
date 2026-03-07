@@ -9,10 +9,6 @@ import { indexOf } from "../utils";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { SearchableDropdown } from "./SearchableDropdown";
 
-export interface InlineDropdownHandle {
-  focus: () => void;
-}
-
 interface Props<T extends string> {
   options: readonly T[];
   value: T;
@@ -21,6 +17,7 @@ interface Props<T extends string> {
   getLabel?: (value: T) => string;
   onInvalid?: () => void;
   onHighlight?: (cid: CalledIdentifier | null) => void;
+  autoFocus?: boolean;
 }
 
 export function InlineDropdown<T extends string>({
@@ -31,8 +28,9 @@ export function InlineDropdown<T extends string>({
   getLabel,
   onInvalid,
   onHighlight,
+  autoFocus,
 }: Props<T>) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoFocus ?? false);
   const dropdownRef = useRef<HTMLUListElement>(null);
   const { onPopoverOpen } = useInstructionEdit();
 

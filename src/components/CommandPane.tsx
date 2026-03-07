@@ -531,6 +531,7 @@ function BeatGutter({
 function InlineForm({
   instruction,
   onChange,
+  autoFocusAction,
   allowContainers = true,
 }: {
   instruction: Instruction;
@@ -569,6 +570,7 @@ function InlineForm({
         value={instruction.type}
         onChange={(v) => handleActionChange(v)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
+        autoFocus={autoFocusAction}
       />{" "}
       {(() => {
         switch (instruction.type) {
