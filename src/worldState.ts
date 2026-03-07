@@ -60,6 +60,10 @@ export type DancerHandPointer = z.infer<typeof DancerHandPointerSchema>;
 // Stores the WorldState a Dancer was looked up from, invisible to Immer and serialization.
 const dancerStates = new WeakMap<Dancer, WorldState>();
 
+type ResolveLabelOpts = { checkDistance?: boolean };
+type ResolveCalledIdentifierOpts = {
+  roles?: "same" | "different";
+} & ResolveLabelOpts;
 export class Dancer {
   static [immerable] = true;
 
@@ -164,11 +168,55 @@ export class Dancer {
     return d;
   }
 
-  resolveLabel(label: InfallibleLabel): Dancer;
-  resolveLabel(label: Label): Dancer | undefined;
-  resolveLabel(label: Label): Dancer | undefined {
-    const result = resolveLabelUnchecked(this, label);
-    if (result && getDist(this.pos, result.pos) > 2.8) {
+  resolveLabel(label: InfallibleLabel, opts?: ResolveLabelOpts): Dancer;
+  resolveLabel(label: Label, opts?: ResolveLabelOpts): Dancer | undefined;
+  resolveLabel(
+    label: Label,
+    { checkDistance = true }: ResolveLabelOpts = {},
+  ): Dancer | undefined {
+    const result = (() => {
+      const s = this.state;
+      // Intermediate lookups skip the distance check; only the final result is checked.
+      const noCheck: ResolveLabelOpts = { checkDistance: false };
+      if (parses(InfallibleLabelSchema, label)) {
+        switch (label) {
+          case "partner":
+          case "neighbor":
+            return Dancer.get(this.labels[label], s);
+          case "opposite": {
+            const neighbor = this.resolveLabel("neighbor", noCheck);
+            if (!neighbor) return undefined;
+            return neighbor.resolveLabel("partner", noCheck);
+          }
+        }
+
+        label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
+        const neighbor = this.resolveLabel("neighbor", noCheck);
+        if (!neighbor) return undefined;
+        return neighbor.addOffset(
+          neighborLabelOffsets[label] * getProgDirSign(this.id),
+        );
+      } else if (parses(ShadowLabelSchema, label)) {
+        if (!this.labels[label]) return undefined;
+        return Dancer.get(this.labels[label], s);
+      } else {
+        const handLabel = label satisfies Exclude<
+          Label,
+          InfallibleLabel | ShadowLabel
+        >;
+        switch (handLabel) {
+          case "person_in_left_hand":
+            if (!this.hands["left"]) return undefined;
+            return Dancer.get(this.hands["left"].theirId, s);
+          case "person_in_right_hand":
+            if (!this.hands["right"]) return undefined;
+            return Dancer.get(this.hands["right"].theirId, s);
+          default:
+            assertNever(handLabel);
+        }
+      }
+    })();
+    if (checkDistance && result && getDist(this.pos, result.pos) > 2.8) {
       throw new SnazzyError([
         { dancerId: this.id },
         " is too far from their ",
@@ -212,13 +260,16 @@ export class Dancer {
     }
   }
 
-  resolveCalledDirection(dir: CalledDirection): Vector {
+  resolveCalledDirection(
+    dir: CalledDirection,
+    opts: ResolveLabelOpts = {},
+  ): Vector {
     if (parses(PureDirectionSchema, dir)) {
       return this.resolvePureDirection(dir);
     }
     if (parses(TowardsLabelDirectionSchema, dir)) {
       const label = towardsToLabel[dir];
-      const them = this.resolveLabel(label);
+      const them = this.resolveLabel(label, opts);
       if (!them)
         throw new SnazzyError([
           { dancerId: this.id },
@@ -242,10 +293,13 @@ export class Dancer {
   }
 
   /** For a "towards" CalledDirection, resolves the target person. Returns undefined for pure directions. */
-  resolveCalledDirectionTarget(dir: CalledDirection): Dancer | undefined {
+  resolveCalledDirectionTarget(
+    dir: CalledDirection,
+    opts: ResolveLabelOpts = {},
+  ): Dancer | undefined {
     if (parses(PureDirectionSchema, dir)) return undefined;
     if (parses(TowardsLabelDirectionSchema, dir)) {
-      return this.resolveLabel(towardsToLabel[dir]) ?? undefined;
+      return this.resolveLabel(towardsToLabel[dir], opts) ?? undefined;
     }
     const pureDir = towardsPersonToDir[dir];
     const pureDirVec = this.resolvePureDirection(pureDir);
@@ -255,10 +309,10 @@ export class Dancer {
   /** Find the dancer best described by "the person to your [...]", if any. */
   findDancerInCalledDirection(
     side: CalledDirection,
-    { roles }: { roles?: "same" | "different" } = {},
+    opts: ResolveCalledIdentifierOpts = {},
   ): Dancer | null {
-    const dir = this.resolveCalledDirection(side);
-    return this.findDancerInDirection(dir, { roles });
+    const dir = this.resolveCalledDirection(side, opts);
+    return this.findDancerInDirection(dir, opts);
   }
 
   /** True when this dancer faces roughly away from the center line (x = 0). */
@@ -331,9 +385,10 @@ export class Dancer {
 
   resolveCalledIdentifier(
     cid: CalledIdentifier,
-    { roles }: { roles?: "same" | "different" } = {},
+    { roles, ...opts }: ResolveCalledIdentifierOpts = {},
   ): Dancer | undefined {
-    if (parses(LabelSchema, cid)) return this.resolveLabel(cid) ?? undefined;
+    if (parses(LabelSchema, cid))
+      return this.resolveLabel(cid, opts) ?? undefined;
     const pureDir = personInToDir[cid];
     const dir = this.resolvePureDirection(pureDir);
     const res = this.findDancerInDirection(dir, { roles });
@@ -356,12 +411,12 @@ export class Dancer {
   /** Resolves this dancer's "match" for a figure where dancers pair up. */
   resolveMatch(
     cid: CalledIdentifier,
-    { roles }: { roles?: "same" | "different" } = {},
+    { roles, ...opts }: ResolveCalledIdentifierOpts = {},
   ): Dancer {
-    const res = this.resolveCalledIdentifier(cid, { roles });
+    const res = this.resolveCalledIdentifier(cid, { roles, ...opts });
     if (!res)
       throw new SnazzyError([{ dancerId: this.id }, " can't find ", { cid }]);
-    const symm = res.resolveCalledIdentifier(cid, { roles });
+    const symm = res.resolveCalledIdentifier(cid, { roles, ...opts });
     if (!symm)
       throw new SnazzyError([{ dancerId: res.id }, " can't find ", { cid }]);
     if (symm.id !== this.id)
@@ -380,55 +435,6 @@ export class Dancer {
         { dancerId: symm.id },
       ]);
     return res;
-  }
-}
-
-function resolveLabelUnchecked(dancer: Dancer, label: InfallibleLabel): Dancer;
-function resolveLabelUnchecked(
-  dancer: Dancer,
-  label: Label,
-): Dancer | undefined;
-function resolveLabelUnchecked(
-  dancer: Dancer,
-  label: Label,
-): Dancer | undefined {
-  const s = dancer.state;
-  if (parses(InfallibleLabelSchema, label)) {
-    switch (label) {
-      case "partner":
-      case "neighbor":
-        return Dancer.get(dancer.labels[label], s);
-      case "opposite": {
-        const neighbor = resolveLabelUnchecked(dancer, "neighbor");
-        if (!neighbor) return undefined;
-        return resolveLabelUnchecked(neighbor, "partner");
-      }
-    }
-
-    label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
-    const neighbor = resolveLabelUnchecked(dancer, "neighbor");
-    if (!neighbor) return undefined;
-    return neighbor.addOffset(
-      neighborLabelOffsets[label] * getProgDirSign(dancer.id),
-    );
-  } else if (parses(ShadowLabelSchema, label)) {
-    if (!dancer.labels[label]) return undefined;
-    return Dancer.get(dancer.labels[label], s);
-  } else {
-    const handLabel = label satisfies Exclude<
-      Label,
-      InfallibleLabel | ShadowLabel
-    >;
-    switch (handLabel) {
-      case "person_in_left_hand":
-        if (!dancer.hands["left"]) return undefined;
-        return Dancer.get(dancer.hands["left"].theirId, s);
-      case "person_in_right_hand":
-        if (!dancer.hands["right"]) return undefined;
-        return Dancer.get(dancer.hands["right"].theirId, s);
-      default:
-        assertNever(handLabel);
-    }
   }
 }
 

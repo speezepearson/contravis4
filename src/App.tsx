@@ -288,7 +288,9 @@ export default function App() {
         }> = [];
         for (const id of ALL_PROTO_IDS) {
           const target = try_(() =>
-            Dancer.get(id, frame).resolveCalledIdentifier(highlightedRel),
+            Dancer.get(id, frame).resolveCalledIdentifier(highlightedRel, {
+              checkDistance: false,
+            }),
           );
           if (target instanceof Error || !target) continue;
           const from = frame[id];
