@@ -1,5 +1,5 @@
 {
-  "$schema": "../dance.schema.json",
+  "$schema": "../_generated/json-schemas/Dance.schema.json",
   "name": "(dummy) California twirl",
   "initFormation": "improper",
   "instructions": [
