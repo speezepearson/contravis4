@@ -5,11 +5,13 @@ import { type DancerId, type ProtoId } from "../contraCore";
 import { must } from "../utils";
 import { Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
+import { fudgeToAlignY } from "./_fudge";
 import {
   hold,
   type InstructionAnimator,
   lerpFacingTo,
   linearTo,
+  type Segment,
 } from "./_segment";
 
 export const LongLinesForwardBackInstructionSchema = z.object({
@@ -135,7 +137,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
 
   const halfBeats = instr.beats / 2;
 
-  return [
+  const segments: Segment[] = [
     // Walk forward: take inside hands, move to x=±0.2, y=assigned slot
     {
       dur: halfBeats,
@@ -164,4 +166,6 @@ export const longLinesForwardBackSegments: InstructionAnimator<
       }),
     },
   ];
+
+  return fudgeToAlignY(segments, init, who);
 };
