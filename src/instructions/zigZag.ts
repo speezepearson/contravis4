@@ -12,7 +12,7 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { getDir } from "../geometry";
-import { getSide } from "../utils";
+import { getSide, must } from "../utils";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import {
@@ -93,7 +93,10 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   // means the same spatial direction regardless of which role leads.
   const leaderProto = [...who].find((id) => getRole(id) === instr.leader)!;
   const effectiveDir: Hand =
-    getSide(init[leaderProto].pos) === "east"
+    must(
+      getSide(init[leaderProto].pos),
+      `[zig zag] leader ${leaderProto} is too close to the center`,
+    ) === "east"
       ? otherHand(instr.leaderDir)
       : instr.leaderDir;
 

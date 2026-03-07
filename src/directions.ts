@@ -5,7 +5,7 @@ import { type DancerId, isLark, type ProtoId } from "./contraCore";
 import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "./geometry";
 import { findDancerInDirection, resolveLabel } from "./instructions/_base";
 import { type Label, LabelSchema } from "./labels";
-import { assertNever, getSide, parses } from "./utils";
+import { assertNever, getSide, must, parses } from "./utils";
 import { Dancer, type WorldState } from "./worldState";
 
 export const CardinalDirectionSchema = z.enum(["up", "down", "across", "out"]);
@@ -13,19 +13,22 @@ export type CardinalDirection = z.infer<typeof CardinalDirectionSchema>;
 export function resolveCardinalDirection(
   dir: CardinalDirection,
   pos: Vector,
-  {
-    errMsg = `unable to resolve ${dir} from pos (${pos.x}, ${pos.y})`,
-  }: { errMsg?: string } = {},
-): Vector {
+): Vector | undefined {
   switch (dir) {
     case "up":
       return NORTH;
     case "down":
       return SOUTH;
-    case "across":
-      return { west: EAST, east: WEST }[getSide(pos, { errMsg })];
-    case "out":
-      return { west: WEST, east: EAST }[getSide(pos, { errMsg })];
+    case "across": {
+      const side = getSide(pos);
+      if (!side) return undefined;
+      return { west: EAST, east: WEST }[side];
+    }
+    case "out": {
+      const side = getSide(pos);
+      if (!side) return undefined;
+      return { west: WEST, east: EAST }[side];
+    }
     default:
       assertNever(dir);
   }
@@ -95,7 +98,10 @@ export function resolvePureDirection(
     case "out":
     case "up":
     case "down":
-      return resolveCardinalDirection(dir, state.pos);
+      return must(
+        resolveCardinalDirection(dir, state.pos),
+        `unable to resolve ${dir} from pos (${state.pos.x}, ${state.pos.y})`,
+      );
     case "on_right":
       return state.facing.rotateByDegrees(-90);
     case "on_left":
@@ -177,12 +183,14 @@ export function findDancerInCalledDirection(
 export function facesOut(
   id: DancerId,
   state: WorldState,
-  { errMsg }: { errMsg?: string } = {},
+  {
+    errMsg = `unable to resolve dir 'out' at dancer ${id}'s pos`,
+  }: { errMsg?: string } = {},
 ): boolean {
   const { facing, pos } = Dancer.get(id, state);
   return roughlySameDir(
     facing,
-    resolveCardinalDirection("out", pos, { errMsg }),
+    must(resolveCardinalDirection("out", pos), errMsg),
   );
 }
 
@@ -190,11 +198,13 @@ export function facesOut(
 export function facesAcross(
   id: DancerId,
   state: WorldState,
-  { errMsg }: { errMsg?: string } = {},
+  {
+    errMsg = `unable to resolve dir 'across' at dancer ${id}'s pos`,
+  }: { errMsg?: string } = {},
 ): boolean {
   const { facing, pos } = Dancer.get(id, state);
   return roughlySameDir(
     facing,
-    resolveCardinalDirection("across", pos, { errMsg }),
+    must(resolveCardinalDirection("across", pos), errMsg),
   );
 }

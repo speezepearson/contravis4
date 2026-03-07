@@ -14,6 +14,7 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { ellipsePosition, PI } from "../geometry";
+import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
   type CalledDirection,
@@ -55,7 +56,10 @@ export function makeHalfPoussetteArcPosition(
   // Face across internally for arc dest resolution (on_left/on_right depend on facing)
   const facedAcross = produce(state, (draft) => {
     for (const id of ALL_PROTO_IDS) {
-      draft[id].facing = resolveCardinalDirection("across", draft[id].pos);
+      draft[id].facing = must(
+        resolveCardinalDirection("across", draft[id].pos),
+        `[poussette] dancer ${id} is too close to the center`,
+      );
     }
   });
 
@@ -112,7 +116,10 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
   const matches = resolveMatches("person_across", init, { roles: "different" });
 
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
-    draft[id].facing = resolveCardinalDirection("across", draft[id].pos);
+    draft[id].facing = must(
+      resolveCardinalDirection("across", draft[id].pos),
+      `[poussette] dancer ${id} is too close to the center`,
+    );
     const matchId = matches[id];
     draft[id].hands = hold(
       ["left", matchId, "right"],

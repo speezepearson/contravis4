@@ -17,7 +17,7 @@ import {
   revolve,
   TWO_PI,
 } from "../geometry";
-import { getSide, indexOf, lerpVectors, safeThreshold } from "../utils";
+import { getSide, indexOf, lerpVectors, must, safeThreshold } from "../utils";
 import {
   avgPos,
   buildProtoRecord,
@@ -81,7 +81,10 @@ export function makeSwingSegments(
   const plans = buildProtoRecord((id) => {
     const me = Dancer.get(id, init);
     const center = centers[id];
-    const finalFacing = resolveCardinalDirection(instr.endFacing, center);
+    const finalFacing = must(
+      resolveCardinalDirection(instr.endFacing, center),
+      `unable to resolve end facing ${instr.endFacing} for dancer ${id} (final CoM (${center.x}, ${center.y}))`,
+    );
 
     const final = {
       facing: finalFacing,
@@ -192,10 +195,18 @@ export function makeSwingSegments(
       // Empirically, ~every "swing, end facing across/out" instruction I've heard
       // has had *everybody* swinging, and ending with every pair facing across to another pair.
       const westSwingers = ALL_PROTO_IDS.filter(
-        (id) => getSide(plans[id].center) === "west",
+        (id) =>
+          must(
+            getSide(plans[id].center),
+            `[swing] dancer ${id}'s swing center is too close to the center line`,
+          ) === "west",
       );
       const eastSwingers = ALL_PROTO_IDS.filter(
-        (id) => getSide(plans[id].center) === "east",
+        (id) =>
+          must(
+            getSide(plans[id].center),
+            `[swing] dancer ${id}'s swing center is too close to the center line`,
+          ) === "east",
       );
       if (westSwingers.length !== eastSwingers.length) {
         throw new Error(
@@ -222,13 +233,12 @@ export function makeSwingSegments(
           NORTH.multiply(2 * er1.offset),
         );
         try {
-          return safeThreshold(
-            getDist(wlcom, er0Com) - getDist(wlcom, er1Com),
-            {
+          return must(
+            safeThreshold(getDist(wlcom, er0Com) - getDist(wlcom, er1Com), {
               neg: [wlcom, er0Com],
               pos: [wlcom, er1Com],
-              errMsg: `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
-            },
+            }),
+            `[swing end facing across/out] isn't sure how to nudge the swings so that couples end up across from each other`,
           );
         } catch {
           const wlRecents = init[westLark].recents;
@@ -247,7 +257,7 @@ export function makeSwingSegments(
       const drifts = buildProtoRecord((id) => {
         const center = centers[id];
         const finalCenter = new Vector(
-          { east: 0.5, west: -0.5 }[getSide(center)],
+          { east: 0.5, west: -0.5 }[must(getSide(center))],
           center.y + dy * (westSwingers.includes(id) ? 1 : -1),
         );
         return finalCenter.subtract(center);

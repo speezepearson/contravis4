@@ -31,7 +31,7 @@ import {
   type ShadowLabel,
   ShadowLabelSchema,
 } from "./labels";
-import { assertNever, getSide, isEqual, parses } from "./utils";
+import { assertNever, getSide, isEqual, must, parses } from "./utils";
 
 export const DancerHandPointerSchema = z.object({
   theirId: DancerIdSchema,
@@ -228,7 +228,7 @@ export function getDancerSide(
     errMsg = `dancer ${dancer.id} is too close to the center, refusing to guess which side they're supposed to be on`,
   }: { errMsg?: string } = {},
 ): "east" | "west" {
-  return getSide(dancer.pos, { errMsg });
+  return must(getSide(dancer.pos), errMsg);
 }
 
 export function avgPos(state: WorldState, ...ids: DancerId[]): Vector {

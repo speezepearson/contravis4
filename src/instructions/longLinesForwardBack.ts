@@ -2,6 +2,7 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { type DancerId, type ProtoId } from "../contraCore";
+import { must } from "../utils";
 import { getDancerSide } from "../worldState";
 import {
   findDancerInCalledDirection,
@@ -84,8 +85,12 @@ export const longLinesForwardBackSegments: InstructionAnimator<
   // Assert everybody faces across
   for (const id of who) {
     if (
-      init[id].facing.dot(resolveCardinalDirection("across", init[id].pos)) <
-      0.7
+      init[id].facing.dot(
+        must(
+          resolveCardinalDirection("across", init[id].pos),
+          `[long lines forward and back] dancer ${id} is too close to the middle, can't tell which way they should move`,
+        ),
+      ) < 0.7
     ) {
       throw new Error(`${id} must face across for long lines forward and back`);
     }
@@ -143,7 +148,10 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         return new Vector(x, yTargets.get(id)!);
       }),
       facing: lerpFacingTo((id, segInit) =>
-        resolveCardinalDirection("across", segInit[id].pos),
+        must(
+          resolveCardinalDirection("across", segInit[id].pos),
+          `[long lines forward and back] dancer ${id} is too close to the middle, can't tell which way they should move`,
+        ),
       ),
       hands: (id) =>
         hold(

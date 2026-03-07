@@ -2,6 +2,7 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
+import { must } from "../utils";
 import {
   instructionBaseSchemaFields,
   resolveCardinalDirection,
@@ -33,7 +34,10 @@ export const longLineInCenterSegments: InstructionAnimator<
       },
       facing: lerpFacingTo((id, segInit) => {
         if (getRole(id) !== instr.role) return segInit[id].facing;
-        return resolveCardinalDirection("across", segInit[id].pos);
+        return must(
+          resolveCardinalDirection("across", segInit[id].pos),
+          `[long line in center] dancer ${id} is too close to the center, can't tell which way they should move`,
+        );
       }),
       hands: () => ({}),
     },

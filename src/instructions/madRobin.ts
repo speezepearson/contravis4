@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { getRole, RoleSchema } from "../contraCore";
 import { ellipsePosition, TWO_PI } from "../geometry";
+import { must } from "../utils";
 import { Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -68,7 +69,10 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
         return ellipsePosition(start, end, semiMinor, phi * frac);
       },
       facing: (id, _frac, segInit) => {
-        return resolveCardinalDirection("across", segInit[id].pos);
+        return must(
+          resolveCardinalDirection("across", segInit[id].pos),
+          `[mad robin] dancer ${id} is too close to the center, can't resolve facing direction`,
+        );
       },
       hands: () => ({}),
       interactedWith: (id) => [matches[id]],

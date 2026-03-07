@@ -33,8 +33,8 @@ export function isEqual<T>(a: T, b: T): boolean {
   return _.isEqual(a, b);
 }
 
-export function must<T>(x: T | null | undefined): T {
-  if (x == null) throw new Error("Value is null or undefined");
+export function must<T>(x: T | null | undefined, msg?: string): T {
+  if (x == null) throw new Error(msg ?? "Value is null or undefined");
   return x;
 }
 
@@ -71,36 +71,16 @@ export function typedSafeParse<Schema extends z.ZodSchema>(
 
 export function safeThreshold<T>(
   x: number,
-  {
-    neg,
-    pos,
-    tol = 0.1,
-    errMsg,
-  }: { neg: T; pos: T; tol?: number; errMsg?: string },
-): T {
+  { neg, pos, tol = 0.1 }: { neg: T; pos: T; tol?: number },
+): T | undefined {
   if (Math.abs(x) < tol) {
-    throw new Error(errMsg ?? "value is too close to zero");
+    return undefined;
   }
   return x > 0 ? pos : neg;
 }
 
-export function getSide(
-  pos: Vector,
-  { errMsg }: { errMsg?: string } = {},
-): "east" | "west" {
-  return safeThreshold(pos.x, { neg: "west", pos: "east", errMsg });
-}
-
-/**
- * Returns the smallest-magnitude number x such that (a+x) and (b-x) differ by a multiple of 2.
- */
-export function smallestCrossDyToMakeAlignByMultOfTwo(
-  a: number,
-  b: number,
-  { errMsg }: { errMsg?: string } = {},
-): number {
-  const halfDiff = (a - b) / 2;
-  return safeRound(halfDiff, { errMsg }) - halfDiff;
+export function getSide(pos: Vector): "east" | "west" | undefined {
+  return safeThreshold(pos.x, { neg: "west", pos: "east" });
 }
 
 /** Shortest distance between two points on a circle of the given circumference. */
@@ -111,17 +91,6 @@ export function circularDistance(
 ): number {
   const d = (((a - b) % modulus) + modulus) % modulus;
   return Math.min(d, modulus - d);
-}
-
-export function safeRound(
-  x: number,
-  { tol = 0.1, errMsg }: { tol?: number; errMsg?: string } = {},
-): number {
-  const rounded = Math.round(x);
-  if (Math.abs(x - rounded) > 0.5 - tol) {
-    throw new Error(errMsg ?? "value is too far from an integer");
-  }
-  return rounded;
 }
 
 export function try_<T>(fn: () => T): T | Error {

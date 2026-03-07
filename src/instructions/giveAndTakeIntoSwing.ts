@@ -7,6 +7,7 @@ import {
   RoleSchema,
 } from "../contraCore";
 import { getDir } from "../geometry";
+import { must } from "../utils";
 import { buildProtoRecord, Dancer, getDancerSide } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -60,7 +61,10 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
       .divide(2);
 
     const finalCoM = drawer.pos.add(
-      resolveCardinalDirection("across", drawer.pos)
+      must(
+        resolveCardinalDirection("across", drawer.pos),
+        `[give and take into swing] dancer ${id} is too close to the center, can't tell which way they should end up facing`,
+      )
         .multiply(0.5)
         .rotateByDegrees(90 * (instr.drawerRole === "robin" ? 1 : -1)),
     );
