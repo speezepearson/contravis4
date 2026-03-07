@@ -9,22 +9,19 @@ import {
   type DancerId,
   getProgDirSign,
   getRole,
-  isLark,
   type ProtoId,
   protoIdToDancerId,
 } from "../contraCore";
-import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "../geometry";
 import {
   type InfallibleLabel,
   InfallibleLabelSchema,
   type Label,
-  LabelSchema,
   neighborLabelOffsets,
   OffsetNeighborLabelSchema,
   type ShadowLabel,
   ShadowLabelSchema,
 } from "../labels";
-import { assertNever, getSide, isNTuple, type NTuple, parses } from "../utils";
+import { assertNever, type NTuple, parses } from "../utils";
 import { buildProtoRecord, Dancer, type WorldState } from "../worldState";
 
 export const InstructionIdSchema = z.string().uuid();
@@ -34,29 +31,6 @@ export const instructionBaseSchemaFields = {
   id: InstructionIdSchema,
   beats: BeatsSchema,
 };
-
-export const CardinalDirectionSchema = z.enum(["up", "down", "across", "out"]);
-export type CardinalDirection = z.infer<typeof CardinalDirectionSchema>;
-export function resolveCardinalDirection(
-  dir: CardinalDirection,
-  pos: Vector,
-  {
-    errMsg = `unable to resolve ${dir} from pos (${pos.x}, ${pos.y})`,
-  }: { errMsg?: string } = {},
-): Vector {
-  switch (dir) {
-    case "up":
-      return NORTH;
-    case "down":
-      return SOUTH;
-    case "across":
-      return { west: EAST, east: WEST }[getSide(pos, { errMsg })];
-    case "out":
-      return { west: WEST, east: EAST }[getSide(pos, { errMsg })];
-    default:
-      assertNever(dir);
-  }
-}
 
 export type Animator = (
   init: WorldState,
@@ -137,294 +111,6 @@ export function resolveLabel(
   }
 }
 
-export const PureDirectionSchema = z.enum([
-  "across",
-  "out",
-  "up",
-  "down",
-  "on_right",
-  "on_left",
-  "in_front",
-  "behind",
-  "left_diagonal",
-  "right_diagonal",
-  "larks_left_robins_right",
-  "larks_right_robins_left",
-]);
-export type PureDirection = z.infer<typeof PureDirectionSchema>;
-
-// ── CalledIdentifier: "the person [X]" — identifies a specific dancer ───
-
-export type PersonInDirection = `person_${PureDirection}`;
-export const PersonInDirectionSchema = z.enum(
-  PureDirectionSchema.options.map((d) => `person_${d}`) as [
-    PersonInDirection,
-    ...PersonInDirection[],
-  ],
-);
-
-export const CalledIdentifierSchema = z.enum([
-  ...LabelSchema.options,
-  ...PersonInDirectionSchema.options,
-]);
-export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
-
-// ── CalledDirection: resolves to a direction vector ─────────────────────
-
-export type TowardsLabelDirection = `towards_${Label}`;
-export const TowardsLabelDirectionSchema = z.enum(
-  LabelSchema.options.map((l) => `towards_${l}`) as [
-    TowardsLabelDirection,
-    ...TowardsLabelDirection[],
-  ],
-);
-
-export type TowardsPersonDirection = `towards_person_${PureDirection}`;
-export const TowardsPersonDirectionSchema = z.enum(
-  PureDirectionSchema.options.map((d) => `towards_person_${d}`) as [
-    TowardsPersonDirection,
-    ...TowardsPersonDirection[],
-  ],
-);
-
-export const CalledDirectionSchema = z.enum([
-  ...PureDirectionSchema.options,
-  ...TowardsLabelDirectionSchema.options,
-  ...TowardsPersonDirectionSchema.options,
-]);
-export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
-
-// ── Lookup maps ─────────────────────────────────────────────────────────
-
-const personInToDir = Object.fromEntries(
-  PureDirectionSchema.options.map((d) => [`person_${d}`, d]),
-) as Record<PersonInDirection, PureDirection>;
-
-const towardsToLabel = Object.fromEntries(
-  LabelSchema.options.map((l) => [`towards_${l}`, l]),
-) as Record<TowardsLabelDirection, Label>;
-
-const towardsPersonToDir = Object.fromEntries(
-  PureDirectionSchema.options.map((d) => [`towards_person_${d}`, d]),
-) as Record<TowardsPersonDirection, PureDirection>;
-
-// ── Resolution functions ────────────────────────────────────────────────
-
-export function resolvePureDirection(
-  id: DancerId,
-  dir: PureDirection,
-  protos: Record<ProtoId, Dancer>,
-): Vector {
-  const state = Dancer.get(id, protos);
-  switch (dir) {
-    case "across":
-    case "out":
-    case "up":
-    case "down":
-      return resolveCardinalDirection(dir, state.pos);
-    case "on_right":
-      return state.facing.rotateByDegrees(-90);
-    case "on_left":
-      return state.facing.rotateByDegrees(90);
-    case "in_front":
-      return state.facing;
-    case "behind":
-      return state.facing.multiply(-1);
-    case "left_diagonal":
-      return state.facing.rotateByDegrees(45);
-    case "right_diagonal":
-      return state.facing.rotateByDegrees(-45);
-    case "larks_left_robins_right":
-      return state.facing.rotateByDegrees(90 * (isLark(id) ? 1 : -1));
-    case "larks_right_robins_left":
-      return state.facing.rotateByDegrees(-90 * (isLark(id) ? 1 : -1));
-    default:
-      assertNever(dir);
-  }
-}
-
-export function resolveCalledDirection(
-  id: DancerId,
-  dir: CalledDirection,
-  protos: Record<ProtoId, Dancer>,
-): Vector {
-  if (parses(PureDirectionSchema, dir)) {
-    return resolvePureDirection(id, dir, protos);
-  }
-  if (parses(TowardsLabelDirectionSchema, dir)) {
-    const label = towardsToLabel[dir];
-    const themId = resolveLabel(id, label, protos);
-    if (!themId) throw new Error(`${id} has no ${label}`);
-    return getDir({
-      from: Dancer.get(id, protos).pos,
-      to: Dancer.get(themId, protos).pos,
-    });
-  }
-  if (parses(TowardsPersonDirectionSchema, dir)) {
-    const pureDir = towardsPersonToDir[dir];
-    const pureDirVec = resolvePureDirection(id, pureDir, protos);
-    const themId = findDancerInDirection(protos, id, pureDirVec);
-    if (!themId) throw new Error(`${id} has nobody ${pureDir}`);
-    return getDir({
-      from: Dancer.get(id, protos).pos,
-      to: Dancer.get(themId, protos).pos,
-    });
-  }
-  assertNever(dir);
-}
-
-export function resolveCalledIdentifier(
-  id: DancerId,
-  cid: CalledIdentifier,
-  protos: Record<ProtoId, Dancer>,
-  { roles }: { roles?: "same" | "different" } = {},
-): DancerId | undefined {
-  if (parses(LabelSchema, cid)) return resolveLabel(id, cid, protos);
-  const pureDir = personInToDir[cid as PersonInDirection];
-  const dir = resolvePureDirection(id, pureDir, protos);
-  const res = findDancerInDirection(protos, id, dir, { roles });
-  if (!res) return undefined;
-  if (roles === "same" && getRole(id) !== getRole(res))
-    throw new Error(
-      `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
-    );
-  if (roles === "different" && getRole(id) === getRole(res))
-    throw new Error(
-      `it's crazy to ask for somebody's ${cid} with the ${roles} role`,
-    );
-  return res;
-}
-
-/** For a "towards" CalledDirection, resolves the target person. Returns undefined for pure directions. */
-export function resolveCalledDirectionTarget(
-  id: DancerId,
-  dir: CalledDirection,
-  protos: Record<ProtoId, Dancer>,
-): DancerId | undefined {
-  if (parses(PureDirectionSchema, dir)) return undefined;
-  if (parses(TowardsLabelDirectionSchema, dir)) {
-    return resolveLabel(id, towardsToLabel[dir], protos) ?? undefined;
-  }
-  const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
-  const pureDirVec = resolvePureDirection(id, pureDir, protos);
-  return findDancerInDirection(protos, id, pureDirVec) ?? undefined;
-}
-
-export function inferRoleOfCalledIdentifier(
-  cid: CalledIdentifier,
-): "same" | "different" | null {
-  switch (cid) {
-    case "neighbor":
-    case "next_neighbor":
-    case "next_x2_neighbor":
-    case "next_x3_neighbor":
-    case "prev_neighbor":
-    case "prev_x2_neighbor":
-    case "prev_x3_neighbor":
-    case "partner":
-    case "shadow":
-    case "shadow_2":
-    case "shadow_3":
-    case "shadow_4":
-    case "shadow_5":
-    case "shadow_6":
-      return "different";
-    case "opposite":
-      return "same";
-  }
-  return null;
-}
-
-export function getCycle<N extends number>(
-  id: DancerId,
-  cid: CalledIdentifier,
-  protos: Record<ProtoId, Dancer>,
-  { length, roles }: { length: N; roles?: "same" | "different" },
-): NTuple<N, DancerId> {
-  const seen = new Set<DancerId>();
-  const cycle: DancerId[] = [];
-  let current: DancerId = id;
-  while (!seen.has(current)) {
-    if (cycle.length > 10)
-      throw new Error(
-        `"${cid}"-cycle starting at ${id} seems to go on forever: ${cycle.join(", ")}`,
-      );
-    seen.add(current);
-    cycle.push(current);
-    const next = resolveCalledIdentifier(current, cid, protos, { roles });
-    if (!next) {
-      throw new Error(
-        `${cid} does not form a cycle including ${id}: ${[...cycle, "null"].join(", ")}`,
-      );
-    }
-    current = next;
-  }
-  if (current !== id)
-    throw new Error(
-      `"${cid}"-cycle starting at ${id} does not return to ${id}: ${cycle.join(", ")}`,
-    );
-  if (!isNTuple(cycle, length))
-    throw new Error(
-      `"${cid}"-cycle starting at ${id} has length ${cycle.length} instead of ${length}: ${cycle.join(", ")}`,
-    );
-  return cycle;
-}
-
-/** Resolves a dancer's "match" for a figure where dancers pair up. */
-export function resolveMatch(
-  id: DancerId,
-  cid: CalledIdentifier,
-  state: WorldState,
-  { roles }: { roles?: "same" | "different" } = {},
-): DancerId {
-  return getCycle(id, cid, state, { length: 2, roles })[1];
-}
-/** Resolves all dancers' "matches" for a figure where dancers pair up. */
-export function resolveMatches(
-  cid: CalledIdentifier,
-  state: WorldState,
-  { roles }: { roles?: "same" | "different" } = {},
-): Record<ProtoId, DancerId> {
-  return buildProtoRecord((id) => resolveMatch(id, cid, state, { roles }));
-}
-
-export function resolveRings(
-  state: WorldState,
-): Record<ProtoId, NTuple<4, DancerId>> {
-  return buildProtoRecord((id) =>
-    getCycle(id, "person_in_right_hand", state, {
-      length: 4,
-      roles: "different",
-    }),
-  );
-}
-
-/** True when a dancer faces roughly away from the center line (x = 0). */
-export function facesOut(
-  id: DancerId,
-  state: WorldState,
-  { errMsg }: { errMsg?: string } = {},
-): boolean {
-  const { facing, pos } = Dancer.get(id, state);
-  return roughlySameDir(
-    facing,
-    resolveCardinalDirection("out", pos, { errMsg }),
-  );
-}
-
-/** True when a dancer faces toward the center line (x = 0). */
-export function facesAcross(
-  id: DancerId,
-  state: WorldState,
-  { errMsg }: { errMsg?: string } = {},
-): boolean {
-  const { facing, pos } = Dancer.get(id, state);
-  return roughlySameDir(
-    facing,
-    resolveCardinalDirection("across", pos, { errMsg }),
-  );
-}
-
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
   let sum = new Vector(0, 0);
   for (const id of dancers) {
@@ -475,17 +161,6 @@ export function findDancerInDirection(
   }
 
   return bestTarget;
-}
-
-/** Find the dancer best described by "the person to your [...]", if any. */
-export function findDancerInCalledDirection(
-  id: ProtoId,
-  side: CalledDirection,
-  dancers: Record<ProtoId, Dancer>,
-  { roles }: { roles?: "same" | "different" } = {},
-): DancerId | null {
-  const dir = resolveCalledDirection(id, side, dancers);
-  return findDancerInDirection(dancers, id, dir, { roles });
 }
 
 export function findClosestDancer(
@@ -605,3 +280,36 @@ export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
     },
   };
 }
+
+// Re-export direction and identifier types/functions so existing imports continue to work.
+export {
+  type CalledDirection,
+  CalledDirectionSchema,
+  type CardinalDirection,
+  CardinalDirectionSchema,
+  facesAcross,
+  facesOut,
+  findDancerInCalledDirection,
+  type PureDirection,
+  PureDirectionSchema,
+  resolveCalledDirection,
+  resolveCalledDirectionTarget,
+  resolveCardinalDirection,
+  resolvePureDirection,
+  type TowardsLabelDirection,
+  TowardsLabelDirectionSchema,
+  type TowardsPersonDirection,
+  TowardsPersonDirectionSchema,
+} from "../directions";
+export {
+  type CalledIdentifier,
+  CalledIdentifierSchema,
+  getCycle,
+  inferRoleOfCalledIdentifier,
+  type PersonInDirection,
+  PersonInDirectionSchema,
+  resolveCalledIdentifier,
+  resolveMatch,
+  resolveMatches,
+  resolveRings,
+} from "../identifiers";
