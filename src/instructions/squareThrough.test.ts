@@ -16,7 +16,7 @@ const baseInstr = {
   type: "square_through" as const,
   firstHand: "right" as const,
   cid1: "neighbor" as const,
-  cid2: "person_in_front" as const,
+  cid2: "partner" as const,
 };
 
 const instr4: SquareThroughInstruction = {
@@ -62,7 +62,7 @@ describe("squareThrough", () => {
       }
     });
 
-    it("ends with all dancers having moved from starting position", () => {
+    it("ends with all dancers having moved from starting position unless n=4", () => {
       const init = initFormationStates.improper;
       const segments = squareThroughSegments(instr, init, allProtos);
 
@@ -75,9 +75,11 @@ describe("squareThrough", () => {
         const moved =
           Math.abs(state[id].pos.x - init[id].pos.x) > 0.1 ||
           Math.abs(state[id].pos.y - init[id].pos.y) > 0.1;
-        expect(moved, `${id} should have moved from starting position`).toBe(
-          true,
-        );
+        const expectMoved = instr.nPullBys !== 4;
+        expect(
+          moved,
+          `${id} should ${expectMoved ? "have" : "not have"} moved from starting position`,
+        ).toBe(expectMoved);
       }
     });
   });

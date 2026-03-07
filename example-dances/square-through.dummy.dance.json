@@ -10,7 +10,7 @@
       "nPullBys": 4,
       "firstHand": "right",
       "cid1": "neighbor",
-      "cid2": "person_in_front"
+      "cid2": "partner"
     },
     {
       "id": "623181bf-a1fe-4a13-8a2e-613a4b4340eb",
@@ -19,7 +19,7 @@
       "nPullBys": 4,
       "firstHand": "right",
       "cid1": "neighbor",
-      "cid2": "person_in_front"
+      "cid2": "partner"
     }
   ]
 }
