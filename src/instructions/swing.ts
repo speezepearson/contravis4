@@ -179,15 +179,17 @@ export function makeSwingSegments(
           plans[dancer.protoId].final.pos,
           frac,
         ),
-      facing: (dancer, frac) =>
-        plans[dancer.protoId].postSwing.facing.rotateByRadians(
-          (ccwRadsBetween(
-            plans[dancer.protoId].postSwing.facing,
-            plans[dancer.protoId].final.facing,
-          ) -
-            (isLark(dancer.protoId) ? 0 : TWO_PI)) *
-            frac,
-        ),
+      facing: (dancer, frac) => {
+        let angle = ccwRadsBetween(
+          plans[dancer.protoId].postSwing.facing,
+          plans[dancer.protoId].final.facing,
+        );
+        // Robin unwinds CW from the swing; force the rotation CW.
+        if (!isLark(dancer.protoId) && angle > 0) angle -= TWO_PI;
+        return plans[dancer.protoId].postSwing.facing.rotateByRadians(
+          angle * frac,
+        );
+      },
       hands: swingHands,
     },
   ];

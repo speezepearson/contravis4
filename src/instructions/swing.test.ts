@@ -2,7 +2,12 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getProgDirVec } from "../contraCore";
+import {
+  ALL_PROTO_IDS,
+  ALL_PROTO_IDS_SET,
+  getProgDirVec,
+  isLark,
+} from "../contraCore";
 import { InfallibleLabel } from "../labels";
 import { Dancer, type WorldState } from "../worldState";
 import { animateSegments } from "./_segment";
@@ -40,6 +45,41 @@ function initWithPartnerDistance(distance: number) {
     draft.down_robin_0.pos = new Vector(-distance / 2, 0.5);
   });
 }
+
+describe("robin disengage rotation", () => {
+  it("robin disengage should be at most a half turn in 16-beat neighbor swing", () => {
+    const init = initFormationStates.improper;
+    const instr = makeInstr({ cid: "neighbor", endFacing: "across" });
+    const segments = swingSegments(instr, init, allProtos);
+    const animation = animateSegments(init, allProtos, segments);
+
+    const disengageStart = segments[0].dur + segments[1].dur;
+    const steps = 100;
+
+    for (const id of ALL_PROTO_IDS) {
+      if (isLark(id)) continue;
+      let disengageRotation = 0;
+      for (let i = 1; i <= steps; i++) {
+        const t0 =
+          disengageStart + ((animation.dur - disengageStart) * (i - 1)) / steps;
+        const t1 =
+          disengageStart + ((animation.dur - disengageStart) * i) / steps;
+        const f0 = animation.getFrame(t0)[id].facing;
+        const f1 = animation.getFrame(t1)[id].facing;
+        disengageRotation += Math.atan2(
+          f0.x * f1.y - f0.y * f1.x,
+          f0.x * f1.x + f0.y * f1.y,
+        );
+      }
+      // The robin's unwind should be at most half a turn CW (≈ -π),
+      // not 1.5 turns as it was before the fix.
+      expect(
+        Math.abs(disengageRotation),
+        `${id}: robin disengage should be ≤π but was ${(disengageRotation / Math.PI).toFixed(2)}π`,
+      ).toBeLessThanOrEqual(Math.PI + 0.01);
+    }
+  });
+});
 
 describe("swing approach/orbit speed matching", () => {
   const dt = 0.1;
