@@ -5,10 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getProgDirVec } from "../contraCore";
 import { InfallibleLabel } from "../labels";
 import { Dancer, type WorldState } from "../worldState";
-import {
-  resolveCalledDirection,
-  resolveCalledIdentifier,
-} from "./_base";
+import { resolveCalledDirection, resolveCalledIdentifier } from "./_base";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type SwingInstruction, swingSegments } from "./swing";
@@ -135,7 +132,7 @@ describe("post-swing alignment", () => {
   const baseWithPreviousNeighborLeadingInRecents = produce(base, (draft) => {
     for (const id of ALL_PROTO_IDS) {
       draft[id].recents = [
-        Dancer.get(id, base).resolveLabel("prev_neighbor", base).id,
+        Dancer.get(id, base).resolveLabel("prev_neighbor").id,
         ...draft[id].recents,
       ];
     }

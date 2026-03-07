@@ -44,6 +44,9 @@ export const DancerHandPointerSchema = z.object({
 });
 export type DancerHandPointer = z.infer<typeof DancerHandPointerSchema>;
 
+// Stores the WorldState a Dancer was looked up from, invisible to Immer and serialization.
+const dancerStates = new WeakMap<Dancer, WorldState>();
+
 export class Dancer {
   static [immerable] = true;
 
@@ -99,13 +102,25 @@ export class Dancer {
     return this.role === "lark";
   }
 
-  static get(id: DancerId, protos: WorldState): Dancer {
-    return protos[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
+  /** The WorldState this dancer was looked up from. Only available on dancers returned by Dancer.get. */
+  get state(): WorldState {
+    const s = dancerStates.get(this);
+    if (!s)
+      throw new Error(
+        `Dancer ${this.id} has no associated state (use Dancer.get to look up dancers)`,
+      );
+    return s;
+  }
+
+  static get(id: DancerId, state: WorldState): Dancer {
+    const d = state[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
+    dancerStates.set(d, state);
+    return d;
   }
 
   addOffset(deltaOffset: DancerOffset): Dancer {
     if (deltaOffset === 0) return this;
-    return new Dancer(addOffsetToId(this.id, deltaOffset), {
+    const d = new Dancer(addOffsetToId(this.id, deltaOffset), {
       pos: this.pos.add(NORTH.multiply(deltaOffset * 2)),
       facing: this.facing,
       hands: buildHandsRecord((hand) => {
@@ -130,37 +145,34 @@ export class Dancer {
       },
       recents: this.recents.map((rid) => addOffsetToId(rid, deltaOffset)),
     });
+    const s = dancerStates.get(this);
+    if (s) dancerStates.set(d, s);
+    return d;
   }
 
-  resolveLabel(
-    label: InfallibleLabel,
-    protos: WorldState,
-  ): Dancer;
-  resolveLabel(
-    label: Label,
-    protos: WorldState,
-  ): Dancer | undefined;
-  resolveLabel(
-    label: Label,
-    protos: WorldState,
-  ): Dancer | undefined {
+  resolveLabel(label: InfallibleLabel): Dancer;
+  resolveLabel(label: Label): Dancer | undefined;
+  resolveLabel(label: Label): Dancer | undefined {
+    const s = this.state;
     if (parses(InfallibleLabelSchema, label)) {
       switch (label) {
         case "partner":
         case "neighbor":
-          return Dancer.get(this.labels[label], protos);
+          return Dancer.get(this.labels[label], s);
         case "opposite": {
-          return this.resolveLabel("neighbor", protos)?.resolveLabel("partner", protos);
+          return this.resolveLabel("neighbor")?.resolveLabel("partner");
         }
       }
-  
+
       label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
-      const neighbor = this.resolveLabel("neighbor", protos);
+      const neighbor = this.resolveLabel("neighbor");
       if (!neighbor) return undefined;
-      return neighbor.addOffset(neighborLabelOffsets[label] * getProgDirSign(this.id));
+      return neighbor.addOffset(
+        neighborLabelOffsets[label] * getProgDirSign(this.id),
+      );
     } else if (parses(ShadowLabelSchema, label)) {
       if (!this.labels[label]) return undefined;
-      return Dancer.get(this.labels[label], protos);
+      return Dancer.get(this.labels[label], s);
     } else {
       const handLabel = label satisfies Exclude<
         Label,
@@ -169,17 +181,15 @@ export class Dancer {
       switch (handLabel) {
         case "person_in_left_hand":
           if (!this.hands["left"]) return undefined;
-          return Dancer.get(this.hands["left"].theirId, protos);
+          return Dancer.get(this.hands["left"].theirId, s);
         case "person_in_right_hand":
           if (!this.hands["right"]) return undefined;
-          return Dancer.get(this.hands["right"].theirId, protos);
+          return Dancer.get(this.hands["right"].theirId, s);
         default:
           assertNever(handLabel);
       }
     }
   }
-  
-
 }
 
 export type WorldState = Record<ProtoId, Dancer>;

@@ -30,9 +30,9 @@ describe("resolveLabel", () => {
   ])(
     "basic: resolves %s %s = %s correctly in improper: %s %s -> %s",
     (id, label, expected) => {
-      expect(Dancer.get(id, initFormationStates.improper).resolveLabel(label, initFormationStates.improper)?.id).toBe(
-        expected,
-      );
+      expect(
+        Dancer.get(id, initFormationStates.improper).resolveLabel(label)?.id,
+      ).toBe(expected);
     },
   );
 
@@ -49,9 +49,9 @@ describe("resolveLabel", () => {
   ])(
     "resolves next/prev neighbors correctly in improper: %s %s -> %s",
     (id, label, expected) => {
-      expect(Dancer.get(id, initFormationStates.improper).resolveLabel(label, initFormationStates.improper)?.id).toBe(
-        expected,
-      );
+      expect(
+        Dancer.get(id, initFormationStates.improper).resolveLabel(label)?.id,
+      ).toBe(expected);
     },
   );
 
@@ -63,9 +63,9 @@ describe("resolveLabel", () => {
   ])(
     "accounts for anchor's offset properly: %s %s -> %s",
     (id, label, expected) => {
-      expect(Dancer.get(id, initFormationStates.improper).resolveLabel(label, initFormationStates.improper)?.id).toBe(
-        expected,
-      );
+      expect(
+        Dancer.get(id, initFormationStates.improper).resolveLabel(label)?.id,
+      ).toBe(expected);
     },
   );
 
@@ -80,7 +80,7 @@ describe("resolveLabel", () => {
       const state = produce(initFormationStates.improper, (draft) => {
         setLabel(draft, p, "shadow", pShadow);
       });
-      expect(Dancer.get(d, state).resolveLabel("shadow", state)?.id).toBe(dShadow);
+      expect(Dancer.get(d, state).resolveLabel("shadow")?.id).toBe(dShadow);
     },
   );
 });

@@ -7,7 +7,7 @@
  *     The full set of identifiers that can appear in instruction schemas
  *     (e.g. as the "cid" field of a swing or allemande).
  *       - Label ("partner", "neighbor", "shadow_2", …)
- *           resolved via resolveLabel in _base.ts using relationship tracking.
+ *           resolved via Dancer.resolveLabel using relationship tracking.
  *       - PersonInDirection ("person_on_right", "person_in_front", …)
  *           finds the nearest dancer in the given PureDirection (see directions.ts).
  *
@@ -61,7 +61,8 @@ export function resolveCalledIdentifier(
   protos: Record<ProtoId, Dancer>,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | undefined {
-  if (parses(LabelSchema, cid)) return Dancer.get(id, protos).resolveLabel(cid, protos)?.id ?? undefined;
+  if (parses(LabelSchema, cid))
+    return Dancer.get(id, protos).resolveLabel(cid)?.id ?? undefined;
   const pureDir = personInToDir[cid as PersonInDirection];
   const dir = resolvePureDirection(id, pureDir, protos);
   const res = findDancerInDirection(protos, id, dir, { roles });

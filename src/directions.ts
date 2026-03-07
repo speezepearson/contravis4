@@ -159,7 +159,7 @@ export function resolveCalledDirection(
   }
   if (parses(TowardsLabelDirectionSchema, dir)) {
     const label = towardsToLabel[dir];
-    const them = Dancer.get(id, protos).resolveLabel(label, protos);
+    const them = Dancer.get(id, protos).resolveLabel(label);
     if (!them) throw new Error(`${id} has no ${label}`);
     return getDir({
       from: Dancer.get(id, protos).pos,
@@ -187,7 +187,9 @@ export function resolveCalledDirectionTarget(
 ): DancerId | undefined {
   if (parses(PureDirectionSchema, dir)) return undefined;
   if (parses(TowardsLabelDirectionSchema, dir)) {
-    return Dancer.get(id, protos).resolveLabel(towardsToLabel[dir], protos)?.id ?? undefined;
+    return (
+      Dancer.get(id, protos).resolveLabel(towardsToLabel[dir])?.id ?? undefined
+    );
   }
   const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
   const pureDirVec = resolvePureDirection(id, pureDir, protos);
