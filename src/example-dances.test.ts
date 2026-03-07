@@ -46,7 +46,7 @@ describe("non-dummy dances have valid nonzero progressions", () => {
       progression,
       `expected a nonzero integer progression`,
     ).not.toBeNull();
-    expect(progression).toBeGreaterThan(0);
+    expect(progression).not.toBe(0);
   });
 });
 
