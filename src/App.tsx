@@ -13,10 +13,7 @@ import {
 } from "./generate";
 import { formatDanceParseError } from "./generate";
 import { inferProgression } from "./inferProgression";
-import {
-  type CalledIdentifier,
-  resolveCalledIdentifier,
-} from "./instructions/_base";
+import { type CalledIdentifier } from "./instructions/_base";
 import type {
   InitFormation,
   Instruction,
@@ -284,7 +281,7 @@ export default function App() {
         }> = [];
         for (const id of ALL_PROTO_IDS) {
           const targetId = try_(() =>
-            resolveCalledIdentifier(id, highlightedRel, frame),
+            Dancer.get(id, frame).resolveCalledIdentifier(highlightedRel),
           );
           if (targetId instanceof Error || !targetId) continue;
           const from = frame[id];

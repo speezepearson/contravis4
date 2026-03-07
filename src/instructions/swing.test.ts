@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getProgDirVec } from "../contraCore";
 import { InfallibleLabel } from "../labels";
 import { Dancer, type WorldState } from "../worldState";
-import { resolveCalledDirection, resolveCalledIdentifier } from "./_base";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type SwingInstruction, swingSegments } from "./swing";
@@ -124,7 +123,9 @@ describe("post-swing alignment", () => {
   //   . . | . .
   const base = produce(initFormationStates.improper, (draft) => {
     for (const id of ALL_PROTO_IDS)
-      draft[id].facing = resolveCalledDirection(id, "towards_partner", draft);
+      draft[id].facing = Dancer.get(id, draft).resolveCalledDirection(
+        "towards_partner",
+      );
     draft.up_robin_0.pos = new Vector(0, draft.up_lark_0.pos.y);
     draft.down_robin_0.pos = new Vector(0, draft.down_lark_0.pos.y);
   });
@@ -171,15 +172,11 @@ describe("post-swing alignment", () => {
       });
 
       for (const id of ALL_PROTO_IDS) {
-        const actualAcrossId = resolveCalledIdentifier(
-          id,
+        const actualAcrossId = Dancer.get(id, final).resolveCalledIdentifier(
           "person_across",
-          final,
         );
-        const expectedAcrossId = resolveCalledIdentifier(
-          id,
+        const expectedAcrossId = Dancer.get(id, final).resolveCalledIdentifier(
           expectedAcross,
-          final,
         );
         expect(
           actualAcrossId,

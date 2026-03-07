@@ -4,7 +4,6 @@ import {
   type CalledDirection,
   CalledDirectionSchema,
   PureDirectionSchema,
-  resolveCalledDirectionTarget,
 } from "../instructions/_base";
 import { parses, try_ } from "../utils";
 import { Dancer } from "../worldState";
@@ -32,11 +31,15 @@ export function CalledDirectionDropdown({
         .filter((o) => !parses(PureDirectionSchema, o))
         .sort((a, b) => {
           const aId = try_(() =>
-            resolveCalledDirectionTarget("up_lark_0", a, dancerStates),
+            Dancer.get("up_lark_0", dancerStates).resolveCalledDirectionTarget(
+              a,
+            ),
           );
           if (aId instanceof Error || !aId) return 1;
           const bId = try_(() =>
-            resolveCalledDirectionTarget("up_lark_0", b, dancerStates),
+            Dancer.get("up_lark_0", dancerStates).resolveCalledDirectionTarget(
+              b,
+            ),
           );
           if (bId instanceof Error || !bId) return -1;
           const targetA = Dancer.get(aId, dancerStates);

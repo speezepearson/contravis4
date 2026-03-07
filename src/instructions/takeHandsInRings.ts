@@ -10,11 +10,7 @@ import {
   Dancer,
   type WorldState,
 } from "../worldState";
-import {
-  instructionBaseSchemaFields,
-  resolveCalledIdentifier,
-  resolveRings,
-} from "./_base";
+import { instructionBaseSchemaFields, resolveRings } from "./_base";
 import {
   getSegmentFrameAtFrac,
   type InstructionAnimator,
@@ -40,15 +36,16 @@ export type TakeHandsInRingsInstruction = z.infer<
  */
 export function makeRingSegment(init: WorldState): Segment {
   const targets = buildProtoRecord((id) => {
+    const d = Dancer.get(id, init);
     const acrossId = must(
-      resolveCalledIdentifier(id, "person_across", init, {
+      d.resolveCalledIdentifier("person_across", {
         roles: "different",
       }),
     );
     const alongCid =
       init[id].facing.y >= 0 ? "person_up" : ("person_down" as const);
     const alongId = must(
-      resolveCalledIdentifier(id, alongCid, init, { roles: "different" }),
+      d.resolveCalledIdentifier(alongCid, { roles: "different" }),
     );
     return { acrossId, alongId };
   });

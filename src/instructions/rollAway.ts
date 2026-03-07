@@ -18,11 +18,7 @@ import {
 } from "../geometry";
 import { IrreducibleLabelSchema } from "../labels";
 import { buildProtoRecord, Dancer } from "../worldState";
-import {
-  type CalledIdentifier,
-  instructionBaseSchemaFields,
-  resolveCalledIdentifier,
-} from "./_base";
+import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import { hold, type InstructionAnimator } from "./_segment";
 
 export const RolleeSpecSchema = z.enum([
@@ -52,9 +48,12 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
   const rolleeToRoller = new Map<DancerId, ProtoId>();
   for (const id of who) {
     if (getRole(id) !== instr.roller) continue;
-    const rolleeId = resolveCalledIdentifier(id, instr.rollee, init, {
-      roles: "different",
-    });
+    const rolleeId = Dancer.get(id, init).resolveCalledIdentifier(
+      instr.rollee,
+      {
+        roles: "different",
+      },
+    );
     if (!rolleeId) {
       throw new Error(
         `${id} has no opposite-role ${instr.rollee} to roll away`,

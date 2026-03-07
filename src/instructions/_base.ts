@@ -2,13 +2,10 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import {
-  ALL_PROTO_IDS,
   type Beats,
   BeatsSchema,
   type DancerId,
-  getRole,
   type ProtoId,
-  protoIdToDancerId,
 } from "../contraCore";
 import { Dancer, type WorldState } from "../worldState";
 
@@ -57,50 +54,6 @@ export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
   return sum.divide(dancers.length);
 }
 
-export function findDancerInDirection(
-  protos: Record<ProtoId, Dancer>,
-  id: DancerId,
-  dir: Vector,
-  { roles }: { roles?: "same" | "different" } = {},
-): DancerId | null {
-  dir = dir.normalize();
-  const pos = Dancer.get(id, protos).pos;
-
-  let bestScore = Infinity;
-  let bestTarget: DancerId | null = null;
-
-  for (const otherProtoId of ALL_PROTO_IDS) {
-    if (otherProtoId === id) continue;
-    if (roles === "same" && getRole(otherProtoId) !== getRole(id)) continue;
-    if (roles === "different" && getRole(otherProtoId) === getRole(id))
-      continue;
-
-    const otherProto = protos[otherProtoId];
-    const dyBase = otherProto.pos.y - pos.y;
-    const oBest = Math.round(-dyBase / 2);
-    for (let o = oBest - 2; o <= oBest + 2; o++) {
-      const targetId = protoIdToDancerId(otherProtoId, o);
-      const target = Dancer.get(targetId, protos);
-      const disp = target.pos.subtract(pos);
-      const r = disp.length();
-      if (r > 1.8 || r < 1e-9) continue;
-
-      const cosTheta = dir.dot(disp) / r;
-      if (cosTheta < 0) continue;
-      const cos2Theta = 2 * cosTheta * cosTheta - 1;
-      if (cos2Theta < 0.01) continue;
-
-      const score = r / cos2Theta;
-      if (score < bestScore) {
-        bestScore = score;
-        bestTarget = targetId;
-      }
-    }
-  }
-
-  return bestTarget;
-}
-
 export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
   if (segments.length === 0) {
     throw new Error("chainAnimations requires at least one segment");
@@ -128,15 +81,9 @@ export {
   CalledDirectionSchema,
   type CardinalDirection,
   CardinalDirectionSchema,
-  facesAcross,
-  facesOut,
-  findDancerInCalledDirection,
   type PureDirection,
   PureDirectionSchema,
-  resolveCalledDirection,
-  resolveCalledDirectionTarget,
   resolveCardinalDirection,
-  resolvePureDirection,
   type TowardsLabelDirection,
   TowardsLabelDirectionSchema,
   type TowardsPersonDirection,
@@ -149,7 +96,5 @@ export {
   inferRoleOfCalledIdentifier,
   type PersonInDirection,
   PersonInDirectionSchema,
-  resolveCalledIdentifier,
-  resolveMatch,
-  resolveMatches,
 } from "../identifiers";
+export { resolveMatches } from "../worldState";

@@ -2,11 +2,7 @@ import { z } from "zod";
 
 import { ShadowLabelSchema } from "../labels";
 import { must } from "../utils";
-import {
-  instructionBaseSchemaFields,
-  PersonInDirectionSchema,
-  resolveCalledIdentifier,
-} from "./_base";
+import { instructionBaseSchemaFields, PersonInDirectionSchema } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
 export const GreetShadowInstructionSchema = z.object({
@@ -26,9 +22,7 @@ export const greetShadowSegments: InstructionAnimator<
   {
     dur: 0,
     labels: (dancer, _frac) => {
-      const theirId = must(
-        resolveCalledIdentifier(dancer.id, instr.cid, dancer.state),
-      );
+      const theirId = must(dancer.resolveCalledIdentifier(instr.cid));
       return [[instr.label, theirId]];
     },
   },

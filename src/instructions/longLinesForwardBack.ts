@@ -3,12 +3,8 @@ import { z } from "zod";
 
 import { type DancerId, type ProtoId } from "../contraCore";
 import { must } from "../utils";
-import { getDancerSide } from "../worldState";
-import {
-  findDancerInCalledDirection,
-  instructionBaseSchemaFields,
-  resolveCardinalDirection,
-} from "./_base";
+import { Dancer, getDancerSide } from "../worldState";
+import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
 import {
   hold,
   type InstructionAnimator,
@@ -100,7 +96,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
   const leftPartners = new Map<ProtoId, DancerId>();
   const rightPartners = new Map<ProtoId, DancerId>();
   for (const id of who) {
-    const left = findDancerInCalledDirection(id, "on_left", init, {
+    const left = Dancer.get(id, init).findDancerInCalledDirection("on_left", {
       roles: "different",
     });
     if (!left) {
@@ -110,7 +106,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
     }
     leftPartners.set(id, left);
 
-    const right = findDancerInCalledDirection(id, "on_right", init, {
+    const right = Dancer.get(id, init).findDancerInCalledDirection("on_right", {
       roles: "different",
     });
     if (!right) {

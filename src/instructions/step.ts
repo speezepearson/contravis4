@@ -2,11 +2,7 @@ import { z } from "zod";
 
 import { lerpFacing } from "../geometry";
 import { lerpVectors } from "../utils";
-import {
-  CalledDirectionSchema,
-  instructionBaseSchemaFields,
-  resolveCalledDirection,
-} from "./_base";
+import { CalledDirectionSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
 export const StepInstructionSchema = z.object({
@@ -22,21 +18,13 @@ export const stepSegments: InstructionAnimator<StepInstruction> = (instr) => [
   {
     dur: instr.beats,
     position: (dancer, frac) => {
-      const dir = resolveCalledDirection(
-        dancer.id,
-        instr.direction,
-        dancer.state,
-      );
+      const dir = dancer.resolveCalledDirection(instr.direction);
       const startPos = dancer.pos;
       const finalPos = startPos.add(dir.multiply(instr.distance));
       return lerpVectors(startPos, finalPos, frac);
     },
     facing: (dancer, frac) => {
-      const finalFacing = resolveCalledDirection(
-        dancer.id,
-        instr.facing,
-        dancer.state,
-      );
+      const finalFacing = dancer.resolveCalledDirection(instr.facing);
       return lerpFacing(dancer.facing, finalFacing, frac);
     },
   },

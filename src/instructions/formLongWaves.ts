@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { ALL_PROTO_IDS, parseProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
-import { connectHands, getDancerSide } from "../worldState";
-import { facesOut, instructionBaseSchemaFields, resolveMatches } from "./_base";
+import { connectHands, Dancer, getDancerSide } from "../worldState";
+import { instructionBaseSchemaFields, resolveMatches } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormLongWavesInstructionSchema = z.object({
@@ -46,10 +46,18 @@ export const formLongWavesSegments: InstructionAnimator<
   const robinIds = ALL_PROTO_IDS.filter(
     (id) => parseProtoId(id).role === "robin",
   );
-  const larksOut = larkIds.every((id) => facesOut(id, snappedState));
-  const larksAcross = larkIds.every((id) => !facesOut(id, snappedState));
-  const robinsOut = robinIds.every((id) => facesOut(id, snappedState));
-  const robinsAcross = robinIds.every((id) => !facesOut(id, snappedState));
+  const larksOut = larkIds.every((id) =>
+    Dancer.get(id, snappedState).facesOut(),
+  );
+  const larksAcross = larkIds.every(
+    (id) => !Dancer.get(id, snappedState).facesOut(),
+  );
+  const robinsOut = robinIds.every((id) =>
+    Dancer.get(id, snappedState).facesOut(),
+  );
+  const robinsAcross = robinIds.every(
+    (id) => !Dancer.get(id, snappedState).facesOut(),
+  );
   if (!((larksOut && robinsAcross) || (larksAcross && robinsOut))) {
     throw new Error(
       `formLongWaves requires all larks facing the same way (across or out) and all robins the opposite`,

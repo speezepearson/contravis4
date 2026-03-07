@@ -3,7 +3,6 @@ import { useContext, useMemo } from "react";
 import {
   type CalledIdentifier,
   CalledIdentifierSchema,
-  resolveCalledIdentifier,
 } from "../instructions/_base";
 import { try_ } from "../utils";
 import { Dancer } from "../worldState";
@@ -31,11 +30,11 @@ export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
     const larkState = dancerStates["up_lark_0"];
     return [...options].sort((a, b) => {
       const aId = try_(() =>
-        resolveCalledIdentifier("up_lark_0", a, dancerStates),
+        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(a),
       );
       if (aId instanceof Error || !aId) return 1;
       const bId = try_(() =>
-        resolveCalledIdentifier("up_lark_0", b, dancerStates),
+        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(b),
       );
       if (bId instanceof Error || !bId) return -1;
       const targetA = Dancer.get(aId, dancerStates);

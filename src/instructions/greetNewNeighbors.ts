@@ -1,11 +1,7 @@
 import { z } from "zod";
 
 import { must } from "../utils";
-import {
-  instructionBaseSchemaFields,
-  PersonInDirectionSchema,
-  resolveCalledIdentifier,
-} from "./_base";
+import { instructionBaseSchemaFields, PersonInDirectionSchema } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
 export const GreetNewNeighborsInstructionSchema = z.object({
@@ -25,7 +21,7 @@ export const greetNewNeighborsSegments: InstructionAnimator<
     dur: 0,
     newNeighbors: instr.cid,
     interactedWith: (dancer) => [
-      must(resolveCalledIdentifier(dancer.protoId, instr.cid, dancer.state)),
+      must(dancer.resolveCalledIdentifier(instr.cid)),
     ],
   },
 ];

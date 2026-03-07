@@ -22,11 +22,7 @@ import {
   setLabel,
   type WorldState,
 } from "../worldState";
-import {
-  type CalledIdentifier,
-  type ContraAnimation,
-  resolveMatch,
-} from "./_base";
+import { type CalledIdentifier, type ContraAnimation } from "./_base";
 
 /** Produces segments for an instruction. The primary interface for atomic instructions. */
 export type InstructionAnimator<T> = (
@@ -245,7 +241,7 @@ export function arc(
   opts: { semiMinor: number; phi: number },
 ): PositionFn {
   return (dancer, frac) => {
-    const themId = resolveMatch(dancer, cid);
+    const themId = dancer.resolveMatch(cid);
     const start = dancer.pos;
     const end = Dancer.get(themId, dancer.state).pos;
     return ellipsePosition(start, end, opts.semiMinor, opts.phi * frac);

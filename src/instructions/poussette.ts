@@ -18,7 +18,6 @@ import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
   type CalledDirection,
-  findDancerInCalledDirection,
   instructionBaseSchemaFields,
   resolveCardinalDirection,
   resolveMatches,
@@ -70,7 +69,9 @@ export function makeHalfPoussetteArcPosition(
   >();
   for (const id of who) {
     if (getRole(id) === backerRole) {
-      const found = findDancerInCalledDirection(id, backerCid, facedAcross);
+      const found = Dancer.get(id, facedAcross).findDancerInCalledDirection(
+        backerCid,
+      );
       if (!found) {
         throw new Error(`backer ${id} has no dancer ${backerCid}`);
       }

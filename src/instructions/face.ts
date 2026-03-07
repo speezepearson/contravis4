@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import {
-  CalledDirectionSchema,
-  instructionBaseSchemaFields,
-  resolveCalledDirection,
-} from "./_base";
+import { CalledDirectionSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
 export const FaceInstructionSchema = z.object({
@@ -19,7 +15,7 @@ export const faceSegments: InstructionAnimator<FaceInstruction> = (instr) => [
   {
     dur: instr.beats,
     facing: (dancer, _frac) => {
-      return resolveCalledDirection(dancer.id, instr.direction, dancer.state);
+      return dancer.resolveCalledDirection(instr.direction);
     },
   },
 ];
