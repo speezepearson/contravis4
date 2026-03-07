@@ -4,7 +4,6 @@ import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
   RollAwayInstructionSchema,
-  type RolleeSpec,
   RolleeSpecSchema,
 } from "../../instructions/rollAway";
 import { typedSafeParse } from "../../utils";
@@ -50,7 +49,7 @@ export function RollAwayFields({
       <CalledIdentifierDropdown
         options={[...RolleeSpecSchema.options]}
         value={instruction.rollee}
-        onChange={(v) => tryCommit({ rollee: v as RolleeSpec })}
+        onChange={(v) => tryCommit({ rollee: RolleeSpecSchema.parse(v) })}
       />
     </>
   );

@@ -4,7 +4,7 @@ import {
   type ProtoId,
   protoIdToDancerId,
 } from "./contraCore";
-import { must, type NTuple } from "./utils";
+import { isNTuple, must, type NTuple } from "./utils";
 import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
 
 export function resolveRings(
@@ -70,6 +70,11 @@ export function resolveShortLines(
     }
 
     line.sort((a, b) => a.x - b.x);
-    return line.map((c) => c.id) as NTuple<4, DancerId>;
+    const res = line.map((c) => c.id);
+    if (!isNTuple(res, 4))
+      throw new Error(
+        `resolveShortLines: line has ${line.length} dancers, not 4`,
+      );
+    return res;
   });
 }

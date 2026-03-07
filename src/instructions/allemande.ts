@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { type Beats, HandSchema, type ProtoId } from "../contraCore";
+import { type Beats, HandSchema } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
 import { buildProtoRecord, Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
@@ -68,7 +68,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
   let totalDistance = 0;
   let count = 0;
   for (const [id, match] of matches) {
-    const me = Dancer.get(id as ProtoId, init);
+    const me = Dancer.get(id, init);
     totalDistance += me.pos.subtract(match.pos).length();
     count++;
   }

@@ -38,6 +38,10 @@ export default defineConfig([
           argsIgnorePattern: "^_",
         },
       ],
+      "@typescript-eslint/consistent-type-assertions": [
+        "warn",
+        { assertionStyle: "never" },
+      ],
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
       "no-restricted-syntax": [

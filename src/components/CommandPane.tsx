@@ -53,6 +53,7 @@ import type { Split } from "../instructions/split";
 import { assertNever, indexOf } from "../utils";
 import { type Dancer, WorldStateSchema } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
+import { BalanceAndSwingFields } from "./fields/BalanceAndSwingFields";
 import { BalanceFields } from "./fields/BalanceFields";
 import { BalanceTheRingFields } from "./fields/BalanceTheRingFields";
 import { BendTheLineFields } from "./fields/BendTheLineFields";
@@ -101,6 +102,7 @@ export type ActionOptionType = Instruction["type"];
 const ACTION_OPTIONS: ActionOptionType[] = [
   "allemande",
   "balance",
+  "balance_and_swing",
   "balance_the_ring",
   "bend_the_line",
   "box_circulate",
@@ -141,6 +143,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
 const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
   balance: "balance",
+  balance_and_swing: "balance & swing",
   balance_the_ring: "balance the ring",
   bend_the_line: "bend the line",
   box_circulate: "box circulate",
@@ -447,6 +450,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
   switch (type) {
     case "allemande":
     case "balance":
+    case "balance_and_swing":
     case "balance_the_ring":
     case "bend_the_line":
     case "box_circulate":
@@ -498,7 +502,7 @@ function BeatGutter({
 }) {
   const hasBeat =
     instruction.type !== "split" && doesRequireBeatsInput(instruction.type);
-  const currentBeats = hasBeat ? (instruction as AtomicInstruction).beats : 0;
+  const currentBeats = instruction.type !== "split" ? instruction.beats : 0;
 
   if (!hasBeat) return <span className="beat-gutter" />;
 
@@ -563,7 +567,7 @@ function InlineForm({
       <InlineDropdown
         options={actionOptions}
         value={instruction.type}
-        onChange={(v) => handleActionChange(v as ActionOptionType)}
+        onChange={(v) => handleActionChange(v)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
       />{" "}
       {(() => {
@@ -572,6 +576,10 @@ function InlineForm({
             return <AllemandeFields {...common} instruction={instruction} />;
           case "balance":
             return <BalanceFields {...common} instruction={instruction} />;
+          case "balance_and_swing":
+            return (
+              <BalanceAndSwingFields {...common} instruction={instruction} />
+            );
           case "balance_the_ring":
             return (
               <BalanceTheRingFields {...common} instruction={instruction} />

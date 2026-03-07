@@ -2,11 +2,7 @@ import { z } from "zod";
 
 import { ALL_HANDS } from "../contraCore";
 import { Dancer } from "../worldState";
-import {
-  type CalledIdentifier,
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
 export const DropHandsInstructionSchema = z.object({
@@ -45,12 +41,12 @@ export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
     case "both":
       return [{ dur: 0, hands: () => ({}) }];
     default: {
-      instr.which satisfies CalledIdentifier;
+      const which = instr.which;
       return [
         {
           dur: 0,
           hands: (dancer) => {
-            const match = dancer.resolveMatch(instr.which as CalledIdentifier);
+            const match = dancer.resolveMatch(which);
             const result: Dancer["hands"] = {};
             for (const hand of ALL_HANDS) {
               const existing = dancer.hands[hand];

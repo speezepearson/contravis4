@@ -36,11 +36,7 @@ export function danceLength(instructions: Instruction[]): Beats {
   );
 }
 
-export const InitFormationNameSchema = z.enum([
-  "improper",
-  "beckett",
-  "proper",
-]);
+export const InitFormationNameSchema = z.enum(["improper", "becket", "proper"]);
 export type InitFormationName = z.infer<typeof InitFormationNameSchema>;
 
 export const InitFormationSchema = z.union([
@@ -103,7 +99,7 @@ const initFormationPosFacings: Record<
     down_lark_0: { pos: new Vector(0.5, 0.5), facing: SOUTH },
     down_robin_0: { pos: new Vector(-0.5, 0.5), facing: SOUTH },
   },
-  beckett: {
+  becket: {
     up_lark_0: { pos: new Vector(-0.5, 0.5), facing: EAST },
     up_robin_0: { pos: new Vector(-0.5, -0.5), facing: EAST },
     down_lark_0: { pos: new Vector(0.5, -0.5), facing: WEST },
@@ -119,7 +115,7 @@ const initFormationPosFacings: Record<
 
 export const initFormationStates: Record<InitFormationName, WorldState> = {
   improper: buildInitFormation("improper"),
-  beckett: buildInitFormation("beckett"),
+  becket: buildInitFormation("becket"),
   proper: buildInitFormation("proper"),
 };
 function buildInitFormation(initFormationName: InitFormationName): WorldState {

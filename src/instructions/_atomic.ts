@@ -6,6 +6,10 @@ import { type InstructionAnimator, type Segment } from "./_segment";
 import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
 import { BalanceInstructionSchema, balanceSegments } from "./balance";
 import {
+  BalanceAndSwingInstructionSchema,
+  balanceAndSwingSegments,
+} from "./balanceAndSwing";
+import {
   BalanceTheRingInstructionSchema,
   balanceTheRingSegments,
 } from "./balanceTheRing";
@@ -94,6 +98,7 @@ import { ZigZagInstructionSchema, zigZagSegments } from "./zigZag";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
+  BalanceAndSwingInstructionSchema,
   BalanceInstructionSchema,
   BalanceTheRingInstructionSchema,
   BendTheLineInstructionSchema,
@@ -141,6 +146,7 @@ export const atomicSegmentAnimators: {
 } = {
   allemande: allemandeSegments,
   balance: balanceSegments,
+  balance_and_swing: balanceAndSwingSegments,
   balance_the_ring: balanceTheRingSegments,
   bend_the_line: bendTheLineSegments,
   box_circulate: boxCirculateSegments,
@@ -183,6 +189,7 @@ export function makeAtomicInstructionSegments(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): Segment[] {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- narrowing discriminated union lookup
   const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<
     typeof instr
   >;

@@ -17,6 +17,7 @@ import {
   TWO_PI,
 } from "../geometry";
 import { IrreducibleLabelSchema } from "../labels";
+import type { AssertExtends } from "../utils";
 import { buildProtoRecord, Dancer } from "../worldState";
 import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import { hold, type InstructionAnimator } from "./_segment";
@@ -27,7 +28,7 @@ export const RolleeSpecSchema = z.enum([
   ...IrreducibleLabelSchema.options,
 ]);
 export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;
-undefined as unknown as RolleeSpec satisfies CalledIdentifier; // type assertion
+null satisfies AssertExtends<RolleeSpec, CalledIdentifier>;
 
 export const RollAwayInstructionSchema = z.object({
   ...instructionBaseSchemaFields,

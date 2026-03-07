@@ -1,6 +1,6 @@
 import type { Vector } from "vecti";
 
-import type { Beats, Hand } from "../contraCore";
+import { type Beats, type Hand, HandSchema } from "../contraCore";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
 import { PI } from "../geometry";
 import { Dancer, type WorldState } from "../worldState";
@@ -30,7 +30,7 @@ function extractHandConnections(
 
   for (const id of ALL_PROTO_IDS) {
     const dancer = protos[id];
-    for (const hand of ["left", "right"] as Hand[]) {
+    for (const hand of HandSchema.options) {
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
