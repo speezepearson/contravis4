@@ -35,16 +35,13 @@ export const starSegments: InstructionAnimator<StarInstruction> = (
   const rings = resolveRings(ringState);
   const centers = buildProtoRecord((id) => avgDancerPos(rings[id], ringState));
 
-  // Facing rotation: CCW if left (+π/2), CW if right (−π/2)
-  const facingRotation = ((instr.direction === "left" ? 1 : -1) * Math.PI) / 2;
+  const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
 
-  // Inside hand: left for star left, right for star right
-  const insideHand =
-    instr.direction === "left" ? ("left" as const) : ("right" as const);
+  const insideHand = instr.direction;
 
   // CW if direction=left, CCW if direction=right (same as circle)
   const orbitRadians =
-    (instr.direction === "right" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
+    (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
 
   return [
     ringSegment,

@@ -35,9 +35,9 @@ describe("star", () => {
     }
   });
 
-  it("direction=left orbits clockwise (quarter turn)", () => {
+  it("direction=right orbits clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ direction: "left", nPlaces: 1 });
+    const instr = makeInstr({ direction: "right", nPlaces: 1 });
     const animation = animateSegments(
       init,
       allProtos,
@@ -45,7 +45,7 @@ describe("star", () => {
     );
     const final = animation.getFrame(animation.dur);
 
-    // Same positions as circle left 1 place
+    // Same positions as circle right 1 place
     expect(final.up_lark_0.pos.x).toBeCloseTo(-0.5);
     expect(final.up_lark_0.pos.y).toBeCloseTo(0.5);
 
@@ -53,9 +53,9 @@ describe("star", () => {
     expect(final.up_robin_0.pos.y).toBeCloseTo(-0.5);
   });
 
-  it("direction=right orbits counter-clockwise (quarter turn)", () => {
+  it("direction=left orbits counter-clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ direction: "right", nPlaces: 1 });
+    const instr = makeInstr({ direction: "left", nPlaces: 1 });
     const animation = animateSegments(
       init,
       allProtos,
