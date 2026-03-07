@@ -20,7 +20,12 @@ USER dev
 WORKDIR /home/dev
 
 ENV PATH="/home/dev/.local/bin:$PATH"
+
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN uv tool install rodney
+RUN uv tool install showboat
+RUN uv cache clean
+
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
 COPY .disposables/claude.json /home/dev/.claude.json
