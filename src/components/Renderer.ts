@@ -36,8 +36,11 @@ function extractHandConnections(
       const { theirId, theirHand } = holding;
       const targetState = Dancer.get(theirId, protos);
 
-      // Dedup: use sorted key
-      const key = [id, hand, theirId, theirHand].sort().join("|");
+      // Dedup: normalize so (A,handA,B,handB) and (B,handB,A,handA) share a key
+      const key =
+        id < theirId || (id === theirId && hand <= theirHand)
+          ? `${id}|${hand}|${theirId}|${theirHand}`
+          : `${theirId}|${theirHand}|${id}|${hand}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
