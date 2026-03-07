@@ -7,10 +7,14 @@ import type { WorldState } from "./worldState";
 
 // gifenc ships CJS. Vite resolves named exports on the namespace directly;
 // Node.js ESM wraps the CJS module.exports as .default.
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- gifenc ships CJS; need casts to handle Vite vs Node ESM interop
 const _g = _gifencNs as Record<string, unknown>;
+
+/* eslint-disable @typescript-eslint/consistent-type-assertions -- see above */
 const { GIFEncoder, quantize, applyPalette } = (
   typeof _g["GIFEncoder"] === "function" ? _g : (_g["default"] as object)
 ) as typeof _gifencNs;
+/* eslint-enable @typescript-eslint/consistent-type-assertions */
 
 export interface GifExportOptions {
   width: number;

@@ -502,7 +502,7 @@ function BeatGutter({
 }) {
   const hasBeat =
     instruction.type !== "split" && doesRequireBeatsInput(instruction.type);
-  const currentBeats = hasBeat ? (instruction as AtomicInstruction).beats : 0;
+  const currentBeats = instruction.type !== "split" ? instruction.beats : 0;
 
   if (!hasBeat) return <span className="beat-gutter" />;
 
@@ -567,7 +567,7 @@ function InlineForm({
       <InlineDropdown
         options={actionOptions}
         value={instruction.type}
-        onChange={(v) => handleActionChange(v as ActionOptionType)}
+        onChange={(v) => handleActionChange(v)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
       />{" "}
       {(() => {

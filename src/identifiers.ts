@@ -24,15 +24,14 @@ import { z } from "zod";
 
 import { type PureDirection, PureDirectionSchema } from "./directions";
 import { LabelSchema } from "./labels";
+import { buildEnumRecord, stripPrefix } from "./utils";
 
 // ── CalledIdentifier: "the person [X]" — identifies a specific dancer ───
 
 export type PersonInDirection = `person_${PureDirection}`;
+
 export const PersonInDirectionSchema = z.enum(
-  PureDirectionSchema.options.map((d) => `person_${d}`) as [
-    PersonInDirection,
-    ...PersonInDirection[],
-  ],
+  PureDirectionSchema.options.map((d) => `person_${d}` as const),
 );
 
 export const CalledIdentifierSchema = z.enum([
@@ -43,9 +42,9 @@ export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 
 // ── Lookup map (used by Dancer methods in worldState.ts) ────────────────
 
-export const personInToDir = Object.fromEntries(
-  PureDirectionSchema.options.map((d) => [`person_${d}`, d]),
-) as Record<PersonInDirection, PureDirection>;
+export const personInToDir = buildEnumRecord(PersonInDirectionSchema, (d) =>
+  stripPrefix("person_", d),
+);
 
 // ── Pure functions ──────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import { NORTH, SOUTH } from "./geometry";
+import type { AssertExtends } from "./utils";
 
 export const BeatsSchema = z.number().int();
 export type Beats = z.infer<typeof BeatsSchema>;
@@ -59,7 +60,7 @@ export type DancerId = z.infer<typeof DancerIdSchema>;
 
 // Compile-time check: every ProtoId is a valid DancerId
 // (the `satisfies` will fail if ProtoId is not assignable to DancerId)
-undefined as unknown as ProtoId satisfies DancerId;
+null satisfies AssertExtends<ProtoId, DancerId>;
 
 export function makeProtoId({
   dir,
@@ -123,27 +124,17 @@ export function isRobin(id: DancerId): boolean {
   return getRole(id) === "robin";
 }
 
-export function flipRole<Id extends DancerId>(
-  id: Id,
-): Id extends ProtoId ? ProtoId : DancerId {
+export function flipRole(id: ProtoId): ProtoId;
+export function flipRole(id: DancerId): DancerId;
+export function flipRole(id: DancerId): DancerId {
   const { dir, role, offset } = parseDancerId(id);
-  if (offset === 0) return makeProtoId({ dir, role: otherRole(role) });
-  return makeDancerId({
-    dir,
-    role: otherRole(role),
-    offset,
-  }) as Id extends ProtoId ? ProtoId : DancerId;
+  return makeDancerId({ dir, role: otherRole(role), offset });
 }
-export function flipProgDir<Id extends DancerId>(
-  id: Id,
-): Id extends ProtoId ? ProtoId : DancerId {
+export function flipProgDir(id: ProtoId): ProtoId;
+export function flipProgDir(id: DancerId): DancerId;
+export function flipProgDir(id: DancerId): DancerId {
   const { dir, role, offset } = parseDancerId(id);
-  if (offset === 0) return makeProtoId({ dir: otherDir(dir), role });
-  return makeDancerId({
-    dir: otherDir(dir),
-    role,
-    offset,
-  }) as Id extends ProtoId ? ProtoId : DancerId;
+  return makeDancerId({ dir: otherDir(dir), role, offset });
 }
 export function flipOffset(id: DancerId): DancerId {
   const { dir, role, offset } = parseDancerId(id);

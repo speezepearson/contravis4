@@ -47,17 +47,11 @@ export const balanceAndSwingSegments: InstructionAnimator<
   append([
     makeImmediateSegment(init, (pid, draft) => {
       connectHands(draft, pid, "left", matches[pid].id, "right");
-    }),
-  ]);
-
-  // 2. Take right hand with cid's left
-  append([
-    makeImmediateSegment(state, (pid, draft) => {
       connectHands(draft, pid, "right", matches[pid].id, "left");
     }),
   ]);
 
-  // 3. Balance
+  // 2. Balance
   append(
     balanceSegments(
       { id, beats: BALANCE_BEATS, type: "balance", cid: instr.cid },
@@ -66,7 +60,7 @@ export const balanceAndSwingSegments: InstructionAnimator<
     ),
   );
 
-  // 4. Swing
+  // 3. Swing
   append(
     makeSwingSegments(
       {

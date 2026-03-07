@@ -37,7 +37,13 @@ import { z } from "zod";
 
 import { EAST, NORTH, SOUTH, WEST } from "./geometry";
 import { type Label, LabelSchema } from "./labels";
-import { assertNever, getSide } from "./utils";
+import {
+  type AssertEquals,
+  assertNever,
+  buildEnumRecord,
+  getSide,
+  stripPrefix,
+} from "./utils";
 
 export const CardinalDirectionSchema = z.enum(["up", "down", "across", "out"]);
 export type CardinalDirection = z.infer<typeof CardinalDirectionSchema>;
@@ -84,19 +90,21 @@ export type PureDirection = z.infer<typeof PureDirectionSchema>;
 // ── CalledDirection: resolves to a direction vector ─────────────────────
 
 export type TowardsLabelDirection = `towards_${Label}`;
+null satisfies AssertEquals<
+  TowardsLabelDirection,
+  z.infer<typeof TowardsLabelDirectionSchema>
+>;
 export const TowardsLabelDirectionSchema = z.enum(
-  LabelSchema.options.map((l) => `towards_${l}`) as [
-    TowardsLabelDirection,
-    ...TowardsLabelDirection[],
-  ],
+  LabelSchema.options.map((l) => `towards_${l}` as const),
 );
 
 export type TowardsPersonDirection = `towards_person_${PureDirection}`;
+null satisfies AssertEquals<
+  TowardsPersonDirection,
+  z.infer<typeof TowardsPersonDirectionSchema>
+>;
 export const TowardsPersonDirectionSchema = z.enum(
-  PureDirectionSchema.options.map((d) => `towards_person_${d}`) as [
-    TowardsPersonDirection,
-    ...TowardsPersonDirection[],
-  ],
+  PureDirectionSchema.options.map((d) => `towards_person_${d}` as const),
 );
 
 export const CalledDirectionSchema = z.enum([
@@ -108,10 +116,12 @@ export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 
 // ── Lookup maps (used by Dancer methods in worldState.ts) ───────────────
 
-export const towardsToLabel = Object.fromEntries(
-  LabelSchema.options.map((l) => [`towards_${l}`, l]),
-) as Record<TowardsLabelDirection, Label>;
+export const towardsToLabel: Record<TowardsLabelDirection, Label> =
+  buildEnumRecord(TowardsLabelDirectionSchema, (l) =>
+    stripPrefix("towards_", l),
+  );
 
-export const towardsPersonToDir = Object.fromEntries(
-  PureDirectionSchema.options.map((d) => [`towards_person_${d}`, d]),
-) as Record<TowardsPersonDirection, PureDirection>;
+export const towardsPersonToDir: Record<TowardsPersonDirection, PureDirection> =
+  buildEnumRecord(TowardsPersonDirectionSchema, (d) =>
+    stripPrefix("towards_person_", d),
+  );

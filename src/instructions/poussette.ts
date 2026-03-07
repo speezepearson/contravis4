@@ -15,7 +15,6 @@ import { ellipsePosition, PI } from "../geometry";
 import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
-  type CalledDirection,
   instructionBaseSchemaFields,
   resolveCardinalDirection,
   resolveMatches,
@@ -60,7 +59,7 @@ export function makeHalfPoussetteArcPosition(
     }
   });
 
-  const backerCid = `on_${backerDir}` as CalledDirection;
+  const backerCid = `on_${backerDir}` as const;
   const arcDests = new Map<
     ProtoId,
     { start: typeof state.up_lark_0.pos; end: typeof state.up_lark_0.pos }

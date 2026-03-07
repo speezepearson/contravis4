@@ -180,6 +180,7 @@ function generateKeyframesInProcess(): AllResults {
   const results: AllResults = {};
   for (const path of dancePaths) {
     try {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, narrowing to unknown
       const raw = JSON.parse(readFileSync(path, "utf-8")) as unknown;
       const dance = DanceSchema.parse(raw);
       parsedDances.set(path, dance);
@@ -202,6 +203,7 @@ function generateKeyframesInProcess(): AllResults {
         frames.push({
           t,
           // Round-trip through JSON so we compare plain objects, not Vector instances.
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, narrowing to unknown
           state: JSON.parse(JSON.stringify(animation.getFrame(t))) as unknown,
         });
       }
@@ -236,6 +238,7 @@ function generateKeyframesFromWorktree(worktreeDir: string): AllResults {
 
   let stdout: string;
   try {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- encoding: "utf-8" makes execFileSync return string
     stdout = execFileSync(tsxBin, [genScript, ...dancePaths], opts) as string;
   } catch (e: unknown) {
     const stderr =
@@ -243,6 +246,7 @@ function generateKeyframesFromWorktree(worktreeDir: string): AllResults {
     throw new Error(`Worktree generator failed:\n${stderr || String(e)}`);
   }
 
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, trusting subprocess output shape
   return JSON.parse(stdout) as AllResults;
 }
 
@@ -258,6 +262,7 @@ function normalize(val: unknown): unknown {
     return Object.fromEntries(
       Object.keys(val)
         .sort()
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- val is known to be a non-null object here
         .map((k) => [k, normalize((val as Record<string, unknown>)[k])]),
     );
   }
@@ -281,6 +286,7 @@ function compareDance(
     const errSide = isOk(current) ? worktree : current;
     return {
       status: "fail",
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- errSide is known to be DanceErr from the conditional above
       message: `Only ${side} errored: ${(errSide as DanceErr).error}`,
     };
   }
@@ -358,6 +364,7 @@ type PlainDancer = {
 
 function formatInitState(state: unknown): string {
   if (!state || typeof state !== "object") return "    (unavailable)";
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- state shape is trusted after null check
   const dancers = state as Record<string, PlainDancer>;
   const ids = Object.keys(dancers).sort();
   return ids
@@ -371,7 +378,9 @@ function formatInitState(state: unknown): string {
 }
 
 function formatFieldDiff(diff: DiffDetail): string {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- diff fields are normalized world states
   const current = diff.current as Record<string, PlainDancer> | null;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- diff fields are normalized world states
   const worktree = diff.worktree as Record<string, PlainDancer> | null;
   if (!current || !worktree) {
     return [
@@ -381,7 +390,9 @@ function formatFieldDiff(diff: DiffDetail): string {
   }
 
   for (const dancerId of Object.keys(current).sort()) {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- PlainDancer is accessed as generic record for field iteration
     const cDancer = current[dancerId] as Record<string, unknown> | undefined;
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- PlainDancer is accessed as generic record for field iteration
     const wDancer = worktree[dancerId] as Record<string, unknown> | undefined;
     if (!cDancer || !wDancer) continue;
     for (const field of ["pos", "facing", "hands", "labels"]) {
