@@ -2,26 +2,14 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import {
-  addOffsetToId,
   ALL_PROTO_IDS,
   type Beats,
   BeatsSchema,
   type DancerId,
-  getProgDirSign,
   getRole,
   type ProtoId,
   protoIdToDancerId,
 } from "../contraCore";
-import {
-  type InfallibleLabel,
-  InfallibleLabelSchema,
-  type Label,
-  neighborLabelOffsets,
-  OffsetNeighborLabelSchema,
-  type ShadowLabel,
-  ShadowLabelSchema,
-} from "../labels";
-import { assertNever, parses } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 
 export const InstructionIdSchema = z.string().uuid();
@@ -60,56 +48,6 @@ export type ContraAnimation = {
   dur: Beats;
   getFrame: (t: Beats) => WorldState;
 };
-
-export function resolveLabel(
-  id: DancerId,
-  label: InfallibleLabel,
-  protos: Record<ProtoId, Dancer>,
-): DancerId;
-export function resolveLabel(
-  id: DancerId,
-  label: Label,
-  protos: Record<ProtoId, Dancer>,
-): DancerId | undefined;
-export function resolveLabel(
-  id: DancerId,
-  label: Label,
-  protos: Record<ProtoId, Dancer>,
-): DancerId | undefined {
-  if (parses(InfallibleLabelSchema, label)) {
-    switch (label) {
-      case "partner":
-      case "neighbor":
-        return Dancer.get(id, protos).labels[label];
-      case "opposite": {
-        const neighbor = resolveLabel(id, "neighbor", protos);
-        return resolveLabel(neighbor, "partner", protos);
-      }
-    }
-
-    label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
-    const neighbor = resolveLabel(id, "neighbor", protos);
-    return addOffsetToId(
-      neighbor,
-      neighborLabelOffsets[label] * getProgDirSign(id),
-    );
-  } else if (parses(ShadowLabelSchema, label)) {
-    return Dancer.get(id, protos).labels[label];
-  } else {
-    const handLabel = label satisfies Exclude<
-      Label,
-      InfallibleLabel | ShadowLabel
-    >;
-    switch (handLabel) {
-      case "person_in_left_hand":
-        return Dancer.get(id, protos).hands["left"]?.theirId;
-      case "person_in_right_hand":
-        return Dancer.get(id, protos).hands["right"]?.theirId;
-      default:
-        assertNever(handLabel);
-    }
-  }
-}
 
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
   let sum = new Vector(0, 0);

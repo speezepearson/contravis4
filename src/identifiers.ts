@@ -26,7 +26,7 @@ import {
   PureDirectionSchema,
   resolvePureDirection,
 } from "./directions";
-import { findDancerInDirection, resolveLabel } from "./instructions/_base";
+import { findDancerInDirection } from "./instructions/_base";
 import { LabelSchema } from "./labels";
 import { must, parses } from "./utils";
 import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
@@ -61,7 +61,7 @@ export function resolveCalledIdentifier(
   protos: Record<ProtoId, Dancer>,
   { roles }: { roles?: "same" | "different" } = {},
 ): DancerId | undefined {
-  if (parses(LabelSchema, cid)) return resolveLabel(id, cid, protos);
+  if (parses(LabelSchema, cid)) return Dancer.get(id, protos).resolveLabel(cid, protos)?.id ?? undefined;
   const pureDir = personInToDir[cid as PersonInDirection];
   const dir = resolvePureDirection(id, pureDir, protos);
   const res = findDancerInDirection(protos, id, dir, { roles });

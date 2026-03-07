@@ -13,6 +13,7 @@ import {
   flipProgDir,
   flipRole,
   getOffset,
+  getProgDirSign,
   getRole,
   type Hand,
   HandSchema,
@@ -25,8 +26,12 @@ import {
 } from "./contraCore";
 import { NORTH } from "./geometry";
 import {
-  type IrreducibleLabel,
+  type InfallibleLabel,
+  InfallibleLabelSchema,
   IrreducibleLabelSchema,
+  type Label,
+  neighborLabelOffsets,
+  OffsetNeighborLabelSchema,
   type SettableLabel,
   type ShadowLabel,
   ShadowLabelSchema,
@@ -94,7 +99,7 @@ export class Dancer {
     return this.role === "lark";
   }
 
-  static get(id: DancerId, protos: Record<ProtoId, Dancer>): Dancer {
+  static get(id: DancerId, protos: WorldState): Dancer {
     return protos[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
   }
 
@@ -126,14 +131,55 @@ export class Dancer {
       recents: this.recents.map((rid) => addOffsetToId(rid, deltaOffset)),
     });
   }
-}
 
-export function resolveIrreducibleLabel(
-  label: IrreducibleLabel,
-  id: DancerId,
-  protos: Record<ProtoId, Dancer>,
-): DancerId | undefined {
-  return Dancer.get(id, protos).labels[label];
+  resolveLabel(
+    label: InfallibleLabel,
+    protos: WorldState,
+  ): Dancer;
+  resolveLabel(
+    label: Label,
+    protos: WorldState,
+  ): Dancer | undefined;
+  resolveLabel(
+    label: Label,
+    protos: WorldState,
+  ): Dancer | undefined {
+    if (parses(InfallibleLabelSchema, label)) {
+      switch (label) {
+        case "partner":
+        case "neighbor":
+          return Dancer.get(this.labels[label], protos);
+        case "opposite": {
+          return this.resolveLabel("neighbor", protos)?.resolveLabel("partner", protos);
+        }
+      }
+  
+      label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
+      const neighbor = this.resolveLabel("neighbor", protos);
+      if (!neighbor) return undefined;
+      return neighbor.addOffset(neighborLabelOffsets[label] * getProgDirSign(this.id));
+    } else if (parses(ShadowLabelSchema, label)) {
+      if (!this.labels[label]) return undefined;
+      return Dancer.get(this.labels[label], protos);
+    } else {
+      const handLabel = label satisfies Exclude<
+        Label,
+        InfallibleLabel | ShadowLabel
+      >;
+      switch (handLabel) {
+        case "person_in_left_hand":
+          if (!this.hands["left"]) return undefined;
+          return Dancer.get(this.hands["left"].theirId, protos);
+        case "person_in_right_hand":
+          if (!this.hands["right"]) return undefined;
+          return Dancer.get(this.hands["right"].theirId, protos);
+        default:
+          assertNever(handLabel);
+      }
+    }
+  }
+  
+
 }
 
 export type WorldState = Record<ProtoId, Dancer>;
@@ -214,12 +260,12 @@ export function buildProtoRecord<V>(f: (id: ProtoId) => V): Record<ProtoId, V> {
   };
 }
 export function mapProtos(
-  protos: Record<ProtoId, Dancer>,
+  protos: WorldState,
   f: (dancer: Dancer) => Dancer,
-): Record<ProtoId, Dancer> {
+): WorldState {
   return Object.fromEntries(
     ALL_PROTO_IDS.map((id) => [id, f(protos[id])] as const),
-  ) as Record<ProtoId, Dancer>;
+  ) as WorldState;
 }
 
 export function getDancerSide(

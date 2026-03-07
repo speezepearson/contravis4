@@ -7,8 +7,8 @@ import { ALL_PROTO_IDS, DancerId, ProtoId } from "../contraCore";
 import { Label } from "../labels";
 import { fcProtoId } from "../testHelpers";
 import { circularDistance } from "../utils";
-import { setLabel, type WorldState } from "../worldState";
-import { resolveLabel, resolveShortLines } from "./_base";
+import { Dancer, setLabel, type WorldState } from "../worldState";
+import { resolveShortLines } from "./_base";
 import { initFormationStates } from "./index";
 
 describe("resolveLabel", () => {
@@ -30,7 +30,7 @@ describe("resolveLabel", () => {
   ])(
     "basic: resolves %s %s = %s correctly in improper: %s %s -> %s",
     (id, label, expected) => {
-      expect(resolveLabel(id, label, initFormationStates.improper)).toBe(
+      expect(Dancer.get(id, initFormationStates.improper).resolveLabel(label, initFormationStates.improper)?.id).toBe(
         expected,
       );
     },
@@ -49,7 +49,7 @@ describe("resolveLabel", () => {
   ])(
     "resolves next/prev neighbors correctly in improper: %s %s -> %s",
     (id, label, expected) => {
-      expect(resolveLabel(id, label, initFormationStates.improper)).toBe(
+      expect(Dancer.get(id, initFormationStates.improper).resolveLabel(label, initFormationStates.improper)?.id).toBe(
         expected,
       );
     },
@@ -63,7 +63,7 @@ describe("resolveLabel", () => {
   ])(
     "accounts for anchor's offset properly: %s %s -> %s",
     (id, label, expected) => {
-      expect(resolveLabel(id, label, initFormationStates.improper)).toBe(
+      expect(Dancer.get(id, initFormationStates.improper).resolveLabel(label, initFormationStates.improper)?.id).toBe(
         expected,
       );
     },
@@ -80,7 +80,7 @@ describe("resolveLabel", () => {
       const state = produce(initFormationStates.improper, (draft) => {
         setLabel(draft, p, "shadow", pShadow);
       });
-      expect(resolveLabel(d, "shadow", state)).toBe(dShadow);
+      expect(Dancer.get(d, state).resolveLabel("shadow", state)?.id).toBe(dShadow);
     },
   );
 });

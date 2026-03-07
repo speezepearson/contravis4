@@ -4,11 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, getProgDirVec } from "../contraCore";
 import { InfallibleLabel } from "../labels";
-import type { WorldState } from "../worldState";
+import { Dancer, type WorldState } from "../worldState";
 import {
   resolveCalledDirection,
   resolveCalledIdentifier,
-  resolveLabel,
 } from "./_base";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
@@ -136,7 +135,7 @@ describe("post-swing alignment", () => {
   const baseWithPreviousNeighborLeadingInRecents = produce(base, (draft) => {
     for (const id of ALL_PROTO_IDS) {
       draft[id].recents = [
-        resolveLabel(id, "prev_neighbor", base),
+        Dancer.get(id, base).resolveLabel("prev_neighbor", base).id,
         ...draft[id].recents,
       ];
     }

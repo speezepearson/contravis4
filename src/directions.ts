@@ -29,7 +29,7 @@ import { z } from "zod";
 
 import { type DancerId, isLark, type ProtoId } from "./contraCore";
 import { EAST, getDir, NORTH, roughlySameDir, SOUTH, WEST } from "./geometry";
-import { findDancerInDirection, resolveLabel } from "./instructions/_base";
+import { findDancerInDirection } from "./instructions/_base";
 import { type Label, LabelSchema } from "./labels";
 import { assertNever, getSide, must, parses } from "./utils";
 import { Dancer, type WorldState } from "./worldState";
@@ -159,11 +159,11 @@ export function resolveCalledDirection(
   }
   if (parses(TowardsLabelDirectionSchema, dir)) {
     const label = towardsToLabel[dir];
-    const themId = resolveLabel(id, label, protos);
-    if (!themId) throw new Error(`${id} has no ${label}`);
+    const them = Dancer.get(id, protos).resolveLabel(label, protos);
+    if (!them) throw new Error(`${id} has no ${label}`);
     return getDir({
       from: Dancer.get(id, protos).pos,
-      to: Dancer.get(themId, protos).pos,
+      to: them.pos,
     });
   }
   if (parses(TowardsPersonDirectionSchema, dir)) {
@@ -187,7 +187,7 @@ export function resolveCalledDirectionTarget(
 ): DancerId | undefined {
   if (parses(PureDirectionSchema, dir)) return undefined;
   if (parses(TowardsLabelDirectionSchema, dir)) {
-    return resolveLabel(id, towardsToLabel[dir], protos) ?? undefined;
+    return Dancer.get(id, protos).resolveLabel(towardsToLabel[dir], protos)?.id ?? undefined;
   }
   const pureDir = towardsPersonToDir[dir as TowardsPersonDirection];
   const pureDirVec = resolvePureDirection(id, pureDir, protos);
