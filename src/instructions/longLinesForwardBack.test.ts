@@ -172,37 +172,7 @@ describe("longLinesForwardBack", () => {
     ).toThrow("must face across");
   });
 
-  it("assigns non-overlapping y slots when dancers would collide", () => {
-    // Move down_robin close to up_lark: both would naively snap to y=-0.5
-    const overlapInit = produce(facingAcrossInit, (draft) => {
-      draft.down_robin_0.pos = new Vector(-0.5, -0.3);
-    });
-
-    const segments = longLinesForwardBackSegments(
-      instr,
-      overlapInit,
-      allProtos,
-    );
-    const midState = getSegmentFrameAtFrac(
-      segments[0],
-      overlapInit,
-      allProtos,
-      1,
-    );
-
-    // Optimal: up_lark(y=-0.5) → -0.5 (cost 0), down_robin(y=-0.3) → 0.5 (cost 0.8)
-    // Total cost 0.8 — better than (-1.5,-0.5) which costs 1.2
-    expect(midState.up_lark_0.pos.x).toBeCloseTo(-0.2);
-    expect(midState.up_lark_0.pos.y).toBeCloseTo(-0.5);
-    expect(midState.down_robin_0.pos.x).toBeCloseTo(-0.2);
-    expect(midState.down_robin_0.pos.y).toBeCloseTo(0.5);
-
-    // Right side dancers are unaffected
-    expect(midState.up_robin_0.pos.y).toBeCloseTo(-0.5);
-    expect(midState.down_lark_0.pos.y).toBeCloseTo(0.5);
-  });
-
-  it("throws if a dancer has no opposite-role dancer on a side", () => {
+  it("throws if dancers are in a dumb orientation", () => {
     // Put both larks on the left, both robins on the right
     const badInit = produce(facingAcrossInit, (draft) => {
       draft.down_lark_0.pos = new Vector(-0.5, 0.5);
@@ -213,7 +183,7 @@ describe("longLinesForwardBack", () => {
 
     expect(() =>
       longLinesForwardBackSegments(instr, badInit, allProtos),
-    ).toThrow("no opposite-role dancer");
+    ).toThrow(/no (lark|robin) on the (east|west) side/);
   });
 });
 

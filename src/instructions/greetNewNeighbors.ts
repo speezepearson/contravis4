@@ -19,12 +19,17 @@ export const greetNewNeighborsSegments: InstructionAnimator<
 > = (instr): Segment[] => [
   {
     dur: 0,
-    labels: (dancer) => [['neighbor', must(dancer.resolveCalledIdentifier(instr.cid)?.id, [
-      {dancerId: dancer.id},
-      ' has no ',
-      {cid: instr.cid},
-      ' to mark as their new neighbor'
-    ])]],
+    labels: (dancer) => [
+      [
+        "neighbor",
+        must(dancer.resolveCalledIdentifier(instr.cid)?.id, [
+          { dancerId: dancer.id },
+          " has no ",
+          { cid: instr.cid },
+          " to mark as their new neighbor",
+        ]),
+      ],
+    ],
     interactedWith: (dancer) => [
       must(dancer.resolveCalledIdentifier(instr.cid)).id,
     ],

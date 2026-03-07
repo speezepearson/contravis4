@@ -99,7 +99,7 @@ export function InlineDropdown<T extends string>({
           onMouseEnter={() => {
             const cid = CalledIdentifierSchema.safeParse(value);
             if (cid.success) onHighlight?.(cid.data);
-        }}
+          }}
         >
           {displayText}
         </span>

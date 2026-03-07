@@ -4,7 +4,12 @@ import { z } from "zod";
 import { getRole, RoleSchema } from "../contraCore";
 import { must } from "../utils";
 import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
-import { hold, type InstructionAnimator, lerpFacingTo, type Segment } from "./_segment";
+import {
+  hold,
+  type InstructionAnimator,
+  lerpFacingTo,
+  type Segment,
+} from "./_segment";
 
 export const LongLineInCenterInstructionSchema = z.object({
   ...instructionBaseSchemaFields,

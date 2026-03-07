@@ -5,9 +5,8 @@ import { type ProtoId } from "../contraCore";
 import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
-import { Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
-import { fudgeToAlignY } from "./_fudge";
+import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
   hold,
   type InstructionAnimator,
@@ -100,72 +99,51 @@ export const longLinesForwardBackSegments: InstructionAnimator<
     }
   }
 
-  // Pre-compute opposite-role neighbors on each side, asserting they exist
-  const leftPartners = new Map<ProtoId, Dancer>();
-  const rightPartners = new Map<ProtoId, Dancer>();
-  for (const id of who) {
-    const left = Dancer.get(id, init).findDancerInCalledDirection("on_left", {
-      roles: "different",
-    });
-    if (!left) {
-      throw new SnazzyError([
-        { dancerId: id },
-        " has no opposite-role dancer on their left for long lines forward and back",
-      ]);
-    }
-    leftPartners.set(id, left);
-
-    const right = Dancer.get(id, init).findDancerInCalledDirection("on_right", {
-      roles: "different",
-    });
-    if (!right) {
-      throw new SnazzyError([
-        { dancerId: id },
-        " has no opposite-role dancer on their right for long lines forward and back",
-      ]);
-    }
-    rightPartners.set(id, right);
-  }
-
-  // Pre-compute non-overlapping y targets per side
-  const westDancers = [...who].filter(
-    (id) => getDancerSide(init[id]) == "west",
-  );
-  const eastDancers = [...who].filter(
-    (id) => getDancerSide(init[id]) == "east",
-  );
-  const yTargets = new Map<ProtoId, number>([
-    ...assignNonOverlappingSlots(
-      westDancers.map((id) => ({ id, y: init[id].pos.y })),
-    ),
-    ...assignNonOverlappingSlots(
-      eastDancers.map((id) => ({ id, y: init[id].pos.y })),
-    ),
-  ]);
-
   const halfBeats = instr.beats / 2;
 
-  const segments: Segment[] = [
-    // Walk forward: take inside hands, move to x=±0.2, y=assigned slot
-    {
-      dur: halfBeats,
-      position: linearTo((dancer) => {
-        const x = Math.sign(init[dancer.protoId].pos.x) * 0.2;
-        return new Vector(x, yTargets.get(dancer.protoId)!);
-      }),
-      facing: lerpFacingTo((dancer) =>
-        must(resolveCardinalDirection("across", dancer.pos), [
-          { dancerId: dancer.protoId },
-          "is in the middle, can't tell which way to move",
-        ]),
+  const walkForwardSegment: Segment = {
+    dur: halfBeats,
+    position: linearTo((dancer) => {
+      const x = Math.sign(init[dancer.protoId].pos.x) * 0.2;
+      return new Vector(x, dancer.pos.y);
+    }),
+    facing: lerpFacingTo((dancer) =>
+      must(resolveCardinalDirection("across", dancer.pos), [
+        { dancerId: dancer.protoId },
+        "is in the middle, can't tell which way to move",
+      ]),
+    ),
+    hands: (dancer) =>
+      hold(
+        [
+          "left",
+          must(
+            dancer.resolveCalledIdentifier("person_on_left", {
+              roles: "different",
+            }),
+            [{ dancerId: dancer.id }, "has nobody on the left"],
+          ).id,
+          "right",
+        ],
+        [
+          "right",
+          must(
+            dancer.resolveCalledIdentifier("person_on_right", {
+              roles: "different",
+            }),
+            [{ dancerId: dancer.id }, "has nobody on the right"],
+          ).id,
+          "left",
+        ],
       ),
-      hands: (dancer) =>
-        hold(
-          ["left", leftPartners.get(dancer.protoId)!.id, "right"],
-          ["right", rightPartners.get(dancer.protoId)!.id, "left"],
-        ),
-    },
-    // Step back out: x=±0.5, keep y, keep hands
+  };
+
+  const segments: Segment[] = [
+    ...fudgeToAlignY(
+      fudgeToSpaceEvenlyInY([walkForwardSegment], init, who),
+      init,
+      who,
+    ),
     {
       dur: halfBeats,
       position: linearTo((dancer) => {
@@ -175,5 +153,5 @@ export const longLinesForwardBackSegments: InstructionAnimator<
     },
   ];
 
-  return fudgeToAlignY(segments, init, who);
+  return segments;
 };

@@ -14,7 +14,9 @@ export const StepInstructionSchema = z.object({
 });
 export type StepInstruction = z.infer<typeof StepInstructionSchema>;
 
-export const stepSegments: InstructionAnimator<StepInstruction> = (instr): Segment[] => [
+export const stepSegments: InstructionAnimator<StepInstruction> = (
+  instr,
+): Segment[] => [
   {
     dur: instr.beats,
     position: (dancer, frac) => {

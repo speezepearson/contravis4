@@ -2,7 +2,12 @@ import { z } from "zod";
 
 import { PI, revolve } from "../geometry";
 import { instructionBaseSchemaFields } from "./_base";
-import { hold, type InstructionAnimator, rotateFacingBy, type Segment } from "./_segment";
+import {
+  hold,
+  type InstructionAnimator,
+  rotateFacingBy,
+  type Segment,
+} from "./_segment";
 
 export const CourtesyTurnInstructionSchema = z.object({
   ...instructionBaseSchemaFields,

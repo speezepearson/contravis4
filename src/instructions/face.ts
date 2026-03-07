@@ -11,7 +11,9 @@ export const FaceInstructionSchema = z.object({
 });
 export type FaceInstruction = z.infer<typeof FaceInstructionSchema>;
 
-export const faceSegments: InstructionAnimator<FaceInstruction> = (instr): Segment[] => [
+export const faceSegments: InstructionAnimator<FaceInstruction> = (
+  instr,
+): Segment[] => [
   {
     dur: instr.beats,
     facing: (dancer) => {

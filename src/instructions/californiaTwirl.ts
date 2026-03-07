@@ -3,7 +3,13 @@ import { z } from "zod";
 import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
 import { instructionBaseSchemaFields } from "./_base";
-import { arc, hold, type InstructionAnimator, lerpFacingTo, type Segment } from "./_segment";
+import {
+  arc,
+  hold,
+  type InstructionAnimator,
+  lerpFacingTo,
+  type Segment,
+} from "./_segment";
 
 export const CaliforniaTwirlInstructionSchema = z.object({
   ...instructionBaseSchemaFields,

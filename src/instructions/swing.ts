@@ -23,7 +23,7 @@ import {
   resolveCardinalDirection,
   resolveMatches,
 } from "./_base";
-import { fudgeToAlignY } from "./_fudge";
+import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
   addPositionDrift,
   type HandsFn,
@@ -65,7 +65,7 @@ export function swingApproachBeatsForSpeedMatch(
 export function makeSwingSegments(
   instr: SwingInstruction,
   init: WorldState,
-  _who: ReadonlySet<ProtoId>,
+  who: ReadonlySet<ProtoId>,
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
   const centers = buildProtoRecord((id) => avgPos(init, id, matches[id].id));
@@ -211,7 +211,7 @@ export function makeSwingSegments(
         (id, globalFrac) => new Vector(xDrifts[id] * globalFrac, 0),
       );
       // Nudge y so that opposite-role pairs end up directly across.
-      return fudgeToAlignY(xSnapped, init, _who);
+      return fudgeToAlignY(fudgeToSpaceEvenlyInY(xSnapped, init, who), init, who);
     }
   }
 
