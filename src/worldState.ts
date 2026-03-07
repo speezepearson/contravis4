@@ -42,12 +42,12 @@ import {
 } from "./identifiers";
 import {
   type InfallibleLabel,
-  InfallibleLabelSchema,
   IrreducibleLabelSchema,
   type Label,
   LabelSchema,
   neighborLabelOffsets,
-  OffsetNeighborLabelSchema,
+  NeighborLabelSchema,
+  OppositeLabelSchema,
   type SettableLabel,
   type ShadowLabel,
   ShadowLabelSchema,
@@ -182,42 +182,26 @@ export class Dancer {
       const s = this.state;
       // Intermediate lookups skip the distance check; only the final result is checked.
       const noCheck: ResolveLabelOpts = { checkDistance: false };
-      if (parses(InfallibleLabelSchema, label)) {
-        switch (label) {
-          case "partner":
-          case "neighbor":
-            return Dancer.get(this.labels[label], s);
-          case "opposite": {
-            const neighbor = this.resolveLabel("neighbor", noCheck);
-            if (!neighbor) return undefined;
-            return neighbor.resolveLabel("partner", noCheck);
-          }
-        }
-
-        label satisfies z.infer<typeof OffsetNeighborLabelSchema>;
-        const neighbor = this.resolveLabel("neighbor", noCheck);
-        if (!neighbor) return undefined;
-        return neighbor.addOffset(
+      if (label === 'partner') {return Dancer.get(this.labels.partner, s);}
+      else if (parses(NeighborLabelSchema, label)) {
+        return Dancer.get(this.labels.neighbor, s).addOffset(
           neighborLabelOffsets[label] * getProgDirSign(this.id),
         );
+      } else if (parses(OppositeLabelSchema, label)) {
+        return Dancer.get(this.labels.neighbor, s).addOffset(
+          neighborLabelOffsets[label] * getProgDirSign(this.id),
+        ).resolveLabel("partner", noCheck);
       } else if (parses(ShadowLabelSchema, label)) {
         if (!this.labels[label]) return undefined;
         return Dancer.get(this.labels[label], s);
-      } else {
-        const handLabel = label satisfies Exclude<
-          Label,
-          InfallibleLabel | ShadowLabel
-        >;
-        switch (handLabel) {
-          case "person_in_left_hand":
+      } else if (label === 'person_in_left_hand'){
             if (!this.hands["left"]) return undefined;
             return Dancer.get(this.hands["left"].theirId, s);
-          case "person_in_right_hand":
-            if (!this.hands["right"]) return undefined;
-            return Dancer.get(this.hands["right"].theirId, s);
-          default:
-            assertNever(handLabel);
-        }
+      } else if (label === 'person_in_right_hand'){
+        if (!this.hands["right"]) return undefined;
+        return Dancer.get(this.hands["right"].theirId, s);
+      } else {
+        assertNever(label);
       }
     })();
     if (checkDistance && result && getDist(this.pos, result.pos) > 2.8) {

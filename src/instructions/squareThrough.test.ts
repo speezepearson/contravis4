@@ -21,13 +21,13 @@ const baseInstr = {
 
 const instr4: SquareThroughInstruction = {
   ...baseInstr,
-  beats: 8,
+  beats: 16,
   nPullBys: 4,
 };
 
 const instr3: SquareThroughInstruction = {
   ...baseInstr,
-  beats: 6,
+  beats: 12,
   nPullBys: 3,
 };
 

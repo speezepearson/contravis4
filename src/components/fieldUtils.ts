@@ -309,6 +309,18 @@ function labelToIdentifierText(label: Label): string {
       return "your prev x2 neighbor";
     case "prev_x3_neighbor":
       return "your prev x3 neighbor";
+    case "next_opposite":
+      return "your next opposite";
+    case "next_x2_opposite":
+      return "your next x2 opposite";
+    case "next_x3_opposite":
+      return "your next x3 opposite";
+    case "prev_opposite":
+      return "your prev opposite";
+    case "prev_x2_opposite":
+      return "your prev x2 opposite";
+    case "prev_x3_opposite":
+      return "your prev x3 opposite";
     case "shadow_2":
       return "your shadow 2";
     case "shadow_3":

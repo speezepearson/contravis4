@@ -17,24 +17,48 @@ export const OffsetNeighborLabelSchema = z.enum([
   "prev_x2_neighbor",
   "prev_x3_neighbor",
 ]);
+export const OffsetOppositeLabelSchema = z.enum([
+  "next_opposite",
+  "next_x2_opposite",
+  "next_x3_opposite",
+  "prev_opposite",
+  "prev_x2_opposite",
+  "prev_x3_opposite",
+]);
 export const neighborLabelOffsets = Object.freeze({
+  neighbor: 0,
+  opposite: 0,
   next_neighbor: 1,
+  next_opposite: 1,
   next_x2_neighbor: 2,
+  next_x2_opposite: 2,
   next_x3_neighbor: 3,
+  next_x3_opposite: 3,
   prev_neighbor: -1,
+  prev_opposite: -1,
   prev_x2_neighbor: -2,
+  prev_x2_opposite: -2,
   prev_x3_neighbor: -3,
-}) satisfies Record<z.infer<typeof OffsetNeighborLabelSchema>, number>;
+  prev_x3_opposite: -3,
+}) satisfies Record<
+  z.infer<typeof NeighborLabelSchema | typeof OppositeLabelSchema>,
+  number
+>;
 
 export const NeighborLabelSchema = z.enum([
   "neighbor",
   ...OffsetNeighborLabelSchema.options,
 ]);
+export const OppositeLabelSchema = z.enum([
+  "opposite",
+  ...OffsetOppositeLabelSchema.options,
+]);
+
 export const LabelSchema = z.enum([
   "partner",
   ...NeighborLabelSchema.options,
+  ...OppositeLabelSchema.options,
   ...ShadowLabelSchema.options,
-  "opposite", // = my neighbor's partner
   "person_in_right_hand",
   "person_in_left_hand",
 ]);
@@ -42,7 +66,7 @@ export const LabelSchema = z.enum([
 export const InfallibleLabelSchema = z.enum([
   "partner",
   ...NeighborLabelSchema.options,
-  "opposite",
+  ...OppositeLabelSchema.options,
 ] satisfies Label[]);
 export const SymmetricLabelSchema = z.enum([
   "partner",
