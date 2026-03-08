@@ -1,12 +1,27 @@
 import {
   ALL_PROTO_IDS,
   type DancerId,
+  getRole,
   type ProtoId,
   protoIdToDancerId,
 } from "./contraCore";
+import { getDist } from "./geometry";
 import { SnazzyError } from "./snazzyError";
-import { isNTuple, must, type NTuple } from "./utils";
-import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
+import {
+  getSide,
+  indexOf,
+  isNTuple,
+  must,
+  type NTuple,
+  safeThreshold,
+} from "./utils";
+import {
+  buildProtoRecord,
+  Dancer,
+  findNearbyDancers,
+  getDancerSide,
+  type WorldState,
+} from "./worldState";
 
 export function resolveRings(
   state: WorldState,
@@ -103,4 +118,107 @@ export function resolveShortLines(
       );
     return res;
   });
+}
+
+/**
+ * Find the closest opposite-role dancer on the same side of the set as `d`.
+ * Tiebreaking: distance → facing alignment → recency.
+ */
+export function findClosestOppRoleSameSide(d: Dancer): Dancer {
+  const state = d.state;
+  const side = getDancerSide(d);
+  const nearby = findNearbyDancers(d.pos, state);
+
+  const candidates: Dancer[] = [];
+  for (const protoId of ALL_PROTO_IDS) {
+    if (getRole(protoId) === d.role) continue;
+    for (const candidate of nearby[protoId]) {
+      if (getSide(candidate.pos) === side) candidates.push(candidate);
+    }
+  }
+
+  if (candidates.length === 0) {
+    throw new SnazzyError([
+      { dancerId: d.id },
+      " has no opposite-role dancer on the same side",
+    ]);
+  }
+
+  return candidates.reduce((best, challenger) =>
+    pickCloserOppRole(d, best, challenger),
+  );
+}
+
+function pickCloserOppRole(d: Dancer, a: Dancer, b: Dancer): Dancer {
+  // 1. Distance
+  const distA = getDist(d.pos, a.pos);
+  const distB = getDist(d.pos, b.pos);
+  const byDist = safeThreshold(distA - distB, { neg: a, pos: b });
+  if (byDist) return byDist;
+
+  // 2. Facing alignment: prefer the candidate more in the direction d faces
+  const dotA = d.facing.dot(a.pos.subtract(d.pos));
+  const dotB = d.facing.dot(b.pos.subtract(d.pos));
+  const byFacing = safeThreshold(dotA - dotB, { neg: b, pos: a });
+  if (byFacing) return byFacing;
+
+  // 3. Recency
+  const recA = indexOf(d.recents, a.id) ?? Infinity;
+  const recB = indexOf(d.recents, b.id) ?? Infinity;
+  if (recA < recB) return a;
+  if (recB < recA) return b;
+
+  throw new SnazzyError([
+    { dancerId: d.id },
+    " can't determine closest same-side opposite-role dancer; ",
+    { dancerId: a.id },
+    " and ",
+    { dancerId: b.id },
+    " are equidistant, equi-facing, and equally recent",
+  ]);
+}
+
+function getGroupOfFourCore(d: Dancer): NTuple<4, Dancer> {
+  // 1. d
+  // 2. opposite-role dancer across the set
+  const across = d.resolveMatch("person_across", { roles: "different" });
+  // 3. closest opposite-role on same side
+  const d2 = findClosestOppRoleSameSide(d);
+  // 4. dancer across from d2 with opposite role from d2
+  const d2Live = Dancer.get(d2.id, d.state);
+  const d2Across = d2Live.resolveMatch("person_across", { roles: "different" });
+  return [d, across, d2, d2Across];
+}
+
+/**
+ * Returns the group of four dancers that `d` belongs to:
+ * d, the opposite-role dancer across from d, the closest opposite-role dancer
+ * on d's side of the set (d2), and the opposite-role dancer across from d2.
+ *
+ * Verifies that calling this on any member produces the same group.
+ */
+export function getGroupOfFour(d: Dancer): NTuple<4, Dancer> {
+  const group = getGroupOfFourCore(d);
+  const groupIds = new Set(group.map((g) => g.id));
+
+  for (const member of group) {
+    if (member.id === d.id) continue;
+    const memberD = Dancer.get(member.id, d.state);
+    const otherGroup = getGroupOfFourCore(memberD);
+    const otherIds = new Set(otherGroup.map((g) => g.id));
+    if (
+      groupIds.size !== otherIds.size ||
+      ![...groupIds].every((id) => otherIds.has(id))
+    ) {
+      throw new SnazzyError([
+        "getGroupOfFour inconsistency: ",
+        { dancerId: d.id },
+        " and ",
+        { dancerId: member.id },
+        " disagree on group membership",
+      ]);
+    }
+  }
+
+  return group;
 }
