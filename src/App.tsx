@@ -7,6 +7,7 @@ import {
   DancerHighlightContext,
 } from "./components/RelationshipHighlightContext";
 import { Renderer } from "./components/Renderer";
+import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { exportGif } from "./exportGif";
 import {
@@ -30,8 +31,11 @@ import {
   InstructionSchema,
 } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
+import { useUndoRedo } from "./useUndoRedo";
 import { isLocalStorageAvailable, try_ } from "./utils";
 import { Dancer, type WorldState } from "./worldState";
+
+type DanceState = { instructions: Instruction[]; initFormation: InitFormation };
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 
@@ -127,15 +131,44 @@ export default function App() {
   const [looping, setLooping] = useState(true);
   const [bpm, setBpm] = useState(120);
   const [beat, setBeat] = useState(0);
-  const [instructions, setInstructions] = useState<Instruction[]>(() =>
-    initialLoadResult && "dance" in initialLoadResult
-      ? initialLoadResult.dance.instructions
-      : [],
+  const initialDanceState: DanceState = useMemo(
+    () => ({
+      instructions:
+        initialLoadResult && "dance" in initialLoadResult
+          ? initialLoadResult.dance.instructions
+          : [],
+      initFormation:
+        initialLoadResult && "dance" in initialLoadResult
+          ? initialLoadResult.dance.initFormation
+          : "improper",
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only compute once
+    [],
   );
-  const [initFormation, setInitFormation] = useState<InitFormation>(() =>
-    initialLoadResult && "dance" in initialLoadResult
-      ? initialLoadResult.dance.initFormation
-      : "improper",
+
+  const {
+    state: danceState,
+    setState: setDanceState,
+    beginTransient,
+    endTransient,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoRedo(initialDanceState);
+
+  const { instructions, initFormation } = danceState;
+
+  const setInstructions = useCallback(
+    (next: Instruction[]) =>
+      setDanceState({ instructions: next, initFormation }),
+    [setDanceState, initFormation],
+  );
+
+  const setInitFormation = useCallback(
+    (next: InitFormation) =>
+      setDanceState({ instructions, initFormation: next }),
+    [setDanceState, instructions],
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 1);
@@ -518,6 +551,19 @@ export default function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Undo/redo works even when focused on inputs
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if ((mod && e.key === "z" && e.shiftKey) || (mod && e.key === "y")) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
       const tag =
         e.target instanceof HTMLElement ? e.target.tagName : undefined;
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
@@ -528,7 +574,7 @@ export default function App() {
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [togglePlay]);
+  }, [togglePlay, undo, redo]);
 
   const handleHoverInstruction = useCallback((id: InstructionId | null) => {
     setHoveredInstructionId(id);
@@ -628,11 +674,17 @@ export default function App() {
     </>
   );
 
+  const undoContextValue = useMemo(
+    () => ({ beginTransient, endTransient, undo, redo, canUndo, canRedo }),
+    [beginTransient, endTransient, undo, redo, canUndo, canRedo],
+  );
+
   const commandPaneProps = {
     instructions,
     setInstructions,
     initFormation,
     setInitFormation,
+    setDanceState,
     activeId: activeInstructionId(instructions, beat),
     generateErrors,
     animation,
@@ -642,105 +694,107 @@ export default function App() {
   };
 
   return (
-    <CalledIdentifierHighlightContext.Provider
-      value={setHighlightedRelationship}
-    >
-      <DancerHighlightContext.Provider value={setHighlightedDancer}>
-        <div className="app-layout">
-          {localStorageError && (
-            <div className="localstorage-error">
-              <strong>Could not load saved dance from localStorage:</strong>
-              <pre>{localStorageError}</pre>
-              <button onClick={() => setLocalStorageError(null)}>
-                Dismiss
-              </button>
+    <UndoContext.Provider value={undoContextValue}>
+      <CalledIdentifierHighlightContext.Provider
+        value={setHighlightedRelationship}
+      >
+        <DancerHighlightContext.Provider value={setHighlightedDancer}>
+          <div className="app-layout">
+            {localStorageError && (
+              <div className="localstorage-error">
+                <strong>Could not load saved dance from localStorage:</strong>
+                <pre>{localStorageError}</pre>
+                <button onClick={() => setLocalStorageError(null)}>
+                  Dismiss
+                </button>
+              </div>
+            )}
+            <div className="vis-column">
+              <div className="canvas-container" ref={canvasContainerRef}>
+                <canvas ref={canvasRef} />
+              </div>
             </div>
-          )}
-          <div className="vis-column">
-            <div className="canvas-container" ref={canvasContainerRef}>
-              <canvas ref={canvasRef} />
-            </div>
-          </div>
 
-          {/* Desktop sidebar */}
-          <div className="sidebar-column">
-            <div className="sidebar-instructions">
-              <CommandPane {...commandPaneProps} />
+            {/* Desktop sidebar */}
+            <div className="sidebar-column">
+              <div className="sidebar-instructions">
+                <CommandPane {...commandPaneProps} />
+              </div>
+              <div className="sidebar-controls">{desktopControlsBlock}</div>
             </div>
-            <div className="sidebar-controls">{desktopControlsBlock}</div>
-          </div>
 
-          {/* Mobile: compact controls bar */}
-          <div className="mobile-controls">
-            <div className="controls">
-              <button onClick={togglePlay}>
-                {playing ? "\u23F8 Pause" : "\u25B6 Play"}
-              </button>
-              <label>
+            {/* Mobile: compact controls bar */}
+            <div className="mobile-controls">
+              <div className="controls">
+                <button onClick={togglePlay}>
+                  {playing ? "\u23F8 Pause" : "\u25B6 Play"}
+                </button>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={looping}
+                    onChange={(e) => setLooping(e.target.checked)}
+                  />{" "}
+                  Loop
+                </label>
                 <input
-                  type="checkbox"
-                  checked={looping}
-                  onChange={(e) => setLooping(e.target.checked)}
-                />{" "}
-                Loop
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={1000}
-                value={scrubberValue}
-                onChange={(e) => scrub(Number(e.target.value))}
-              />
-              <div className="beat-display">Beat {beat.toFixed(1)}</div>
-            </div>
-            <div className="controls">
-              <span className="speed-display">{bpm} BPM</span>
-              <input
-                type="range"
-                min={60}
-                max={120}
-                value={bpm}
-                onChange={(e) => setBpm(Number(e.target.value))}
-              />
-            </div>
-            <div className="controls">
-              <span className="speed-display">
-                Smooth {smoothness.toFixed(1)}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={2}
-                step={0.1}
-                value={smoothness}
-                onChange={(e) => setSmoothness(Number(e.target.value))}
-              />
-            </div>
-            <button onClick={downloadGif} disabled={exporting || !animation}>
-              {exporting ? "..." : "GIF"}
-            </button>
-            <button
-              className="drawer-toggle"
-              onClick={() => setDrawerOpen(true)}
-            >
-              {"\u25B2 Edit Instructions"}
-            </button>
-          </div>
-
-          {/* Mobile: full-screen instruction editor */}
-          {drawerOpen && (
-            <div className="instruction-drawer open">
+                  type="range"
+                  min={0}
+                  max={1000}
+                  value={scrubberValue}
+                  onChange={(e) => scrub(Number(e.target.value))}
+                />
+                <div className="beat-display">Beat {beat.toFixed(1)}</div>
+              </div>
+              <div className="controls">
+                <span className="speed-display">{bpm} BPM</span>
+                <input
+                  type="range"
+                  min={60}
+                  max={120}
+                  value={bpm}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                />
+              </div>
+              <div className="controls">
+                <span className="speed-display">
+                  Smooth {smoothness.toFixed(1)}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={smoothness}
+                  onChange={(e) => setSmoothness(Number(e.target.value))}
+                />
+              </div>
+              <button onClick={downloadGif} disabled={exporting || !animation}>
+                {exporting ? "..." : "GIF"}
+              </button>
               <button
                 className="drawer-toggle"
-                onClick={() => setDrawerOpen(false)}
+                onClick={() => setDrawerOpen(true)}
               >
-                {"\u25BC Back to Visualization"}
+                {"\u25B2 Edit Instructions"}
               </button>
-              <CommandPane {...commandPaneProps} />
             </div>
-          )}
-        </div>
-      </DancerHighlightContext.Provider>
-    </CalledIdentifierHighlightContext.Provider>
+
+            {/* Mobile: full-screen instruction editor */}
+            {drawerOpen && (
+              <div className="instruction-drawer open">
+                <button
+                  className="drawer-toggle"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  {"\u25BC Back to Visualization"}
+                </button>
+                <CommandPane {...commandPaneProps} />
+              </div>
+            )}
+          </div>
+        </DancerHighlightContext.Provider>
+      </CalledIdentifierHighlightContext.Provider>
+    </UndoContext.Provider>
   );
 }

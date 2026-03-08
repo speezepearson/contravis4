@@ -107,6 +107,7 @@ import {
   DancerHighlightContext,
 } from "./RelationshipHighlightContext";
 import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
+import { useUndo } from "./UndoContext";
 
 function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   const highlightRel = useContext(CalledIdentifierHighlightContext);
@@ -459,6 +460,10 @@ interface Props {
   setInstructions: (instructions: Instruction[]) => void;
   initFormation: InitFormation;
   setInitFormation: (formation: InitFormation) => void;
+  setDanceState: (state: {
+    instructions: Instruction[];
+    initFormation: InitFormation;
+  }) => void;
   activeId: InstructionId | null;
   generateErrors: GenerateError[];
   animation: ContraAnimation | null;
@@ -819,6 +824,7 @@ export default memo(function CommandPane({
   setInstructions,
   initFormation,
   setInitFormation,
+  setDanceState,
   activeId,
   generateErrors,
   animation,
@@ -826,6 +832,7 @@ export default memo(function CommandPane({
   onEditInstruction,
   onSkipToInstruction,
 }: Props) {
+  const { undo, redo, canUndo, canRedo } = useUndo();
   const [newlyAddedId, setNewlyAddedId] = useState<InstructionId | null>(null);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [pasteFeedback, setPasteFeedback] = useState("");
@@ -1107,8 +1114,10 @@ export default memo(function CommandPane({
     }
     const parsed = result.data;
     setPasteFeedback("");
-    setInitFormation(parsed.initFormation);
-    setInstructions(parsed.instructions);
+    setDanceState({
+      initFormation: parsed.initFormation,
+      instructions: parsed.instructions,
+    });
   }
 
   const sensors = useSensors(
@@ -1197,8 +1206,10 @@ export default memo(function CommandPane({
   function handleLoadDance(filename: string) {
     const entry = dances.find((d) => d.filename === filename);
     if (!entry) return;
-    setInitFormation(entry.dance.initFormation);
-    setInstructions(entry.dance.instructions);
+    setDanceState({
+      initFormation: entry.dance.initFormation,
+      instructions: entry.dance.instructions,
+    });
   }
 
   return (
@@ -1218,6 +1229,25 @@ export default memo(function CommandPane({
           </select>
         </div>
       )}
+
+      <div className="undo-redo-bar">
+        <button
+          className="undo-btn"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+        >
+          Undo
+        </button>
+        <button
+          className="redo-btn"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Shift+Z)"
+        >
+          Redo
+        </button>
+      </div>
 
       <div className="formation-selector">
         <label>Formation: </label>

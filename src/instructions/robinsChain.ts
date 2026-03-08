@@ -4,10 +4,7 @@ import { type DancerId, isRobin } from "../contraCore";
 import { getDir, lerpFacing } from "../geometry";
 import { must } from "../utils";
 import type { Lark, Robin } from "../worldState";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
 export const RobinsChainInstructionSchema = z.object({

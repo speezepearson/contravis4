@@ -2,6 +2,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useInstructionEdit } from "./InstructionEditContext";
+import { useUndo } from "./UndoContext";
 
 interface Props {
   value: string;
@@ -27,6 +28,7 @@ export function InlineNumber({
     null,
   );
   const { onPopoverOpen } = useInstructionEdit();
+  const { beginTransient, endTransient } = useUndo();
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -59,8 +61,9 @@ export function InlineNumber({
       };
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- e.target is always an HTMLElement in pointer events but the DOM types return EventTarget
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      beginTransient();
     },
-    [open, value],
+    [open, value, beginTransient],
   );
 
   const handlePointerMove = useCallback(
@@ -80,10 +83,11 @@ export function InlineNumber({
   const handlePointerUp = useCallback(() => {
     const wasDrag = dragRef.current?.moved ?? false;
     dragRef.current = null;
+    endTransient();
     if (!wasDrag) {
       handleOpenChange(true);
     }
-  }, [handleOpenChange]);
+  }, [handleOpenChange, endTransient]);
 
   return (
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
@@ -95,6 +99,7 @@ export function InlineNumber({
           onPointerUp={handlePointerUp}
           onPointerCancel={() => {
             dragRef.current = null;
+            endTransient();
           }}
           style={{ touchAction: "none" }}
         >
