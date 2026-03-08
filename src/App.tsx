@@ -377,6 +377,28 @@ export default function App() {
     drawRef.current = draw;
   });
 
+  // Debug hook for browser automation testing
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- temporary debug hook
+    (window as any).__debug = {
+      scrub: (beat: number) => {
+        beatRef.current = beat;
+        nProgressionsRef.current = 0;
+        rendererRef.current?.clearTrails();
+        drawRef.current();
+      },
+      setBeat: (beat: number) => {
+        beatRef.current = beat;
+        drawRef.current();
+      },
+      getNProgressions: () => nProgressionsRef.current,
+      addProgression: (n: number) => {
+        nProgressionsRef.current += n;
+        drawRef.current();
+      },
+    };
+  });
+
   useEffect(() => {
     nProgressionsRef.current = 0;
     drawRef.current();
@@ -646,6 +668,9 @@ export default function App() {
           onChange={(e) => scrub(Number(e.target.value))}
         />
         <div className="beat-display">Beat {beat.toFixed(1)}</div>
+        {nProgressionsRef.current !== 0 && (
+          <div className="beat-display">Prog {nProgressionsRef.current}</div>
+        )}
       </div>
       <div className="controls">
         <span className="speed-display">{bpm} BPM</span>
