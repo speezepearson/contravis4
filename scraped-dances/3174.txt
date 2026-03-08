@@ -1,0 +1,14 @@
+Title:     Amiss
+Author:    Cary Ravitz
+Formation: Becket
+
+Figures:
+   2 beats  long lines forward
+   4 beats  neighbors gyre ½
+   2 beats  long lines back
+   8 beats  circle right 3 places
+   6 beats  zig right zag left past neighbors ⁋
+  10 beats  next neighbors swing
+   8 beats  mad robin, gentlespoons in front
+   8 beats  gentlespoons allemande left 1½
+  16 beats  partners balance & swing

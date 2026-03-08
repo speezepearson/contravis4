@@ -1,0 +1,15 @@
+Title:     Bicycle
+Author:    Sam Whited
+Formation: Becket
+
+Figures:
+   4 beats  balance the ring
+   4 beats  circle left 2 places
+   8 beats  Oval left
+   8 beats  Oval right, end across from new neighbors ⁋
+   8 beats  star left - hands across - 4 places
+   8 beats  ladles start a half hey - rights in center, lefts on ends  - gentlespoons ricochet (ladles pull by and gentlespoons cast off to start)
+   8 beats  neighbors swing
+   4 beats  balance the ring
+   4 beats  ladles give & take partners
+   8 beats  partners swing

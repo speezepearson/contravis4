@@ -1,0 +1,10 @@
+Title:     The Dance Angel
+Author:    JoLaine Jones-Pokorney
+Formation: Duple Improper
+
+Figures:
+   8 beats  circle left 4 places
+   8 beats  neighbors swing
+  16 beats  ones contra corners Opposite file
+  16 beats  ones contra corners Home file
+  16 beats  partners balance & swing ones only end facing down ⁋

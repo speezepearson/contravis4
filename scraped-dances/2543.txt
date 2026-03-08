@@ -1,0 +1,14 @@
+Title:     Christmas &#39;96 variation
+Author:    Nicholas Rockstroh
+Formation: improper
+
+Figures:
+   8 beats  star right 4 places
+   8 beats  circle right 4 places
+   4 beats  balance the ring
+   2 beats  pass through ⁋
+  10 beats  neighbors swing
+   6 beats  circle left 3 places
+  10 beats  partners swing
+   8 beats  ladles chain
+   8 beats  star left 4 places and look for next neighbors ⁋

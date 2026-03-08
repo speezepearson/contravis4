@@ -1,0 +1,11 @@
+Title:     Roller Coaster
+Author:    Michael Fuerst
+Formation: Duple Improper
+
+Figures:
+   8 beats  Balance the ring and pass by  right to  2nd neighbors
+   8 beats  Balance the ring and pass by right to 3rd neighbors
+  16 beats  Dosido and swing 3rd neighbors, end facing across
+  16 beats  Star left 3 places, gentlespoons turn back over right shoulder, partners swing
+   8 beats  left diagonal right left through end facing 1st neighbors across
+   8 beats  Ladles start 1/2 hey,  passing right shoulders. Gentlespoons immediately ricochet, and all face new neighbors (original 2nd neighbors)

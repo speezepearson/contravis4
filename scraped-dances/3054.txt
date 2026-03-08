@@ -1,0 +1,14 @@
+Title:     Roll for Initiative
+Author:    Alex Burka
+Formation: duple becket (reverse double progression)
+
+Figures:
+   8 beats  right diagonal right left through (find new neighbors across, leaving the RL-thru neighbors behind; if you have nobody on your right diagonal stay in place) ⁋
+   8 beats  ladles allemande right 1½
+  16 beats  neighbors balance & swing
+   8 beats  ladles chain
+   4 beats  balance the ring
+   4 beats  gentlespoons roll away partners with a half sashay (up or down the set, ladles in front)
+   4 beats  balance the ring
+   4 beats  ladles roll away neighbors with a half sashay (across the set, gentlespoons in front)
+   8 beats  partners swing

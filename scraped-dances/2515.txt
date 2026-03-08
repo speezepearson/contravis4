@@ -1,0 +1,13 @@
+Title:     Basic Becket
+Author:    Mattie Rynkiewicz
+Formation: Becket
+
+Figures:
+   8 beats  long lines forward & back
+   8 beats  long lines slice left & back ⁋
+   8 beats  circle left 4 places
+   8 beats  partners do si do once
+   8 beats  neighbors do si do once
+   8 beats  half poussette - ladles pull neighbors back then left
+   8 beats  neighbors do si do once
+   8 beats  half poussette - gentlespoons pull neighbors back then left ⁋

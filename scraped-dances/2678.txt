@@ -1,0 +1,14 @@
+Title:     Jefferson&#39;s Sixpence
+Author:    Ann Fallon
+Formation: improper
+
+Figures:
+   8 beats  circle left 4 places
+   8 beats  circle right 4 places
+   8 beats  neighbors do si do once
+   8 beats  partners do si do once
+   8 beats  long lines forward & back
+   8 beats  ones swing
+   8 beats  down the hall ones in the middle ⁋
+   4 beats  up the hall backward
+   4 beats  ones arch twos dive

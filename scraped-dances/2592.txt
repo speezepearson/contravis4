@@ -1,0 +1,12 @@
+Title:     Stir Crazy
+Author:    Erik Weberg
+Formation: Becket
+
+Figures:
+   6 beats  circle left 3 places
+   2 beats  pass through
+   8 beats  next neighbors swing
+   8 beats  circle left 3 places
+   8 beats  partners do si do once
+  16 beats  square through four - partners balance &  pull by right, then neighbors pull by left, then repeat
+  16 beats  partners balance & swing

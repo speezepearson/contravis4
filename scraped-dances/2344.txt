@@ -1,0 +1,13 @@
+Title:     Jubilation Permutation
+Author:    Cary Ravitz
+Formation: improper
+
+Figures:
+  16 beats  neighbors balance & swing
+   8 beats  gentlespoons allemande left 1½
+   8 beats  partners swing
+   8 beats  gentlespoons start a half hey - lefts in center, rights on ends
+   8 beats  partners swing
+   6 beats  circle left 3 places
+   2 beats  pass through ⁋
+   8 beats  next neighbors do si do once

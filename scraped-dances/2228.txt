@@ -1,0 +1,19 @@
+npm warn exec The following package was not found and will be installed: tsx@4.21.0
+Title:     Three Thirty-Three
+Author:    Steve Zakon-Anderson
+Formation: improper
+
+Figures:
+   4 beats  1st neighbors balance by the right hand
+   0 beats  grand right and left :
+   2 beats  1st neighbors pull by right
+   2 beats  2nd neighbors pull by left
+   8 beats  3rd neighbors right hand balance &  box the gnat
+   0 beats  grand right and left the other way :
+   2 beats  3rd neighbors pull by right
+   2 beats  2nd neighbors pull by left
+  12 beats  1st neighbors swing
+   8 beats  circle left 3 places
+   8 beats  partners swing
+   8 beats  long lines forward & back
+   8 beats  ladles do si do 1½ and face new 1st neighbors ⁋
