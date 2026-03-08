@@ -225,6 +225,23 @@ Always 0 beats (instant).
 }
 ```
 
+### `hey`
+
+- `full`: `true` for full hey, `false` for half hey
+- `centerRole`: which role passes in the center
+- `centerHand`: which hand they pass by in the center
+
+```json
+{
+  "id": "...",
+  "beats": 16,
+  "type": "hey",
+  "full": true,
+  "centerRole": "lark",
+  "centerHand": "right"
+}
+```
+
 ### `greet_new_neighbors`
 
 Always 0 beats (instant). Updates the `neighbor` label.

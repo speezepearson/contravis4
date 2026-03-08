@@ -95,6 +95,15 @@ export function makeDefaultInstruction(
           drawerRole: "lark",
           endFacing: "across",
         };
+      case "hey":
+        return {
+          id,
+          type: "hey",
+          beats: 16,
+          full: true,
+          centerRole: "lark",
+          centerHand: "right",
+        };
       case "long_line_in_center":
         return { id, type: "long_line_in_center", role: "lark", beats: 4 };
       case "long_lines_forward_back":

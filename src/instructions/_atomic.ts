@@ -54,6 +54,7 @@ import {
   GreetShadowInstructionSchema,
   greetShadowSegments,
 } from "./greetShadow";
+import { HeyInstructionSchema, heySegments } from "./hey";
 import {
   LongLineInCenterInstructionSchema,
   longLineInCenterSegments,
@@ -128,6 +129,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   FormLongWavesInstructionSchema,
   FormShortWavesInstructionSchema,
   GiveAndTakeIntoSwingInstructionSchema,
+  HeyInstructionSchema,
   GreetNewNeighborsInstructionSchema,
   GreetShadowInstructionSchema,
   LongLineInCenterInstructionSchema,
@@ -180,6 +182,7 @@ export const atomicSegmentAnimators: {
   form_long_waves: formLongWavesSegments,
   form_short_waves: formShortWavesSegments,
   give_and_take_into_swing: giveAndTakeIntoSwingSegments,
+  hey: heySegments,
   greet_new_neighbors: greetNewNeighborsSegments,
   greet_shadow: greetShadowSegments,
   long_line_in_center: longLineInCenterSegments,
