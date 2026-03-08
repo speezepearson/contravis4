@@ -1,13 +1,12 @@
 /**
  * Trace dancer state through each instruction in a dance file.
  *
- * Usage: npx tsx scripts/trace-dance.ts <dance.json>
+ * Usage: npx tsx scripts/trace-dance.ts <dance.ts>
  *
  * Prints the dancer positions, facings, and hands at each instruction boundary.
  * On error, prints the error and the state at the point of failure, then continues.
  */
 
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -17,9 +16,8 @@ import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { makeAtomicInstructionSegments } from "../src/instructions/_atomic";
 import { animateSegments } from "../src/instructions/_segment";
-import type { Instruction } from "../src/instructions/index";
+import type { Dance, Instruction } from "../src/instructions/index";
 import {
-  DanceSchema,
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
@@ -35,13 +33,13 @@ const { positionals } = parseArgs({
 
 const file = positionals[0];
 if (!file) {
-  console.error("Usage: npx tsx scripts/trace-dance.ts <dance.json>");
+  console.error("Usage: npx tsx scripts/trace-dance.ts <dance.ts>");
   process.exit(1);
 }
 
-const dance = DanceSchema.parse(
-  JSON.parse(readFileSync(resolve(file), "utf-8")),
-);
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
+const mod = (await import(resolve(file))) as { default: Dance };
+const dance = mod.default;
 
 const initState = resolveInitFormation(dance.initFormation);
 

@@ -1,19 +1,19 @@
 ---
 name: transcribe-contradb-dance
-description: Transcribe a ContraDB dance into an example-dance JSON file.
+description: Transcribe a ContraDB dance into an example-dance TypeScript file.
 ---
 
-# Transcribing a ContraDB dance into an example-dance JSON file
+# Transcribing a ContraDB dance into an example-dance TypeScript file
 
 ## Overview
 
-Given a ContraDB URL (e.g. `https://contradb.com/dances/3010`), the user runs `npx tsx scripts/fetch-contradb-dance.ts <url>` to get a human-readable listing of figures. Your job is to turn that listing into a valid `.dance.json` file in `example-dances/`.
+Given a ContraDB URL (e.g. `https://contradb.com/dances/3010`), the user runs `npx tsx scripts/fetch-contradb-dance.ts <url>` to get a human-readable listing of figures. Your job is to turn that listing into a valid `.ts` dance file in `src/example-dances/`.
 
 ## Process
 
 1. **Read the ContraDB output** — note the title, author, formation (the fetcher prints it), and the sequence of figures with beat counts.
 
-2. **Study existing dances** — read a non-dummy example dance (e.g. `ellies-iguanarama.dance.json` or `otters-allemande.dance.json`) to match the format. Also read the petronella dummy if the dance has petronella/ring figures.
+2. **Study existing dances** — read a non-dummy example dance (e.g. `ellies-iguanarama.ts` or `otters-allemande.ts` in `src/example-dances/`) to match the format. Also read the petronella dummy if the dance has petronella/ring figures.
 
 3. **Check `src/instructions/README.md`** — this catalogues every instruction type with examples and synonyms. Key synonyms to know:
    - "gentlespoons" / "gents" = larks (use `"lark"` in splits)
@@ -35,15 +35,15 @@ Given a ContraDB URL (e.g. `https://contradb.com/dances/3010`), the user runs `n
 
 6. **Generate valid UUIDs** for all `id` fields — use `node -e "for(let i=0;i<N;i++) console.log(crypto.randomUUID())"`. Do NOT use made-up prefixes like `hb000000-...`; the schema validates UUID format strictly (version 1-8 only).
 
-7. **Create the file** as `example-dances/<kebab-case-name>.dance.json` with `"$schema": "../_generated/json-schemas/Dance.schema.json"` and `"url": "<contradb-url>"`.
+7. **Create the file** as `src/example-dances/<kebab-case-name>.ts` with `import type { Dance } from "../instructions/index";` and `export default { status: "preliminary", url: "<contradb-url>", ... } satisfies Dance;`.
 
-8. **Run `npm run verify`** and fix errors iteratively. If simulation errors occur, use `npx tsx scripts/trace-dance.ts <dance.json>` to see the dancer state at each instruction boundary — this shows positions, facings, and hand connections, making it easy to identify where things go wrong.
+8. **Run `npm run verify`** and fix errors iteratively. If simulation errors occur, use `npx tsx scripts/trace-dance.ts src/example-dances/<name>.ts` to see the dancer state at each instruction boundary — this shows positions, facings, and hand connections, making it easy to identify where things go wrong.
 
 9. **Write notes** to `example-dances/<kebab-case-name>.notes.md` — document key decisions (e.g. progression placement, ambiguous figure interpretations), what caused trouble, and how you fixed it. This helps future transcriptions of similar dances.
 
 ## Common pitfalls
 
-- **UUID validation**: IDs must be valid v1-v8 UUIDs. Random hex strings with invalid version/variant nibbles will fail schema validation.
+- **UUID validation**: IDs must be valid v1-v8 UUIDs. Random hex strings with invalid version/variant nibbles will fail validation.
 - **Hand conflicts**: The simulation tracks hand state precisely. After any instruction that creates hand connections (swing, allemande, circle, take_hands_in_rings, **long_lines_forward_back**, poussette), you likely need `drop_hands` before the next instruction that creates new connections. `long_lines_forward_back` is easy to forget — it leaves dancers holding hands with neighbors along the line.
 - **Ring formation edge cases**: `makeRingSegment` (used by circle, take_hands_in_rings, etc.) needs dancers in positions where it can find both a `person_across` and a `person_up`/`person_down` of different role. After partner swings ending across, dancers face horizontally (facing.y ≈ 0), which can cause the ring algorithm to fail when dancers are at y-extremes. This was fixed with a recency-based tiebreaker, but be aware of it.
 - **Beat counts**: The dance must total 64 beats. The test suite checks this for non-dummy dances.
@@ -51,7 +51,7 @@ Given a ContraDB URL (e.g. `https://contradb.com/dances/3010`), the user runs `n
 
 ## Debugging tools
 
-- **`npx tsx scripts/trace-dance.ts <dance.json>`** — prints dancer positions, facings, and hand connections after each instruction. Stops at the first error (later instructions would have meaningless state). Use this instead of writing throwaway test files.
+- **`npx tsx scripts/trace-dance.ts <dance.ts>`** — prints dancer positions, facings, and hand connections after each instruction. Stops at the first error (later instructions would have meaningless state). Use this instead of writing throwaway test files.
 - **`npm run verify-noop -- HEAD`** — after changes, checks that existing dances still produce identical animations.
 
 ## What you may need to ask the user

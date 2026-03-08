@@ -7,15 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",
+    "test:playwright": "playwright test",
     "test:watch": "vitest",
     "lint": "eslint -f ./eslint-formatter-relative.js .",
     "lint:fix": "eslint --fix -f ./eslint-formatter-relative.js .",
-    "format": "prettier --write src scripts example-dances --log-level=warn",
+    "format": "prettier --write src scripts --log-level=warn",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "verify": "npm run format && npm run lint -- --fix && npm run typecheck && npm run test",
+    "verify": "npm run format && npm run lint -- --fix && npm run typecheck && npm run test && npm run test:playwright",
     "verify-noop": "tsx scripts/verify-noop.ts",
-    "generate-json-schema": "tsx scripts/generate-json-schema.ts",
     "fetch-contradb-dance": "tsx scripts/fetch-contradb-dance.ts"
   },
   "dependencies": {
@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.2",
     "@types/lodash": "^4.17.24",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",

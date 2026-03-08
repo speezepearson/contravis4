@@ -129,7 +129,11 @@ function buildInitFormation(initFormationName: InitFormationName): WorldState {
   );
 }
 
+export const DanceStatusSchema = z.enum(["dummy", "preliminary", "verified"]);
+export type DanceStatus = z.infer<typeof DanceStatusSchema>;
+
 export const DanceSchema = z.object({
+  status: DanceStatusSchema.default("preliminary"),
   url: z.string().optional(),
   name: z.string().optional(),
   author: z.string().optional(),

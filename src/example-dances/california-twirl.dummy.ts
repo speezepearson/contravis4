@@ -1,0 +1,21 @@
+import type { Dance } from "../instructions/index";
+
+export default {
+  status: "dummy",
+  name: "(dummy) California twirl",
+  initFormation: "improper",
+  instructions: [
+    {
+      id: "ee88d476-5590-4787-bec2-d50db05c1fce",
+      beats: 4,
+      type: "california_twirl",
+    },
+    {
+      id: "85347ba0-d879-4fb1-a175-14dcddaeb24c",
+      beats: 4,
+      type: "pull_by",
+      cid: "partner",
+      hand: "right",
+    },
+  ],
+} satisfies Dance;

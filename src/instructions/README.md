@@ -8,7 +8,6 @@ This document catalogues every instruction type in the dance animation system.
 
 - **Swings** (incl. meltdown, give and take) should be assumed to **end facing across** unless otherwise specified.
 - When a dance calls for a **role-specific instruction** (e.g. "larks allemande left 1½"), model it as a **`split`** instruction. Usually one branch of the split is empty, but some dances have calls like "larks X while robins Y", where both branches have instructions.
-- JSON schemas for all types live in `./_generated/`. If missing, regenerate with `npx tsx ./scripts/generate-json-schema.ts`.
 
 ## Synonyms
 

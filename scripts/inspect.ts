@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import { enableMapSet } from "immer";
@@ -12,9 +12,8 @@ import {
 } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
+import type { Dance, Instruction } from "../src/instructions/index";
 import {
-  DanceSchema,
-  type Instruction,
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
@@ -32,19 +31,20 @@ const { values, positionals } = parseArgs({
 });
 
 if (positionals.length !== 1 || values.time === undefined) {
-  console.error("Usage: inspect.ts DANCE_JSON_PATH --time BEATS");
+  console.error("Usage: inspect.ts DANCE_PATH --time BEATS");
   process.exit(1);
 }
 
-const jsonPath = positionals[0];
+const dancePath = positionals[0];
 const time = Number(values.time);
 if (!Number.isFinite(time) || time < 0) {
   console.error(`Invalid time: ${values.time}`);
   process.exit(1);
 }
 
-const raw = JSON.parse(readFileSync(jsonPath, "utf-8"));
-const dance = DanceSchema.parse(raw);
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
+const mod = (await import(resolve(dancePath))) as { default: Dance };
+const dance = mod.default;
 
 const { animation, errors } = generateDanceAnimation(
   dance.instructions,

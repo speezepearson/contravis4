@@ -4,10 +4,7 @@ import { type DancerId, isRobin } from "../contraCore";
 import { getDir, lerpFacing } from "../geometry";
 import { must } from "../utils";
 import type { Lark, Robin } from "../worldState";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
 export const RobinsChainInstructionSchema = z.object({
@@ -21,7 +18,7 @@ export type RobinsChainInstruction = z.infer<
 
 export const robinsChainSegments: InstructionAnimator<
   RobinsChainInstruction
-> = (instr, init, who) => {
+> = (instr, _init, who) => {
   if (who.size !== 4) throw new Error("chain requires all 4 dancers");
 
   const getRobinMatch = (dancer: Robin): Robin => {

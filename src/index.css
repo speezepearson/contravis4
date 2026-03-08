@@ -648,6 +648,31 @@ input[type="range"] {
 
 /* Dance loader */
 
+.undo-redo-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.undo-redo-bar button {
+  font-size: 0.8em;
+  padding: 2px 10px;
+  background: #2a2a4a;
+  color: #ccc;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.undo-redo-bar button:hover:not(:disabled) {
+  background: #3a3a5a;
+}
+
+.undo-redo-bar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .dance-loader {
   margin-bottom: 12px;
   font-size: 0.85em;

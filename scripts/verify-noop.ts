@@ -4,7 +4,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
-  readFileSync,
   symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,7 +16,6 @@ import { generateDanceAnimation } from "../src/generate";
 import {
   type Dance,
   danceLength,
-  DanceSchema,
   type Instruction,
   instructionDuration,
   resolveInitFormation,
@@ -155,14 +153,14 @@ function findFrameNear(
 // Discover dances
 // ---------------------------------------------------------------------------
 
-const danceDir = resolve("example-dances");
+const danceDir = resolve("src/example-dances");
 const dancePaths = readdirSync(danceDir)
-  .filter((f) => f.endsWith(".dance.json"))
+  .filter((f) => f.endsWith(".ts"))
   .sort()
   .map((f) => join(danceDir, f));
 
 if (dancePaths.length === 0) {
-  console.error("No .dance.json files found in example-dances/");
+  console.error("No .ts dance files found in src/example-dances/");
   process.exit(1);
 }
 
@@ -176,13 +174,13 @@ const parsedDances = new Map<string, Dance>();
 // Generate keyframes (current working tree, in-process)
 // ---------------------------------------------------------------------------
 
-function generateKeyframesInProcess(): AllResults {
+async function generateKeyframesInProcess(): Promise<AllResults> {
   const results: AllResults = {};
   for (const path of dancePaths) {
     try {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, narrowing to unknown
-      const raw = JSON.parse(readFileSync(path, "utf-8")) as unknown;
-      const dance = DanceSchema.parse(raw);
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
+      const mod = (await import(resolve(path))) as { default: Dance };
+      const dance = mod.default;
       parsedDances.set(path, dance);
       const { animation, errors } = generateDanceAnimation(
         dance.instructions,
@@ -506,7 +504,7 @@ function outputJson(reports: DanceReport[]): void {
 // ---------------------------------------------------------------------------
 
 log("Generating keyframes from current working tree...");
-const currentResults = generateKeyframesInProcess();
+const currentResults = await generateKeyframesInProcess();
 
 log(`Creating worktree at ${commit}...`);
 const worktreeDir = mkdtempSync(join(tmpdir(), "verify-noop-"));
