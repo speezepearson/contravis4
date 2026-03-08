@@ -246,6 +246,7 @@ export default function App() {
   const highlightDancerRafRef = useRef(0);
 
   const lastFrameWarnRef = useRef(0);
+  const nProgressionsRef = useRef(0);
 
   const draw = useCallback(() => {
     const renderer = rendererRef.current;
@@ -303,6 +304,10 @@ export default function App() {
       }
     } catch (e) {
       frameError = e instanceof Error ? e.message : String(e);
+    }
+
+    if (frame && nProgressionsRef.current !== 0) {
+      frame = shiftFrameByProgression(frame, nProgressionsRef.current);
     }
 
     if (frame) {
@@ -373,6 +378,7 @@ export default function App() {
   });
 
   useEffect(() => {
+    nProgressionsRef.current = 0;
     drawRef.current();
   }, [animation, smoothness]);
 
@@ -515,6 +521,9 @@ export default function App() {
         if (looping) {
           beatRef.current = 0;
           rendererRef.current?.clearTrails();
+          if (inferredProgression !== null) {
+            nProgressionsRef.current += inferredProgression;
+          }
         } else {
           beatRef.current = DANCE_LENGTH;
           setPlaying(false);
@@ -547,6 +556,7 @@ export default function App() {
     (val: number) => {
       const pct = val / 1000;
       beatRef.current = pct * DANCE_LENGTH;
+      nProgressionsRef.current = 0;
       rendererRef.current?.clearTrails();
       drawRef.current();
     },
@@ -590,6 +600,7 @@ export default function App() {
       const startBeat = findInstructionStartBeat(instructions, id);
       if (startBeat !== null) {
         beatRef.current = startBeat;
+        nProgressionsRef.current = 0;
         rendererRef.current?.clearTrails();
         drawRef.current();
       }
@@ -602,6 +613,7 @@ export default function App() {
       const startBeat = findInstructionStartBeat(instructions, id);
       if (startBeat !== null) {
         beatRef.current = startBeat;
+        nProgressionsRef.current = 0;
         rendererRef.current?.clearTrails();
         drawRef.current();
       }
