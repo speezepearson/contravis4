@@ -26,6 +26,13 @@ export interface GifExportOptions {
   bgColor?: string;
 }
 
+/** User-controllable GIF export settings exposed in the UI. */
+export type GifOptions = {
+  fps: number;
+  width: number;
+  height: number;
+};
+
 const DEFAULT_BG_COLOR = "#0f0f23";
 
 /**

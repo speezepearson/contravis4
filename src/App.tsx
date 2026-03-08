@@ -9,7 +9,7 @@ import {
 import { Renderer } from "./components/Renderer";
 import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
-import { exportGif } from "./exportGif";
+import { exportGif, type GifOptions } from "./exportGif";
 import {
   findInstructionStartBeat,
   generateDanceAnimation,
@@ -173,6 +173,11 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 1);
   const [exporting, setExporting] = useState(false);
+  const [gifOptions, setGifOptions] = useState<GifOptions>({
+    fps: 15,
+    width: 400,
+    height: 600,
+  });
 
   // Persist dance to localStorage whenever it changes
   useEffect(() => {
@@ -395,8 +400,7 @@ export default function App() {
     setExporting(true);
     // Yield to let the UI show the "Exporting..." state before blocking
     setTimeout(() => {
-      const w = 400;
-      const h = 600;
+      const { width: w, height: h, fps } = gifOptions;
       const offscreen = document.createElement("canvas");
       offscreen.width = w;
       offscreen.height = h;
@@ -405,6 +409,7 @@ export default function App() {
       const gifBytes = exportGif(animation, offCtx, {
         width: w,
         height: h,
+        fps,
         bpm,
         smoothness,
         inferredProgression,
@@ -422,7 +427,7 @@ export default function App() {
       URL.revokeObjectURL(url);
       setExporting(false);
     }, 50);
-  }, [animation, bpm, smoothness, inferredProgression]);
+  }, [animation, bpm, smoothness, inferredProgression, gifOptions]);
 
   // Redraw when animation or preview change
   useEffect(() => {
@@ -655,6 +660,56 @@ export default function App() {
         <button onClick={downloadGif} disabled={exporting || !animation}>
           {exporting ? "Exporting..." : "Download GIF"}
         </button>
+        <details className="gif-options">
+          <summary>GIF Options</summary>
+          <label>
+            FPS:{" "}
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={gifOptions.fps}
+              onChange={(e) =>
+                setGifOptions((prev) => ({
+                  ...prev,
+                  fps: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label>
+            Width:{" "}
+            <input
+              type="number"
+              min={100}
+              max={1200}
+              step={50}
+              value={gifOptions.width}
+              onChange={(e) =>
+                setGifOptions((prev) => ({
+                  ...prev,
+                  width: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+          <label>
+            Height:{" "}
+            <input
+              type="number"
+              min={100}
+              max={1800}
+              step={50}
+              value={gifOptions.height}
+              onChange={(e) =>
+                setGifOptions((prev) => ({
+                  ...prev,
+                  height: Number(e.target.value),
+                }))
+              }
+            />
+          </label>
+        </details>
       </div>
       <div className="legend">
         <div className="legend-item">
