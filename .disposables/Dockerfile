@@ -33,3 +33,4 @@ COPY .disposables/claude.json /home/dev/.claude.json
 WORKDIR /tmp/preinstalls
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN npx playwright install

@@ -18,7 +18,7 @@ export type RobinsChainInstruction = z.infer<
 
 export const robinsChainSegments: InstructionAnimator<
   RobinsChainInstruction
-> = (instr, init, who) => {
+> = (instr, _init, who) => {
   if (who.size !== 4) throw new Error("chain requires all 4 dancers");
 
   const getRobinMatch = (dancer: Robin): Robin => {
