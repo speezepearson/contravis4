@@ -1,11 +1,10 @@
-import { type Dance, DanceSchema } from "./instructions/index";
+import type { Dance } from "./instructions/index";
 
-type DanceModule = { default: unknown };
+type DanceModule = { default: Dance };
 
-const modules = import.meta.glob<DanceModule>(
-  "../example-dances/*.dance.json",
-  { eager: true },
-);
+const modules = import.meta.glob<DanceModule>("./example-dances/*.ts", {
+  eager: true,
+});
 
 export interface ExampleDance {
   filename: string;
@@ -16,13 +15,13 @@ export interface ExampleDance {
 export const exampleDances: ExampleDance[] = Object.entries(modules).map(
   ([path, mod]) => {
     const filename = path.split("/").pop() ?? path;
-    const dance = DanceSchema.parse(mod.default);
+    const dance = mod.default;
     return { filename, name: dance.name ?? filename, dance };
   },
 );
 
 export function sortedExampleDances(isDevMode: boolean): ExampleDance[] {
-  const isDummy = (d: ExampleDance) => d.filename.endsWith(".dummy.dance.json");
+  const isDummy = (d: ExampleDance) => d.dance.status === "dummy";
   const filtered = isDevMode
     ? exampleDances
     : exampleDances.filter((d) => !isDummy(d));

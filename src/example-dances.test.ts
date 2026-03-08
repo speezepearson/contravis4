@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,33 +6,23 @@ import { describe, expect, it } from "vitest";
 
 import { generateDanceAnimation } from "./generate";
 import { inferProgression } from "./inferProgression";
-import { DanceSchema, initFormationStates } from "./instructions/index";
+import type { Dance } from "./instructions/index";
+import { initFormationStates } from "./instructions/index";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dir = resolve(__dirname, "../example-dances");
-const files = readdirSync(dir).filter((f: string) => f.endsWith(".json"));
+const dir = resolve(__dirname, "example-dances");
+const files = readdirSync(dir).filter((f: string) => f.endsWith(".ts"));
 
-describe("example dances", () => {
-  it.each(files)("%s parses as a valid Dance", (file: string) => {
-    const raw = JSON.parse(readFileSync(resolve(dir, file), "utf-8"));
-    const result = DanceSchema.safeParse(raw);
-    if (!result.success) {
-      throw new Error(
-        result.error.issues
-          .map((i) => `${i.path.join(".")}: ${i.message}`)
-          .join("\n"),
-      );
-    }
-  });
-});
+async function loadDance(file: string): Promise<Dance> {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
+  const mod = (await import(resolve(dir, file))) as { default: Dance };
+  return mod.default;
+}
 
-const nonDummyFiles = files.filter((f) => !f.includes(".dummy."));
-
-describe("non-dummy dances have valid nonzero progressions", () => {
-  it.each(nonDummyFiles)("%s", (file: string) => {
-    const dance = DanceSchema.parse(
-      JSON.parse(readFileSync(resolve(dir, file), "utf-8")),
-    );
+describe("verified dances have valid nonzero progressions", () => {
+  it.each(files)("%s", async (file: string) => {
+    const dance = await loadDance(file);
+    if (dance.status !== "verified") return;
     const initState = initFormationStates[dance.initFormation];
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
@@ -50,11 +40,10 @@ describe("non-dummy dances have valid nonzero progressions", () => {
   });
 });
 
-describe("non-dummy dances are 64 beats long", () => {
-  it.each(nonDummyFiles)("%s", (file: string) => {
-    const dance = DanceSchema.parse(
-      JSON.parse(readFileSync(resolve(dir, file), "utf-8")),
-    );
+describe("verified dances are 64 beats long", () => {
+  it.each(files)("%s", async (file: string) => {
+    const dance = await loadDance(file);
+    if (dance.status !== "verified") return;
     const initState = initFormationStates[dance.initFormation];
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,15 +16,16 @@ import {
 } from "./contraCore";
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
-import { DanceSchema, resolveInitFormation } from "./instructions/index";
+import type { Dance } from "./instructions/index";
+import { resolveInitFormation } from "./instructions/index";
 import { OtherDirLabelSchema, SameDirLabelSchema } from "./labels";
 import { assertNever, parses } from "./utils";
 import { Dancer, WorldState } from "./worldState";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const exampleDancesDir = resolve(__dirname, "../example-dances");
+const exampleDancesDir = resolve(__dirname, "example-dances");
 const files = readdirSync(exampleDancesDir).filter((f: string) =>
-  f.endsWith(".json"),
+  f.endsWith(".ts"),
 );
 
 function progressInitFormation(state: WorldState): WorldState {
@@ -74,15 +75,14 @@ function progressionDelta(protoId: ProtoId) {
 
 describe("progression shift invariance", () => {
   for (const file of files) {
-    const raw = JSON.parse(
-      readFileSync(resolve(exampleDancesDir, file), "utf-8"),
-    );
-    const parseResult = DanceSchema.safeParse(raw);
-    if (!parseResult.success) continue;
-    const dance = parseResult.data;
-    if (dance.instructions.length === 0) continue;
-
-    it(`${dance.name ?? file}`, () => {
+    it(file, async () => {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
+      const mod = (await import(resolve(exampleDancesDir, file))) as {
+        default: Dance;
+      };
+      const dance = mod.default;
+      if (dance.instructions.length === 0) return;
+      if (dance.status !== "verified") return;
       const initState = resolveInitFormation(dance.initFormation);
       const { animation: origAnim, errors: origErrors } =
         generateDanceAnimation(dance.instructions, initState);

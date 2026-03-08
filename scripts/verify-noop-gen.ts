@@ -1,13 +1,10 @@
-import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { enableMapSet } from "immer";
 
 import { generateDanceAnimation } from "../src/generate";
-import {
-  danceLength,
-  DanceSchema,
-  resolveInitFormation,
-} from "../src/instructions/index";
+import type { Dance } from "../src/instructions/index";
+import { danceLength, resolveInitFormation } from "../src/instructions/index";
 
 enableMapSet();
 
@@ -17,10 +14,9 @@ const results: Record<
 > = {};
 for (const path of process.argv.slice(2)) {
   try {
-    const dance = DanceSchema.parse(
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, narrowing to unknown for schema parse
-      JSON.parse(readFileSync(path, "utf-8")) as unknown,
-    );
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
+    const mod = (await import(resolve(path))) as { default: Dance };
+    const dance = mod.default;
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
       resolveInitFormation(dance.initFormation),
