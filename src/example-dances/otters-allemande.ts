@@ -115,5 +115,11 @@ export default {
       cid1: "neighbor",
       cid2: "partner",
     },
+    {
+      id: "c7f2a4b8-3d6e-4901-a5c8-e9d1b3f7a205",
+      beats: 0,
+      type: "greet_new_neighbors",
+      cid: "person_larks_right_robins_left",
+    },
   ],
 } satisfies Dance;

@@ -115,5 +115,11 @@ export default {
         },
       ],
     },
+    {
+      id: "d8e3f6a1-4b7c-4902-9d5e-c1a8b4f2e703",
+      beats: 0,
+      type: "greet_new_neighbors",
+      cid: "person_larks_left_robins_right",
+    },
   ],
 } satisfies Dance;

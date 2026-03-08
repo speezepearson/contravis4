@@ -134,5 +134,11 @@ export default {
       cid: "partner",
       endFacing: "across",
     },
+    {
+      id: "a3d8e1f5-6b9c-4207-8a5e-d4c7f2b3e601",
+      beats: 0,
+      type: "greet_new_neighbors",
+      cid: "person_across",
+    },
   ],
 } satisfies Dance;

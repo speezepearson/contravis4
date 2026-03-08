@@ -16,6 +16,7 @@ import {
 } from "./contraCore";
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
+import { inferProgression } from "./inferProgression";
 import type { Dance } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
 import { OtherDirLabelSchema, SameDirLabelSchema } from "./labels";
@@ -134,6 +135,24 @@ describe("progression shift invariance", () => {
           ).toBeCloseTo(origFrame[protoId].facing.y, 6);
 
           // TODO: someday later: check the hands too. This is tricky, punting on it for now.
+        }
+      }
+
+      // Check that neighbor labels at the final frame are correctly offset
+      // by the inferred progression amount.
+      const progression = inferProgression(origAnim, initState);
+      if (progression !== null && progression !== 0) {
+        const finalFrame = origAnim.getFrame(origAnim.dur);
+        for (const protoId of ALL_PROTO_IDS) {
+          const initNeighbor = initState[protoId].labels.neighbor;
+          const expectedNeighbor = addOffsetToId(
+            initNeighbor,
+            getProgDirSign(protoId) * progression,
+          );
+          expect(
+            finalFrame[protoId].labels.neighbor,
+            `${protoId} neighbor label at end of dance`,
+          ).toBe(expectedNeighbor);
         }
       }
     });
