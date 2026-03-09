@@ -2,7 +2,7 @@ import { Vector } from "vecti";
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, getRole } from "../contraCore";
-import { resolveShortLines } from "../formations";
+import { resolveShortLine } from "../formations";
 import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must, safeThreshold } from "../utils";
@@ -27,33 +27,32 @@ export const formShortWavesSegments: InstructionAnimator<
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`formShortWaves instruction must target all dancers`);
 
-  const shortLines = resolveShortLines(init);
   for (const id of ALL_PROTO_IDS) {
-    const line = shortLines[id];
-    if (getRole(line[1]) !== getRole(line[2])) {
+    const line = resolveShortLine(Dancer.get(id, init));
+    if (getRole(line[1].id) !== getRole(line[2].id)) {
       throw new Error(`dancers in middle of short waves do not have same role`);
     }
     for (let i = 0; i < 3; i++) {
       const isUp = must(
-        safeThreshold(Dancer.get(line[i], init).facing.y, {
+        safeThreshold(line[i].facing.y, {
           neg: "down",
           pos: "up",
         } as const),
-        [{ dancerId: line[i] }, " is not facing up or down"],
+        [{ dancerId: line[i].id }, " is not facing up or down"],
       );
       const nextIsUp = must(
-        safeThreshold(Dancer.get(line[i + 1], init).facing.y, {
+        safeThreshold(line[i + 1].facing.y, {
           neg: "down",
           pos: "up",
         } as const),
-        [{ dancerId: line[i + 1] }, " is not facing up or down"],
+        [{ dancerId: line[i + 1].id }, " is not facing up or down"],
       );
       if (isUp === nextIsUp) {
         throw new SnazzyError([
           "short waves should have dancers alternating facing up/down, but ",
-          { dancerId: line[i] },
+          { dancerId: line[i].id },
           " and ",
-          { dancerId: line[i + 1] },
+          { dancerId: line[i + 1].id },
           " are both facing ",
           isUp ? "up" : "down",
         ]);
@@ -63,7 +62,13 @@ export const formShortWavesSegments: InstructionAnimator<
 
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const i = must(indexOf(shortLines[id], id));
+      const line = resolveShortLine(Dancer.get(id, init));
+      const i = must(
+        indexOf(
+          line.map((d) => d.protoId),
+          id,
+        ),
+      );
       draft[id].facing = init[id].facing.y > 0 ? NORTH : SOUTH;
       draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y).add(
         draft[id].facing.multiply(-0.1),

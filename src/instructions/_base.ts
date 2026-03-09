@@ -89,7 +89,7 @@ export {
   type TowardsPersonDirection,
   TowardsPersonDirectionSchema,
 } from "../directions";
-export { getGroupOfFour, resolveRing, resolveShortLines } from "../formations";
+export { getGroupOfFour, resolveRing, resolveShortLine } from "../formations";
 export {
   type CalledIdentifier,
   CalledIdentifierSchema,

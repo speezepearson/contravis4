@@ -1,4 +1,4 @@
-import { type DancerId, type ProtoId, ProtoIdSchema } from "./contraCore";
+import { type ProtoId, ProtoIdSchema } from "./contraCore";
 import { getDir, getDist } from "./geometry";
 import { SnazzyError } from "./snazzyError";
 import {
@@ -10,12 +10,7 @@ import {
   type NTuple,
   safeThreshold,
 } from "./utils";
-import {
-  buildProtoRecord,
-  Dancer,
-  findNearbyDancers,
-  type WorldState,
-} from "./worldState";
+import { Dancer, findNearbyDancers } from "./worldState";
 
 function mustGetRightHand(d: Dancer): Dancer {
   return must(d.resolveCalledIdentifier("person_in_right_hand"), [
@@ -63,33 +58,24 @@ export function resolveRing(dancer: Dancer): NTuple<4, Dancer> {
   return ring;
 }
 
-export function resolveShortLines(
-  state: WorldState,
-): Record<ProtoId, NTuple<4, DancerId>> {
-  return buildProtoRecord((protoId) => {
-    const line = Object.values(
-      getGroupOfFour(Dancer.get(protoId, state), { by: [preferCloser] }),
-    );
-    for (const d of line) {
-      if (Math.abs(d.pos.y - state[protoId].pos.y) > 0.5) {
-        throw new SnazzyError([
-          "resolveShortLines: closest copy of ",
-          { dancerId: d.id },
-          ` is ${Math.abs(d.pos.y - state[protoId].pos.y).toFixed(3)} away in y from `,
-          { dancerId: protoId },
-          " (max 0.5)",
-        ]);
-      }
+export function resolveShortLine(dancer: Dancer): NTuple<4, Dancer> {
+  const line = Object.values(getGroupOfFour(dancer, { by: [preferCloser] }));
+  for (const d of line) {
+    if (Math.abs(d.pos.y - dancer.pos.y) > 0.5) {
+      throw new SnazzyError([
+        "resolveShortLine: closest copy of ",
+        { dancerId: d.id },
+        ` is ${Math.abs(d.pos.y - dancer.pos.y).toFixed(3)} away in y from `,
+        { dancerId: dancer.id },
+        " (max 0.5)",
+      ]);
     }
+  }
 
-    line.sort((a, b) => a.pos.x - b.pos.x);
-    const res = line.map((c) => c.id);
-    if (!isNTuple(res, 4))
-      throw new Error(
-        `resolveShortLines: line has ${line.length} dancers, not 4`,
-      );
-    return res;
-  });
+  line.sort((a, b) => a.pos.x - b.pos.x);
+  if (!isNTuple(line, 4))
+    throw new Error(`resolveShortLine: line has ${line.length} dancers, not 4`);
+  return line;
 }
 
 export type Tiebreaker = (

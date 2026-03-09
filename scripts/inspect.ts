@@ -4,12 +4,7 @@ import { parseArgs } from "node:util";
 import { enableMapSet } from "immer";
 import type { Vector } from "vecti";
 
-import {
-  ALL_PROTO_IDS,
-  type DancerId,
-  type Hand,
-  type ProtoId,
-} from "../src/contraCore";
+import { ALL_PROTO_IDS, type DancerId, type Hand } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
 import type { Dance, Instruction } from "../src/instructions/index";

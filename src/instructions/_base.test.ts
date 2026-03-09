@@ -8,7 +8,7 @@ import { type Label } from "../labels";
 import { fcProtoId } from "../testHelpers";
 import { circularDistance } from "../utils";
 import { Dancer, setLabel, type WorldState } from "../worldState";
-import { resolveShortLines } from "./_base";
+import { resolveShortLine } from "./_base";
 import { initFormationStates } from "./index";
 
 describe("resolveLabel", () => {
@@ -94,7 +94,7 @@ describe("resolveLabel", () => {
   );
 });
 
-describe("resolveShortLines", () => {
+describe("resolveShortLine", () => {
   /** Improper with every dancer displaced 0.5m forward and 0.25m to their right. */
   const OK_BASE: WorldState = produce(initFormationStates.improper, (draft) => {
     for (const id of ALL_PROTO_IDS) {
@@ -106,24 +106,29 @@ describe("resolveShortLines", () => {
     }
   });
 
+  const resolveForAll = (state: WorldState) =>
+    ALL_PROTO_IDS.map((id) => resolveShortLine(Dancer.get(id, state)));
+
   it("should throw starting in improper", () => {
-    expect(() => resolveShortLines(initFormationStates.improper)).toThrow();
+    expect(() =>
+      resolveShortLine(Dancer.get("up_lark_0", initFormationStates.improper)),
+    ).toThrow();
   });
 
   it("should succeed from OK_BASE with a single short line of all proto dancers", () => {
-    const res = resolveShortLines(OK_BASE);
     const allProtoSet = new Set<string>(ALL_PROTO_IDS);
 
     for (const protoId of ALL_PROTO_IDS) {
-      const line = res[protoId];
+      const line = resolveShortLine(Dancer.get(protoId, OK_BASE));
       expect(line).toHaveLength(4);
-      expect(new Set<string>(line)).toEqual(allProtoSet);
+      expect(new Set<string>(line.map((d) => d.id))).toEqual(allProtoSet);
     }
 
-    // All protos should map to the same tuple (single short line)
-    for (const a of ALL_PROTO_IDS) {
-      for (const b of ALL_PROTO_IDS) {
-        expect(res[a]).toEqual(res[b]);
+    // All protos should resolve to the same set of dancers (single short line)
+    const lines = resolveForAll(OK_BASE);
+    for (const a of lines) {
+      for (const b of lines) {
+        expect(a.map((d) => d.id)).toEqual(b.map((d) => d.id));
       }
     }
   });
@@ -151,13 +156,14 @@ describe("resolveShortLines", () => {
             );
           });
 
-          const res = resolveShortLines(state);
-          const values = Object.values(res);
+          const lines = resolveForAll(state);
 
-          for (const arr1 of values) {
-            for (const arr2 of values) {
-              if (arr1.some((id) => arr2.includes(id))) {
-                expect(arr1).toEqual(arr2);
+          for (const arr1 of lines) {
+            for (const arr2 of lines) {
+              const ids1 = arr1.map((d) => d.id);
+              const ids2 = arr2.map((d) => d.id);
+              if (ids1.some((id) => ids2.includes(id))) {
+                expect(ids1).toEqual(ids2);
               }
             }
           }
@@ -175,7 +181,7 @@ describe("resolveShortLines", () => {
           draft[protoId].pos = draft[protoId].pos.add(new Vector(0, dy));
         });
 
-        expect(() => resolveShortLines(state)).toThrow();
+        expect(() => resolveShortLine(Dancer.get(protoId, state))).toThrow();
       }),
     );
   });
@@ -201,9 +207,13 @@ describe("resolveShortLines", () => {
         }
 
         if (maxDist > 0.5) {
-          expect(() => resolveShortLines(state)).toThrow();
+          expect(() =>
+            resolveShortLine(Dancer.get("up_lark_0", state)),
+          ).toThrow();
         } else {
-          expect(() => resolveShortLines(state)).not.toThrow();
+          expect(() =>
+            resolveShortLine(Dancer.get("up_lark_0", state)),
+          ).not.toThrow();
         }
       }),
     );
