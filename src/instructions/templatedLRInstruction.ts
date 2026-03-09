@@ -11,7 +11,7 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
-import { allLRTemplates } from "./templates/index";
+import { allLRTemplates, templateIds } from "./templates/index";
 
 // ── Template schema ──────────────────────────────────────────────────────
 
@@ -48,14 +48,7 @@ export type ChoreographerSpecifiedLRInstructionFields = z.infer<
 
 // ── Instruction schema ───────────────────────────────────────────────────
 
-const templateIds = Object.keys(allLRTemplates);
-if (templateIds.length === 0) {
-  throw new Error("allLRTemplates must have at least one template");
-}
-const TemplateIdSchema = z.enum(
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Object.keys returns string[], but we've verified non-empty
-  templateIds as [string, ...string[]],
-);
+const TemplateIdSchema = z.enum(templateIds);
 
 export const TemplatedLRInstructionSchema = z.object({
   ...instructionBaseSchemaFields,

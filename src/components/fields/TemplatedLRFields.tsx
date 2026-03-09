@@ -7,9 +7,6 @@ import { allLRTemplates } from "../../instructions/templates/index";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { InlineDropdown } from "../InlineDropdown";
-
-const TEMPLATE_OPTIONS = Object.keys(allLRTemplates) as [string, ...string[]];
 
 export function TemplatedLRFields({
   instruction,
@@ -38,19 +35,6 @@ export function TemplatedLRFields({
 
   return (
     <>
-      {": "}
-      <InlineDropdown
-        options={TEMPLATE_OPTIONS}
-        value={instruction.templateId}
-        getLabel={(tid) => allLRTemplates[tid]?.name ?? tid}
-        onChange={(v) => {
-          const newTemplate = allLRTemplates[v];
-          tryCommit({
-            templateId: v,
-            beats: newTemplate?.defaultBeats ?? instruction.beats,
-          });
-        }}
-      />
       {template?.matcher.type === "choreographer_specified" && (
         <>
           {" with "}

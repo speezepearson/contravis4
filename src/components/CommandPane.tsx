@@ -50,6 +50,10 @@ import {
   resolveInitFormation,
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
+import {
+  allLRTemplates,
+  type TemplateId,
+} from "../instructions/templates/index";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, indexOf } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
@@ -145,7 +149,9 @@ function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   );
 }
 
-export type ActionOptionType = Instruction["type"];
+export type ActionOptionType =
+  | Exclude<Instruction["type"], "templated_lr">
+  | TemplateId;
 
 const ACTION_OPTIONS: ActionOptionType[] = [
   "allemande",
@@ -188,12 +194,12 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "step",
   "swing",
   "take_hands_in_rings",
-  "templated_lr",
   "take_hands",
   "turn_alone",
   "turn_as_a_couple",
   "up_the_hall",
   "zig_zag",
+  ...(Object.keys(allLRTemplates) as TemplateId[]),
 ];
 const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
@@ -237,12 +243,14 @@ const ACTION_LABELS: Record<ActionOptionType, string> = {
   swing: "swing",
   take_hands_in_rings: "take hands in rings",
   take_hands: "take hands",
-  templated_lr: "templated LR",
   turn_alone: "turn alone",
   turn_as_a_couple: "turn as a couple",
   up_the_hall: "up the hall",
   zig_zag: "zig zag",
-};
+  ...Object.fromEntries(
+    Object.entries(allLRTemplates).map(([id, t]) => [id, t.name]),
+  ),
+} as Record<ActionOptionType, string>;
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
   if (by === "role") return list === "A" ? "Larks" : "Robins";
@@ -618,8 +626,13 @@ function InlineForm({
     ? ACTION_OPTIONS
     : ACTION_OPTIONS.filter((o) => o !== "split");
 
+  const actionOptionValue: ActionOptionType =
+    instruction.type === "templated_lr"
+      ? instruction.templateId
+      : instruction.type;
+
   function handleActionChange(newAction: ActionOptionType) {
-    if (newAction !== instruction.type) {
+    if (newAction !== actionOptionValue) {
       onChange(makeDefaultInstruction(newAction, instruction.id));
       setValid(true);
     }
@@ -640,7 +653,7 @@ function InlineForm({
     <span className={`inline-form${valid ? "" : " invalid"}`}>
       <InlineDropdown
         options={actionOptions}
-        value={instruction.type}
+        value={actionOptionValue}
         onChange={(v) => handleActionChange(v)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
         autoFocus={autoFocusAction}
