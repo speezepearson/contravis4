@@ -20,7 +20,7 @@ export function CalledDirectionDropdown({
   value: CalledDirection;
   onChange: (value: CalledDirection) => void;
 }) {
-  const { dancerStates } = useInstructionEdit();
+  const { worldState: dancerStates } = useInstructionEdit();
 
   const sortedOptions = useMemo(() => {
     if (!dancerStates) return options;

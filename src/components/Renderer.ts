@@ -18,7 +18,7 @@ const PX_PER_METER = 103;
 
 /** Extract hand connections from WorldState, deduplicating (each appears from both sides). */
 function extractHandConnections(
-  protos: Record<ProtoId, Dancer>,
+  protos: WorldState,
 ): Array<{ a: Dancer; ha: Hand; b: Dancer; hb: Hand }> {
   const connections: Array<{
     a: Dancer;
@@ -34,7 +34,6 @@ function extractHandConnections(
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const targetState = Dancer.get(theirId, protos);
 
       // Dedup: normalize so (A,handA,B,handB) and (B,handB,A,handA) share a key
       const key =
@@ -44,7 +43,12 @@ function extractHandConnections(
       if (seen.has(key)) continue;
       seen.add(key);
 
-      connections.push({ a: dancer, ha: hand, b: targetState, hb: theirHand });
+      connections.push({
+        a: Dancer.get(id, protos),
+        ha: hand,
+        b: Dancer.get(theirId, protos),
+        hb: theirHand,
+      });
     }
   }
   return connections;
@@ -252,21 +256,14 @@ export class Renderer {
 
   drawDancerHighlight(dancer: Dancer) {
     const ctx = this.ctx;
-    const viewYMin = -this.yRange / 2;
-    const viewYMax = this.yRange / 2;
-    const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
-    const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
 
     ctx.strokeStyle = "#ffcc00";
     ctx.lineWidth = 3;
-
-    for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
-      ctx.globalAlpha = offset === 0 ? 0.9 : 0.3;
-      const [cx, cy] = this.worldToCanvas(dancer.pos.x, dancer.pos.y + offset);
-      ctx.beginPath();
-      ctx.arc(cx, cy, 20, 0, 2 * PI);
-      ctx.stroke();
-    }
+    ctx.globalAlpha = 0.9;
+    const [cx, cy] = this.worldToCanvas(dancer.pos.x, dancer.pos.y);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 20, 0, 2 * PI);
+    ctx.stroke();
     ctx.globalAlpha = 1.0;
   }
 

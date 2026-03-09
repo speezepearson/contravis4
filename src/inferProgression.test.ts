@@ -5,7 +5,7 @@ import { ALL_PROTO_IDS } from "./contraCore";
 import { EAST, NORTH, SOUTH } from "./geometry";
 import { inferProgression } from "./inferProgression";
 import { initFormationStates } from "./instructions";
-import { ContraAnimation } from "./instructions/_base";
+import { type ContraAnimation } from "./instructions/_base";
 
 describe("inferProgression", () => {
   it("returns 0 if all dancers hold still", () => {

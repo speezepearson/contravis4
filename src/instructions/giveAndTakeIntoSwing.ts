@@ -4,13 +4,12 @@ import { ALL_PROTO_IDS, parseProtoId, RoleSchema } from "../contraCore";
 import { getDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
-import { buildProtoRecord, Dancer, getDancerSide } from "../worldState";
+import { Dancer, getDancerSide } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
   instructionBaseSchemaFields,
   resolveCardinalDirection,
-  resolveMatches,
 } from "./_base";
 import {
   getSegmentFrameAtFrac,
@@ -36,10 +35,13 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 > = (instr, init, who) => {
   const approachDur = 1;
   const swingDur = instr.beats - approachDur;
-  const matches = resolveMatches(instr.cid, init, { roles: "different" });
+  const orig = (d: Dancer) => d.at(init);
+  const getMatch = (d: Dancer) =>
+    orig(d).resolveMatch(instr.cid, { roles: "different" });
+
   for (const id of ALL_PROTO_IDS) {
     const me = Dancer.get(id, init);
-    const them = matches[id];
+    const them = getMatch(me);
     if (getDancerSide(me) === getDancerSide(them)) {
       throw new SnazzyError([
         "dancers ",
@@ -51,10 +53,10 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     }
   }
 
-  const plans = buildProtoRecord((id) => {
-    const amDrawer = parseProtoId(id).role === instr.drawerRole;
-    const drawer = amDrawer ? Dancer.get(id, init) : matches[id];
-    const drawee = amDrawer ? matches[id] : Dancer.get(id, init);
+  const getPlan = (d: Dancer) => {
+    const amDrawer = parseProtoId(d.protoId).role === instr.drawerRole;
+    const drawer = amDrawer ? orig(d) : getMatch(d);
+    const drawee = amDrawer ? getMatch(d) : orig(d);
 
     const postApproachDrawerPos = drawer.pos;
     const postApproachDraweePos = drawer.pos.add(drawee.pos).divide(2);
@@ -64,7 +66,7 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 
     const finalCoM = drawer.pos.add(
       must(resolveCardinalDirection("across", drawer.pos), [
-        { dancerId: id },
+        { dancerId: d.id },
         "too close to center, not sure which way to face",
       ])
         .multiply(0.5)
@@ -86,13 +88,13 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
         com: finalCoM,
       },
     };
-  });
+  };
 
   const approachSegment = {
     dur: approachDur,
-    position: linearTo((dancer) => plans[dancer.protoId].postApproach.pos),
-    facing: lerpFacingTo((dancer) => plans[dancer.protoId].postApproach.facing),
-    interactedWith: (dancer: Dancer) => [matches[dancer.protoId].id],
+    position: linearTo((dancer) => getPlan(dancer).postApproach.pos),
+    facing: lerpFacingTo((dancer) => getPlan(dancer).postApproach.facing),
+    interactedWith: (dancer: Dancer) => [getMatch(dancer).id],
   };
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);

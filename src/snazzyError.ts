@@ -15,7 +15,7 @@ function segmentToString(seg: SnazzySegment): string {
 export class SnazzyError extends Error {
   readonly segments: SnazzySegment[];
   constructor(segments: SnazzySegment[]) {
-    super(segments.map(segmentToString).join(""));
+    super(segments.map(segmentToString).join(" "));
     this.segments = segments;
   }
 }

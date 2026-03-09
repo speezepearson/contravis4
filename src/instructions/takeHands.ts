@@ -4,11 +4,7 @@ import { type Hand } from "../contraCore";
 import { SnazzyError } from "../snazzyError";
 import { assertNever, safeThreshold } from "../utils";
 import { connectHands, Dancer } from "../worldState";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-  resolveMatches,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
@@ -38,10 +34,9 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
   instr,
   init,
 ) => {
-  const matches = resolveMatches(instr.cid, init);
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const other = matches[id];
+      const other = Dancer.get(id, init).resolveMatch(instr.cid);
       switch (instr.hand) {
         case "left":
           connectHands(draft, id, "left", other.id, "left");
@@ -50,14 +45,14 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
           connectHands(draft, id, "right", other.id, "right");
           break;
         case "inside": {
-          const ourHand = resolveInsideHand(draft[id], other);
+          const ourHand = resolveInsideHand(Dancer.get(id, draft), other);
           if (!ourHand)
             throw new SnazzyError([
               { dancerId: id },
               " can't determine inside hand with ",
               { dancerId: other.id },
             ]);
-          const theirHand = resolveInsideHand(other, draft[id]);
+          const theirHand = resolveInsideHand(other, Dancer.get(id, draft));
           if (!theirHand)
             throw new SnazzyError([
               { dancerId: other.id },

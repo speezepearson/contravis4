@@ -1,7 +1,8 @@
+import { produce } from "immer";
 import { Vector } from "vecti";
 
 import { parseProtoId } from "./contraCore";
-import { buildProtoRecord, Dancer, type WorldState } from "./worldState";
+import { buildProtoRecord, type WorldState } from "./worldState";
 
 export function averageFrames(frames: WorldState[]): WorldState {
   const n = frames.length;
@@ -24,12 +25,12 @@ export function averageFrames(frames: WorldState[]): WorldState {
     const facingLen = avgFacing.length();
     const mid = frames[Math.floor(n / 2)][id];
 
-    return new Dancer(id, {
-      pos: new Vector(posX / n, posY / n),
-      facing: facingLen > 0 ? avgFacing.normalize() : mid.facing,
-      hands: mid.hands,
-      labels: mid.labels,
-      recents: mid.recents,
+    return produce(frames[Math.floor(n / 2)][id], (draft) => {
+      draft.pos = new Vector(posX / n, posY / n);
+      draft.facing = facingLen > 0 ? avgFacing.normalize() : mid.facing;
+      draft.hands = mid.hands;
+      draft.labels = mid.labels;
+      draft.recents = mid.recents;
     });
   });
 }
@@ -42,13 +43,8 @@ export function shiftFrameByProgression(
   return buildProtoRecord((id) => {
     const { dir } = parseProtoId(id);
     const dy = dir === "up" ? n : -n;
-    const dancer = frame[id];
-    return new Dancer(id, {
-      pos: new Vector(dancer.pos.x, dancer.pos.y + dy),
-      facing: dancer.facing,
-      hands: dancer.hands,
-      labels: dancer.labels,
-      recents: dancer.recents,
+    return produce(frame[id], (draft) => {
+      draft.pos = new Vector(draft.pos.x, draft.pos.y + dy);
     });
   });
 }

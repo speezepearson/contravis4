@@ -4,12 +4,7 @@ import { parseArgs } from "node:util";
 import { enableMapSet } from "immer";
 import type { Vector } from "vecti";
 
-import {
-  ALL_PROTO_IDS,
-  type DancerId,
-  type Hand,
-  type ProtoId,
-} from "../src/contraCore";
+import { ALL_PROTO_IDS, type DancerId, type Hand } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
 import type { Dance, Instruction } from "../src/instructions/index";
@@ -17,7 +12,7 @@ import {
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
-import type { Dancer, WorldState } from "../src/worldState";
+import { Dancer, type WorldState } from "../src/worldState";
 
 enableMapSet();
 
@@ -128,16 +123,16 @@ function formatActiveInstruction(active: ActiveInstruction): string {
 function formatWorldState(ws: WorldState, label: string, t: number): string {
   const lines = [`${label} state (t=${t}):`];
   for (const id of ALL_PROTO_IDS) {
-    lines.push(formatDancer(id, ws[id]));
+    lines.push(formatDancer(Dancer.get(id, ws)));
   }
   return lines.join("\n");
 }
 
-function formatDancer(id: ProtoId, d: Dancer): string {
+function formatDancer(d: Dancer): string {
   const pos = formatPos(d.pos);
   const facing = formatFacing(d.facing);
   const hands = formatHands(d.hands);
-  return `  ${id.padEnd(14)}  pos=${pos}  facing=${facing}  ${hands}`;
+  return `  ${d.protoId.padEnd(14)}  pos=${pos}  facing=${facing}  ${hands}`;
 }
 
 function formatPos(v: Vector): string {

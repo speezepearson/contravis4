@@ -2,7 +2,7 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, type Beats } from "../contraCore";
-import { resolveShortLines } from "../formations";
+import { resolveShortLine } from "../formations";
 import { roughlySameDir, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
@@ -31,16 +31,14 @@ export function theHallSegments(
   instr: { beats: Beats; distance: number },
   init: WorldState,
 ): Segment[] {
-  const shortLines = resolveShortLines(init);
-
   // Assert all dancers face approximately the correct direction
   for (const protoId of ALL_PROTO_IDS) {
-    for (const dancerId of shortLines[protoId]) {
-      const state = Dancer.get(dancerId, init);
-      if (!roughlySameDir(state.facing, dir)) {
+    const line = resolveShortLine(Dancer.get(protoId, init));
+    for (const d of line) {
+      if (!roughlySameDir(d.facing, dir)) {
         throw new SnazzyError([
           "Dancer ",
-          { dancerId },
+          { dancerId: d.id },
           " is not facing approximately ",
           dirName,
           " the hall",
@@ -52,25 +50,24 @@ export function theHallSegments(
   return [
     // Connect inside hands between adjacent dancers in the line
     makeImmediateSegment(init, (id, draft) => {
-      const line = shortLines[id];
-      const idx = must(indexOf(line, id));
-      if (idx < 0)
-        throw new SnazzyError([
-          "Proto ",
-          { dancerId: id },
-          " not found in its short line",
-        ]);
+      const line = resolveShortLine(Dancer.get(id, init));
+      const idx = must(
+        indexOf(
+          line.map((d) => d.protoId),
+          id,
+        ),
+      );
       if (idx < 3) {
-        const adjId = line[idx + 1];
+        const adjId = line[idx + 1].id;
         const adjState = Dancer.get(adjId, draft);
-        const myHand = resolveInsideHand(draft[id], adjState);
+        const myHand = resolveInsideHand(Dancer.get(id, draft), adjState);
         if (!myHand)
           throw new SnazzyError([
             { dancerId: id },
             " can't determine inside hand with ",
             { dancerId: adjId },
           ]);
-        const theirHand = resolveInsideHand(adjState, draft[id]);
+        const theirHand = resolveInsideHand(adjState, Dancer.get(id, draft));
         if (!theirHand)
           throw new SnazzyError([
             { dancerId: adjId },

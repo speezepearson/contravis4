@@ -224,9 +224,11 @@ function findDyToNearest(
   init: WorldState,
 ): number {
   const fromPos = Dancer.get(fromProto, finalState).pos;
-  const [candidate0, candidate1] = findNearbyDancers(fromPos, finalState)[
-    toProto
-  ];
+  const [candidate0, candidate1] = findNearbyDancers(
+    fromPos,
+    toProto,
+    finalState,
+  );
 
   const dist0 = getDist(fromPos, candidate0.pos);
   const dist1 = getDist(fromPos, candidate1.pos);

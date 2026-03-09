@@ -9,7 +9,7 @@ function makeBalance(beats: number): Instruction {
     type: "balance",
     id: makeInstructionId(),
     beats,
-    did: "partner",
+    cid: "partner",
   };
 }
 

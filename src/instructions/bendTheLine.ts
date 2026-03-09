@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { ALL_PROTO_IDS } from "../contraCore";
-import { resolveShortLines } from "../formations";
+import { resolveShortLine } from "../formations";
 import { PI, revolve, roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must } from "../utils";
@@ -20,39 +19,47 @@ export type BendTheLineInstruction = z.infer<
 export const bendTheLineSegments: InstructionAnimator<
   BendTheLineInstruction
 > = (instr, init) => {
-  const shortLines = resolveShortLines(init);
+  const orig = (d: Dancer) => d.at(init);
 
-  // Assert all dancers in each short line face approximately the same direction
-  for (const protoId of ALL_PROTO_IDS) {
-    const line = shortLines[protoId];
-    const refFacing = Dancer.get(line[0], init).facing;
-    for (const dancerId of line) {
-      if (!roughlySameDir(Dancer.get(dancerId, init).facing, refFacing)) {
+  const getInitLine = (dancer: Dancer) => resolveShortLine(orig(dancer));
+
+  const ensureAllFacingSameWay = (dancer: Dancer) => {
+    const line = getInitLine(dancer);
+
+    // Assert all dancers in each short line face approximately the same direction
+    for (const d of line) {
+      if (!roughlySameDir(d.facing, dancer.facing)) {
         throw new SnazzyError([
           "Dancers in short line for ",
-          { dancerId: protoId },
+          { dancerId: d.id },
           " are not all facing approximately the same direction",
         ]);
       }
     }
-  }
+  };
 
   return [
     {
       dur: instr.beats,
       position: (dancer, frac) => {
-        const line = shortLines[dancer.protoId];
-        const idx = must(indexOf(line, dancer.protoId));
+        ensureAllFacingSameWay(dancer);
+        const line = getInitLine(dancer);
+        const idx = must(
+          indexOf(
+            line.map((d) => d.protoId),
+            dancer.protoId,
+          ),
+        );
         if (idx === 0) {
           // Left end: arc CW around neighbor
-          const center = Dancer.get(line[1], dancer.state).pos;
+          const center = Dancer.get(line[1].id, dancer.worldState).pos;
           return revolve(dancer.pos, {
             around: center,
             radians: (-PI / 2) * frac,
           });
         } else if (idx === 3) {
           // Right end: arc CCW around neighbor
-          const center = Dancer.get(line[2], dancer.state).pos;
+          const center = Dancer.get(line[2].id, dancer.worldState).pos;
           return revolve(dancer.pos, {
             around: center,
             radians: (PI / 2) * frac,
@@ -61,17 +68,27 @@ export const bendTheLineSegments: InstructionAnimator<
         return dancer.pos;
       },
       facing: (dancer, frac) => {
-        const line = shortLines[dancer.protoId];
-        const idx = must(indexOf(line, dancer.protoId));
+        const line = getInitLine(dancer);
+        const idx = must(
+          indexOf(
+            line.map((d) => d.protoId),
+            dancer.protoId,
+          ),
+        );
         // Left pair rotates CW, right pair rotates CCW
         const radians = idx <= 1 ? -PI / 2 : PI / 2;
         return dancer.facing.rotateByRadians(radians * frac);
       },
       interactedWith: (dancer) => {
-        const line = shortLines[dancer.protoId];
-        const idx = must(indexOf(line, dancer.protoId));
+        const line = getInitLine(dancer);
+        const idx = must(
+          indexOf(
+            line.map((d) => d.protoId),
+            dancer.protoId,
+          ),
+        );
         // Left pair (0,1) and right pair (2,3) bend together
-        return [line[idx ^ 1]];
+        return [line[idx ^ 1].id];
       },
     },
   ];

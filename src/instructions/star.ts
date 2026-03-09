@@ -1,21 +1,12 @@
 import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
-import { revolve, TWO_PI } from "../geometry";
-import { lerp } from "../utils";
-import { buildProtoRecord } from "../worldState";
-import {
-  avgDancerPos,
-  instructionBaseSchemaFields,
-  resolveRings,
-} from "./_base";
-import {
-  getSegmentFrameAtFrac,
-  hold,
-  type InstructionAnimator,
-  rotateFacingBy,
-} from "./_segment";
-import { makeRingSegment } from "./takeHandsInRings";
+import { preferCloser, preferOneInFront, preferRecent } from "../formations";
+import { getDir, revolve, TWO_PI } from "../geometry";
+import { getSingleton, lerp, must } from "../utils";
+import { avgPos, Dancer } from "../worldState";
+import { getGroupOfFour, instructionBaseSchemaFields } from "./_base";
+import { hold, type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const StarInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -28,13 +19,8 @@ export type StarInstruction = z.infer<typeof StarInstructionSchema>;
 export const starSegments: InstructionAnimator<StarInstruction> = (
   instr,
   init,
-  who,
 ) => {
-  const ringSegment = makeRingSegment(init);
-  const ringState = getSegmentFrameAtFrac(ringSegment, init, who, 1);
-  const rings = resolveRings(ringState);
-  const centers = buildProtoRecord((id) => avgDancerPos(rings[id], ringState));
-
+  const orig = (d: Dancer) => d.at(init);
   const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
 
   const insideHand = instr.direction;
@@ -43,28 +29,44 @@ export const starSegments: InstructionAnimator<StarInstruction> = (
   const orbitRadians =
     (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
 
+  const getInitGroup = (dancer: Dancer) =>
+    getGroupOfFour(orig(dancer), {
+      by: [preferCloser, preferOneInFront, preferRecent],
+    });
+  const opp = (dancer: Dancer) => {
+    const group = getInitGroup(dancer);
+    return must(
+      getSingleton(
+        group.filter((d) => d.role === dancer.role && d.dir !== dancer.dir),
+      ),
+    );
+  };
+
+  const getCenter = (dancer: Dancer) => avgPos(...getInitGroup(dancer));
+
   return [
-    ringSegment,
     // Star setup: rotate facing 90°, connect inside hands with opposite
     {
       dur: 0,
-      facing: (dancer) => dancer.facing.rotateByRadians(facingRotation),
-      hands: (dancer) =>
-        hold([insideHand, rings[dancer.protoId][2], insideHand]),
+      facing: (dancer) =>
+        getDir({ from: dancer.pos, to: getCenter(dancer) }).rotateByRadians(
+          facingRotation,
+        ),
+      hands: (dancer) => hold([insideHand, opp(dancer).id, insideHand]),
     },
     // Orbit (same as circle)
     {
       dur: instr.beats,
       position: (dancer, frac) => {
-        const id = dancer.protoId;
+        const center = getCenter(dancer);
         const revolved = revolve(dancer.pos, {
-          around: centers[id],
+          around: center,
           radians: orbitRadians * frac,
         });
-        const offset = revolved.subtract(centers[id]);
+        const offset = revolved.subtract(center);
         const targetScale =
-          Math.sqrt(2) / 2 / dancer.pos.subtract(centers[id]).length();
-        return centers[id].add(offset.multiply(lerp(1, targetScale, frac)));
+          Math.sqrt(2) / 2 / dancer.pos.subtract(center).length();
+        return center.add(offset.multiply(lerp(1, targetScale, frac)));
       },
       facing: rotateFacingBy(() => orbitRadians),
     },

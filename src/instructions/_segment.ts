@@ -284,18 +284,17 @@ export function arc(
 
 /** Orbit around midpoint with counterpart. */
 export function orbit(
-  matches: Map<ProtoId, Dancer>,
+  centers: (dancer: Dancer) => Vector,
   opts: { radians: number },
   who?: ReadonlySet<ProtoId>,
 ): PositionFn {
   return (dancer, frac) => {
     if (who && !who.has(dancer.protoId)) return dancer.pos;
     const myPos = dancer.pos;
-    const them = matches.get(dancer.protoId);
-    if (!them) return myPos;
-    const theirPos = Dancer.get(them.id, dancer.state).pos;
-    const center = myPos.add(theirPos).divide(2);
-    return revolve(myPos, { around: center, radians: opts.radians * frac });
+    return revolve(myPos, {
+      around: centers(dancer),
+      radians: opts.radians * frac,
+    });
   };
 }
 
@@ -330,9 +329,11 @@ export function lerpFacingTo(
 }
 
 /** Rotate facing by a fixed number of radians over the segment. */
-export function rotateFacingBy(radiansFn: (id: ProtoId) => number): FacingFn {
+export function rotateFacingBy(
+  radiansFn: (dancer: Dancer) => number,
+): FacingFn {
   return (dancer, frac) => {
-    return dancer.facing.rotateByRadians(radiansFn(dancer.protoId) * frac);
+    return dancer.facing.rotateByRadians(radiansFn(dancer) * frac);
   };
 }
 

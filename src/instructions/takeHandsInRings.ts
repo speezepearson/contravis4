@@ -1,17 +1,14 @@
-import { produce } from "immer";
+import _ from "lodash";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS } from "../contraCore";
+import { preferCloser, preferOneInFront, preferRecent } from "../formations";
 import { ccwRadsBetween, getDir } from "../geometry";
-import { SnazzyError } from "../snazzyError";
-import { indexOf, must, safeThreshold } from "../utils";
+import { avgPos, Dancer, mapWorldState, type WorldState } from "../worldState";
 import {
-  buildProtoRecord,
-  connectHands,
-  Dancer,
-  type WorldState,
-} from "../worldState";
-import { instructionBaseSchemaFields, resolveRings } from "./_base";
+  getGroupOfFour,
+  instructionBaseSchemaFields,
+  resolveRing,
+} from "./_base";
 import {
   getSegmentFrameAtFrac,
   type InstructionAnimator,
@@ -36,78 +33,24 @@ export type TakeHandsInRingsInstruction = z.infer<
  * Then turns to face halfway between those two, and takes inside hands with each.
  */
 export function makeRingSegment(init: WorldState): Segment {
-  const targets = buildProtoRecord((id) => {
-    const d = Dancer.get(id, init);
-    const across = must(
-      d.resolveCalledIdentifier("person_across", {
-        roles: "different",
-      }),
+  const getGroup = _.memoize((dancer: Dancer) =>
+    getGroupOfFour(dancer, {
+      by: [preferCloser, preferOneInFront, preferRecent],
+    }),
+  );
+  const final = mapWorldState(init, (dancer) => {
+    const group = getGroup(dancer);
+    const center = avgPos(...group);
+    dancer.facing = getDir({ from: dancer.pos, to: center });
+    const [left, right] = _.sortBy(
+      group.filter((d) => d.role !== dancer.role),
+      (d) =>
+        ccwRadsBetween(dancer.facing, getDir({ from: dancer.pos, to: d.pos })),
     );
-    const alongCid = safeThreshold(init[id].facing.y, {
-      neg: "person_down",
-      pos: "person_up",
-    } as const);
-    let along: Dancer;
-    if (alongCid) {
-      along = must(d.resolveCalledIdentifier(alongCid, { roles: "different" }));
-    } else {
-      // Facing exactly across — use recency as tiebreaker.
-      const up = d.resolveCalledIdentifier("person_up", {
-        roles: "different",
-      });
-      const down = d.resolveCalledIdentifier("person_down", {
-        roles: "different",
-      });
-      if (up && !down) {
-        along = up;
-      } else if (down && !up) {
-        along = down;
-      } else if (up && down) {
-        // Lower index = more recent. undefined means not found (least recent).
-        const upRecency = indexOf(d.recents, up.id) ?? Infinity;
-        const downRecency = indexOf(d.recents, down.id) ?? Infinity;
-        if (upRecency < downRecency) {
-          along = up;
-        } else if (downRecency < upRecency) {
-          along = down;
-        } else {
-          throw new SnazzyError([
-            { dancerId: id },
-            " can't determine which direction to face for a ring: up set is ",
-            { dancerId: up.id },
-            ` (recency ${upRecency}) and down set is `,
-            { dancerId: down.id },
-            ` (recency ${downRecency})`,
-          ]);
-        }
-      } else {
-        throw new SnazzyError([
-          { dancerId: id },
-          " can't determine which direction to face for a ring",
-        ]);
-      }
-    }
-    return { across, along };
-  });
-
-  const final = produce(init, (draft) => {
-    for (const id of ALL_PROTO_IDS) {
-      const { across, along } = targets[id];
-      const dirToAcross = getDir({
-        from: init[id].pos,
-        to: across.pos,
-      });
-      const dirToAlong = getDir({
-        from: init[id].pos,
-        to: along.pos,
-      });
-      draft[id].facing = dirToAcross.add(dirToAlong).normalize();
-
-      const onRight =
-        ccwRadsBetween(draft[id].facing, dirToAlong) > 0 ? across : along;
-
-      connectHands(draft, id, "right", onRight.id, "left");
-    }
+    dancer.hands = {
+      left: { theirId: left.id, theirHand: "right" },
+      right: { theirId: right.id, theirHand: "left" },
+    };
   });
 
   return {
@@ -115,10 +58,7 @@ export function makeRingSegment(init: WorldState): Segment {
     position: (dancer) => final[dancer.protoId].pos,
     facing: (dancer) => final[dancer.protoId].facing,
     hands: (dancer) => final[dancer.protoId].hands,
-    interactedWith: (dancer) => [
-      targets[dancer.protoId].across.id,
-      targets[dancer.protoId].along.id,
-    ],
+    interactedWith: (dancer) => getGroup(dancer).map((d) => d.id),
   };
 }
 
@@ -127,6 +67,6 @@ export const takeHandsInRingsSegments: InstructionAnimator<
 > = (_instr, init, who) => {
   const segment = makeRingSegment(init);
   const endState = getSegmentFrameAtFrac(segment, init, who, 1);
-  resolveRings(endState);
+  for (const protoId of who) resolveRing(Dancer.get(protoId, endState));
   return [segment];
 };

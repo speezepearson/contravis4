@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   addOffsetToId,
   ALL_PROTO_IDS,
-  DancerId,
+  type DancerId,
   getProgDir,
   getProgDirSign,
   parseProtoId,
@@ -20,8 +20,8 @@ import { inferProgression } from "./inferProgression";
 import type { Dance } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
 import { OtherDirLabelSchema, SameDirLabelSchema } from "./labels";
-import { assertNever, parses } from "./utils";
-import { Dancer, WorldState } from "./worldState";
+import { assertNever, parses, typedParse } from "./utils";
+import { ProtoDancerStateSchema, type WorldState } from "./worldState";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const exampleDancesDir = resolve(__dirname, "example-dances");
@@ -38,7 +38,7 @@ function progressInitFormation(state: WorldState): WorldState {
     for (const id of ALL_PROTO_IDS) {
       const offset = getProgDirSign(id);
       const incr = (refId: DancerId) => addOffsetToId(refId, offset);
-      draft[id] = new Dancer(id, {
+      draft[id] = typedParse(ProtoDancerStateSchema, {
         pos: draft[id].pos.add(progressionDelta(id)),
         facing: draft[id].facing,
         hands: Object.fromEntries(
@@ -47,21 +47,24 @@ function progressInitFormation(state: WorldState): WorldState {
             { theirId: incr(theirId.theirId), theirHand: theirId.theirHand },
           ]),
         ),
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- rebuilding labels record with dynamic keys
-        labels: Object.fromEntries(
-          Object.entries(draft[id].labels).map(([labelStr, theirId]) => {
-            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic label key from Object.entries
-            const label = labelStr as keyof (typeof draft)[ProtoId]["labels"];
-            return [
-              label,
-              parses(SameDirLabelSchema, label)
-                ? theirId
-                : parses(OtherDirLabelSchema, label)
-                  ? incr(theirId)
-                  : assertNever(label),
-            ];
-          }),
-        ) as (typeof draft)[ProtoId]["labels"],
+        labels: {
+          partner: draft[id].labels.partner,
+          neighbor: incr(draft[id].labels.neighbor),
+          ...Object.fromEntries(
+            Object.entries(draft[id].labels).map(([labelStr, theirId]) => {
+              // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic label key from Object.entries
+              const label = labelStr as keyof (typeof draft)[ProtoId]["labels"];
+              return [
+                label,
+                parses(SameDirLabelSchema, label)
+                  ? theirId
+                  : parses(OtherDirLabelSchema, label)
+                    ? incr(theirId)
+                    : assertNever(label),
+              ];
+            }),
+          ),
+        },
         recents: draft[id].recents.map((rid) =>
           getProgDir(rid) === getProgDir(id) ? rid : incr(rid),
         ),

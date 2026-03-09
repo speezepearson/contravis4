@@ -1,13 +1,14 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
+import { type DancerId, HandSchema, RoleSchema } from "../contraCore";
 import {
-  ALL_PROTO_IDS,
-  type DancerId,
-  HandSchema,
-  RoleSchema,
-} from "../contraCore";
-import { getGroupOfFour } from "../formations";
+  getGroupOfFour,
+  preferCloser,
+  preferOneInFront,
+  preferRecent,
+} from "../formations";
+import { getSingleton, must } from "../utils";
 import { Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
 import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
@@ -29,18 +30,17 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
 ) => {
   if (who.size !== 4) throw new Error("hey requires all 4 dancers");
 
-  // Pre-compute groups for each dancer
-  const groups = Object.fromEntries(
-    ALL_PROTO_IDS.map((id) => {
-      const d = Dancer.get(id, init);
-      return [id, getGroupOfFour(d)] as const;
-    }),
-  );
+  const orig = (d: Dancer) => d.at(init);
+
+  const getInitGroup = (dancer: Dancer) =>
+    getGroupOfFour(orig(dancer), {
+      by: [preferCloser, preferOneInFront, preferRecent],
+    });
 
   const mainSegment: ReturnType<InstructionAnimator<HeyInstruction>>[number] = {
     dur: instr.beats,
     position: linearTo((dancer) => {
-      const group = groups[dancer.protoId];
+      const group = getInitGroup(dancer);
       const side = getDancerSide(dancer);
       if (instr.full) {
         // Full hey: end on the same side, same y
@@ -49,17 +49,19 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
       } else {
         // Half hey: end on the opposite side, at the y of the other
         // dancer with the same role in the group
-        const sameRoleOther = group.find(
-          (g) => g.role === dancer.role && g.id !== dancer.id,
-        )!;
+        const sameRoleOther = must(
+          getSingleton(
+            group.filter((d) => d.role === dancer.role && d.dir !== dancer.dir),
+          ),
+        );
         const x = side === "west" ? 0.5 : -0.5;
         return new Vector(x, sameRoleOther.pos.y);
       }
     }),
     hands: () => ({}),
     interactedWith: (dancer): DancerId[] => {
-      const group = groups[dancer.protoId];
-      return group.filter((g) => g.id !== dancer.id).map((g) => g.id);
+      const group = getInitGroup(dancer);
+      return group.filter((d) => d.id !== dancer.id).map((d) => d.id);
     },
   };
 

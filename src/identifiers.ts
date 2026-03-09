@@ -14,7 +14,6 @@
  * Resolution is done via Dancer methods (see worldState.ts):
  *   dancer.resolveCalledIdentifier(cid)
  *   dancer.resolveMatch(cid)
- *   Dancer.resolveMatches(cid, state)
  *
  * See also: directions.ts for CalledDirection, which resolves to a direction
  * vector rather than a specific dancer.

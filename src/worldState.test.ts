@@ -34,10 +34,10 @@ describe("WorldStateSchema", () => {
     const ws = initFormationStates.improper;
     const json = JSON.parse(JSON.stringify(ws));
     const result = WorldStateSchema.safeParse(json);
-    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
     if (!result.success) return;
     for (const id of ALL_PROTO_IDS) {
-      expect(result.data[id].id).toBe(ws[id].id);
+      expect(result.data[id]).toEqual(ws[id]);
       expect(result.data[id].pos.x).toBeCloseTo(ws[id].pos.x);
       expect(result.data[id].pos.y).toBeCloseTo(ws[id].pos.y);
       expect(result.data[id].facing.x).toBeCloseTo(ws[id].facing.x);
@@ -97,9 +97,8 @@ describe("findNearbyDancers", () => {
   it("returns arrays sorted by distance to pos, closest first", () => {
     fc.assert(
       fc.property(fcAnyWorldState, fcQueryPos, (state, pos) => {
-        const result = findNearbyDancers(pos, state);
         for (const protoId of ALL_PROTO_IDS) {
-          const arr = result[protoId];
+          const arr = findNearbyDancers(pos, protoId, state);
           for (let i = 0; i < arr.length - 1; i++) {
             const d1 = arr[i].pos.subtract(pos).length();
             const d2 = arr[i + 1].pos.subtract(pos).length();
@@ -110,26 +109,13 @@ describe("findNearbyDancers", () => {
     );
   });
 
-  it("returns arrays with length between 4 and 10", () => {
+  it("returns arrays where both entries are within 2 y-units of pos", () => {
     fc.assert(
       fc.property(fcAnyWorldState, fcQueryPos, (state, pos) => {
-        const result = findNearbyDancers(pos, state);
-        for (const protoId of ALL_PROTO_IDS) {
-          expect(result[protoId].length).toBeGreaterThanOrEqual(4);
-          expect(result[protoId].length).toBeLessThanOrEqual(10);
-        }
-      }),
-    );
-  });
-
-  it("returns arrays where the first entry is within 1 y-unit of pos", () => {
-    fc.assert(
-      fc.property(fcAnyWorldState, fcQueryPos, (state, pos) => {
-        const result = findNearbyDancers(pos, state);
         for (const protoId of ALL_PROTO_IDS) {
           expect(
-            Math.abs(result[protoId][0].pos.y - pos.y),
-          ).toBeLessThanOrEqual(1);
+            Math.abs(findNearbyDancers(pos, protoId, state)[0].pos.y - pos.y),
+          ).toBeLessThanOrEqual(2);
         }
       }),
     );

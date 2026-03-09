@@ -23,7 +23,7 @@ export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
   onInvalid?: () => void;
 }) {
   const highlightRelationship = useContext(CalledIdentifierHighlightContext);
-  const { dancerStates } = useInstructionEdit();
+  const { worldState: dancerStates } = useInstructionEdit();
 
   const sortedOptions = useMemo(() => {
     if (!dancerStates) return options;

@@ -5,12 +5,8 @@ import { HandSchema, isLark } from "../contraCore";
 import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors, must } from "../utils";
-import { connectHands, getDancerSide } from "../worldState";
-import {
-  instructionBaseSchemaFields,
-  resolveCardinalDirection,
-  resolveMatches,
-} from "./_base";
+import { connectHands, Dancer, getDancerSide } from "../worldState";
+import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
 import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
   advanceState,
@@ -57,9 +53,8 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
   };
 
   // Immediate: take hands with person_larks_right_robins_left
-  const matches = resolveMatches(cid, init);
   const takeHands: Segment = makeImmediateSegment(init, (id, draft) => {
-    const them = matches[id];
+    const them = Dancer.get(id, init).resolveMatch(cid);
     // Lark's match is to their right, robin's match is to their left
     const myHand = isLark(id) ? "right" : "left";
     const theirHand = isLark(id) ? "left" : "right";
