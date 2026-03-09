@@ -61,7 +61,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
     return orig(d).resolveMatch(instr.cid);
   });
 
-  const avgDistance = (()=>{
+  const avgDistance = (() => {
     let totalDistance = 0;
     let count = 0;
     for (const id of who) {
@@ -95,22 +95,19 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
       }),
       hands: (dancer) =>
         orig(dancer).pos.subtract(getMatch(dancer).pos).length() < 1.2
-          ? hold([
-              instr.handedness,
-              getMatch(dancer).id,
-              instr.handedness,
-            ])
+          ? hold([instr.handedness, getMatch(dancer).id, instr.handedness])
           : {},
     },
     {
       dur: circlingBeats,
-      position: orbit((d => avgPos(orig(d), orig(getMatch(d)))), { radians: numAllemandeRadians }, who),
+      position: orbit(
+        (d) => avgPos(orig(d), orig(getMatch(d))),
+        { radians: numAllemandeRadians },
+        who,
+      ),
       facing: rotateFacingBy(() => numAllemandeRadians),
-      hands: (dancer) =>hold([
-              instr.handedness,
-              getMatch(dancer).id,
-              instr.handedness,
-            ]),
+      hands: (dancer) =>
+        hold([instr.handedness, getMatch(dancer).id, instr.handedness]),
       interactedWith: (dancer) => [getMatch(dancer).id],
     },
   ] satisfies Segment[];

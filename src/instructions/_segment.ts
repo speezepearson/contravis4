@@ -291,7 +291,10 @@ export function orbit(
   return (dancer, frac) => {
     if (who && !who.has(dancer.protoId)) return dancer.pos;
     const myPos = dancer.pos;
-    return revolve(myPos, { around: centers(dancer), radians: opts.radians * frac });
+    return revolve(myPos, {
+      around: centers(dancer),
+      radians: opts.radians * frac,
+    });
   };
 }
 
