@@ -1,5 +1,12 @@
 import { produce } from "immer";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Vector } from "vecti";
 
 import { Renderer } from "./components/Renderer";
@@ -163,34 +170,63 @@ export default function InstructionDefinitionTool() {
 
   // ── Drawing ──────────────────────────────────────────────────────────
 
+  // Refs mirroring draw-relevant state so `draw` can be stable (no stale
+  // closures) and `requestDraw` / canvas-setup never re-trigger.
+  const initStateRef = useRef(initState);
+  const keyframesRef = useRef(keyframes);
+  const selectedDancerRef = useRef<ProtoId | null>(selectedDancer);
+  const selectedRoleRef = useRef(selectedRole);
+  const modeRef = useRef(mode);
+  const previewAnimationRef = useRef(previewAnimation);
+  const previewBeatRef = useRef(previewBeat);
+  useLayoutEffect(() => {
+    initStateRef.current = initState;
+    keyframesRef.current = keyframes;
+    selectedDancerRef.current = selectedDancer;
+    selectedRoleRef.current = selectedRole;
+    modeRef.current = mode;
+    previewAnimationRef.current = previewAnimation;
+    previewBeatRef.current = previewBeat;
+  });
+
+  // Stable draw – reads everything from refs so requestDraw never changes
+  // and the canvas-setup effect only runs once.
   const draw = useCallback(() => {
     const renderer = rendererRef.current;
     if (!renderer) return;
 
-    if (mode === "preview" && previewAnimation) {
-      const t = Math.min(previewBeat, previewAnimation.dur);
-      renderer.drawFrame(t, previewAnimation.getFrame(t));
+    const curMode = modeRef.current;
+    const curInitState = initStateRef.current;
+    const curPreviewAnimation = previewAnimationRef.current;
+    const curPreviewBeat = previewBeatRef.current;
+    const curSelectedDancer = selectedDancerRef.current;
+    const curSelectedRole = selectedRoleRef.current;
+    const curKeyframes = keyframesRef.current;
+
+    if (curMode === "preview" && curPreviewAnimation) {
+      const t = Math.min(curPreviewBeat, curPreviewAnimation.dur);
+      renderer.drawFrame(t, curPreviewAnimation.getFrame(t));
       return;
     }
 
     // Draw the base frame (this draws grid + all dancers)
-    renderer.drawFrame(0, initState);
+    renderer.drawFrame(0, curInitState);
 
     // Highlight selected dancer
-    if (selectedDancer && mode === "keyframe") {
-      renderer.drawDancerHighlight(Dancer.get(selectedDancer, initState));
+    if (curSelectedDancer && curMode === "keyframe") {
+      renderer.drawDancerHighlight(Dancer.get(curSelectedDancer, curInitState));
     }
 
     // Draw ghost dancers at keyframe positions
-    if (selectedDancer && mode === "keyframe" && selectedRole) {
-      const orig = Dancer.get(selectedDancer, initState);
-      for (const kf of keyframes) {
-        const roleState = kf.states[selectedRole];
+    if (curSelectedDancer && curMode === "keyframe" && curSelectedRole) {
+      const orig = Dancer.get(curSelectedDancer, curInitState);
+      for (const kf of curKeyframes) {
+        const roleState = kf.states[curSelectedRole];
         if (!roleState) continue;
         const worldPos = relToWorld(roleState.relPos, orig.pos, orig.facing);
         const worldFacing = relFacingToWorld(roleState.relFacing, orig.facing);
         renderer.drawGhostDancer(
-          selectedDancer,
+          curSelectedDancer,
           worldPos.x,
           worldPos.y,
           worldFacing,
@@ -215,7 +251,7 @@ export default function InstructionDefinitionTool() {
         const dragFacing =
           dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
         renderer.drawGhostDancer(
-          selectedDancer,
+          curSelectedDancer,
           dragPos.x,
           dragPos.y,
           dragFacing,
@@ -223,15 +259,7 @@ export default function InstructionDefinitionTool() {
         );
       }
     }
-  }, [
-    initState,
-    selectedDancer,
-    selectedRole,
-    mode,
-    keyframes,
-    previewAnimation,
-    previewBeat,
-  ]);
+  }, []);
 
   const requestDraw = useCallback(() => {
     cancelAnimationFrame(drawRafRef.current);
@@ -279,7 +307,16 @@ export default function InstructionDefinitionTool() {
   // Redraw when state changes
   useEffect(() => {
     requestDraw();
-  }, [requestDraw]);
+  }, [
+    initState,
+    selectedDancer,
+    selectedRole,
+    mode,
+    keyframes,
+    previewAnimation,
+    previewBeat,
+    requestDraw,
+  ]);
 
   // ── Mouse interaction ────────────────────────────────────────────────
 
@@ -373,19 +410,19 @@ export default function InstructionDefinitionTool() {
           const dancer = initState[id];
           const dir = new Vector(wx - dancer.pos.x, wy - dancer.pos.y);
           if (dir.length() > 0.01) {
-            setInitState(
-              produce(initState, (draft) => {
-                draft[id].facing = dir.normalize();
-              }),
-            );
+            const next = produce(initState, (draft) => {
+              draft[id].facing = dir.normalize();
+            });
+            setInitState(next);
+            initStateRef.current = next;
           }
         } else {
           // Move dancer
-          setInitState(
-            produce(initState, (draft) => {
-              draft[id].pos = new Vector(wx, wy);
-            }),
-          );
+          const next = produce(initState, (draft) => {
+            draft[id].pos = new Vector(wx, wy);
+          });
+          setInitState(next);
+          initStateRef.current = next;
         }
       } else if (
         mode === "keyframe" &&
@@ -407,22 +444,22 @@ export default function InstructionDefinitionTool() {
             const dir = new Vector(wx - ghostWorldPos.x, wy - ghostWorldPos.y);
             if (dir.length() > 0.01) {
               const newRelFacing = facingToRel(dir.normalize(), orig.facing);
-              setKeyframes((prev) =>
-                prev.map((kf, i) =>
-                  i === kfIdx
-                    ? {
-                        ...kf,
-                        states: {
-                          ...kf.states,
-                          [selectedRole]: {
-                            ...kf.states[selectedRole]!,
-                            relFacing: newRelFacing,
-                          },
+              const next = keyframes.map((kf, i) =>
+                i === kfIdx
+                  ? {
+                      ...kf,
+                      states: {
+                        ...kf.states,
+                        [selectedRole]: {
+                          ...kf.states[selectedRole]!,
+                          relFacing: newRelFacing,
                         },
-                      }
-                    : kf,
-                ),
+                      },
+                    }
+                  : kf,
               );
+              setKeyframes(next);
+              keyframesRef.current = next;
             }
           }
         } else {
@@ -432,22 +469,22 @@ export default function InstructionDefinitionTool() {
             orig.pos,
             orig.facing,
           );
-          setKeyframes((prev) =>
-            prev.map((kf, i) =>
-              i === kfIdx
-                ? {
-                    ...kf,
-                    states: {
-                      ...kf.states,
-                      [selectedRole]: {
-                        ...kf.states[selectedRole]!,
-                        relPos: newRelPos,
-                      },
+          const next = keyframes.map((kf, i) =>
+            i === kfIdx
+              ? {
+                  ...kf,
+                  states: {
+                    ...kf.states,
+                    [selectedRole]: {
+                      ...kf.states[selectedRole]!,
+                      relPos: newRelPos,
                     },
-                  }
-                : kf,
-            ),
+                  },
+                }
+              : kf,
           );
+          setKeyframes(next);
+          keyframesRef.current = next;
         }
       }
 
