@@ -386,6 +386,21 @@ Spin to the right into the next position in the ring.
 }
 ```
 
+### `robins_chain`
+
+Robins chain across the set. Phase 1 (first half): robins cross to the receiving lark's position facing out, while larks shift to the sent robin's position facing out. Phase 2 (second half): each lark courtesy turns the arriving robin.
+
+- `cid`: which robin to chain with (typically `"opposite"`)
+
+```json
+{
+  "id": "...",
+  "beats": 8,
+  "type": "robins_chain",
+  "cid": "opposite"
+}
+```
+
 ### `roll_away`
 
 - `roller`: who does the rolling

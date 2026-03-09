@@ -1,11 +1,17 @@
 import { z } from "zod";
 
-import { type DancerId, isRobin } from "../contraCore";
-import { getDir, lerpFacing } from "../geometry";
+import { type DancerId } from "../contraCore";
+import { lerpFacing, PI, revolve } from "../geometry";
 import { must } from "../utils";
 import type { Lark, Robin } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
-import { type InstructionAnimator, linearTo } from "./_segment";
+import {
+  hold,
+  type InstructionAnimator,
+  linearTo,
+  rotateFacingBy,
+  type Segment,
+} from "./_segment";
 
 export const RobinsChainInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -36,7 +42,7 @@ export const robinsChainSegments: InstructionAnimator<
       }),
       [
         { dancerId: dancer.id },
-        "has no left on left to be sent out on a chain by",
+        "has no lark on left to be sent out on a chain by",
       ],
     );
   };
@@ -46,54 +52,79 @@ export const robinsChainSegments: InstructionAnimator<
       dancer.findDancerInDirection(across.rotateByDegrees(-90), {
         roles: "different",
       }),
-      [
-        { dancerId: dancer.id },
-        "has no right on right to be sent on a chain to",
-      ],
+      [{ dancerId: dancer.id }, "has no robin on right to send on a chain to"],
     );
     if (!res.isRobin()) throw new Error("programming error");
     return res;
   };
-  return [
-    {
-      dur: instr.beats,
-      position: linearTo((dancer) => {
-        if (!isRobin(dancer.id)) return dancer.pos;
-        const them = dancer.resolveMatch(instr.cid);
-        return them.pos;
-      }),
-      facing: (dancer, frac) => {
-        if (dancer.isRobin()) {
-          const them = getRobinMatch(dancer);
-          return lerpFacing(
-            dancer.facing,
-            them.resolvePureDirection("across"),
-            frac,
-          );
-        } else if (dancer.isLark()) {
-          return lerpFacing(
-            getDir({ from: dancer.pos, to: getSendee(dancer).pos }),
-            dancer.resolvePureDirection("across"),
-            Math.max(0, 4 * frac - 3),
-          );
-        } else {
-          throw new Error("programming error");
-        }
-      },
-      hands: () => ({}),
-      interactedWith: (dancer): DancerId[] => {
-        if (dancer.isRobin()) {
-          return [
-            getSender(dancer).id,
-            getRobinMatch(dancer).id,
-            getSender(getRobinMatch(dancer)).id,
-          ];
-        } else if (dancer.isLark()) {
-          return [getSendee(dancer).id, getRobinMatch(getSendee(dancer)).id];
-        } else {
-          throw new Error("programming error");
-        }
-      },
+
+  /** The lark who receives this robin after she crosses (= sender of the opposite robin). */
+  const getReceiver = (dancer: Robin) => getSender(getRobinMatch(dancer));
+
+  const halfBeats = instr.beats / 2;
+
+  // Phase 1: Robins cross the set; larks shift to the sent robin's position.
+  const cross: Segment = {
+    dur: halfBeats,
+    position: linearTo((dancer) => {
+      if (dancer.isRobin()) return getReceiver(dancer).pos;
+      if (dancer.isLark()) return getSendee(dancer).pos;
+      throw new Error("programming error");
+    }),
+    facing: (dancer, frac) => {
+      if (dancer.isRobin()) {
+        return lerpFacing(
+          dancer.facing,
+          getReceiver(dancer).resolvePureDirection("out"),
+          frac,
+        );
+      }
+      if (dancer.isLark()) {
+        return lerpFacing(
+          dancer.facing,
+          dancer.resolvePureDirection("out"),
+          frac,
+          {
+            forceDir: "ccw",
+          },
+        );
+      }
+      throw new Error("programming error");
     },
-  ];
+    hands: () => ({}),
+    interactedWith: (dancer): DancerId[] => {
+      if (dancer.isRobin()) {
+        return [getSender(dancer).id, getRobinMatch(dancer).id];
+      }
+      if (dancer.isLark()) return [getSendee(dancer).id];
+      throw new Error("programming error");
+    },
+  };
+
+  // Phase 2: Courtesy turn (robin + receiving lark revolve 180°).
+  const courtesyTurn: Segment = {
+    dur: halfBeats,
+    position: (dancer, frac) => {
+      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+        roles: "different",
+      });
+      const center = dancer.pos.add(them.pos).divide(2);
+      return revolve(dancer.pos, { around: center, radians: PI * frac });
+    },
+    facing: rotateFacingBy(() => PI),
+    hands: (dancer) => {
+      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+        roles: "different",
+      });
+      return hold(["left", them.id, "left"], ["right", them.id, "right"]);
+    },
+    interactedWith: (dancer): DancerId[] => {
+      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+        roles: "different",
+      });
+      return [them.id];
+    },
+  };
+
+  return [cross, courtesyTurn];
 };
