@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import type { ProtoId } from "../contraCore";
+import type { DancerId } from "../contraCore";
 import type { CalledIdentifier } from "../instructions/_base";
 
 /** Context for relationship dropdown hover highlighting.
@@ -11,8 +11,8 @@ export const CalledIdentifierHighlightContext = createContext<
 >(() => {});
 
 /** Context for dancer hover highlighting from snazzy errors.
- *  The value is a callback that accepts a ProtoId or null to clear the highlight.
+ *  The value is a callback that accepts a DancerId or null to clear the highlight.
  */
 export const DancerHighlightContext = createContext<
-  (id: ProtoId | null) => void
+  (id: DancerId | null) => void
 >(() => {});

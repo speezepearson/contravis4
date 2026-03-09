@@ -8,7 +8,7 @@ import {
 } from "./components/RelationshipHighlightContext";
 import { Renderer } from "./components/Renderer";
 import { UndoContext } from "./components/UndoContext";
-import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
+import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "./contraCore";
 import { exportGif, type GifOptions } from "./exportGif";
 import {
   findInstructionStartBeat,
@@ -242,7 +242,7 @@ export default function App() {
   const highlightRelRafRef = useRef(0);
 
   // Dancer highlight from snazzy errors: ref-based to avoid re-renders
-  const highlightedDancerRef = useRef<ProtoId | null>(null);
+  const highlightedDancerRef = useRef<DancerId | null>(null);
   const highlightDancerRafRef = useRef(0);
 
   const lastFrameWarnRef = useRef(0);
@@ -351,7 +351,7 @@ export default function App() {
       // Draw dancer highlight ring (from snazzy error hover)
       const highlightedDancer = highlightedDancerRef.current;
       if (highlightedDancer) {
-        renderer.drawDancerHighlight(frame[highlightedDancer]);
+        renderer.drawDancerHighlight(Dancer.get(highlightedDancer, frame));
       }
 
       // Draw preview keyframes overlay
@@ -415,7 +415,7 @@ export default function App() {
     [],
   );
 
-  const setHighlightedDancer = useCallback((id: ProtoId | null) => {
+  const setHighlightedDancer = useCallback((id: DancerId | null) => {
     highlightedDancerRef.current = id;
     cancelAnimationFrame(highlightDancerRafRef.current);
     highlightDancerRafRef.current = requestAnimationFrame(() =>

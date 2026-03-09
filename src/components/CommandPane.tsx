@@ -27,7 +27,7 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { projectDancerIdToProtoId, type ProtoId } from "../contraCore";
+import { type ProtoId } from "../contraCore";
 import { sortedExampleDances } from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
@@ -123,9 +123,7 @@ function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
             <span
               key={i}
               className="snazzy-dancer"
-              onMouseEnter={() =>
-                highlightDancer(projectDancerIdToProtoId(seg.dancerId))
-              }
+              onMouseEnter={() => highlightDancer(seg.dancerId)}
               onMouseLeave={() => highlightDancer(null)}
             >
               {seg.dancerId}
