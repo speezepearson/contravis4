@@ -94,6 +94,7 @@ import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
+import { TemplatedLRFields } from "./fields/TemplatedLRFields";
 import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
@@ -187,6 +188,7 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "step",
   "swing",
   "take_hands_in_rings",
+  "templated_lr",
   "take_hands",
   "turn_alone",
   "turn_as_a_couple",
@@ -235,6 +237,7 @@ const ACTION_LABELS: Record<ActionOptionType, string> = {
   swing: "swing",
   take_hands_in_rings: "take hands in rings",
   take_hands: "take hands",
+  templated_lr: "templated LR",
   turn_alone: "turn alone",
   turn_as_a_couple: "turn as a couple",
   up_the_hall: "up the hall",
@@ -547,6 +550,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "turn_as_a_couple":
     case "up_the_hall":
     case "zig_zag":
+    case "templated_lr":
       return true;
     case "drop_hands":
     case "face":
@@ -774,6 +778,8 @@ function InlineForm({
             return <UpTheHallFields {...common} instruction={instruction} />;
           case "zig_zag":
             return <ZigZagFields {...common} instruction={instruction} />;
+          case "templated_lr":
+            return <TemplatedLRFields {...common} instruction={instruction} />;
           default:
             assertNever(instruction);
         }

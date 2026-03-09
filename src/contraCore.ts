@@ -4,7 +4,7 @@ import { z } from "zod";
 import { NORTH, SOUTH } from "./geometry";
 import type { AssertExtends } from "./utils";
 
-export const BeatsSchema = z.number().int();
+export const BeatsSchema = z.number();
 export type Beats = z.infer<typeof BeatsSchema>;
 
 export const HandSchema = z.enum(["left", "right"]);

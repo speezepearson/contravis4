@@ -262,6 +262,14 @@ export function makeDefaultInstruction(
       case "down_the_hall":
       case "up_the_hall":
         return { id, type, beats: 6, distance: 1.5 };
+      case "templated_lr":
+        return {
+          id,
+          type: "templated_lr",
+          beats: 8,
+          templateId: "specialChain",
+          fields: {},
+        };
       default:
         assertNever(type);
     }
