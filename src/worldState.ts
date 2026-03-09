@@ -66,6 +66,7 @@ import {
   getSide,
   isEqual,
   must,
+  type NTuple,
   parses,
 } from "./utils";
 
@@ -834,4 +835,37 @@ export function mapWorldState(
   });
 }
 
-export type ByDancer<V> = (dancer: Dancer) => V;
+export function getCycle(
+  dancer: Dancer,
+  next: (d: Dancer) => Dancer,
+): NTuple<4, Dancer> {
+  const r = next(dancer);
+  const rr = next(r);
+  const rrr = next(rr);
+  const rrrr = next(rrr);
+
+  if (rrrr.id !== dancer.id)
+    throw new SnazzyError([
+      "getCycle: cycle does not end at the starting dancer",
+      { dancerId: dancer.id },
+      " -> ",
+      { dancerId: r.id },
+      " -> ",
+      { dancerId: rr.id },
+      " -> ",
+      { dancerId: rrr.id },
+      " -> ",
+      { dancerId: rrrr.id },
+      " !== ",
+      { dancerId: dancer.id },
+    ]);
+
+  const res: NTuple<4, Dancer> = [dancer, r, rr, rrr];
+  if (new Set(res.map((d) => d.id)).size !== 4)
+    throw new SnazzyError([
+      "getCycle: cycle has duplicate dancers",
+      ...res.map((d) => ({ dancerId: d.id })),
+    ]);
+
+  return res;
+}

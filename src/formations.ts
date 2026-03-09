@@ -2,52 +2,15 @@ import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { getDir, getDist } from "./geometry";
 import { SnazzyError } from "./snazzyError";
 import { indexOf, isNTuple, must, type NTuple, safeThreshold } from "./utils";
-import { Dancer, findNearbyDancers } from "./worldState";
-
-function mustGetRightHand(d: Dancer): Dancer {
-  return must(d.resolveCalledIdentifier("person_in_right_hand"), [
-    { dancerId: d.id },
-    "has nobody in their right hand",
-  ]);
-}
+import { Dancer, findNearbyDancers, getCycle } from "./worldState";
 
 export function resolveRing(dancer: Dancer): NTuple<4, Dancer> {
-  const r = mustGetRightHand(dancer);
-  const rr = mustGetRightHand(r);
-  const rrr = mustGetRightHand(rr);
-  const rrrr = mustGetRightHand(rrr);
-  if (rrrr.id !== dancer.id)
-    throw new SnazzyError([
-      "[rings] following right hands: ",
-      { dancerId: dancer.id },
-      " -> ",
-      { dancerId: r.id },
-      " -> ",
-      { dancerId: rr.id },
-      " -> ",
-      { dancerId: rrr.id },
-      " -> ",
-      { dancerId: rrrr.id },
-      " !== ",
-      { dancerId: dancer.id },
-    ]);
-
-  const ring: NTuple<4, Dancer> = [dancer, r, rr, rrr];
-  if (!(new Set(ring).size === 4))
-    throw new SnazzyError([
-      "[rings] following right hands: ",
-      { dancerId: dancer.id },
-      " -> ",
-      { dancerId: r.id },
-      " -> ",
-      { dancerId: rr.id },
-      " -> ",
-      { dancerId: rrr.id },
-      " -> ",
-      { dancerId: rrrr.id },
-      " -> ... does not contain 4 people",
-    ]);
-  return ring;
+  return getCycle(dancer, (d) =>
+    must(d.resolveCalledIdentifier("person_in_right_hand"), [
+      { dancerId: d.id },
+      "has nobody in their right hand",
+    ]),
+  );
 }
 
 export function resolveShortLine(dancer: Dancer): NTuple<4, Dancer> {

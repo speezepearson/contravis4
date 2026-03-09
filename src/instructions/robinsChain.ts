@@ -4,7 +4,7 @@ import { type DancerId, isRobin } from "../contraCore";
 import { lerpFacing, PI, revolve } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
-import { Dancer, type Lark, type Robin } from "../worldState";
+import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import {
   hold,
@@ -25,7 +25,7 @@ export type RobinsChainInstruction = z.infer<
 
 export const robinsChainSegments: InstructionAnimator<
   RobinsChainInstruction
-> = (instr, _init, who) => {
+> = (instr, init, who) => {
   if (who.size !== 4) throw new Error("chain requires all 4 dancers");
 
   /** Robin → receiving lark (given by cid). */
@@ -53,33 +53,14 @@ export const robinsChainSegments: InstructionAnimator<
     return res;
   };
 
-  // Validate cycle: robin A → receiver B → sendee C → receiver D → sendee → robin A
   {
-    const firstRobinId = [...who].find((id) => isRobin(id));
-    if (!firstRobinId) throw new Error("chain requires at least one robin");
-    const a = Dancer.get(firstRobinId, _init);
-    if (!a.isRobin()) throw new Error("programming error");
-    const b = getReceiver(a);
-    const c = getSendee(b);
-    const d = getReceiver(c);
-    const back = getSendee(d);
-    const chain: Dancer[] = [a, b, c, d, back];
-    if (back.id !== a.id)
-      throw new SnazzyError([
-        "[robins chain] does not form a cycle: ",
-        ...chain.flatMap((d, i) =>
-          i === 0 ? [{ dancerId: d.id }] : [" → ", { dancerId: d.id }],
-        ),
-      ]);
-    if (new Set(chain.slice(0, 4).map((d) => d.id)).size !== 4)
-      throw new SnazzyError([
-        "[robins chain] cycle has duplicate dancers: ",
-        ...chain
-          .slice(0, 4)
-          .flatMap((d, i) =>
-            i === 0 ? [{ dancerId: d.id }] : [" → ", { dancerId: d.id }],
-          ),
-      ]);
+    for (const dancer of who) {
+      getCycle(Dancer.get(dancer, init), (d) => {
+        if (d.isLark()) return getSendee(d);
+        if (d.isRobin()) return getReceiver(d);
+        throw new Error("programming error");
+      })
+    }
   }
 
   const halfBeats = instr.beats / 2;
