@@ -38,6 +38,7 @@ import { Dancer, type WorldState } from "./worldState";
 type DanceState = { instructions: Instruction[]; initFormation: InitFormation };
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
+const GIF_OPTIONS_KEY = "contravis4-gif-options";
 
 function loadDanceFromLocalStorage():
   | { dance: Dance }
@@ -173,10 +174,12 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 1);
   const [exporting, setExporting] = useState(false);
-  const [gifOptions, setGifOptions] = useState<GifOptions>({
-    fps: 15,
-    width: 400,
-    height: 600,
+  const [gifOptions, setGifOptions] = useState<GifOptions>(() => {
+    const defaults: GifOptions = { fps: 15, width: 400, height: 600 };
+    if (!isLocalStorageAvailable()) return defaults;
+    const raw = localStorage.getItem(GIF_OPTIONS_KEY);
+    if (raw === null) return defaults;
+    return try_(() => ({ ...defaults, ...JSON.parse(raw) })) ?? defaults; // DEFAULT_VALUE: fall back to defaults if stored JSON is corrupt
   });
 
   // Persist dance to localStorage whenever it changes
@@ -185,6 +188,12 @@ export default function App() {
     const dance = { initFormation, instructions };
     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
   }, [instructions, initFormation]);
+
+  // Persist GIF options to localStorage whenever they change
+  useEffect(() => {
+    if (!isLocalStorageAvailable()) return;
+    localStorage.setItem(GIF_OPTIONS_KEY, JSON.stringify(gifOptions));
+  }, [gifOptions]);
 
   const [hoveredInstructionId, setHoveredInstructionId] =
     useState<InstructionId | null>(null);
