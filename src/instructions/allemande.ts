@@ -1,8 +1,9 @@
+import _ from "lodash";
 import { z } from "zod";
 
 import { type Beats, HandSchema } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
-import { Dancer } from "../worldState";
+import { avgPos, Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import {
   arc,
@@ -51,29 +52,25 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
   init,
   who,
 ) => {
+  const orig = (d: Dancer) => d.at(init);
   const rotationSign = instr.handedness === "left" ? 1 : -1;
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  const matches = new Map(
-    [...who].map((id) => [id, Dancer.get(id, init).resolveMatch(instr.cid)]),
-  );
-  const orig = (d: Dancer) => d.at(init);
+  const getMatch = _.memoize((d: Dancer) => {
+    return orig(d).resolveMatch(instr.cid);
+  });
 
-  const isAlreadyClose = (d: Dancer) => {
-    const match = matches.get(d.protoId);
-    if (!match) return false;
-    return orig(d).pos.subtract(match.pos).length() < 1.2;
-  };
-
-  let totalDistance = 0;
-  let count = 0;
-  for (const [id, match] of matches) {
-    const me = Dancer.get(id, init);
-    totalDistance += me.pos.subtract(match.pos).length();
-    count++;
-  }
-  const avgDistance = totalDistance / count;
+  const avgDistance = (()=>{
+    let totalDistance = 0;
+    let count = 0;
+    for (const id of who) {
+      const dancer = Dancer.get(id, init);
+      totalDistance += dancer.pos.subtract(getMatch(dancer).pos).length();
+      count++;
+    }
+    return totalDistance / count;
+  })();
   const approachBeats = approachBeatsForSpeedMatch(
     avgDistance,
     instr.beats,
@@ -89,35 +86,32 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
         phi: APPROACH_ELLIPSE_RADIANS,
       }),
       facing: lerpFacingTo((dancer) => {
-        const match = matches.get(dancer.protoId);
+        const match = getMatch(dancer);
         if (!match) return dancer.facing;
         return getDir({
-          from: dancer.pos,
-          to: match.pos,
+          from: orig(dancer).pos,
+          to: orig(match).pos,
         });
       }),
       hands: (dancer) =>
-        isAlreadyClose(dancer)
+        orig(dancer).pos.subtract(getMatch(dancer).pos).length() < 1.2
           ? hold([
               instr.handedness,
-              matches.get(dancer.protoId)!.id,
+              getMatch(dancer).id,
               instr.handedness,
             ])
           : {},
     },
     {
       dur: circlingBeats,
-      position: orbit(matches, { radians: numAllemandeRadians }, who),
+      position: orbit((d => avgPos(orig(d), orig(getMatch(d)))), { radians: numAllemandeRadians }, who),
       facing: rotateFacingBy(() => numAllemandeRadians),
-      hands: (dancer) =>
-        !matches.has(dancer.protoId)
-          ? {}
-          : hold([
+      hands: (dancer) =>hold([
               instr.handedness,
-              matches.get(dancer.protoId)!.id,
+              getMatch(dancer).id,
               instr.handedness,
             ]),
-      interactedWith: (dancer) => [matches.get(dancer.protoId)!.id],
+      interactedWith: (dancer) => [getMatch(dancer).id],
     },
   ] satisfies Segment[];
 };

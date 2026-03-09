@@ -284,18 +284,14 @@ export function arc(
 
 /** Orbit around midpoint with counterpart. */
 export function orbit(
-  matches: Map<ProtoId, Dancer>,
+  centers: (dancer: Dancer) => Vector,
   opts: { radians: number },
   who?: ReadonlySet<ProtoId>,
 ): PositionFn {
   return (dancer, frac) => {
     if (who && !who.has(dancer.protoId)) return dancer.pos;
     const myPos = dancer.pos;
-    const them = matches.get(dancer.protoId);
-    if (!them) return myPos;
-    const theirPos = Dancer.get(them.id, dancer.worldState).pos;
-    const center = myPos.add(theirPos).divide(2);
-    return revolve(myPos, { around: center, radians: opts.radians * frac });
+    return revolve(myPos, { around: centers(dancer), radians: opts.radians * frac });
   };
 }
 
