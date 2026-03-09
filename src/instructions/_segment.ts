@@ -330,9 +330,11 @@ export function lerpFacingTo(
 }
 
 /** Rotate facing by a fixed number of radians over the segment. */
-export function rotateFacingBy(radiansFn: (id: ProtoId) => number): FacingFn {
+export function rotateFacingBy(
+  radiansFn: (dancer: Dancer) => number,
+): FacingFn {
   return (dancer, frac) => {
-    return dancer.facing.rotateByRadians(radiansFn(dancer.protoId) * frac);
+    return dancer.facing.rotateByRadians(radiansFn(dancer) * frac);
   };
 }
 

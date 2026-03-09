@@ -1,12 +1,8 @@
 import { z } from "zod";
 
 import { ALL_PROTO_IDS } from "../contraCore";
-import { buildProtoRecord } from "../worldState";
-import {
-  avgDancerPos,
-  instructionBaseSchemaFields,
-  resolveRings,
-} from "./_base";
+import { avgPos } from "../worldState";
+import { instructionBaseSchemaFields, resolveRing } from "./_base";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
 export const BalanceTheRingInstructionSchema = z.object({
@@ -23,18 +19,20 @@ export const balanceTheRingSegments: InstructionAnimator<
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`balanceTheRing instruction must target all dancers`);
 
-  const rings = resolveRings(init);
-  const centers = buildProtoRecord((id) => avgDancerPos(rings[id], init));
-
   const halfBeats = instr.beats / 2;
 
   return [
     {
       dur: halfBeats,
-      position: linearTo((dancer) =>
-        init[dancer.protoId].pos.add(centers[dancer.protoId]).divide(2),
-      ),
-      interactedWith: (dancer) => rings[dancer.protoId].slice(1),
+      position: linearTo((dancer) => {
+        const ring = resolveRing(dancer);
+        const center = avgPos(...ring);
+        return dancer.pos.add(center).divide(2);
+      }),
+      interactedWith: (dancer) =>
+        resolveRing(dancer)
+          .slice(1)
+          .map((d) => d.id),
     },
     {
       dur: halfBeats,

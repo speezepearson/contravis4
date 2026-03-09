@@ -3,17 +3,9 @@ import { z } from "zod";
 import { HandSchema } from "../contraCore";
 import { revolve, TWO_PI } from "../geometry";
 import { lerp } from "../utils";
-import { buildProtoRecord } from "../worldState";
-import {
-  avgDancerPos,
-  instructionBaseSchemaFields,
-  resolveRings,
-} from "./_base";
-import {
-  getSegmentFrameAtFrac,
-  type InstructionAnimator,
-  rotateFacingBy,
-} from "./_segment";
+import { avgPos } from "../worldState";
+import { instructionBaseSchemaFields, resolveRing } from "./_base";
+import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 import { makeRingSegment } from "./takeHandsInRings";
 
 export const CircleInstructionSchema = z.object({
@@ -27,12 +19,8 @@ export type CircleInstruction = z.infer<typeof CircleInstructionSchema>;
 export const circleSegments: InstructionAnimator<CircleInstruction> = (
   instr,
   init,
-  who,
 ) => {
   const ringSegment = makeRingSegment(init);
-  const ringState = getSegmentFrameAtFrac(ringSegment, init, who, 1);
-  const rings = resolveRings(ringState);
-  const centers = buildProtoRecord((id) => avgDancerPos(rings[id], ringState));
 
   // CW if direction=left, CCW if direction=right
   const orbitRadians =
@@ -43,15 +31,15 @@ export const circleSegments: InstructionAnimator<CircleInstruction> = (
     {
       dur: instr.beats,
       position: (dancer, frac) => {
-        const id = dancer.protoId;
+        const center = avgPos(...resolveRing(dancer));
         const revolved = revolve(dancer.pos, {
-          around: centers[id],
+          around: center,
           radians: orbitRadians * frac,
         });
-        const offset = revolved.subtract(centers[id]);
+        const offset = revolved.subtract(center);
         const targetScale =
-          Math.sqrt(2) / 2 / dancer.pos.subtract(centers[id]).length();
-        return centers[id].add(offset.multiply(lerp(1, targetScale, frac)));
+          Math.sqrt(2) / 2 / dancer.pos.subtract(center).length();
+        return center.add(offset.multiply(lerp(1, targetScale, frac)));
       },
       facing: rotateFacingBy(() => orbitRadians),
     },

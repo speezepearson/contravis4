@@ -83,7 +83,7 @@ describe("star", () => {
     // Just check that facing is not pointing at center
     for (const id of ALL_PROTO_IDS) {
       const toCenter = mid[id].pos.multiply(-1).normalize();
-      const dot = mid[id].facing.x * toCenter.x + mid[id].facing.y * toCenter.y;
+      const dot = mid[id].facing.dot(toCenter);
       // Should NOT be facing center (dot ≈ 1), should be roughly perpendicular (dot ≈ 0)
       expect(Math.abs(dot)).toBeLessThan(0.5);
     }

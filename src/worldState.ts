@@ -224,6 +224,10 @@ export class Dancer {
     return new Dancer(id, state);
   }
 
+  at(state: WorldState): Dancer {
+    return new Dancer(this.id, state);
+  }
+
   addOffset(deltaOffset: DancerOffset): Dancer {
     return new Dancer(addOffsetToId(this.id, deltaOffset), this.worldState);
   }
@@ -831,3 +835,5 @@ export function mapWorldState(
     }
   });
 }
+
+export type ByDancer<V> = (dancer: Dancer) => V;

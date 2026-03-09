@@ -7,7 +7,7 @@ import { avgPos, Dancer, mapWorldState, type WorldState } from "../worldState";
 import {
   getGroupOfFour,
   instructionBaseSchemaFields,
-  resolveRings,
+  resolveRing,
 } from "./_base";
 import {
   getSegmentFrameAtFrac,
@@ -68,6 +68,6 @@ export const takeHandsInRingsSegments: InstructionAnimator<
 > = (_instr, init, who) => {
   const segment = makeRingSegment(init);
   const endState = getSegmentFrameAtFrac(segment, init, who, 1);
-  resolveRings(endState);
+  for (const d of who) resolveRing(Dancer.get(d, endState));
   return [segment];
 };

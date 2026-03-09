@@ -1,20 +1,13 @@
 import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
-import { revolve, TWO_PI } from "../geometry";
+import { getGroupOfFour, preferCloser, preferOneInFront } from "../formations";
+import { preferRecent } from "../formations";
+import { getDir, revolve, TWO_PI } from "../geometry";
 import { lerp } from "../utils";
-import { buildProtoRecord } from "../worldState";
-import {
-  avgDancerPos,
-  instructionBaseSchemaFields,
-  resolveRings,
-} from "./_base";
-import {
-  getSegmentFrameAtFrac,
-  type InstructionAnimator,
-  rotateFacingBy,
-} from "./_segment";
-import { makeRingSegment } from "./takeHandsInRings";
+import { avgPos, Dancer } from "../worldState";
+import { instructionBaseSchemaFields } from "./_base";
+import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const SingleFilePromenadeInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -28,39 +21,43 @@ export type SingleFilePromenadeInstruction = z.infer<
 
 export const singleFilePromenadeSegments: InstructionAnimator<
   SingleFilePromenadeInstruction
-> = (instr, init, who) => {
-  const ringSegment = makeRingSegment(init);
-  const ringState = getSegmentFrameAtFrac(ringSegment, init, who, 1);
-  const rings = resolveRings(ringState);
-  const centers = buildProtoRecord((id) => avgDancerPos(rings[id], ringState));
-
+> = (instr, init) => {
   const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
+
+  const getInitGroup = (dancer: Dancer) =>
+    getGroupOfFour(dancer.at(init), {
+      by: [preferCloser, preferOneInFront, preferRecent],
+    });
+
+  const getCenter = (dancer: Dancer) =>
+    avgPos(...Object.values(getInitGroup(dancer)));
 
   // CW if direction=left, CCW if direction=right (same as circle/star)
   const orbitRadians =
     (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
 
   return [
-    ringSegment,
-    // Setup: rotate facing 90°, drop all hands
     {
       dur: 0,
-      facing: (dancer) => dancer.facing.rotateByRadians(facingRotation),
+      facing: (dancer) =>
+        getDir({ from: dancer.pos, to: getCenter(dancer) }).rotateByRadians(
+          facingRotation,
+        ),
       hands: () => ({}),
     },
     // Orbit (same as star/circle)
     {
       dur: instr.beats,
       position: (dancer, frac) => {
-        const id = dancer.protoId;
+        const center = getCenter(dancer);
         const revolved = revolve(dancer.pos, {
-          around: centers[id],
+          around: center,
           radians: orbitRadians * frac,
         });
-        const offset = revolved.subtract(centers[id]);
+        const offset = revolved.subtract(center);
         const targetScale =
-          Math.sqrt(2) / 2 / dancer.pos.subtract(centers[id]).length();
-        return centers[id].add(offset.multiply(lerp(1, targetScale, frac)));
+          Math.sqrt(2) / 2 / dancer.pos.subtract(center).length();
+        return center.add(offset.multiply(lerp(1, targetScale, frac)));
       },
       facing: rotateFacingBy(() => orbitRadians),
     },

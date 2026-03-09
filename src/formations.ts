@@ -17,53 +17,52 @@ import {
   type WorldState,
 } from "./worldState";
 
-export function resolveRings(
-  state: WorldState,
-): Record<ProtoId, NTuple<4, DancerId>> {
-  const getRH = (id: DancerId) =>
-    must(
-      Dancer.get(id, state).resolveCalledIdentifier("person_in_right_hand"),
-      [{ dancerId: id }, "has nobody in their right hand"],
-    );
-  return buildProtoRecord((id) => {
-    const r = getRH(id);
-    const rr = getRH(r.id);
-    const rrr = getRH(rr.id);
-    const rrrr = getRH(rrr.id);
-    if (rrrr.id !== id)
-      throw new SnazzyError([
-        "[rings] following right hands: ",
-        { dancerId: id },
-        " -> ",
-        { dancerId: r.id },
-        " -> ",
-        { dancerId: rr.id },
-        " -> ",
-        { dancerId: rrr.id },
-        " -> ",
-        { dancerId: rrrr.id },
-        " !== ",
-        { dancerId: id },
-      ]);
-
-    const ring: NTuple<4, DancerId> = [id, r.id, rr.id, rrr.id];
-    if (!(new Set(ring).size === 4))
-      throw new SnazzyError([
-        "[rings] following right hands: ",
-        { dancerId: id },
-        " -> ",
-        { dancerId: r.id },
-        " -> ",
-        { dancerId: rr.id },
-        " -> ",
-        { dancerId: rrr.id },
-        " -> ",
-        { dancerId: rrrr.id },
-        " -> ... does not contain 4 people",
-      ]);
-    return ring;
-  });
+function mustGetRightHand(d: Dancer): Dancer {
+  return must(d.resolveCalledIdentifier("person_in_right_hand"), [
+    { dancerId: d.id },
+    "has nobody in their right hand",
+  ]);
 }
+
+export function resolveRing(dancer: Dancer): NTuple<4, Dancer> {
+  const r = mustGetRightHand(dancer);
+  const rr = mustGetRightHand(r);
+  const rrr = mustGetRightHand(rr);
+  const rrrr = mustGetRightHand(rrr);
+  if (rrrr.id !== dancer.id)
+    throw new SnazzyError([
+      "[rings] following right hands: ",
+      { dancerId: dancer.id },
+      " -> ",
+      { dancerId: r.id },
+      " -> ",
+      { dancerId: rr.id },
+      " -> ",
+      { dancerId: rrr.id },
+      " -> ",
+      { dancerId: rrrr.id },
+      " !== ",
+      { dancerId: dancer.id },
+    ]);
+
+  const ring: NTuple<4, Dancer> = [dancer, r, rr, rrr];
+  if (!(new Set(ring).size === 4))
+    throw new SnazzyError([
+      "[rings] following right hands: ",
+      { dancerId: dancer.id },
+      " -> ",
+      { dancerId: r.id },
+      " -> ",
+      { dancerId: rr.id },
+      " -> ",
+      { dancerId: rrr.id },
+      " -> ",
+      { dancerId: rrrr.id },
+      " -> ... does not contain 4 people",
+    ]);
+  return ring;
+}
+
 export function resolveShortLines(
   state: WorldState,
 ): Record<ProtoId, NTuple<4, DancerId>> {
@@ -205,10 +204,10 @@ export function getGroupOfFour(
     ]);
 
   const all = [d, dr, drr, drrr];
-  if (new Set(all.map(d => d.id)).size !== 4)
+  if (new Set(all.map((d) => d.id)).size !== 4)
     throw new SnazzyError([
       "confusion how to get into groups of four: ",
-      ...all.map(d => ({ dancerId: d.id })),
+      ...all.map((d) => ({ dancerId: d.id })),
     ]);
 
   return buildEnumRecord(ProtoIdSchema, (id) =>

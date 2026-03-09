@@ -16,6 +16,6 @@ export const turnAloneSegments: InstructionAnimator<TurnAloneInstruction> = (
 ) => [
   {
     dur: instr.beats,
-    facing: rotateFacingBy((id) => (isLark(id) ? -PI : PI)),
+    facing: rotateFacingBy((dancer) => (isLark(dancer.protoId) ? -PI : PI)),
   },
 ];
