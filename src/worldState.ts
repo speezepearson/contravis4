@@ -141,9 +141,10 @@ export class Dancer {
 
   static get(id: DancerId, state: WorldState): Dancer {
     const protoId = projectDancerIdToProtoId(id);
-    const d = new Dancer(protoId, state[projectDancerIdToProtoId(protoId)]).addOffset(
-      getOffset(id),
-    );
+    const d = new Dancer(
+      protoId,
+      state[projectDancerIdToProtoId(protoId)],
+    ).addOffset(getOffset(id));
     dancerStates.set(d, state);
     return d;
   }
@@ -783,14 +784,13 @@ export const HandsJsonSchema = z
   })
   .default({});
 
-export const DancerJsonSchema = z
-  .object({
-    pos: VectorJsonSchema,
-    facing: VectorJsonSchema,
-    hands: HandsJsonSchema,
-    labels: LabelsJsonSchema,
-    recents: z.array(DancerIdSchema).default([]),
-  })
+export const DancerJsonSchema = z.object({
+  pos: VectorJsonSchema,
+  facing: VectorJsonSchema,
+  hands: HandsJsonSchema,
+  labels: LabelsJsonSchema,
+  recents: z.array(DancerIdSchema).default([]),
+});
 
 export const WorldStateSchema = z
   .object({

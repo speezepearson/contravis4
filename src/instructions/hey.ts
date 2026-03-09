@@ -58,7 +58,9 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
     hands: () => ({}),
     interactedWith: (dancer): DancerId[] => {
       const group = groups[dancer.protoId];
-      return Object.values(group).filter((g) => g.id !== dancer.id).map((g) => g.id);
+      return Object.values(group)
+        .filter((g) => g.id !== dancer.id)
+        .map((g) => g.id);
     },
   };
 

@@ -4,7 +4,6 @@ import {
   getRole,
   otherRole,
   type ProtoId,
-  protoIdToDancerId,
 } from "./contraCore";
 import { getDist } from "./geometry";
 import { SnazzyError } from "./snazzyError";
@@ -77,7 +76,9 @@ export function resolveShortLines(
   state: WorldState,
 ): Record<ProtoId, NTuple<4, DancerId>> {
   return buildProtoRecord((protoId) => {
-    const line = Object.values(getGroupOfFour(Dancer.get(protoId, state), {by: []}));
+    const line = Object.values(
+      getGroupOfFour(Dancer.get(protoId, state), { by: [] }),
+    );
     for (const d of line) {
       if (Math.abs(d.pos.y - state[protoId].pos.y) > 0.5) {
         throw new SnazzyError([
@@ -222,8 +223,7 @@ export function getGroupOfFour(
     const memberD = Dancer.get(member.id, d.worldState);
     const otherGroup = getGroupOfFourCore(memberD, { by });
     const otherIds = new Set(Object.values(otherGroup).map((g) => g.id));
-    if (![...groupIds].every((id) => otherIds.has(id))
-    ) {
+    if (![...groupIds].every((id) => otherIds.has(id))) {
       throw new SnazzyError([
         "getGroupOfFour inconsistency: ",
         { dancerId: d.id },

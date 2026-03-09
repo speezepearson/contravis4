@@ -131,14 +131,11 @@ export const initFormationStates: Record<InitFormationName, WorldState> = {
   proper: buildInitFormation("proper"),
 };
 function buildInitFormation(initFormationName: InitFormationName): WorldState {
-  return buildProtoRecord(
-    (id) =>
-      ({
-        ...protoCores[id],
-        pos: initFormationPosFacings[initFormationName][id].pos,
-        facing: initFormationPosFacings[initFormationName][id].facing,
-      })
-  );
+  return buildProtoRecord((id) => ({
+    ...protoCores[id],
+    pos: initFormationPosFacings[initFormationName][id].pos,
+    facing: initFormationPosFacings[initFormationName][id].facing,
+  }));
 }
 
 export const DanceStatusSchema = z.enum(["dummy", "preliminary", "verified"]);
