@@ -19,7 +19,7 @@ import {
 import { IrreducibleLabelSchema } from "../labels";
 import { SnazzyError } from "../snazzyError";
 import type { AssertExtends } from "../utils";
-import { buildProtoRecord, Dancer } from "../worldState";
+import { Dancer } from "../worldState";
 import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import { hold, type InstructionAnimator } from "./_segment";
 
@@ -75,15 +75,15 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
     rolleeToRoller.set(rollee.id, id);
   }
 
-  const matches = buildProtoRecord((id) => {
+  const getMatch = (d: Dancer): DancerId => {
     const res =
-      getRole(id) === instr.roller
-        ? rollerToRollee.get(id)
-        : rolleeToRoller.get(id);
+      getRole(d.protoId) === instr.roller
+        ? rollerToRollee.get(d.protoId)
+        : rolleeToRoller.get(d.protoId);
     if (!res)
-      throw new SnazzyError(["dancer ", { dancerId: id }, " has no match"]);
+      throw new SnazzyError(["dancer ", { dancerId: d.id }, " has no match"]);
     return res;
-  });
+  };
 
   const rollerSides = new Set(
     [...rollerToRollee].map(([rollerId, rolleeId]) => {
@@ -114,7 +114,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
     {
       dur: instr.beats,
       position: (dancer, frac) => {
-        const themId = matches[dancer.protoId];
+        const themId = getMatch(dancer);
         const start = dancer.pos;
         const end = Dancer.get(themId, dancer.worldState).pos;
         return ellipsePosition(start, end, semiMinor, PI * frac);
@@ -123,7 +123,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
         const isRoller = getRole(dancer.protoId) === instr.roller;
         const normal = getDir({
           from: dancer.pos,
-          to: Dancer.get(matches[dancer.protoId], dancer.worldState).pos,
+          to: Dancer.get(getMatch(dancer), dancer.worldState).pos,
         }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
         if (isRoller) return lerpFacing(dancer.facing, normal, frac);
         const totalRads =
@@ -132,7 +132,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
       },
       hands: (dancer, frac) => {
         const isRoller = getRole(dancer.protoId) === instr.roller;
-        const themId = matches[dancer.protoId];
+        const themId = getMatch(dancer);
 
         const firstHalf = frac < 0.5;
         const myHand: Hand = isRoller
@@ -152,7 +152,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
 
         return hold([myHand, themId, theirHand]);
       },
-      interactedWith: (dancer) => [matches[dancer.protoId]],
+      interactedWith: (dancer) => [getMatch(dancer)],
     },
   ];
 };
