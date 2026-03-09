@@ -288,6 +288,16 @@ export class Dancer {
           { dancerId: this.id },
           `unable to resolve ${dir}`,
         ]);
+      case "setclockwise":
+        return must(resolveCardinalDirection("across", this.pos), [
+          { dancerId: this.id },
+          "unable to resolve setclockwise",
+        ]).rotateByDegrees(90);
+      case "setcounterclockwise":
+        return must(resolveCardinalDirection("across", this.pos), [
+          { dancerId: this.id },
+          "unable to resolve setcounterclockwise",
+        ]).rotateByDegrees(-90);
       case "on_right":
         return this.facing.rotateByDegrees(-90);
       case "on_left":

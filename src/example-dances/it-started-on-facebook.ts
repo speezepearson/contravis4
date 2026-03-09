@@ -22,7 +22,7 @@ export default {
       id: "659b3b45-0437-4eda-8501-012b52796c84",
       beats: 8,
       type: "robins_chain",
-      cid: "opposite",
+      cid: "neighbor",
     },
     {
       id: "4151df35-fbdc-491a-a62c-eac4468025bf",

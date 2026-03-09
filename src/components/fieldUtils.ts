@@ -61,7 +61,7 @@ export function makeDefaultInstruction(
       case "california_twirl":
         return { id, type: "california_twirl", beats: 4 };
       case "robins_chain":
-        return { id, type: "robins_chain", beats: 8, cid: "opposite" };
+        return { id, type: "robins_chain", beats: 8, cid: "neighbor" };
       case "circle":
         return {
           id,
@@ -303,6 +303,10 @@ function pureDirectionToText(dir: PureDirection): string {
       return "up";
     case "down":
       return "down";
+    case "setclockwise":
+      return "set clockwise";
+    case "setcounterclockwise":
+      return "set counterclockwise";
     default:
       assertNever(dir);
   }
@@ -387,6 +391,10 @@ function personInDirectionToText(dir: PureDirection): string {
       return "the person above you";
     case "down":
       return "the person below you";
+    case "setclockwise":
+      return "the person set-clockwise from you";
+    case "setcounterclockwise":
+      return "the person set-counterclockwise from you";
     default:
       assertNever(dir);
   }

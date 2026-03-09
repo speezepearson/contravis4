@@ -4,13 +4,11 @@ Source: https://contradb.com/dances/2490
 
 ## Key Decisions
 
-### "Ladles chain" = `robins_chain` with `cid: "opposite"`
+### "Ladles chain" = `robins_chain` with `cid: "neighbor"`
 
-After partner swing ending across and long lines, the robins are diagonal from each other
-(not directly across the set). The `"neighbor"` cid fails because it resolves to a
-different-role dancer. The `"person_across"` cid fails because the angle between "across"
-(east/west) and the diagonal is too large (~45 degrees) for `findDancerInDirection`.
-Using `"opposite"` works because it resolves via labels: neighbor's partner = the other robin.
+The `cid` identifies which lark receives each robin (robin→lark, different role).
+After partner swing ending across and long lines, each robin's neighbor is the
+receiving lark diagonally across the set.
 
 ### "Ones swing" = split by direction, downs swing
 

@@ -390,14 +390,16 @@ Spin to the right into the next position in the ring.
 
 Robins chain across the set. Phase 1 (first half): robins cross to the receiving lark's position facing out, while larks shift to the sent robin's position facing out. Phase 2 (second half): each lark courtesy turns the arriving robin.
 
-- `cid`: which robin to chain with (typically `"opposite"`)
+- `cid`: which lark receives each robin (typically `"neighbor"`)
+
+The lark who sends each robin is determined by `setcounterclockwise` (the robin in the set-counterclockwise direction from the lark). The system validates that `robin → receiver → sendee → receiver → sendee` forms a 4-person cycle.
 
 ```json
 {
   "id": "...",
   "beats": 8,
   "type": "robins_chain",
-  "cid": "opposite"
+  "cid": "neighbor"
 }
 ```
 

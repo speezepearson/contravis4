@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-import { type DancerId } from "../contraCore";
+import { type DancerId, isRobin } from "../contraCore";
 import { lerpFacing, PI, revolve } from "../geometry";
+import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
-import type { Lark, Robin } from "../worldState";
+import { Dancer, type Lark, type Robin } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import {
   hold,
@@ -27,39 +28,59 @@ export const robinsChainSegments: InstructionAnimator<
 > = (instr, _init, who) => {
   if (who.size !== 4) throw new Error("chain requires all 4 dancers");
 
-  const getRobinMatch = (dancer: Robin): Robin => {
+  /** Robin → receiving lark (given by cid). */
+  const getReceiver = (dancer: Robin): Lark => {
     const res = must(
-      dancer.resolveCalledIdentifier(instr.cid, { roles: "same" }),
-      [{ dancerId: dancer.id }, "has no match to chain with"],
+      dancer.resolveCalledIdentifier(instr.cid, { roles: "different" }),
+      [{ dancerId: dancer.id }, "has no receiver lark for chain"],
     );
-    if (!res.isRobin()) throw new Error("programming error");
+    if (!res.isLark()) throw new Error("programming error");
     return res;
   };
-  const getSender = (dancer: Robin) => {
-    return must(
-      dancer.resolveCalledIdentifier("person_on_left", {
+
+  /** Lark → robin being sent away (setcounterclockwise from lark). */
+  const getSendee = (dancer: Lark): Robin => {
+    const res = must(
+      dancer.resolveCalledIdentifier("person_setcounterclockwise", {
         roles: "different",
       }),
       [
         { dancerId: dancer.id },
-        "has no lark on left to be sent out on a chain by",
+        "has no robin in setcounterclockwise direction to send on a chain",
       ],
-    );
-  };
-  const getSendee = (dancer: Lark): Robin => {
-    const across = dancer.resolveCalledDirection("across");
-    const res = must(
-      dancer.findDancerInDirection(across.rotateByDegrees(-90), {
-        roles: "different",
-      }),
-      [{ dancerId: dancer.id }, "has no robin on right to send on a chain to"],
     );
     if (!res.isRobin()) throw new Error("programming error");
     return res;
   };
 
-  /** The lark who receives this robin after she crosses (= sender of the opposite robin). */
-  const getReceiver = (dancer: Robin) => getSender(getRobinMatch(dancer));
+  // Validate cycle: robin A → receiver B → sendee C → receiver D → sendee → robin A
+  {
+    const firstRobinId = [...who].find((id) => isRobin(id));
+    if (!firstRobinId) throw new Error("chain requires at least one robin");
+    const a = Dancer.get(firstRobinId, _init);
+    if (!a.isRobin()) throw new Error("programming error");
+    const b = getReceiver(a);
+    const c = getSendee(b);
+    const d = getReceiver(c);
+    const back = getSendee(d);
+    const chain: Dancer[] = [a, b, c, d, back];
+    if (back.id !== a.id)
+      throw new SnazzyError([
+        "[robins chain] does not form a cycle: ",
+        ...chain.flatMap((d, i) =>
+          i === 0 ? [{ dancerId: d.id }] : [" → ", { dancerId: d.id }],
+        ),
+      ]);
+    if (new Set(chain.slice(0, 4).map((d) => d.id)).size !== 4)
+      throw new SnazzyError([
+        "[robins chain] cycle has duplicate dancers: ",
+        ...chain
+          .slice(0, 4)
+          .flatMap((d, i) =>
+            i === 0 ? [{ dancerId: d.id }] : [" → ", { dancerId: d.id }],
+          ),
+      ]);
+  }
 
   const halfBeats = instr.beats / 2;
 
@@ -94,7 +115,8 @@ export const robinsChainSegments: InstructionAnimator<
     hands: () => ({}),
     interactedWith: (dancer): DancerId[] => {
       if (dancer.isRobin()) {
-        return [getSender(dancer).id, getRobinMatch(dancer).id];
+        const receiver = getReceiver(dancer);
+        return [receiver.id, getSendee(receiver).id];
       }
       if (dancer.isLark()) return [getSendee(dancer).id];
       throw new Error("programming error");

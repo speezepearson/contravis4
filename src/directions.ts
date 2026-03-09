@@ -76,6 +76,8 @@ export const PureDirectionSchema = z.enum([
   "out",
   "up",
   "down",
+  "setclockwise",
+  "setcounterclockwise",
   "on_right",
   "on_left",
   "in_front",
