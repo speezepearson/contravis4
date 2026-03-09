@@ -197,12 +197,21 @@ const ACTION_OPTIONS: ActionOptionType[] = (
     "up_the_hall",
     "zig_zag",
   ] satisfies ActionOptionType[]
-).sort((a, b) => {
-  const freqA = contradbInstructionFrequencies.get(a) ?? 0;
-  const freqB = contradbInstructionFrequencies.get(b) ?? 0;
-  if (freqA !== freqB) return freqB - freqA;
-  return a.localeCompare(b);
-});
+)
+  .sort((a, b) => {
+    const freqA = contradbInstructionFrequencies.get(a) ?? 0;
+    const freqB = contradbInstructionFrequencies.get(b) ?? 0;
+    if (freqA !== freqB) return freqB - freqA;
+    return a.localeCompare(b);
+  })
+  .reduce<ActionOptionType[]>((acc, type) => {
+    // "drop_hands" goes right after "take_hands"; "greet_new_neighbors" goes at the end.
+    if (type === "drop_hands" || type === "greet_new_neighbors") return acc;
+    acc.push(type);
+    if (type === "take_hands") acc.push("drop_hands");
+    return acc;
+  }, [])
+  .concat("greet_new_neighbors");
 const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
   balance: "balance",
