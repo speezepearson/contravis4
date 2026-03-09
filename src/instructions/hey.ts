@@ -8,7 +8,12 @@ import {
   HandSchema,
   RoleSchema,
 } from "../contraCore";
-import { getGroupOfFour } from "../formations";
+import {
+  getGroupOfFour,
+  preferCloser,
+  preferOneInFront,
+  preferRecent,
+} from "../formations";
 import { Dancer, getDancerSide } from "../worldState";
 import { instructionBaseSchemaFields } from "./_base";
 import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
@@ -34,7 +39,12 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
   const groups = Object.fromEntries(
     ALL_PROTO_IDS.map((id) => {
       const d = Dancer.get(id, init);
-      return [id, getGroupOfFour(d, { by: ["recency"] })] as const;
+      return [
+        id,
+        getGroupOfFour(d, {
+          by: [preferCloser, preferOneInFront, preferRecent],
+        }),
+      ] as const;
     }),
   );
 

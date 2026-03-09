@@ -22,10 +22,11 @@ import {
   SettableLabelSchema,
   ShadowLabelSchema,
 } from "./labels";
+import { typedParse } from "./utils";
 import {
   buildProtoRecord,
   connectHands,
-  Dancer,
+  ProtoDancerStateSchema,
   setLabel,
   type WorldState,
 } from "./worldState";
@@ -118,7 +119,7 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
       // Build each proto dancer
       const state: WorldState = buildProtoRecord((protoId) => {
         const partner: DancerId = flipRole(protoId);
-        return new Dancer(protoId, {
+        return typedParse(ProtoDancerStateSchema, {
           pos: positions[protoId],
           facing: NORTH,
           hands: {},

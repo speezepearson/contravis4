@@ -1,27 +1,19 @@
-import {
-  ALL_PROTO_IDS,
-  type DancerId,
-  getRole,
-  otherRole,
-  type ProtoId,
-} from "./contraCore";
-import { getDist } from "./geometry";
+import { type DancerId, type ProtoId, ProtoIdSchema } from "./contraCore";
+import { getDir, getDist } from "./geometry";
 import { SnazzyError } from "./snazzyError";
 import {
-  getSide,
+  buildEnumRecord,
   getSingleton,
   indexOf,
   isNTuple,
   must,
   type NTuple,
-  otherSide,
   safeThreshold,
 } from "./utils";
 import {
   buildProtoRecord,
   Dancer,
   findNearbyDancers,
-  getDancerSide,
   type WorldState,
 } from "./worldState";
 
@@ -77,7 +69,7 @@ export function resolveShortLines(
 ): Record<ProtoId, NTuple<4, DancerId>> {
   return buildProtoRecord((protoId) => {
     const line = Object.values(
-      getGroupOfFour(Dancer.get(protoId, state), { by: [] }),
+      getGroupOfFour(Dancer.get(protoId, state), { by: [preferCloser] }),
     );
     for (const d of line) {
       if (Math.abs(d.pos.y - state[protoId].pos.y) > 0.5) {
@@ -101,141 +93,125 @@ export function resolveShortLines(
   });
 }
 
-/**
- * Find the closest opposite-role dancer on the same side of the set as `d`.
- * Tiebreaking: distance → facing alignment → recency.
- */
-export function findBestOppRole(
-  d: Dancer,
-  {
-    by,
-    sides,
-  }: {
-    by: Array<"distance" | "facing" | "recency">;
-    sides: "same" | "different";
-  },
-): Dancer {
-  const state = d.worldState;
-  const dSide = getDancerSide(d);
-  const wantSide = { same: dSide, different: otherSide(dSide) }[sides];
-  const nearby = findNearbyDancers(d.pos, state);
-
-  const sameSideOppRoleProtos = ALL_PROTO_IDS.filter(
-    (protoId) =>
-      getRole(protoId) !== d.role && getSide(state[protoId].pos) === wantSide,
-  );
-  const sameSideOppRoleProto = must(getSingleton(sameSideOppRoleProtos), [
-    { dancerId: d.id },
-    ` wants exactly one ${otherRole(d.role)} on their side, but found ${sameSideOppRoleProtos.length}: `,
-    ...sameSideOppRoleProtos.map((protoId) => ({ dancerId: protoId })),
-  ]);
-
-  const candidates = nearby[sameSideOppRoleProto];
-
-  for (const tiebreakerName of by) {
-    const tiebreaker = tiebreakerByName[tiebreakerName];
-    const res = tiebreaker(d, [candidates[0], candidates[1]]);
-    if (res) return res;
-  }
-  throw new SnazzyError([
-    { dancerId: d.id },
-    " can't determine best opposite-role dancer on the same side; ",
-    ...by.map((b) => `(by ${b})`),
-    " are all tied",
-  ]);
-}
-
-const tiebreakerByName = {
-  distance: chooseSameSideMatchByDistance,
-  facing: chooseSameSideMatchByFacing,
-  recency: chooseSameSideMatchByRecency,
-};
-export function chooseSameSideMatchByDistance(
+export type Tiebreaker = (
   d: Dancer,
   [cand1, cand2]: [Dancer, Dancer],
-): Dancer | undefined {
+) => Dancer | undefined;
+export const preferCloser: Tiebreaker = (d, [cand1, cand2]) => {
   const dist1 = getDist(d.pos, cand1.pos);
   const dist2 = getDist(d.pos, cand2.pos);
   return safeThreshold(dist1 - dist2, { neg: cand1, pos: cand2, tol: 0.2 });
-}
-export function chooseSameSideMatchByFacing(
-  d: Dancer,
-  [cand1, cand2]: [Dancer, Dancer],
-): Dancer | undefined {
-  const facing1 = Math.max(0, d.facing.dot(cand1.pos.subtract(d.pos)));
-  const facing2 = Math.max(0, d.facing.dot(cand2.pos.subtract(d.pos)));
-  return safeThreshold(facing1 - facing2, { neg: cand2, pos: cand1 });
-}
-export function chooseSameSideMatchByRecency(
-  d: Dancer,
-  [cand1, cand2]: [Dancer, Dancer],
-): Dancer | undefined {
+};
+export const preferOneInFront: Tiebreaker = (d, [cand1, cand2]) => {
+  const inFront1 = d.facing.dot(getDir({ from: d.pos, to: cand1.pos })) > 0.2;
+  const inFront2 = d.facing.dot(getDir({ from: d.pos, to: cand2.pos })) > 0.2;
+  if (inFront1 && !inFront2) return cand1;
+  if (!inFront1 && inFront2) return cand2;
+  return undefined;
+};
+export const preferRecent: Tiebreaker = (d, [cand1, cand2]) => {
   const rec1 = indexOf(d.recents, cand1.id) ?? Infinity;
   const rec2 = indexOf(d.recents, cand2.id) ?? Infinity;
   if (rec1 < rec2) return cand1;
   if (rec2 < rec1) return cand2;
   return undefined;
-}
+};
 
-function getGroupOfFourCore(
+type AtLeastOne<T> = [T, ...T[]];
+
+export function getHandsFourAdjacents(
   d: Dancer,
-  { by }: { by: Array<"facing" | "recency"> },
-): Record<ProtoId, Dancer> {
+  { by }: { by: AtLeastOne<Tiebreaker> },
+): [Dancer, Dancer] {
   const nearby = findNearbyDancers(d.pos, d.worldState);
-  return buildProtoRecord((id) => {
-    if (id === d.id) return d;
-
+  const choose = (id: ProtoId) => {
     const cands = nearby[id];
 
-    const closest = chooseSameSideMatchByDistance(d, cands);
-    if (closest) return closest;
-
-    for (const tiebreakerName of by) {
-      const tiebreaker = tiebreakerByName[tiebreakerName];
+    for (const tiebreaker of by) {
       const res = tiebreaker(d, cands);
       if (res) return res;
     }
     throw new SnazzyError([
       { dancerId: d.id },
-      " can't determine best opposite-role dancer on the same side; ",
-      ...by.map((b) => `(by ${b})`),
-      " are all tied for ",
-      { dancerId: id },
+      `can't determine most appropriate ${cands[0].dir} ${cands[0].role}:`,
+      ...cands.map((c) => ({ dancerId: c.id })),
+      `are all tied by ${by.map((b) => `${b.name ?? "<???>"}`).join(", ")}`,
     ]);
-  });
+  };
+
+  const cwProtoIds = [
+    "up_lark_0",
+    "up_robin_0",
+    "down_lark_0",
+    "down_robin_0",
+  ] as const;
+  const i = must(indexOf(cwProtoIds, d.protoId));
+  return [choose(cwProtoIds[(i + 3) % 4]), choose(cwProtoIds[(i + 1) % 4])];
 }
 
-/**
- * Returns the group of four dancers that `d` belongs to:
- * d, the opposite-role dancer across from d, the "best" opposite-role dancer
- * on d's side of the set (d2), and the opposite-role dancer across from d2.
- *
- * Verifies that calling this on any member produces the same group.
- */
 export function getGroupOfFour(
   d: Dancer,
-  { by }: { by: Array<"facing" | "recency"> },
+  { by }: { by: AtLeastOne<Tiebreaker> },
 ): Record<ProtoId, Dancer> {
-  const group = getGroupOfFourCore(d, { by });
-  const groupIds = new Set(Object.values(group).map((g) => g.id));
-  for (const member of Object.values(group)) {
-    if (member.id === d.id) continue;
-    const memberD = Dancer.get(member.id, d.worldState);
-    const otherGroup = getGroupOfFourCore(memberD, { by });
-    const otherIds = new Set(Object.values(otherGroup).map((g) => g.id));
-    if (![...groupIds].every((id) => otherIds.has(id))) {
-      throw new SnazzyError([
-        "getGroupOfFour inconsistency: ",
-        { dancerId: d.id },
-        " and ",
-        { dancerId: member.id },
-        " disagree on group membership: ",
-        ...Object.values(group).map((g) => ({ dancerId: g.id })),
-        " vs ",
-        ...Object.values(otherGroup).map((g) => ({ dancerId: g.id })),
-      ]);
-    }
-  }
+  const [dl, dr] = getHandsFourAdjacents(d, { by }).sort();
 
-  return group;
+  const [drl, drr] = getHandsFourAdjacents(dr, { by }).sort();
+  if (drl.id !== d.id)
+    throw new SnazzyError([
+      "confusion how to get into groups of four: ",
+      { dancerId: d.id },
+      " -> ",
+      { dancerId: dl.id },
+      " -> ",
+      { dancerId: drl.id },
+    ]);
+
+  const [drrl, drrr] = getHandsFourAdjacents(drr, { by }).sort();
+  if (drrl.id !== dr.id)
+    throw new SnazzyError([
+      "confusion how to get into groups of four: ",
+      { dancerId: dr.id },
+      " -> ",
+      { dancerId: drr.id },
+      " -> ",
+      { dancerId: drrl.id },
+    ]);
+
+  const [drrrl, drrrr] = getHandsFourAdjacents(drrr, { by }).sort();
+  if (drrrl.id !== drr.id)
+    throw new SnazzyError([
+      "confusion how to get into groups of four: ",
+      { dancerId: drr.id },
+      " -> ",
+      { dancerId: drrr.id },
+      " -> ",
+      { dancerId: drrrl.id },
+    ]);
+
+  if (drrrr.id !== d.id)
+    throw new SnazzyError([
+      "confusion how to get into groups of four: ",
+      { dancerId: d.id },
+      " -> ",
+      { dancerId: dr.id },
+      " -> ",
+      { dancerId: drr.id },
+      " -> ",
+      { dancerId: drrr.id },
+      " -> ",
+      { dancerId: drrrr.id },
+      " !== ",
+      { dancerId: d.id },
+    ]);
+
+  const all = [d, dr, drr, drrr];
+  if (new Set(all.map(d => d.id)).size !== 4)
+    throw new SnazzyError([
+      "confusion how to get into groups of four: ",
+      ...all.map(d => ({ dancerId: d.id })),
+    ]);
+
+  return buildEnumRecord(ProtoIdSchema, (id) =>
+    must(getSingleton([d, dr, drr, drrr].filter((d) => d.protoId === id))),
+  );
 }

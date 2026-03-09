@@ -1,14 +1,11 @@
+import { produce } from "immer";
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { type Beats, type ProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, type Beats, type ProtoId } from "../contraCore";
 import { EAST, NORTH, SOUTH, WEST } from "../geometry";
-import {
-  buildProtoRecord,
-  Dancer,
-  type WorldState,
-  WorldStateSchema,
-} from "../worldState";
+import { typedParse } from "../utils";
+import { type WorldState, WorldStateSchema } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
 import { getSplitDuration, SplitSchema } from "./split";
 
@@ -57,11 +54,10 @@ export function resolveInitFormation(initFormation: InitFormation): WorldState {
   return initFormation;
 }
 
-const protoCores: Record<
-  ProtoId,
-  Omit<ConstructorParameters<typeof Dancer>[1], "pos" | "facing">
-> = {
+const improper = typedParse(WorldStateSchema, {
   up_lark_0: {
+    pos: { x: -0.5, y: -0.5 },
+    facing: NORTH,
     hands: {},
     labels: {
       partner: "up_robin_0",
@@ -70,6 +66,8 @@ const protoCores: Record<
     recents: ["up_robin_0", "down_robin_0"],
   },
   up_robin_0: {
+    pos: { x: 0.5, y: -0.5 },
+    facing: NORTH,
     hands: {},
     labels: {
       partner: "up_lark_0",
@@ -78,6 +76,8 @@ const protoCores: Record<
     recents: ["up_lark_0", "down_lark_0"],
   },
   down_lark_0: {
+    pos: { x: 0.5, y: 0.5 },
+    facing: SOUTH,
     hands: {},
     labels: {
       partner: "down_robin_0",
@@ -86,6 +86,8 @@ const protoCores: Record<
     recents: ["down_robin_0", "up_robin_0"],
   },
   down_robin_0: {
+    pos: { x: -0.5, y: 0.5 },
+    facing: SOUTH,
     hands: {},
     labels: {
       partner: "down_lark_0",
@@ -93,7 +95,7 @@ const protoCores: Record<
     },
     recents: ["down_lark_0", "up_lark_0"],
   },
-};
+});
 const initFormationPosFacings: Record<
   InitFormationName,
   Record<ProtoId, { pos: Vector; facing: Vector }>
@@ -131,11 +133,12 @@ export const initFormationStates: Record<InitFormationName, WorldState> = {
   proper: buildInitFormation("proper"),
 };
 function buildInitFormation(initFormationName: InitFormationName): WorldState {
-  return buildProtoRecord((id) => ({
-    ...protoCores[id],
-    pos: initFormationPosFacings[initFormationName][id].pos,
-    facing: initFormationPosFacings[initFormationName][id].facing,
-  }));
+  return produce(improper, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
+      draft[id].pos = initFormationPosFacings[initFormationName][id].pos;
+      draft[id].facing = initFormationPosFacings[initFormationName][id].facing;
+    }
+  });
 }
 
 export const DanceStatusSchema = z.enum(["dummy", "preliminary", "verified"]);

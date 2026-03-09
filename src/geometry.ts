@@ -1,7 +1,9 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-export const VectorSchema = z.instanceof(Vector);
+export const VectorSchema = z
+  .object({ x: z.number(), y: z.number() })
+  .transform((v) => new Vector(v.x, v.y));
 
 export const PI = Math.PI;
 export const TWO_PI = 2 * Math.PI;

@@ -8,7 +8,7 @@ import {
   getProgDirVec,
   isLark,
 } from "../contraCore";
-import { InfallibleLabel } from "../labels";
+import { type InfallibleLabel } from "../labels";
 import { Dancer, type WorldState } from "../worldState";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";

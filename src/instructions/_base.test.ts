@@ -3,8 +3,8 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { ALL_PROTO_IDS, DancerId, getProgDirVec, ProtoId } from "../contraCore";
-import { Label } from "../labels";
+import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "../contraCore";
+import { type Label } from "../labels";
 import { fcProtoId } from "../testHelpers";
 import { circularDistance } from "../utils";
 import { Dancer, setLabel, type WorldState } from "../worldState";
@@ -44,11 +44,9 @@ describe("resolveLabel", () => {
   ])(
     "resolves next neighbors correctly in progressed improper: %s %s -> %s",
     (id, label, expected) => {
-      const init = produce(initFormationStates.improper, (draft) => {
-        // gotta move all the dancers the right way so they're close enough to their neighbors to see them
-        draft[id].pos = draft[id].pos.add(getProgDirVec(id));
-      });
-      expect(Dancer.get(id, init).resolveLabel(label)?.id).toBe(expected);
+      expect(
+        Dancer.get(id, initFormationStates.improper).resolveLabel(label)?.id,
+      ).toBe(expected);
     },
   );
 
@@ -60,10 +58,9 @@ describe("resolveLabel", () => {
   ])(
     "resolves prev neighbors correctly in anti-progressed improper: %s %s -> %s",
     (id, label, expected) => {
-      const init = produce(initFormationStates.improper, (draft) => {
-        draft[id].pos = draft[id].pos.add(getProgDirVec(id).multiply(-1));
-      });
-      expect(Dancer.get(id, init).resolveLabel(label)?.id).toBe(expected);
+      expect(
+        Dancer.get(id, initFormationStates.improper).resolveLabel(label)?.id,
+      ).toBe(expected);
     },
   );
 

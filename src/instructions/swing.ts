@@ -68,7 +68,9 @@ export function makeSwingSegments(
   who: ReadonlySet<ProtoId>,
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
-  const centers = buildProtoRecord((id) => avgPos(init, id, matches[id].id));
+  const centers = buildProtoRecord((id) =>
+    avgPos(Dancer.get(id, init), matches[id]),
+  );
 
   const plans = buildProtoRecord((id) => {
     const me = Dancer.get(id, init);

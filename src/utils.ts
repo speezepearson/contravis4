@@ -64,6 +64,12 @@ export function isNTuple<N extends number, T>(
   return x.length === length;
 }
 
+export function typedParse<Schema extends z.ZodSchema>(
+  schema: Schema,
+  x: z.input<Schema>,
+) {
+  return schema.parse(x);
+}
 export function typedSafeParse<Schema extends z.ZodSchema>(
   schema: Schema,
   x: z.input<Schema>,

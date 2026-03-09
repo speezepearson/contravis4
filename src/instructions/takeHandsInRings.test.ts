@@ -36,11 +36,10 @@ describe("takeHandsInRings", () => {
     let current: DancerId = "up_lark_0";
     const visited: DancerId[] = [current];
     for (let i = 0; i < 3; i++) {
-      const { theirId } = must(Dancer.get(current, final).hands.right);
-      current = theirId;
+      current = must(Dancer.get(current, final).hands.right).theirId;
       visited.push(current);
     }
-    const { theirId: back } = must(Dancer.get(current, final).hands.right);
+    const back = must(Dancer.get(current, final).hands.right).theirId;
     expect(back).toBe("up_lark_0");
     expect(new Set(visited).size).toBe(4);
   });

@@ -23,7 +23,10 @@ describe("verified dances have valid nonzero progressions", () => {
   it.each(files)("%s", async (file: string) => {
     const dance = await loadDance(file);
     if (dance.status !== "verified") return;
-    const initState = initFormationStates[dance.initFormation];
+    const initState =
+      typeof dance.initFormation === "string"
+        ? initFormationStates[dance.initFormation]
+        : dance.initFormation;
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
       initState,
@@ -44,7 +47,10 @@ describe("verified dances are 64 beats long", () => {
   it.each(files)("%s", async (file: string) => {
     const dance = await loadDance(file);
     if (dance.status !== "verified") return;
-    const initState = initFormationStates[dance.initFormation];
+    const initState =
+      typeof dance.initFormation === "string"
+        ? initFormationStates[dance.initFormation]
+        : dance.initFormation;
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
       initState,
