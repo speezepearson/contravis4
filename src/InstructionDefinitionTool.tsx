@@ -43,8 +43,10 @@ type DragState = {
   currentWorldY: number;
   /** In init mode, which dancer we're dragging */
   dancerId?: ProtoId;
-  /** Whether shift was held at drag start (init mode: change facing) */
+  /** Whether shift was held at drag start (init/keyframe: change facing) */
   shiftKey: boolean;
+  /** In keyframe mode, index of the ghost keyframe being dragged (if any) */
+  ghostKeyframeIndex?: number;
 };
 
 // ── Coordinate helpers ───────────────────────────────────────────────────
@@ -196,7 +198,7 @@ export default function InstructionDefinitionTool() {
         );
       }
 
-      // Draw ghost during drag (only if actually dragging, not just clicking)
+      // Draw ghost during new-keyframe drag (not when dragging an existing ghost)
       const drag = dragRef.current;
       const dragDist = drag
         ? Math.hypot(
@@ -204,7 +206,7 @@ export default function InstructionDefinitionTool() {
             drag.currentWorldY - drag.startWorldY,
           )
         : 0;
-      if (drag && dragDist >= 0.02) {
+      if (drag && dragDist >= 0.02 && drag.ghostKeyframeIndex == null) {
         const dragPos = new Vector(drag.startWorldX, drag.startWorldY);
         const dragDir = new Vector(
           drag.currentWorldX - drag.startWorldX,
@@ -307,6 +309,33 @@ export default function InstructionDefinitionTool() {
           dragRef.current = drag;
         }
       } else if (mode === "keyframe") {
+        // Hit-test ghost dancers first
+        if (selectedDancer && selectedRole) {
+          const orig = Dancer.get(selectedDancer, initState);
+          const ghostHitRadius = 0.15; // world units
+          for (let i = 0; i < keyframes.length; i++) {
+            const roleState = keyframes[i].states[selectedRole];
+            if (!roleState) continue;
+            const ghostPos = relToWorld(
+              roleState.relPos,
+              orig.pos,
+              orig.facing,
+            );
+            const dist = Math.hypot(wx - ghostPos.x, wy - ghostPos.y);
+            if (dist < ghostHitRadius) {
+              dragRef.current = {
+                startWorldX: wx,
+                startWorldY: wy,
+                currentWorldX: wx,
+                currentWorldY: wy,
+                shiftKey: e.shiftKey,
+                ghostKeyframeIndex: i,
+              };
+              return;
+            }
+          }
+        }
+
         const drag: DragState = {
           startWorldX: wx,
           startWorldY: wy,
@@ -317,7 +346,7 @@ export default function InstructionDefinitionTool() {
         dragRef.current = drag;
       }
     },
-    [mode, initState],
+    [mode, initState, selectedDancer, selectedRole, keyframes],
   );
 
   const handleMouseMove = useCallback(
@@ -358,11 +387,73 @@ export default function InstructionDefinitionTool() {
             }),
           );
         }
+      } else if (
+        mode === "keyframe" &&
+        dragRef.current.ghostKeyframeIndex != null &&
+        selectedDancer &&
+        selectedRole
+      ) {
+        const kfIdx = dragRef.current.ghostKeyframeIndex;
+        const orig = Dancer.get(selectedDancer, initState);
+        if (dragRef.current.shiftKey) {
+          // Change ghost facing: facing = direction from ghost position to mouse
+          const roleState = keyframes[kfIdx].states[selectedRole];
+          if (roleState) {
+            const ghostWorldPos = relToWorld(
+              roleState.relPos,
+              orig.pos,
+              orig.facing,
+            );
+            const dir = new Vector(wx - ghostWorldPos.x, wy - ghostWorldPos.y);
+            if (dir.length() > 0.01) {
+              const newRelFacing = facingToRel(dir.normalize(), orig.facing);
+              setKeyframes((prev) =>
+                prev.map((kf, i) =>
+                  i === kfIdx
+                    ? {
+                        ...kf,
+                        states: {
+                          ...kf.states,
+                          [selectedRole]: {
+                            ...kf.states[selectedRole]!,
+                            relFacing: newRelFacing,
+                          },
+                        },
+                      }
+                    : kf,
+                ),
+              );
+            }
+          }
+        } else {
+          // Move ghost: update relPos
+          const newRelPos = worldToRel(
+            new Vector(wx, wy),
+            orig.pos,
+            orig.facing,
+          );
+          setKeyframes((prev) =>
+            prev.map((kf, i) =>
+              i === kfIdx
+                ? {
+                    ...kf,
+                    states: {
+                      ...kf.states,
+                      [selectedRole]: {
+                        ...kf.states[selectedRole]!,
+                        relPos: newRelPos,
+                      },
+                    },
+                  }
+                : kf,
+            ),
+          );
+        }
       }
 
       requestDraw();
     },
-    [mode, initState, requestDraw],
+    [mode, initState, selectedDancer, selectedRole, keyframes, requestDraw],
   );
 
   const handleMouseUp = useCallback(
@@ -377,7 +468,9 @@ export default function InstructionDefinitionTool() {
       const isClick = dragDist < 0.02;
 
       if (mode === "keyframe") {
-        if (isClick) {
+        if (drag.ghostKeyframeIndex != null) {
+          // Ghost drag already applied during mousemove; nothing to do.
+        } else if (isClick) {
           // Click with no drag = select dancer
           const renderer = rendererRef.current;
           const canvas = canvasRef.current;
