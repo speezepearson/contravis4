@@ -247,24 +247,18 @@ export class Renderer {
   ) {
     if (lines.length === 0) return;
     const ctx = this.ctx;
-    const viewYMin = -this.yRange / 2;
-    const viewYMax = this.yRange / 2;
-    const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
-    const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
 
     ctx.strokeStyle = "#4a4";
     ctx.lineWidth = 2;
 
+    ctx.globalAlpha = 0.4;
     for (const { fromX, fromY, toX, toY } of lines) {
-      for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
-        ctx.globalAlpha = offset === 0 ? 0.4 : 0.15;
-        const [ax, ay] = this.worldToCanvas(fromX, fromY + offset);
-        const [bx, by] = this.worldToCanvas(toX, toY + offset);
-        ctx.beginPath();
-        ctx.moveTo(ax, ay);
-        ctx.lineTo(bx, by);
-        ctx.stroke();
-      }
+      const [ax, ay] = this.worldToCanvas(fromX, fromY);
+      const [bx, by] = this.worldToCanvas(toX, toY);
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
     }
     ctx.globalAlpha = 1.0;
   }
