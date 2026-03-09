@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { flipProgDir, HandSchema } from "../contraCore";
+import { HandSchema } from "../contraCore";
 import { preferCloser, preferOneInFront, preferRecent } from "../formations";
 import { getDir, revolve, TWO_PI } from "../geometry";
-import { lerp } from "../utils";
+import { getSingleton, lerp, must } from "../utils";
 import { avgPos, Dancer } from "../worldState";
 import { getGroupOfFour, instructionBaseSchemaFields } from "./_base";
 import { hold, type InstructionAnimator, rotateFacingBy } from "./_segment";
@@ -34,11 +34,14 @@ export const starSegments: InstructionAnimator<StarInstruction> = (
     });
   const opp = (dancer: Dancer) => {
     const group = getInitGroup(dancer);
-    return group[flipProgDir(dancer.protoId)];
+    return must(
+      getSingleton(
+        group.filter((d) => d.role === dancer.role && d.dir !== dancer.dir),
+      ),
+    );
   };
 
-  const getCenter = (dancer: Dancer) =>
-    avgPos(...Object.values(getInitGroup(dancer)));
+  const getCenter = (dancer: Dancer) => avgPos(...getInitGroup(dancer));
 
   return [
     // Star setup: rotate facing 90°, connect inside hands with opposite

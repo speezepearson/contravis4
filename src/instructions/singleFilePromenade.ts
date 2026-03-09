@@ -29,8 +29,7 @@ export const singleFilePromenadeSegments: InstructionAnimator<
       by: [preferCloser, preferOneInFront, preferRecent],
     });
 
-  const getCenter = (dancer: Dancer) =>
-    avgPos(...Object.values(getInitGroup(dancer)));
+  const getCenter = (dancer: Dancer) => avgPos(...getInitGroup(dancer));
 
   // CW if direction=left, CCW if direction=right (same as circle/star)
   const orbitRadians =

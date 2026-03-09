@@ -1,15 +1,7 @@
-import { type ProtoId, ProtoIdSchema } from "./contraCore";
+import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { getDir, getDist } from "./geometry";
 import { SnazzyError } from "./snazzyError";
-import {
-  buildEnumRecord,
-  getSingleton,
-  indexOf,
-  isNTuple,
-  must,
-  type NTuple,
-  safeThreshold,
-} from "./utils";
+import { indexOf, isNTuple, must, type NTuple, safeThreshold } from "./utils";
 import { Dancer, findNearbyDancers } from "./worldState";
 
 function mustGetRightHand(d: Dancer): Dancer {
@@ -136,7 +128,7 @@ export function getHandsFourAdjacents(
 export function getGroupOfFour(
   d: Dancer,
   { by }: { by: AtLeastOne<Tiebreaker> },
-): Record<ProtoId, Dancer> {
+): NTuple<4, Dancer> {
   const [dl, dr] = getHandsFourAdjacents(d, { by }).sort();
 
   const [drl, drr] = getHandsFourAdjacents(dr, { by }).sort();
@@ -195,7 +187,11 @@ export function getGroupOfFour(
       ...all.map((d) => ({ dancerId: d.id })),
     ]);
 
-  return buildEnumRecord(ProtoIdSchema, (id) =>
-    must(getSingleton([d, dr, drr, drrr].filter((d) => d.protoId === id))),
+  all.sort(
+    (a, b) =>
+      must(indexOf(ALL_PROTO_IDS, a.protoId)) -
+      must(indexOf(ALL_PROTO_IDS, b.protoId)),
   );
+  if (!isNTuple(all, 4)) throw new Error("unreachable");
+  return all;
 }

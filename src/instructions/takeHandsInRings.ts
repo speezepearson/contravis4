@@ -40,10 +40,10 @@ export function makeRingSegment(init: WorldState): Segment {
   );
   const final = mapWorldState(init, (dancer) => {
     const group = getGroup(dancer);
-    const center = avgPos(...Object.values(group));
+    const center = avgPos(...group);
     dancer.facing = getDir({ from: dancer.pos, to: center });
     const [left, right] = _.sortBy(
-      Object.values(group).filter((d) => d.role !== dancer.role),
+      group.filter((d) => d.role !== dancer.role),
       (d) =>
         ccwRadsBetween(dancer.facing, getDir({ from: dancer.pos, to: d.pos })),
     );
@@ -58,8 +58,7 @@ export function makeRingSegment(init: WorldState): Segment {
     position: (dancer) => final[dancer.protoId].pos,
     facing: (dancer) => final[dancer.protoId].facing,
     hands: (dancer) => final[dancer.protoId].hands,
-    interactedWith: (dancer) =>
-      Object.values(getGroup(dancer)).map((d) => d.id),
+    interactedWith: (dancer) => getGroup(dancer).map((d) => d.id),
   };
 }
 
@@ -68,6 +67,6 @@ export const takeHandsInRingsSegments: InstructionAnimator<
 > = (_instr, init, who) => {
   const segment = makeRingSegment(init);
   const endState = getSegmentFrameAtFrac(segment, init, who, 1);
-  for (const d of who) resolveRing(Dancer.get(d, endState));
+  for (const protoId of who) resolveRing(Dancer.get(protoId, endState));
   return [segment];
 };
