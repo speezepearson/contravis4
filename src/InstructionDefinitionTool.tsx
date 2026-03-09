@@ -96,6 +96,8 @@ export default function InstructionDefinitionTool() {
   const [mode, setMode] = useState<Mode>("init");
   const [selectedDancer, setSelectedDancer] = useState<ProtoId | null>(null);
   const [keyframeDuration, setKeyframeDuration] = useState(1);
+  // Tracks which keyframe slot the next click will fill for the current role
+  const [nextSlotForRole, setNextSlotForRole] = useState(0);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [fieldsDisplayText, setFieldsDisplayText] = useState("");
 
@@ -139,9 +141,15 @@ export default function InstructionDefinitionTool() {
         );
       }
 
-      // Draw ghost during drag
+      // Draw ghost during drag (only if actually dragging, not just clicking)
       const drag = dragRef.current;
-      if (drag && !drag.shiftKey) {
+      const dragDist = drag
+        ? Math.hypot(
+            drag.currentWorldX - drag.startWorldX,
+            drag.currentWorldY - drag.startWorldY,
+          )
+        : 0;
+      if (drag && dragDist >= 0.02) {
         const dragPos = new Vector(drag.startWorldX, drag.startWorldY);
         const dragDir = new Vector(
           drag.currentWorldX - drag.startWorldX,
@@ -235,7 +243,7 @@ export default function InstructionDefinitionTool() {
           };
           dragRef.current = drag;
         }
-      } else if (mode === "keyframe" && selectedDancer) {
+      } else if (mode === "keyframe") {
         const drag: DragState = {
           startWorldX: wx,
           startWorldY: wy,
@@ -246,7 +254,7 @@ export default function InstructionDefinitionTool() {
         dragRef.current = drag;
       }
     },
-    [mode, initState, selectedDancer],
+    [mode, initState],
   );
 
   const handleMouseMove = useCallback(
@@ -294,50 +302,100 @@ export default function InstructionDefinitionTool() {
     [mode, initState, requestDraw],
   );
 
-  const handleMouseUp = useCallback(() => {
-    const drag = dragRef.current;
-    if (!drag) return;
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const drag = dragRef.current;
+      if (!drag) return;
 
-    if (mode === "keyframe" && selectedDancer && selectedRole) {
-      // Append a keyframe
-      const orig = Dancer.get(selectedDancer, initState);
-      const clickPos = new Vector(drag.startWorldX, drag.startWorldY);
-      const dragDir = new Vector(
+      const dragDist = Math.hypot(
         drag.currentWorldX - drag.startWorldX,
         drag.currentWorldY - drag.startWorldY,
       );
-      const worldFacing =
-        dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
+      const isClick = dragDist < 0.02;
 
-      const relPos = worldToRel(clickPos, orig.pos, orig.facing);
-      const relFacing = facingToRel(worldFacing, orig.facing);
+      if (mode === "keyframe") {
+        if (isClick) {
+          // Click with no drag = select dancer
+          const renderer = rendererRef.current;
+          const canvas = canvasRef.current;
+          if (renderer && canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const hit = renderer.hitTestDancer(cx, cy, initState);
+            if (hit) {
+              setSelectedDancer(hit);
+              // Reset slot counter: find how many existing keyframes already
+              // have data for this dancer's role
+              const hitRole = Dancer.get(hit, initState).role;
+              const filled = keyframes.filter(
+                (kf) => kf.states[hitRole] != null,
+              ).length;
+              setNextSlotForRole(filled);
+            }
+          }
+        } else if (selectedDancer && selectedRole) {
+          // Drag = add keyframe for current role, merged into the next slot
+          const orig = Dancer.get(selectedDancer, initState);
+          const clickPos = new Vector(drag.startWorldX, drag.startWorldY);
+          const dragDir = new Vector(
+            drag.currentWorldX - drag.startWorldX,
+            drag.currentWorldY - drag.startWorldY,
+          );
+          const worldFacing =
+            dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
 
-      const lastT =
-        keyframes.length > 0 ? keyframes[keyframes.length - 1].t : 0;
+          const relPos = worldToRel(clickPos, orig.pos, orig.facing);
+          const relFacing = facingToRel(worldFacing, orig.facing);
 
-      setKeyframes((prev) => [
-        ...prev,
-        {
-          t: lastT + keyframeDuration,
-          states: {
-            ...prev[prev.length - 1]?.states,
-            [selectedRole]: { relPos, relFacing },
-          },
-        },
-      ]);
-    }
+          const slot = nextSlotForRole;
 
-    dragRef.current = null;
-    requestDraw();
-  }, [
-    mode,
-    selectedDancer,
-    selectedRole,
-    initState,
-    keyframes,
-    keyframeDuration,
-    requestDraw,
-  ]);
+          setKeyframes((prev) => {
+            if (slot < prev.length) {
+              // Merge into existing keyframe
+              return prev.map((kf, i) =>
+                i === slot
+                  ? {
+                      ...kf,
+                      states: {
+                        ...kf.states,
+                        [selectedRole]: { relPos, relFacing },
+                      },
+                    }
+                  : kf,
+              );
+            } else {
+              // Append new keyframe slot
+              const lastT = prev.length > 0 ? prev[prev.length - 1].t : 0;
+              return [
+                ...prev,
+                {
+                  t: lastT + keyframeDuration,
+                  states: {
+                    [selectedRole]: { relPos, relFacing },
+                  },
+                },
+              ];
+            }
+          });
+          setNextSlotForRole(slot + 1);
+        }
+      }
+
+      dragRef.current = null;
+      requestDraw();
+    },
+    [
+      mode,
+      selectedDancer,
+      selectedRole,
+      initState,
+      keyframes,
+      keyframeDuration,
+      nextSlotForRole,
+      requestDraw,
+    ],
+  );
 
   // ── Export / Import ──────────────────────────────────────────────────
 
@@ -617,7 +675,14 @@ export default function InstructionDefinitionTool() {
                 <button
                   key={id}
                   className={selectedDancer === id ? "active" : ""}
-                  onClick={() => setSelectedDancer(id)}
+                  onClick={() => {
+                    setSelectedDancer(id);
+                    const role = Dancer.get(id, initState).role;
+                    const filled = keyframes.filter(
+                      (kf) => kf.states[role] != null,
+                    ).length;
+                    setNextSlotForRole(filled);
+                  }}
                 >
                   {id.replace(/_0$/, "").replace(/_/g, " ")}
                 </button>
