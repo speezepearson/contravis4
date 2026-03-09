@@ -627,6 +627,25 @@ Couples zig-zag along the set, moving sideways in alternating directions.
 }
 ```
 
+### `templated_lr`
+
+A template-driven instruction type. The animation is defined by a set of keyframes with per-role relative positions and facings, looked up from a named template. Templates can have a hardcoded matcher (identifying who the dancer interacts with) or require the choreographer to specify one.
+
+- `templateId`: identifier of the template (e.g. `"specialChain"`)
+- `fields.matcher` _(optional)_: a CalledIdentifier, required when the template's matcher is `choreographer_specified`
+
+```json
+{
+  "id": "...",
+  "beats": 8,
+  "type": "templated_lr",
+  "templateId": "specialChain",
+  "fields": {
+    "matcher": "partner"
+  }
+}
+```
+
 ---
 
 ## `split`

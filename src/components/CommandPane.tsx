@@ -53,6 +53,10 @@ import {
   resolveInitFormation,
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
+import {
+  allLRTemplates,
+  type TemplateId,
+} from "../instructions/templates/index";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, indexOf } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
@@ -97,6 +101,7 @@ import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
+import { TemplatedLRFields } from "./fields/TemplatedLRFields";
 import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
@@ -147,7 +152,9 @@ function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   );
 }
 
-export type ActionOptionType = Instruction["type"];
+export type ActionOptionType =
+  | Exclude<Instruction["type"], "templated_lr">
+  | TemplateId;
 
 const ACTION_OPTIONS: ActionOptionType[] = (
   [
@@ -196,11 +203,14 @@ const ACTION_OPTIONS: ActionOptionType[] = (
     "turn_as_a_couple",
     "up_the_hall",
     "zig_zag",
+    ...(Object.keys(allLRTemplates) as TemplateId[]),
   ] satisfies ActionOptionType[]
 )
   .sort((a, b) => {
-    const freqA = contradbInstructionFrequencies.get(a) ?? 0;
-    const freqB = contradbInstructionFrequencies.get(b) ?? 0;
+    const freqA =
+      contradbInstructionFrequencies.get(a as AtomicInstruction["type"]) ?? 0; // DEFAULT_VALUE: templates won't be in the frequency map, so they sort alphabetically at the end
+    const freqB =
+      contradbInstructionFrequencies.get(b as AtomicInstruction["type"]) ?? 0;
     if (freqA !== freqB) return freqB - freqA;
     return a.localeCompare(b);
   })
@@ -258,7 +268,10 @@ const ACTION_LABELS: Record<ActionOptionType, string> = {
   turn_as_a_couple: "turn as a couple",
   up_the_hall: "up the hall",
   zig_zag: "zig zag",
-};
+  ...Object.fromEntries(
+    Object.entries(allLRTemplates).map(([id, t]) => [id, t.name]),
+  ),
+} as Record<ActionOptionType, string>;
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
   if (by === "role") return list === "A" ? "Larks" : "Robins";
@@ -566,6 +579,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "turn_as_a_couple":
     case "up_the_hall":
     case "zig_zag":
+    case "templated_lr":
       return true;
     case "drop_hands":
     case "face":
@@ -633,8 +647,13 @@ function InlineForm({
     ? ACTION_OPTIONS
     : ACTION_OPTIONS.filter((o) => o !== "split");
 
+  const actionOptionValue: ActionOptionType =
+    instruction.type === "templated_lr"
+      ? instruction.templateId
+      : instruction.type;
+
   function handleActionChange(newAction: ActionOptionType) {
-    if (newAction !== instruction.type) {
+    if (newAction !== actionOptionValue) {
       onChange(makeDefaultInstruction(newAction, instruction.id));
       setValid(true);
     }
@@ -655,7 +674,7 @@ function InlineForm({
     <span className={`inline-form${valid ? "" : " invalid"}`}>
       <InlineDropdown
         options={actionOptions}
-        value={instruction.type}
+        value={actionOptionValue}
         onChange={(v) => handleActionChange(v)}
         getLabel={(v) => ACTION_LABELS[v] ?? v}
         autoFocus={autoFocusAction}
@@ -793,6 +812,8 @@ function InlineForm({
             return <UpTheHallFields {...common} instruction={instruction} />;
           case "zig_zag":
             return <ZigZagFields {...common} instruction={instruction} />;
+          case "templated_lr":
+            return <TemplatedLRFields {...common} instruction={instruction} />;
           default:
             assertNever(instruction);
         }
