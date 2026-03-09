@@ -43,13 +43,8 @@ export function shiftFrameByProgression(
   return buildProtoRecord((id) => {
     const { dir } = parseProtoId(id);
     const dy = dir === "up" ? n : -n;
-    const dancer = frame[id];
-    return produce(dancer, (draft) => {
-      draft.pos = new Vector(dancer.pos.x, dancer.pos.y + dy);
-      draft.facing = dancer.facing;
-      draft.hands = dancer.hands;
-      draft.labels = dancer.labels;
-      draft.recents = dancer.recents;
+    return produce(frame[id], (draft) => {
+      draft.pos = new Vector(draft.pos.x, draft.pos.y + dy);
     });
   });
 }
