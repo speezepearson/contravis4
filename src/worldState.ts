@@ -787,23 +787,22 @@ export function setLabel(
 
 export function findNearbyDancers(
   pos: Vector,
+  protoId: ProtoId,
   state: WorldState,
-): Record<ProtoId, [Dancer, Dancer]> {
-  return buildProtoRecord((protoId) => {
-    const below: DancerOffset = Math.floor((pos.y - state[protoId].pos.y) / 2);
-    const above = below + 1;
+): [Dancer, Dancer] {
+  const below: DancerOffset = Math.floor((pos.y - state[protoId].pos.y) / 2);
+  const above = below + 1;
 
-    const dancers: [Dancer, Dancer] = [
-      Dancer.get(protoIdToDancerId(protoId, below), state),
-      Dancer.get(protoIdToDancerId(protoId, above), state),
-    ];
+  const dancers: [Dancer, Dancer] = [
+    Dancer.get(protoIdToDancerId(protoId, below), state),
+    Dancer.get(protoIdToDancerId(protoId, above), state),
+  ];
 
-    dancers.sort(
-      (a, b) => a.pos.subtract(pos).length() - b.pos.subtract(pos).length(),
-    );
+  dancers.sort(
+    (a, b) => a.pos.subtract(pos).length() - b.pos.subtract(pos).length(),
+  );
 
-    return dancers;
-  });
+  return dancers;
 }
 
 export const WorldStateSchema = z.object({

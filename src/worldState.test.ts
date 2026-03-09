@@ -97,9 +97,8 @@ describe("findNearbyDancers", () => {
   it("returns arrays sorted by distance to pos, closest first", () => {
     fc.assert(
       fc.property(fcAnyWorldState, fcQueryPos, (state, pos) => {
-        const result = findNearbyDancers(pos, state);
         for (const protoId of ALL_PROTO_IDS) {
-          const arr = result[protoId];
+          const arr = findNearbyDancers(pos, protoId, state);
           for (let i = 0; i < arr.length - 1; i++) {
             const d1 = arr[i].pos.subtract(pos).length();
             const d2 = arr[i + 1].pos.subtract(pos).length();
@@ -113,10 +112,9 @@ describe("findNearbyDancers", () => {
   it("returns arrays where both entries are within 2 y-units of pos", () => {
     fc.assert(
       fc.property(fcAnyWorldState, fcQueryPos, (state, pos) => {
-        const result = findNearbyDancers(pos, state);
         for (const protoId of ALL_PROTO_IDS) {
           expect(
-            Math.abs(result[protoId][0].pos.y - pos.y),
+            Math.abs(findNearbyDancers(pos, protoId, state)[0].pos.y - pos.y),
           ).toBeLessThanOrEqual(2);
         }
       }),

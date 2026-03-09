@@ -108,9 +108,8 @@ export function getHandsFourAdjacents(
   d: Dancer,
   { by }: { by: AtLeastOne<Tiebreaker> },
 ): [Dancer, Dancer] {
-  const nearby = findNearbyDancers(d.pos, d.worldState);
   const choose = (id: ProtoId) => {
-    const cands = nearby[id];
+    const cands = findNearbyDancers(d.pos, id, d.worldState);
 
     for (const tiebreaker of by) {
       const res = tiebreaker(d, cands);
