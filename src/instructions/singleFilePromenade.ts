@@ -22,10 +22,11 @@ export type SingleFilePromenadeInstruction = z.infer<
 export const singleFilePromenadeSegments: InstructionAnimator<
   SingleFilePromenadeInstruction
 > = (instr, init) => {
+  const orig = (d: Dancer) => d.at(init);
   const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
 
   const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(dancer.at(init), {
+    getGroupOfFour(orig(dancer), {
       by: [preferCloser, preferOneInFront, preferRecent],
     });
 

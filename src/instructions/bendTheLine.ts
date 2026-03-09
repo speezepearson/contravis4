@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { ALL_PROTO_IDS } from "../contraCore";
 import { resolveShortLine } from "../formations";
 import { PI, revolve, roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
@@ -20,26 +19,31 @@ export type BendTheLineInstruction = z.infer<
 export const bendTheLineSegments: InstructionAnimator<
   BendTheLineInstruction
 > = (instr, init) => {
-  // Assert all dancers in each short line face approximately the same direction
-  for (const protoId of ALL_PROTO_IDS) {
-    const line = resolveShortLine(Dancer.get(protoId, init));
-    const refFacing = line[0].facing;
+  const orig = (d: Dancer) => d.at(init);
+
+  const getInitLine = (dancer: Dancer) => resolveShortLine(orig(dancer));
+
+  const ensureAllFacingSameWay = (dancer: Dancer) => {
+    const line = getInitLine(dancer);
+
+    // Assert all dancers in each short line face approximately the same direction
     for (const d of line) {
-      if (!roughlySameDir(d.facing, refFacing)) {
+      if (!roughlySameDir(d.facing, dancer.facing)) {
         throw new SnazzyError([
           "Dancers in short line for ",
-          { dancerId: protoId },
+          { dancerId: d.id },
           " are not all facing approximately the same direction",
         ]);
       }
     }
-  }
+  };
 
   return [
     {
       dur: instr.beats,
       position: (dancer, frac) => {
-        const line = resolveShortLine(dancer.at(init));
+        ensureAllFacingSameWay(dancer);
+        const line = getInitLine(dancer);
         const idx = must(
           indexOf(
             line.map((d) => d.protoId),
@@ -64,7 +68,7 @@ export const bendTheLineSegments: InstructionAnimator<
         return dancer.pos;
       },
       facing: (dancer, frac) => {
-        const line = resolveShortLine(dancer.at(init));
+        const line = getInitLine(dancer);
         const idx = must(
           indexOf(
             line.map((d) => d.protoId),
@@ -76,7 +80,7 @@ export const bendTheLineSegments: InstructionAnimator<
         return dancer.facing.rotateByRadians(radians * frac);
       },
       interactedWith: (dancer) => {
-        const line = resolveShortLine(dancer.at(init));
+        const line = getInitLine(dancer);
         const idx = must(
           indexOf(
             line.map((d) => d.protoId),

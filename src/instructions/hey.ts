@@ -30,9 +30,10 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
 ) => {
   if (who.size !== 4) throw new Error("hey requires all 4 dancers");
 
-  // Pre-compute groups for each dancer
+  const orig = (d: Dancer) => d.at(init);
+
   const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(dancer.at(init), {
+    getGroupOfFour(orig(dancer), {
       by: [preferCloser, preferOneInFront, preferRecent],
     });
 

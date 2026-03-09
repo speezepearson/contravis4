@@ -20,6 +20,7 @@ export const starSegments: InstructionAnimator<StarInstruction> = (
   instr,
   init,
 ) => {
+  const orig = (d: Dancer) => d.at(init);
   const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
 
   const insideHand = instr.direction;
@@ -29,7 +30,7 @@ export const starSegments: InstructionAnimator<StarInstruction> = (
     (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
 
   const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(dancer.at(init), {
+    getGroupOfFour(orig(dancer), {
       by: [preferCloser, preferOneInFront, preferRecent],
     });
   const opp = (dancer: Dancer) => {
