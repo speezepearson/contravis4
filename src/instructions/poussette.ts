@@ -53,7 +53,7 @@ export function makeHalfPoussetteArcPositionFn(
     arcDests.set(id, {
       start: init[id].pos,
       end: init[id].pos.add(
-        init[id]
+        Dancer.get(id, init)
           .resolveCalledDirection("across")
           .rotateByDegrees(
             (isBacker ? 1 : -1) * { right: -90, left: 90 }[backerDir],

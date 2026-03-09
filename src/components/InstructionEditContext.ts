@@ -1,13 +1,12 @@
-import { createContext, useContext } from "react";
+import react from "react";
 
-import type { ProtoId } from "../contraCore";
-import type { Dancer } from "../worldState";
+import type { WorldState } from "../worldState";
 
-export const InstructionEditContext = createContext<{
+export const InstructionEditContext = react.createContext<{
   onPopoverOpen?: () => void;
-  dancerStates?: Record<ProtoId, Dancer>;
+  worldState?: WorldState;
 }>({});
 
 export function useInstructionEdit() {
-  return useContext(InstructionEditContext);
+  return react.useContext(InstructionEditContext);
 }

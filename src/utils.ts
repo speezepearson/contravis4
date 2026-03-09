@@ -81,6 +81,9 @@ export function safeThreshold<T>(
   return x > 0 ? pos : neg;
 }
 
+export function otherSide(side: "east" | "west"): "east" | "west" {
+  return side === "east" ? "west" : "east";
+}
 export function getSide(pos: Vector): "east" | "west" | undefined {
   return safeThreshold(pos.x, { neg: "west", pos: "east" });
 }
@@ -141,4 +144,9 @@ export function stripPrefix<P extends string, S extends `${P}${string}`>(
 ): S extends `${P}${infer Rest}` ? Rest : never {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return s.slice(prefix.length) as never;
+}
+
+export function getSingleton<T>(arr: T[]): T | undefined {
+  if (arr.length !== 1) return undefined;
+  return arr[0];
 }

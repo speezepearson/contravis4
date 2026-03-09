@@ -27,7 +27,6 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { type ProtoId } from "../contraCore";
 import { sortedExampleDances } from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
@@ -53,7 +52,7 @@ import {
 import type { Split } from "../instructions/split";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, indexOf } from "../utils";
-import { type Dancer, WorldStateSchema } from "../worldState";
+import { type WorldState, WorldStateSchema } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceAndSwingFields } from "./fields/BalanceAndSwingFields";
 import { BalanceFields } from "./fields/BalanceFields";
@@ -865,7 +864,7 @@ export default memo(function CommandPane({
 
   // Pre-compute dancer states at each instruction's start beat using animation
   const dancerStatesById = useMemo(() => {
-    const result = new Map<InstructionId, Record<ProtoId, Dancer>>();
+    const result = new Map<InstructionId, WorldState>();
     if (!animation) return result;
 
     let beat = 0;
@@ -1158,7 +1157,7 @@ export default memo(function CommandPane({
       <InstructionEditContext.Provider
         value={{
           onPopoverOpen: () => onEditInstruction?.(instr.id),
-          dancerStates: dancerStatesById.get(instr.id),
+          worldState: dancerStatesById.get(instr.id),
         }}
       >
         <div

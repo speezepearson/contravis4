@@ -293,7 +293,7 @@ export function orbit(
     const myPos = dancer.pos;
     const them = matches.get(dancer.protoId);
     if (!them) return myPos;
-    const theirPos = Dancer.get(them.id, dancer.state).pos;
+    const theirPos = Dancer.get(them.id, dancer.worldState).pos;
     const center = myPos.add(theirPos).divide(2);
     return revolve(myPos, { around: center, radians: opts.radians * frac });
   };

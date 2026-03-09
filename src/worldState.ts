@@ -72,6 +72,16 @@ type ResolveCalledIdentifierOpts = {
 export type Lark = Dancer & { role: "lark" };
 export type Robin = Dancer & { role: "robin" };
 
+type RawDancerState = {
+  pos: Vector;
+  facing: Vector;
+  hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
+  labels: {
+    partner: DancerId;
+    neighbor: DancerId;
+  } & Partial<Record<ShadowLabel, DancerId>>;
+  recents: DancerId[];
+};
 export class Dancer {
   static [immerable] = true;
 
@@ -90,19 +100,7 @@ export class Dancer {
   /** Dancers this dancer has interacted with recently, most recent first. */
   recents: DancerId[];
 
-  constructor(
-    id: DancerId,
-    state: {
-      pos: Vector;
-      facing: Vector;
-      hands: Partial<Record<Hand, DancerHandPointer | undefined>>;
-      labels: {
-        partner: DancerId;
-        neighbor: DancerId;
-      } & Partial<Record<ShadowLabel, DancerId>>;
-      recents: DancerId[];
-    },
-  ) {
+  constructor(id: DancerId, state: RawDancerState) {
     this.id = id;
     this.pos = state.pos;
     this.facing = state.facing;
@@ -131,7 +129,7 @@ export class Dancer {
   }
 
   /** The WorldState this dancer was looked up from. Only available on dancers returned by Dancer.get. */
-  get state(): WorldState {
+  get worldState(): WorldState {
     const s = dancerStates.get(this);
     if (!s)
       throw new SnazzyError([
@@ -142,7 +140,10 @@ export class Dancer {
   }
 
   static get(id: DancerId, state: WorldState): Dancer {
-    const d = state[projectDancerIdToProtoId(id)].addOffset(getOffset(id));
+    const protoId = projectDancerIdToProtoId(id);
+    const d = new Dancer(protoId, state[projectDancerIdToProtoId(protoId)]).addOffset(
+      getOffset(id),
+    );
     dancerStates.set(d, state);
     return d;
   }
@@ -186,7 +187,7 @@ export class Dancer {
     { checkDistance = true }: ResolveLabelOpts = {},
   ): Dancer | undefined {
     const result = (() => {
-      const s = this.state;
+      const s = this.worldState;
       // Intermediate lookups skip the distance check; only the final result is checked.
       const noCheck: ResolveLabelOpts = { checkDistance: false };
       if (label === "partner") {
@@ -345,7 +346,7 @@ export class Dancer {
     { roles }: { roles?: "same" | "different" } = {},
   ): Dancer | null {
     dir = dir.normalize();
-    const protos = this.state;
+    const protos = this.worldState;
 
     let bestScore = Infinity;
     let bestTarget: Dancer | null = null;
@@ -447,7 +448,7 @@ export class Dancer {
   }
 }
 
-export type WorldState = Record<ProtoId, Dancer>;
+export type WorldState = Record<ProtoId, RawDancerState>;
 
 /** Resolves all dancers' "matches" for a figure where dancers pair up. */
 export function resolveMatches(
@@ -743,39 +744,23 @@ export function setLabel(
   assertNever(label);
 }
 
-const NEARBY_HALF_WINDOW: DancerOffset = 2;
-
-type AtLeastFour<T> = [T, T, T, T, ...T[]];
-function isAtLeastFour<T>(arr: T[]): arr is AtLeastFour<T> {
-  return arr.length >= 4;
-}
-
 export function findNearbyDancers(
   pos: Vector,
   state: WorldState,
-): Record<ProtoId, AtLeastFour<Dancer>> {
+): Record<ProtoId, [Dancer, Dancer]> {
   return buildProtoRecord((protoId) => {
-    const bestOffset: DancerOffset = Math.round(
-      (pos.y - state[protoId].pos.y) / 2,
-    );
+    const below: DancerOffset = Math.floor((pos.y - state[protoId].pos.y) / 2);
+    const above = below + 1;
 
-    const dancers: Dancer[] = [];
-    for (
-      let o = bestOffset - NEARBY_HALF_WINDOW;
-      o <= bestOffset + NEARBY_HALF_WINDOW;
-      o++
-    ) {
-      dancers.push(Dancer.get(protoIdToDancerId(protoId, o), state));
-    }
+    const dancers: [Dancer, Dancer] = [
+      Dancer.get(protoIdToDancerId(protoId, below), state),
+      Dancer.get(protoIdToDancerId(protoId, above), state),
+    ];
 
     dancers.sort(
       (a, b) => a.pos.subtract(pos).length() - b.pos.subtract(pos).length(),
     );
 
-    if (!isAtLeastFour(dancers))
-      throw new Error(
-        `findNearbyDancers: expected at least 4 dancers near ${protoId}, but lazily stopped too early somehow, got only ${dancers.length}`,
-      );
     return dancers;
   });
 }
@@ -800,23 +785,12 @@ export const HandsJsonSchema = z
 
 export const DancerJsonSchema = z
   .object({
-    id: DancerIdSchema,
     pos: VectorJsonSchema,
     facing: VectorJsonSchema,
     hands: HandsJsonSchema,
     labels: LabelsJsonSchema,
     recents: z.array(DancerIdSchema).default([]),
   })
-  .transform(
-    (d) =>
-      new Dancer(d.id, {
-        pos: d.pos,
-        facing: d.facing,
-        hands: d.hands,
-        labels: d.labels,
-        recents: d.recents,
-      }),
-  );
 
 export const WorldStateSchema = z
   .object({

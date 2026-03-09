@@ -50,14 +50,14 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
           connectHands(draft, id, "right", other.id, "right");
           break;
         case "inside": {
-          const ourHand = resolveInsideHand(draft[id], other);
+          const ourHand = resolveInsideHand(Dancer.get(id, draft), other);
           if (!ourHand)
             throw new SnazzyError([
               { dancerId: id },
               " can't determine inside hand with ",
               { dancerId: other.id },
             ]);
-          const theirHand = resolveInsideHand(other, draft[id]);
+          const theirHand = resolveInsideHand(other, Dancer.get(id, draft));
           if (!theirHand)
             throw new SnazzyError([
               { dancerId: other.id },

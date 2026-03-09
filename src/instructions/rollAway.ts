@@ -116,14 +116,14 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
       position: (dancer, frac) => {
         const themId = matches[dancer.protoId];
         const start = dancer.pos;
-        const end = Dancer.get(themId, dancer.state).pos;
+        const end = Dancer.get(themId, dancer.worldState).pos;
         return ellipsePosition(start, end, semiMinor, PI * frac);
       },
       facing: (dancer, frac) => {
         const isRoller = getRole(dancer.protoId) === instr.roller;
         const normal = getDir({
           from: dancer.pos,
-          to: Dancer.get(matches[dancer.protoId], dancer.state).pos,
+          to: Dancer.get(matches[dancer.protoId], dancer.worldState).pos,
         }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
         if (isRoller) return lerpFacing(dancer.facing, normal, frac);
         const totalRads =

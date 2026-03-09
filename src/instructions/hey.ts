@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   ALL_PROTO_IDS,
   type DancerId,
+  flipRole,
   HandSchema,
   RoleSchema,
 } from "../contraCore";
@@ -33,7 +34,7 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
   const groups = Object.fromEntries(
     ALL_PROTO_IDS.map((id) => {
       const d = Dancer.get(id, init);
-      return [id, getGroupOfFour(d)] as const;
+      return [id, getGroupOfFour(d, { by: ["recency"] })] as const;
     }),
   );
 
@@ -49,9 +50,7 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
       } else {
         // Half hey: end on the opposite side, at the y of the other
         // dancer with the same role in the group
-        const sameRoleOther = group.find(
-          (g) => g.role === dancer.role && g.id !== dancer.id,
-        )!;
+        const sameRoleOther = group[flipRole(dancer.protoId)];
         const x = side === "west" ? 0.5 : -0.5;
         return new Vector(x, sameRoleOther.pos.y);
       }
@@ -59,7 +58,7 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
     hands: () => ({}),
     interactedWith: (dancer): DancerId[] => {
       const group = groups[dancer.protoId];
-      return group.filter((g) => g.id !== dancer.id).map((g) => g.id);
+      return Object.values(group).filter((g) => g.id !== dancer.id).map((g) => g.id);
     },
   };
 

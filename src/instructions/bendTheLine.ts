@@ -45,14 +45,14 @@ export const bendTheLineSegments: InstructionAnimator<
         const idx = must(indexOf(line, dancer.protoId));
         if (idx === 0) {
           // Left end: arc CW around neighbor
-          const center = Dancer.get(line[1], dancer.state).pos;
+          const center = Dancer.get(line[1], dancer.worldState).pos;
           return revolve(dancer.pos, {
             around: center,
             radians: (-PI / 2) * frac,
           });
         } else if (idx === 3) {
           // Right end: arc CCW around neighbor
-          const center = Dancer.get(line[2], dancer.state).pos;
+          const center = Dancer.get(line[2], dancer.worldState).pos;
           return revolve(dancer.pos, {
             around: center,
             radians: (PI / 2) * frac,

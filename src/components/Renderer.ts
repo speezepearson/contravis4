@@ -18,7 +18,7 @@ const PX_PER_METER = 103;
 
 /** Extract hand connections from WorldState, deduplicating (each appears from both sides). */
 function extractHandConnections(
-  protos: Record<ProtoId, Dancer>,
+  protos: WorldState,
 ): Array<{ a: Dancer; ha: Hand; b: Dancer; hb: Hand }> {
   const connections: Array<{
     a: Dancer;
@@ -34,7 +34,6 @@ function extractHandConnections(
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const targetState = Dancer.get(theirId, protos);
 
       // Dedup: normalize so (A,handA,B,handB) and (B,handB,A,handA) share a key
       const key =
@@ -44,7 +43,12 @@ function extractHandConnections(
       if (seen.has(key)) continue;
       seen.add(key);
 
-      connections.push({ a: dancer, ha: hand, b: targetState, hb: theirHand });
+      connections.push({
+        a: Dancer.get(id, protos),
+        ha: hand,
+        b: Dancer.get(theirId, protos),
+        hb: theirHand,
+      });
     }
   }
   return connections;

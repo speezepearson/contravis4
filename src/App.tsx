@@ -379,7 +379,7 @@ export default function App() {
 
   // Debug hook for browser automation testing
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- temporary debug hook
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/consistent-type-assertions -- debug hook
     (window as any).__debug = {
       scrub: (beat: number) => {
         beatRef.current = beat;

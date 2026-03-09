@@ -63,14 +63,14 @@ export function theHallSegments(
       if (idx < 3) {
         const adjId = line[idx + 1];
         const adjState = Dancer.get(adjId, draft);
-        const myHand = resolveInsideHand(draft[id], adjState);
+        const myHand = resolveInsideHand(Dancer.get(id, draft), adjState);
         if (!myHand)
           throw new SnazzyError([
             { dancerId: id },
             " can't determine inside hand with ",
             { dancerId: adjId },
           ]);
-        const theirHand = resolveInsideHand(adjState, draft[id]);
+        const theirHand = resolveInsideHand(adjState, Dancer.get(id, draft));
         if (!theirHand)
           throw new SnazzyError([
             { dancerId: adjId },

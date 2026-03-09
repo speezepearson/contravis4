@@ -17,7 +17,7 @@ import {
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
-import type { Dancer, WorldState } from "../src/worldState";
+import { Dancer, type WorldState } from "../src/worldState";
 
 enableMapSet();
 
@@ -128,7 +128,7 @@ function formatActiveInstruction(active: ActiveInstruction): string {
 function formatWorldState(ws: WorldState, label: string, t: number): string {
   const lines = [`${label} state (t=${t}):`];
   for (const id of ALL_PROTO_IDS) {
-    lines.push(formatDancer(id, ws[id]));
+    lines.push(formatDancer(id, Dancer.get(id, ws)));
   }
   return lines.join("\n");
 }

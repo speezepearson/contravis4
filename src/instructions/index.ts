@@ -133,11 +133,11 @@ export const initFormationStates: Record<InitFormationName, WorldState> = {
 function buildInitFormation(initFormationName: InitFormationName): WorldState {
   return buildProtoRecord(
     (id) =>
-      new Dancer(id, {
+      ({
         ...protoCores[id],
         pos: initFormationPosFacings[initFormationName][id].pos,
         facing: initFormationPosFacings[initFormationName][id].facing,
-      }),
+      })
   );
 }
 

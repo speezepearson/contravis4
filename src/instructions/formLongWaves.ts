@@ -26,7 +26,9 @@ export const formLongWavesSegments: InstructionAnimator<
   // Assert one lark on each side, one robin on each side
   for (const role of ["lark", "robin"] as const) {
     const protos = ALL_PROTO_IDS.filter((id) => parseProtoId(id).role === role);
-    const sides = new Set(protos.map((id) => getDancerSide(init[id])));
+    const sides = new Set(
+      protos.map((id) => getDancerSide(Dancer.get(id, init))),
+    );
     if (sides.size !== 2)
       throw new Error(
         `formLongWaves requires one ${role} on each side of the set, got sides [${sides}]`,

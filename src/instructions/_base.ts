@@ -89,12 +89,7 @@ export {
   type TowardsPersonDirection,
   TowardsPersonDirectionSchema,
 } from "../directions";
-export {
-  findClosestOppRoleSameSide,
-  getGroupOfFour,
-  resolveRings,
-  resolveShortLines,
-} from "../formations";
+export { getGroupOfFour, resolveRings, resolveShortLines } from "../formations";
 export {
   type CalledIdentifier,
   CalledIdentifierSchema,
