@@ -10,12 +10,7 @@ import {
   TWO_PI,
 } from "../geometry";
 import { getSide, lerpVectors, must } from "../utils";
-import {
-  avgPos,
-  buildProtoRecord,
-  Dancer,
-  type WorldState,
-} from "../worldState";
+import { avgPos, Dancer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
@@ -68,16 +63,17 @@ export function makeSwingSegments(
   who: ReadonlySet<ProtoId>,
 ): Segment[] {
   const matches = resolveMatches(instr.cid, init);
-  const centers = buildProtoRecord((id) =>
-    avgPos(Dancer.get(id, init), matches[id]),
-  );
 
-  const plans = buildProtoRecord((id) => {
-    const me = Dancer.get(id, init);
-    const center = centers[id];
+  const orig = (d: Dancer) => d.at(init);
+
+  const getCenter = (d: Dancer) => avgPos(orig(d), matches[d.protoId]);
+
+  const getPlan = (d: Dancer) => {
+    const me = orig(d);
+    const center = getCenter(d);
     const finalFacing = must(
       resolveCardinalDirection(instr.endFacing, center),
-      [{ dancerId: id }, `unable to resolve end facing ${instr.endFacing}`],
+      [{ dancerId: d.id }, `unable to resolve end facing ${instr.endFacing}`],
     );
 
     const final = {
@@ -87,7 +83,7 @@ export function makeSwingSegments(
           .multiply(
             { across: 1, out: 1, up: 0.5, down: 0.5 }[instr.endFacing] / 2,
           )
-          .rotateByDegrees(90 * (isLark(id) ? 1 : -1)),
+          .rotateByDegrees(90 * (isLark(d.protoId) ? 1 : -1)),
       ),
     };
 
@@ -101,7 +97,9 @@ export function makeSwingSegments(
     const numSwingRadians =
       -TWO_PI * Math.floor(instr.beats / APPROX_BEATS_PER_SWING_ROTATION) +
       ccwRadsBetween(
-        isLark(id) ? postApproach.facing : postApproach.facing.multiply(-1),
+        isLark(d.protoId)
+          ? postApproach.facing
+          : postApproach.facing.multiply(-1),
         finalFacing,
       );
 
@@ -120,15 +118,16 @@ export function makeSwingSegments(
       postSwing,
       numSwingRadians,
     };
-  });
+  };
 
   let totalApproachDist = 0;
   let totalSwingRadians = 0;
   for (const id of ALL_PROTO_IDS) {
+    const plan = getPlan(Dancer.get(id, init));
     totalApproachDist += Dancer.get(id, init)
-      .pos.subtract(plans[id].postApproach.pos)
+      .pos.subtract(plan.postApproach.pos)
       .length();
-    totalSwingRadians += Math.abs(plans[id].numSwingRadians);
+    totalSwingRadians += Math.abs(plan.numSwingRadians);
   }
   const avgApproachDist = totalApproachDist / ALL_PROTO_IDS.length;
   const avgSwingRadians = totalSwingRadians / ALL_PROTO_IDS.length;
@@ -150,26 +149,22 @@ export function makeSwingSegments(
     {
       dur: approachBeats,
       position: (dancer, frac) =>
-        lerpVectors(dancer.pos, plans[dancer.protoId].postApproach.pos, frac),
+        lerpVectors(dancer.pos, getPlan(dancer).postApproach.pos, frac),
       facing: (dancer, frac) =>
-        lerpFacing(
-          dancer.facing,
-          plans[dancer.protoId].postApproach.facing,
-          frac,
-        ),
+        lerpFacing(dancer.facing, getPlan(dancer).postApproach.facing, frac),
       hands: () => ({}),
       interactedWith: (dancer) => [matches[dancer.protoId].id],
     },
     {
       dur: swingBeats,
       position: (dancer, frac) =>
-        revolve(plans[dancer.protoId].postApproach.pos, {
-          around: plans[dancer.protoId].center,
-          radians: plans[dancer.protoId].numSwingRadians * frac,
+        revolve(getPlan(dancer).postApproach.pos, {
+          around: getPlan(dancer).center,
+          radians: getPlan(dancer).numSwingRadians * frac,
         }),
       facing: (dancer, frac) =>
-        plans[dancer.protoId].postApproach.facing.rotateByRadians(
-          plans[dancer.protoId].numSwingRadians * frac,
+        getPlan(dancer).postApproach.facing.rotateByRadians(
+          getPlan(dancer).numSwingRadians * frac,
         ),
       hands: swingHands,
     },
@@ -177,20 +172,18 @@ export function makeSwingSegments(
       dur: DISENGAGE_BEATS,
       position: (dancer, frac) =>
         lerpVectors(
-          plans[dancer.protoId].postSwing.pos,
-          plans[dancer.protoId].final.pos,
+          getPlan(dancer).postSwing.pos,
+          getPlan(dancer).final.pos,
           frac,
         ),
       facing: (dancer, frac) => {
         let angle = ccwRadsBetween(
-          plans[dancer.protoId].postSwing.facing,
-          plans[dancer.protoId].final.facing,
+          getPlan(dancer).postSwing.facing,
+          getPlan(dancer).final.facing,
         );
         // Robin unwinds CW from the swing; force the rotation CW.
         if (!isLark(dancer.protoId) && angle > 0) angle -= TWO_PI;
-        return plans[dancer.protoId].postSwing.facing.rotateByRadians(
-          angle * frac,
-        );
+        return getPlan(dancer).postSwing.facing.rotateByRadians(angle * frac);
       },
       hands: swingHands,
     },
@@ -200,17 +193,18 @@ export function makeSwingSegments(
     case "across":
     case "out": {
       // Snap x to exactly ±0.5 (centers of each side of the set).
-      const xDrifts = buildProtoRecord((id) => {
-        const center = centers[id];
+      const getXDrift = (d: Dancer) => {
+        const center = getCenter(d);
         const side = must(getSide(center), [
-          { dancerId: id },
+          { dancerId: d.id },
           "too close to center, not sure which side is east or west",
         ]);
         return { east: 0.5, west: -0.5 }[side] - center.x;
-      });
+      };
       const xSnapped = addPositionDrift(
         segments,
-        (id, globalFrac) => new Vector(xDrifts[id] * globalFrac, 0),
+        (id, globalFrac) =>
+          new Vector(getXDrift(Dancer.get(id, init)) * globalFrac, 0),
       );
       // Nudge y so that opposite-role pairs end up directly across.
       return fudgeToAlignY(
