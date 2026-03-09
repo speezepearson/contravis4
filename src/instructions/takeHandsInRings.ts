@@ -60,7 +60,7 @@ export function makeRingSegment(
     const group = getGroup(dancer);
     const center = avgPos(...group);
     dancer.facing = getDir({ from: dancer.pos, to: center });
-    const [left, right] = _.sortBy(
+    const [right, left] = _.sortBy(
       group.filter((d) => d.role !== dancer.role),
       (d) =>
         ccwRadsBetween(dancer.facing, getDir({ from: dancer.pos, to: d.pos })),

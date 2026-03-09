@@ -27,7 +27,10 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { sortedExampleDances } from "../exampleDances";
+import {
+  contradbInstructionFrequencies,
+  sortedExampleDances,
+} from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
 import { inferProgression } from "../inferProgression";
@@ -154,54 +157,74 @@ export type ActionOptionType =
   | Exclude<Instruction["type"], "templated_lr">
   | TemplateId;
 
-const ACTION_OPTIONS: ActionOptionType[] = [
-  "allemande",
-  "balance",
-  "balance_and_swing",
-  "balance_the_ring",
-  "bend_the_line",
-  "box_circulate",
-  "box_the_gnat",
-  "california_twirl",
-  "robins_chain",
-  "circle",
-  "do_si_do",
-  "down_the_hall",
-  "drop_hands",
-  "face",
-  "form_long_waves",
-  "form_short_waves",
-  "give_and_take_into_swing",
-  "greet_new_neighbors",
-  "hey",
-  "greet_shadow",
-  "long_line_in_center",
-  "long_lines_forward_back",
-  "mad_robin",
-  "meltdown_swing",
-  "pass_by",
-  "petronella",
-  "poussette",
-  "pull_by",
-  "right_left_through",
-  "roll_away",
-  "rory_o_more",
-  "shoulder_round",
-  "single_file_promenade",
-  "slice",
-  "square_through",
-  "star",
-  "split",
-  "step",
-  "swing",
-  "take_hands_in_rings",
-  "take_hands",
-  "turn_alone",
-  "turn_as_a_couple",
-  "up_the_hall",
-  "zig_zag",
-  ...templateIds,
-];
+const ACTION_OPTIONS: ActionOptionType[] = (
+  [
+    "allemande",
+    "balance",
+    "balance_and_swing",
+    "balance_the_ring",
+    "bend_the_line",
+    "box_circulate",
+    "box_the_gnat",
+    "california_twirl",
+    "robins_chain",
+    "circle",
+    "do_si_do",
+    "down_the_hall",
+    "drop_hands",
+    "face",
+    "form_long_waves",
+    "form_short_waves",
+    "give_and_take_into_swing",
+    "greet_new_neighbors",
+    "hey",
+    "greet_shadow",
+    "long_line_in_center",
+    "long_lines_forward_back",
+    "mad_robin",
+    "meltdown_swing",
+    "pass_by",
+    "petronella",
+    "poussette",
+    "pull_by",
+    "right_left_through",
+    "roll_away",
+    "rory_o_more",
+    "shoulder_round",
+    "single_file_promenade",
+    "slice",
+    "square_through",
+    "star",
+    "split",
+    "step",
+    "swing",
+    "take_hands_in_rings",
+    "take_hands",
+    "turn_alone",
+    "turn_as_a_couple",
+    "up_the_hall",
+    "zig_zag",
+    ...templateIds,
+  ] satisfies ActionOptionType[]
+)
+  .sort((a, b) => {
+    /* eslint-disable @typescript-eslint/consistent-type-assertions -- templates won't be in the frequency map; DEFAULT_VALUE: 0 sorts them alphabetically at the end */
+    const freqA =
+      contradbInstructionFrequencies.get(a as AtomicInstruction["type"]) ?? 0;
+    const freqB =
+      contradbInstructionFrequencies.get(b as AtomicInstruction["type"]) ?? 0;
+    /* eslint-enable @typescript-eslint/consistent-type-assertions */
+    if (freqA !== freqB) return freqB - freqA;
+    return a.localeCompare(b);
+  })
+  .reduce<ActionOptionType[]>((acc, type) => {
+    // "drop_hands" goes right after "take_hands"; "greet_new_neighbors" goes at the end.
+    if (type === "drop_hands" || type === "greet_new_neighbors") return acc;
+    acc.push(type);
+    if (type === "take_hands") acc.push("drop_hands");
+    return acc;
+  }, [])
+  .concat("greet_new_neighbors");
 /* eslint-disable @typescript-eslint/consistent-type-assertions -- Object.fromEntries widens keys to string; exact keys ensured by ACTION_OPTIONS */
 const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
