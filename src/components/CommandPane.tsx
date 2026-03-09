@@ -53,6 +53,7 @@ import type { Split } from "../instructions/split";
 import {
   allLRTemplates,
   type TemplateId,
+  templateIds,
 } from "../instructions/templates/index";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, indexOf } from "../utils";
@@ -199,8 +200,9 @@ const ACTION_OPTIONS: ActionOptionType[] = [
   "turn_as_a_couple",
   "up_the_hall",
   "zig_zag",
-  ...(Object.keys(allLRTemplates) as TemplateId[]),
+  ...templateIds,
 ];
+/* eslint-disable @typescript-eslint/consistent-type-assertions -- Object.fromEntries widens keys to string; exact keys ensured by ACTION_OPTIONS */
 const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
   balance: "balance",
@@ -251,6 +253,7 @@ const ACTION_LABELS: Record<ActionOptionType, string> = {
     Object.entries(allLRTemplates).map(([id, t]) => [id, t.name]),
   ),
 } as Record<ActionOptionType, string>;
+/* eslint-enable @typescript-eslint/consistent-type-assertions */
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
   if (by === "role") return list === "A" ? "Larks" : "Robins";

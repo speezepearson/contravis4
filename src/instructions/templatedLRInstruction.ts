@@ -11,7 +11,7 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
-import { allLRTemplates, templateIds } from "./templates/index";
+import { allLRTemplates, TemplateIdSchema } from "./templates/index";
 
 // ── Template schema ──────────────────────────────────────────────────────
 
@@ -47,8 +47,6 @@ export type ChoreographerSpecifiedLRInstructionFields = z.infer<
 >;
 
 // ── Instruction schema ───────────────────────────────────────────────────
-
-const TemplateIdSchema = z.enum(templateIds);
 
 export const TemplatedLRInstructionSchema = z.object({
   ...instructionBaseSchemaFields,

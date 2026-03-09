@@ -32,5 +32,16 @@ export default function (results) {
     output += summary;
   }
 
+  const hasTypeAssertions = results.some((r) =>
+    r.messages.some(
+      (m) => m.ruleId === "@typescript-eslint/consistent-type-assertions",
+    ),
+  );
+  if (hasTypeAssertions) {
+    output += chalk.cyan(
+      "Hint: consider using buildEnumProto or typedParse to avoid type assertions.\n",
+    );
+  }
+
   return output;
 }

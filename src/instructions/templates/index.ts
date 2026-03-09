@@ -1,13 +1,20 @@
+import { z } from "zod";
+
+import { assertNever, buildEnumRecord } from "../../utils";
 import type { LRInstructionTemplate } from "../templatedLRInstruction";
 import { specialChainTemplate } from "./specialChain";
 
-export const allLRTemplates = {
-  specialChain: specialChainTemplate,
-} satisfies Record<string, LRInstructionTemplate>;
+export const TemplateIdSchema = z.enum(["specialChain"]);
+export type TemplateId = z.infer<typeof TemplateIdSchema>;
 
-export type TemplateId = keyof typeof allLRTemplates;
+export const templateIds = TemplateIdSchema.options;
 
-export const templateIds = Object.keys(allLRTemplates) as [
-  TemplateId,
-  ...TemplateId[],
-];
+export const allLRTemplates: Record<TemplateId, LRInstructionTemplate> =
+  buildEnumRecord(TemplateIdSchema, (id): LRInstructionTemplate => {
+    switch (id) {
+      case "specialChain":
+        return specialChainTemplate;
+      default:
+        assertNever(id);
+    }
+  });

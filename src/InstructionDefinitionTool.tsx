@@ -600,6 +600,7 @@ export default function InstructionDefinitionTool() {
       fieldsDisplay,
       keyframes: keyframes.map((kf) => ({
         t: kf.t,
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Object.fromEntries returns Record<string, ...>; keys are filtered RoleSchema.options
         states: Object.fromEntries(
           RoleSchema.options
             .filter((r) => kf.states[r] != null)
@@ -617,6 +618,7 @@ export default function InstructionDefinitionTool() {
         if (value instanceof Vector) {
           return { x: value.x, y: value.y };
         }
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.stringify replacer must return unknown
         return value as unknown;
       },
       2,
@@ -799,6 +801,7 @@ export default function InstructionDefinitionTool() {
               onChange={(e) =>
                 setMatcher({
                   type: "hardcoded",
+                  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- value comes from <select> whose <option>s are CalledIdentifierSchema.options
                   cid: e.target.value as CalledIdentifier,
                 })
               }
@@ -839,6 +842,7 @@ export default function InstructionDefinitionTool() {
                   if (e.target.value) {
                     setInitState(
                       resolveInitFormation(
+                        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- value comes from <select> whose <option>s are the listed formation strings
                         e.target.value as
                           | "improper"
                           | "becket"

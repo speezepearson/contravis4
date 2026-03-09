@@ -39,7 +39,7 @@ export default defineConfig([
         },
       ],
       "@typescript-eslint/consistent-type-assertions": [
-        "warn",
+        "error",
         { assertionStyle: "never" },
       ],
       "simple-import-sort/imports": "error",
