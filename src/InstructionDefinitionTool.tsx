@@ -479,10 +479,9 @@ export default function InstructionDefinitionTool() {
     };
   }, [name, defaultBeats, matcher, fieldsDisplay, keyframes]);
 
-  const exportJson = useCallback(() => {
+  const exportTypeScript = useCallback(() => {
     const template = exportTemplate();
-    // Serialize Vectors as {x, y}
-    return JSON.stringify(
+    const jsonBody = JSON.stringify(
       template,
       (_key, value) => {
         if (value instanceof Vector) {
@@ -492,6 +491,13 @@ export default function InstructionDefinitionTool() {
       },
       2,
     );
+    return [
+      `import { typedParse } from "../../utils";`,
+      `import { LRInstructionTemplateSchema } from "../templatedLRInstruction";`,
+      ``,
+      `export default typedParse(LRInstructionTemplateSchema, ${jsonBody});`,
+      ``,
+    ].join("\n");
   }, [exportTemplate]);
 
   const handleImportJson = useCallback((text: string) => {
@@ -846,12 +852,12 @@ export default function InstructionDefinitionTool() {
 
         {/* Export / Import */}
         <div className="def-instr-section">
-          <h3>JSON</h3>
+          <h3>Export / Import</h3>
           <div className="json-io">
-            <textarea readOnly rows={8} value={exportJson()} />
+            <textarea readOnly rows={8} value={exportTypeScript()} />
             <button
               onClick={() => {
-                void navigator.clipboard.writeText(exportJson());
+                void navigator.clipboard.writeText(exportTypeScript());
               }}
             >
               Copy to clipboard
