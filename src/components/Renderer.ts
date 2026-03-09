@@ -88,10 +88,16 @@ export class Renderer {
     this.trails = {};
   }
 
-  private worldToCanvas(wx: number, wy: number): [number, number] {
+  worldToCanvas(wx: number, wy: number): [number, number] {
     const cx = MARGIN + ((wx + this.xRange / 2) / this.xRange) * this.usableW;
     const cy = MARGIN + ((this.yRange / 2 - wy) / this.yRange) * this.usableH;
     return [cx, cy];
+  }
+
+  canvasToWorld(cx: number, cy: number): [number, number] {
+    const wx = ((cx - MARGIN) / this.usableW) * this.xRange - this.xRange / 2;
+    const wy = this.yRange / 2 - ((cy - MARGIN) / this.usableH) * this.yRange;
+    return [wx, wy];
   }
 
   drawFrame(_t: Beats, frame: WorldState) {
@@ -345,7 +351,7 @@ export class Renderer {
     ctx.globalAlpha = 1.0;
   }
 
-  private drawGhostDancer(
+  drawGhostDancer(
     id: ProtoId,
     x: number,
     y: number,
@@ -424,13 +430,7 @@ export class Renderer {
     ctx.globalAlpha = 1.0;
   }
 
-  private drawDancer(
-    id: ProtoId,
-    x: number,
-    y: number,
-    facing: Vector,
-    alpha: number,
-  ) {
+  drawDancer(id: ProtoId, x: number, y: number, facing: Vector, alpha: number) {
     const color = COLORS[id];
     if (!color) return;
     const ctx = this.ctx;
