@@ -60,10 +60,12 @@ export class Renderer {
   private height: number;
   private usableW: number;
   private usableH: number;
-  private xRange: number;
-  private yRange: number;
+  private xRange!: number;
+  private yRange!: number;
   private trails: Partial<Record<ProtoId, { x: number; y: number }[]>> = {};
   private trailLength = 20;
+  private zoom = 1;
+  private pxPerMeter = PX_PER_METER;
 
   constructor(ctx: CanvasRenderingContext2D, width: number, height: number) {
     this.ctx = ctx;
@@ -71,8 +73,7 @@ export class Renderer {
     this.height = height;
     this.usableW = width - 2 * MARGIN;
     this.usableH = height - 2 * MARGIN;
-    this.yRange = this.usableH / PX_PER_METER;
-    this.xRange = this.usableW / PX_PER_METER;
+    this.recomputeRanges();
   }
 
   resize(width: number, height: number) {
@@ -80,8 +81,22 @@ export class Renderer {
     this.height = height;
     this.usableW = width - 2 * MARGIN;
     this.usableH = height - 2 * MARGIN;
-    this.yRange = this.usableH / PX_PER_METER;
-    this.xRange = this.usableW / PX_PER_METER;
+    this.recomputeRanges();
+  }
+
+  private recomputeRanges() {
+    this.yRange = this.usableH / this.pxPerMeter;
+    this.xRange = this.usableW / this.pxPerMeter;
+  }
+
+  getZoom(): number {
+    return this.zoom;
+  }
+
+  setZoom(z: number) {
+    this.zoom = z;
+    this.pxPerMeter = PX_PER_METER * z;
+    this.recomputeRanges();
   }
 
   clearTrails() {
@@ -207,7 +222,7 @@ export class Renderer {
     const viewYMax = this.yRange / 2;
     const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
     const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
-    const r = 14;
+    const r = 14 * this.zoom;
     const [dxA, dyA] = this.handAnchorOffset(da.facing, handA, r);
     const [dxB, dyB] = this.handAnchorOffset(db.facing, handB, r);
     for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
@@ -262,7 +277,7 @@ export class Renderer {
     ctx.globalAlpha = 0.9;
     const [cx, cy] = this.worldToCanvas(dancer.pos.x, dancer.pos.y);
     ctx.beginPath();
-    ctx.arc(cx, cy, 20, 0, 2 * PI);
+    ctx.arc(cx, cy, 20 * this.zoom, 0, 2 * PI);
     ctx.stroke();
     ctx.globalAlpha = 1.0;
   }
@@ -357,8 +372,8 @@ export class Renderer {
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
     const ghostScale = 10 / 14; // ghost is smaller than main dancer
-    const rWide = (0.5 / 2) * PX_PER_METER * ghostScale;
-    const rNarrow = (0.3 / 2) * PX_PER_METER * ghostScale;
+    const rWide = (0.5 / 2) * this.pxPerMeter * ghostScale;
+    const rNarrow = (0.3 / 2) * this.pxPerMeter * ghostScale;
     const facingAngle = Math.atan2(-facing.y, facing.x);
 
     ctx.globalAlpha = alpha;
@@ -388,7 +403,7 @@ export class Renderer {
     canvasY: number,
     frame: WorldState,
   ): ProtoId | null {
-    const r = 14;
+    const r = 14 * this.zoom;
     for (const id of ALL_PROTO_IDS) {
       const d = frame[id];
       const [cx, cy] = this.worldToCanvas(d.pos.x, d.pos.y);
@@ -402,7 +417,7 @@ export class Renderer {
   drawRecentsHighlight(recents: DancerId[], frame: WorldState) {
     if (recents.length === 0) return;
     const ctx = this.ctx;
-    const circleR = 20;
+    const circleR = 20 * this.zoom;
 
     ctx.strokeStyle = "#ff3333";
     ctx.lineWidth = 2.5;
@@ -436,8 +451,8 @@ export class Renderer {
     const ctx = this.ctx;
     const [cx, cy] = this.worldToCanvas(x, y);
     // Oval: 0.5 units wide (perpendicular to facing) × 0.3 units long (along facing)
-    const rWide = (0.5 / 2) * PX_PER_METER; // half-width perpendicular to facing
-    const rNarrow = (0.3 / 2) * PX_PER_METER; // half-length along facing
+    const rWide = (0.5 / 2) * this.pxPerMeter; // half-width perpendicular to facing
+    const rNarrow = (0.3 / 2) * this.pxPerMeter; // half-length along facing
     // Canvas facing angle (y is flipped)
     const facingAngle = Math.atan2(-facing.y, facing.x);
 

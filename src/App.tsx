@@ -518,8 +518,21 @@ export default function App() {
         hoverRaf = requestAnimationFrame(() => drawRef.current());
       }
     };
+    const onWheel = (e: WheelEvent) => {
+      const renderer = rendererRef.current;
+      if (!renderer) return;
+      e.preventDefault();
+      const zoomFactor = 1.1;
+      const currentZoom = renderer.getZoom();
+      const newZoom =
+        e.deltaY < 0 ? currentZoom * zoomFactor : currentZoom / zoomFactor;
+      renderer.setZoom(Math.max(0.2, Math.min(5, newZoom)));
+      cancelAnimationFrame(hoverRaf);
+      hoverRaf = requestAnimationFrame(() => drawRef.current());
+    };
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mouseleave", onMouseLeave);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
 
     let resizeRaf = 0;
     const observer = new ResizeObserver(() => {
@@ -534,6 +547,7 @@ export default function App() {
       cancelAnimationFrame(hoverRaf);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseleave", onMouseLeave);
+      canvas.removeEventListener("wheel", onWheel);
     };
   }, []);
 
