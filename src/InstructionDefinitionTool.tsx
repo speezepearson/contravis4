@@ -5,23 +5,27 @@ import { Vector } from "vecti";
 import { Renderer } from "./components/Renderer";
 import {
   ALL_PROTO_IDS,
+  ALL_PROTO_IDS_SET,
   type ProtoId,
   type Role,
   RoleSchema,
 } from "./contraCore";
-import { ccwRadsBetween, NORTH } from "./geometry";
+import { ccwRadsBetween, lerpFacing as lerpFacingVec, NORTH } from "./geometry";
 import {
   type CalledIdentifier,
   CalledIdentifierSchema,
+  type ContraAnimation,
 } from "./instructions/_base";
+import { animateSegments, type Segment } from "./instructions/_segment";
 import { resolveInitFormation } from "./instructions/index";
 import type { LRInstructionTemplate } from "./instructions/templatedLRInstruction";
 import { LRInstructionTemplateSchema } from "./instructions/templatedLRInstruction";
+import { lerpVectors } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-type Mode = "init" | "keyframe";
+type Mode = "init" | "keyframe" | "preview";
 
 type KeyframeEntry = {
   t: number;
@@ -98,6 +102,7 @@ export default function InstructionDefinitionTool() {
   const [keyframeDuration, setKeyframeDuration] = useState(1);
   // Tracks which keyframe slot the next click will fill for the current role
   const [nextSlotForRole, setNextSlotForRole] = useState(0);
+  const [previewBeat, setPreviewBeat] = useState(0);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [fieldsDisplayText, setFieldsDisplayText] = useState("");
 
@@ -110,11 +115,61 @@ export default function InstructionDefinitionTool() {
     return Dancer.get(selectedDancer, initState).role;
   }, [selectedDancer, initState]);
 
+  // ── Preview animation ───────────────────────────────────────────────
+
+  const previewAnimation = useMemo((): ContraAnimation | null => {
+    if (keyframes.length === 0) return null;
+
+    const lastKfT = keyframes[keyframes.length - 1].t;
+    const scale = lastKfT > 0 ? defaultBeats / lastKfT : 1;
+
+    try {
+      const segments: Segment[] = [];
+      let prevT = 0;
+
+      for (const kf of keyframes) {
+        const scaledT = kf.t * scale;
+        const dur = scaledT - prevT;
+
+        segments.push({
+          dur,
+          position: (dancer, frac) => {
+            const state = kf.states[dancer.role];
+            if (!state) return dancer.pos;
+            const orig = dancer.at(initState);
+            const worldTarget = relToWorld(state.relPos, orig.pos, orig.facing);
+            return lerpVectors(dancer.pos, worldTarget, frac);
+          },
+          facing: (dancer, frac) => {
+            const state = kf.states[dancer.role];
+            if (!state) return dancer.facing;
+            const orig = dancer.at(initState);
+            const worldFacing = relFacingToWorld(state.relFacing, orig.facing);
+            return lerpFacingVec(dancer.facing, worldFacing, frac);
+          },
+        });
+
+        prevT = scaledT;
+      }
+
+      return animateSegments(initState, ALL_PROTO_IDS_SET, segments);
+    } catch {
+      // SWALLOW_EXCEPTION: template may be in an invalid intermediate state while editing
+      return null;
+    }
+  }, [keyframes, defaultBeats, initState]);
+
   // ── Drawing ──────────────────────────────────────────────────────────
 
   const draw = useCallback(() => {
     const renderer = rendererRef.current;
     if (!renderer) return;
+
+    if (mode === "preview" && previewAnimation) {
+      const t = Math.min(previewBeat, previewAnimation.dur);
+      renderer.drawFrame(t, previewAnimation.getFrame(t));
+      return;
+    }
 
     // Draw the base frame (this draws grid + all dancers)
     renderer.drawFrame(0, initState);
@@ -166,7 +221,15 @@ export default function InstructionDefinitionTool() {
         );
       }
     }
-  }, [initState, selectedDancer, selectedRole, mode, keyframes]);
+  }, [
+    initState,
+    selectedDancer,
+    selectedRole,
+    mode,
+    keyframes,
+    previewAnimation,
+    previewBeat,
+  ]);
 
   const requestDraw = useCallback(() => {
     cancelAnimationFrame(drawRafRef.current);
@@ -540,6 +603,16 @@ export default function InstructionDefinitionTool() {
           >
             Keyframes
           </button>
+          <button
+            className={mode === "preview" ? "active" : ""}
+            onClick={() => {
+              setPreviewBeat(0);
+              setMode("preview");
+            }}
+            disabled={!previewAnimation}
+          >
+            Preview
+          </button>
         </div>
 
         {/* Template metadata */}
@@ -741,6 +814,33 @@ export default function InstructionDefinitionTool() {
                 <button onClick={() => setKeyframes([])}>Clear all</button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Preview controls */}
+        {mode === "preview" && previewAnimation && (
+          <div className="def-instr-section">
+            <h3>Preview</h3>
+            <label>
+              Beat: {previewBeat.toFixed(2)} / {previewAnimation.dur.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={previewAnimation.dur}
+              step={0.05}
+              value={previewBeat}
+              onChange={(e) => setPreviewBeat(Number(e.target.value))}
+              style={{ width: "100%" }}
+            />
+          </div>
+        )}
+        {mode === "preview" && !previewAnimation && (
+          <div className="def-instr-section">
+            <h3>Preview</h3>
+            <p className="def-instr-hint">
+              No keyframes defined. Add keyframes first.
+            </p>
           </div>
         )}
 
