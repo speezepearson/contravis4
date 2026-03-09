@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { type Beats, HandSchema } from "../contraCore";
 import { getDir, PI, TWO_PI } from "../geometry";
-import { buildProtoRecord, Dancer } from "../worldState";
+import { Dancer } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import {
   arc,
@@ -58,12 +58,13 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
   const matches = new Map(
     [...who].map((id) => [id, Dancer.get(id, init).resolveMatch(instr.cid)]),
   );
-  const alreadyClose = buildProtoRecord((id) => {
-    const me = Dancer.get(id, init);
-    const match = matches.get(id);
+  const orig = (d: Dancer) => d.at(init);
+
+  const isAlreadyClose = (d: Dancer) => {
+    const match = matches.get(d.protoId);
     if (!match) return false;
-    return me.pos.subtract(match.pos).length() < 1.2;
-  });
+    return orig(d).pos.subtract(match.pos).length() < 1.2;
+  };
 
   let totalDistance = 0;
   let count = 0;
@@ -96,7 +97,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
         });
       }),
       hands: (dancer) =>
-        alreadyClose[dancer.protoId]
+        isAlreadyClose(dancer)
           ? hold([
               instr.handedness,
               matches.get(dancer.protoId)!.id,
