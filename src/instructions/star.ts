@@ -1,11 +1,21 @@
 import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
-import { preferCloser, preferOneInFront, preferRecent } from "../formations";
+import {
+  makePreferHinted,
+  preferCloser,
+  preferOneInFront,
+  preferRecent,
+  type Tiebreaker,
+} from "../formations";
 import { getDir, revolve, TWO_PI } from "../geometry";
 import { getSingleton, lerp, must } from "../utils";
 import { avgPos, Dancer } from "../worldState";
-import { getGroupOfFour, instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  getGroupOfFour,
+  instructionBaseSchemaFields,
+} from "./_base";
 import { hold, type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const StarInstructionSchema = z.object({
@@ -13,6 +23,7 @@ export const StarInstructionSchema = z.object({
   type: z.literal("star"),
   direction: HandSchema,
   nPlaces: z.number().positive(),
+  disambiguatingCid: CalledIdentifierSchema.optional(),
 });
 export type StarInstruction = z.infer<typeof StarInstructionSchema>;
 
@@ -29,10 +40,16 @@ export const starSegments: InstructionAnimator<StarInstruction> = (
   const orbitRadians =
     (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
 
+  const tiebreakers: [Tiebreaker, ...Tiebreaker[]] = instr.disambiguatingCid
+    ? [
+        makePreferHinted(instr.disambiguatingCid),
+        preferCloser,
+        preferOneInFront,
+        preferRecent,
+      ]
+    : [preferCloser, preferOneInFront, preferRecent];
   const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(orig(dancer), {
-      by: [preferCloser, preferOneInFront, preferRecent],
-    });
+    getGroupOfFour(orig(dancer), { by: tiebreakers });
   const opp = (dancer: Dancer) => {
     const group = getInitGroup(dancer);
     return must(

@@ -126,6 +126,7 @@ Balance in a ring (all four dancers).
 
 - `direction`: `"left"` (CCW from above) or `"right"` (CW from above)
 - `nPlaces`: number of places to circle
+- `disambiguatingCid` _(optional)_: a CalledIdentifier hint to resolve ambiguity about which group of four to form (useful in becket formation)
 
 ```json
 {
@@ -133,7 +134,8 @@ Balance in a ring (all four dancers).
   "beats": 8,
   "type": "circle",
   "direction": "left",
-  "nPlaces": 4
+  "nPlaces": 4,
+  "disambiguatingCid": "partner"
 }
 ```
 
@@ -230,6 +232,7 @@ Always 0 beats (instant).
 - `full`: `true` for full hey, `false` for half hey
 - `centerRole`: which role passes in the center
 - `centerHand`: which hand they pass by in the center
+- `disambiguatingCid` _(optional)_: a CalledIdentifier hint to resolve ambiguity about which group of four to form
 
 ```json
 {
@@ -479,6 +482,7 @@ Like a star, but without hands. Dancers orbit in single file around the ring.
 
 - `direction`: `"left"` or `"right"`
 - `nPlaces`: number of places to promenade
+- `disambiguatingCid` _(optional)_: a CalledIdentifier hint to resolve ambiguity about which group of four to form
 
 ```json
 {
@@ -496,6 +500,7 @@ Like a circle, but each dancer's facing is rotated 90° (CCW if left, CW if righ
 
 - `direction`: `"left"` or `"right"`
 - `nPlaces`: number of places to star
+- `disambiguatingCid` _(optional)_: a CalledIdentifier hint to resolve ambiguity about which group of four to form
 
 ```json
 {
@@ -503,7 +508,8 @@ Like a circle, but each dancer's facing is rotated 90° (CCW if left, CW if righ
   "beats": 8,
   "type": "star",
   "direction": "left",
-  "nPlaces": 4
+  "nPlaces": 4,
+  "disambiguatingCid": "neighbor"
 }
 ```
 
@@ -556,11 +562,14 @@ Always 0 beats (instant).
 
 Always 0 beats (instant). All four dancers join hands in a ring.
 
+- `disambiguatingCid` _(optional)_: a CalledIdentifier hint to resolve ambiguity about which group of four to form
+
 ```json
 {
   "id": "...",
   "beats": 0,
-  "type": "take_hands_in_rings"
+  "type": "take_hands_in_rings",
+  "disambiguatingCid": "partner"
 }
 ```
 

@@ -1,5 +1,6 @@
 import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { getDir, getDist } from "./geometry";
+import type { CalledIdentifier } from "./identifiers";
 import { SnazzyError } from "./snazzyError";
 import { indexOf, isNTuple, must, type NTuple, safeThreshold } from "./utils";
 import { Dancer, findNearbyDancers, getCycle } from "./worldState";
@@ -56,6 +57,22 @@ export const preferRecent: Tiebreaker = (d, [cand1, cand2]) => {
   if (rec2 < rec1) return cand2;
   return undefined;
 };
+
+/** Tiebreaker that prefers the candidate matching (or closer to) the dancer
+ *  identified by the given CalledIdentifier. */
+export function makePreferHinted(cid: CalledIdentifier): Tiebreaker {
+  return (d, [cand1, cand2]) => {
+    const hinted = d.resolveCalledIdentifier(cid);
+    if (!hinted) return undefined;
+    // Direct match: one candidate IS the hinted dancer
+    if (cand1.id === hinted.id) return cand1;
+    if (cand2.id === hinted.id) return cand2;
+    // Proximity fallback: prefer the candidate closer to the hinted dancer
+    const dist1 = getDist(cand1.pos, hinted.pos);
+    const dist2 = getDist(cand2.pos, hinted.pos);
+    return safeThreshold(dist1 - dist2, { neg: cand1, pos: cand2, tol: 0.2 });
+  };
+}
 
 type AtLeastOne<T> = [T, ...T[]];
 

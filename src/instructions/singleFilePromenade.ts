@@ -1,12 +1,18 @@
 import { z } from "zod";
 
 import { HandSchema } from "../contraCore";
-import { getGroupOfFour, preferCloser, preferOneInFront } from "../formations";
-import { preferRecent } from "../formations";
+import {
+  getGroupOfFour,
+  makePreferHinted,
+  preferCloser,
+  preferOneInFront,
+  preferRecent,
+  type Tiebreaker,
+} from "../formations";
 import { getDir, revolve, TWO_PI } from "../geometry";
 import { lerp } from "../utils";
 import { avgPos, Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const SingleFilePromenadeInstructionSchema = z.object({
@@ -14,6 +20,7 @@ export const SingleFilePromenadeInstructionSchema = z.object({
   type: z.literal("single_file_promenade"),
   direction: HandSchema,
   nPlaces: z.number().positive(),
+  disambiguatingCid: CalledIdentifierSchema.optional(),
 });
 export type SingleFilePromenadeInstruction = z.infer<
   typeof SingleFilePromenadeInstructionSchema
@@ -25,10 +32,16 @@ export const singleFilePromenadeSegments: InstructionAnimator<
   const orig = (d: Dancer) => d.at(init);
   const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
 
+  const tiebreakers: [Tiebreaker, ...Tiebreaker[]] = instr.disambiguatingCid
+    ? [
+        makePreferHinted(instr.disambiguatingCid),
+        preferCloser,
+        preferOneInFront,
+        preferRecent,
+      ]
+    : [preferCloser, preferOneInFront, preferRecent];
   const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(orig(dancer), {
-      by: [preferCloser, preferOneInFront, preferRecent],
-    });
+    getGroupOfFour(orig(dancer), { by: tiebreakers });
 
   const getCenter = (dancer: Dancer) => avgPos(...getInitGroup(dancer));
 

@@ -4,6 +4,7 @@ import { HandSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { SingleFilePromenadeInstructionSchema } from "../../instructions/singleFilePromenade";
 import { typedSafeParse } from "../../utils";
+import { DisambiguatingCidField } from "../DisambiguatingCidField";
 import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
@@ -27,6 +28,7 @@ export function SingleFilePromenadeFields({
       beats: instruction.beats,
       direction: instruction.direction,
       nPlaces: instruction.nPlaces,
+      disambiguatingCid: instruction.disambiguatingCid,
       ...overrides,
     });
     if (result.success) onChange(result.data);
@@ -47,6 +49,11 @@ export function SingleFilePromenadeFields({
         onDrag={(n) => tryCommit({ nPlaces: n })}
         step={1}
         suffix=" places"
+      />{" "}
+      <DisambiguatingCidField
+        value={instruction.disambiguatingCid}
+        onChange={(cid) => tryCommit({ disambiguatingCid: cid })}
+        onInvalid={onInvalid}
       />
     </>
   );

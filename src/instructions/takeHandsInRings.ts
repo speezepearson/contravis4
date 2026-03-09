@@ -1,10 +1,18 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import { preferCloser, preferOneInFront, preferRecent } from "../formations";
+import {
+  makePreferHinted,
+  preferCloser,
+  preferOneInFront,
+  preferRecent,
+  type Tiebreaker,
+} from "../formations";
 import { ccwRadsBetween, getDir } from "../geometry";
+import type { CalledIdentifier } from "../identifiers";
 import { avgPos, Dancer, mapWorldState, type WorldState } from "../worldState";
 import {
+  CalledIdentifierSchema,
   getGroupOfFour,
   instructionBaseSchemaFields,
   resolveRing,
@@ -19,6 +27,7 @@ export const TakeHandsInRingsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("take_hands_in_rings"),
   beats: z.literal(0),
+  disambiguatingCid: CalledIdentifierSchema.optional(),
 });
 export type TakeHandsInRingsInstruction = z.infer<
   typeof TakeHandsInRingsInstructionSchema
@@ -32,11 +41,20 @@ export type TakeHandsInRingsInstruction = z.infer<
  *   (b) the opposite-role dancer north or south (whichever is more like their facing)
  * Then turns to face halfway between those two, and takes inside hands with each.
  */
-export function makeRingSegment(init: WorldState): Segment {
+export function makeRingSegment(
+  init: WorldState,
+  disambiguatingCid?: CalledIdentifier,
+): Segment {
+  const tiebreakers: [Tiebreaker, ...Tiebreaker[]] = disambiguatingCid
+    ? [
+        makePreferHinted(disambiguatingCid),
+        preferCloser,
+        preferOneInFront,
+        preferRecent,
+      ]
+    : [preferCloser, preferOneInFront, preferRecent];
   const getGroup = _.memoize((dancer: Dancer) =>
-    getGroupOfFour(dancer, {
-      by: [preferCloser, preferOneInFront, preferRecent],
-    }),
+    getGroupOfFour(dancer, { by: tiebreakers }),
   );
   const final = mapWorldState(init, (dancer) => {
     const group = getGroup(dancer);
@@ -64,8 +82,8 @@ export function makeRingSegment(init: WorldState): Segment {
 
 export const takeHandsInRingsSegments: InstructionAnimator<
   TakeHandsInRingsInstruction
-> = (_instr, init, who) => {
-  const segment = makeRingSegment(init);
+> = (instr, init, who) => {
+  const segment = makeRingSegment(init, instr.disambiguatingCid);
   const endState = getSegmentFrameAtFrac(segment, init, who, 1);
   for (const protoId of who) resolveRing(Dancer.get(protoId, endState));
   return [segment];

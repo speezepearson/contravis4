@@ -4,6 +4,7 @@ import { HandSchema, RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import { HeyInstructionSchema } from "../../instructions/hey";
 import { typedSafeParse } from "../../utils";
+import { DisambiguatingCidField } from "../DisambiguatingCidField";
 import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS, ROLE_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
@@ -25,6 +26,7 @@ export function HeyFields({
       full: instruction.full,
       centerRole: instruction.centerRole,
       centerHand: instruction.centerHand,
+      disambiguatingCid: instruction.disambiguatingCid,
       ...overrides,
     });
     if (result.success) onChange(result.data);
@@ -53,7 +55,12 @@ export function HeyFields({
         value={instruction.centerHand}
         onChange={(v) => tryCommit({ centerHand: HandSchema.parse(v) })}
       />
-      {" in the center"}
+      {" in the center "}
+      <DisambiguatingCidField
+        value={instruction.disambiguatingCid}
+        onChange={(cid) => tryCommit({ disambiguatingCid: cid })}
+        onInvalid={onInvalid}
+      />
     </>
   );
 }

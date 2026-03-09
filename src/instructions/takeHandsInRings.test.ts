@@ -1,3 +1,4 @@
+import { produce } from "immer";
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
@@ -7,15 +8,25 @@ import { must } from "../utils";
 import { Dancer } from "../worldState";
 import { getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
-import { takeHandsInRingsSegments } from "./takeHandsInRings";
+import {
+  type TakeHandsInRingsInstruction,
+  takeHandsInRingsSegments,
+} from "./takeHandsInRings";
 
 const allProtos = ALL_PROTO_IDS_SET;
 
-const DUMMY_INSTR = {
-  id: "00000000-0000-0000-0000-000000000000" as const,
-  beats: 0 as const,
-  type: "take_hands_in_rings" as const,
-};
+function makeInstr(
+  overrides: Partial<TakeHandsInRingsInstruction> = {},
+): TakeHandsInRingsInstruction {
+  return {
+    id: "00000000-0000-0000-0000-000000000000",
+    beats: 0,
+    type: "take_hands_in_rings",
+    ...overrides,
+  };
+}
+
+const DUMMY_INSTR = makeInstr();
 
 describe("takeHandsInRings", () => {
   it("forms a ring of 4 in improper formation", () => {
@@ -42,6 +53,50 @@ describe("takeHandsInRings", () => {
     const back = must(Dancer.get(current, final).hands.right).theirId;
     expect(back).toBe("up_lark_0");
     expect(new Set(visited).size).toBe(4);
+  });
+
+  it("disambiguatingCid resolves ambiguity in becket", () => {
+    // In becket with empty recents, getGroupOfFour is ambiguous
+    // (preferCloser ties, preferOneInFront ties, preferRecent has no data).
+    // The disambiguatingCid hint should resolve this.
+    const becketNoRecents = produce(initFormationStates.becket, (draft) => {
+      for (const id of ALL_PROTO_IDS) draft[id].recents = [];
+    });
+
+    // Without hint, should throw due to ambiguity
+    expect(() =>
+      takeHandsInRingsSegments(makeInstr(), becketNoRecents, allProtos),
+    ).toThrow();
+
+    // With hint "partner", should succeed
+    const instr = makeInstr({ disambiguatingCid: "partner" });
+    const segments = takeHandsInRingsSegments(
+      instr,
+      becketNoRecents,
+      allProtos,
+    );
+    const final = getSegmentFrameAtFrac(
+      segments[0],
+      becketNoRecents,
+      allProtos,
+      1,
+    );
+
+    // Every dancer has both hands connected
+    for (const id of ALL_PROTO_IDS) {
+      expect(final[id].hands.left, `${id} missing left hand`).toBeDefined();
+      expect(final[id].hands.right, `${id} missing right hand`).toBeDefined();
+    }
+
+    // Partner should be in the ring: follow right hands from up_lark_0
+    // and expect to find up_robin_0 (partner)
+    let current: DancerId = "up_lark_0";
+    const visited: DancerId[] = [current];
+    for (let i = 0; i < 3; i++) {
+      current = must(Dancer.get(current, final).hands.right).theirId;
+      visited.push(current);
+    }
+    expect(visited).toContain("up_robin_0");
   });
 
   it("turns dancers to face the center of the ring", () => {

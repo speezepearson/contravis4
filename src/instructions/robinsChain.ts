@@ -1,8 +1,7 @@
 import { z } from "zod";
 
-import { type DancerId, isRobin } from "../contraCore";
+import { type DancerId } from "../contraCore";
 import { lerpFacing, PI, revolve } from "../geometry";
-import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
 import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
 import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
@@ -59,7 +58,7 @@ export const robinsChainSegments: InstructionAnimator<
         if (d.isLark()) return getSendee(d);
         if (d.isRobin()) return getReceiver(d);
         throw new Error("programming error");
-      })
+      });
     }
   }
 

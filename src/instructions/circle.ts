@@ -4,7 +4,11 @@ import { HandSchema } from "../contraCore";
 import { revolve, TWO_PI } from "../geometry";
 import { lerp } from "../utils";
 import { avgPos } from "../worldState";
-import { instructionBaseSchemaFields, resolveRing } from "./_base";
+import {
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  resolveRing,
+} from "./_base";
 import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 import { makeRingSegment } from "./takeHandsInRings";
 
@@ -13,6 +17,7 @@ export const CircleInstructionSchema = z.object({
   type: z.literal("circle"),
   direction: HandSchema,
   nPlaces: z.number().positive(),
+  disambiguatingCid: CalledIdentifierSchema.optional(),
 });
 export type CircleInstruction = z.infer<typeof CircleInstructionSchema>;
 
@@ -20,7 +25,7 @@ export const circleSegments: InstructionAnimator<CircleInstruction> = (
   instr,
   init,
 ) => {
-  const ringSegment = makeRingSegment(init);
+  const ringSegment = makeRingSegment(init, instr.disambiguatingCid);
 
   // CW if direction=left, CCW if direction=right
   const orbitRadians =

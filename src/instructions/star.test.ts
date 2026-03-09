@@ -1,3 +1,4 @@
+import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
@@ -107,6 +108,38 @@ describe("star", () => {
         mid[id].hands.right,
         `${id} should not have right hand`,
       ).toBeUndefined();
+    }
+  });
+
+  it("disambiguatingCid resolves ambiguity in becket", () => {
+    // In becket with empty recents, getGroupOfFour is ambiguous.
+    // The disambiguatingCid hint should resolve this.
+    const becketNoRecents = produce(initFormationStates.becket, (draft) => {
+      for (const id of ALL_PROTO_IDS) draft[id].recents = [];
+    });
+
+    // Without hint, should throw due to ambiguity
+    expect(() =>
+      animateSegments(
+        becketNoRecents,
+        allProtos,
+        starSegments(makeInstr(), becketNoRecents, allProtos),
+      ),
+    ).toThrow();
+
+    // With hint "partner", should succeed
+    const instr = makeInstr({ disambiguatingCid: "partner" });
+    const animation = animateSegments(
+      becketNoRecents,
+      allProtos,
+      starSegments(instr, becketNoRecents, allProtos),
+    );
+    const final = animation.getFrame(animation.dur);
+
+    // Full rotation (4 places) should return dancers to starting positions
+    for (const id of ALL_PROTO_IDS) {
+      expect(final[id].pos.x).toBeCloseTo(becketNoRecents[id].pos.x);
+      expect(final[id].pos.y).toBeCloseTo(becketNoRecents[id].pos.y);
     }
   });
 
