@@ -4,11 +4,7 @@ import { type Hand } from "../contraCore";
 import { SnazzyError } from "../snazzyError";
 import { assertNever, safeThreshold } from "../utils";
 import { connectHands, Dancer } from "../worldState";
-import {
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-  resolveMatches,
-} from "./_base";
+import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
@@ -38,10 +34,9 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
   instr,
   init,
 ) => {
-  const matches = resolveMatches(instr.cid, init);
   return [
     makeImmediateSegment(init, (id, draft) => {
-      const other = matches[id];
+      const other = Dancer.get(id, init).resolveMatch(instr.cid);
       switch (instr.hand) {
         case "left":
           connectHands(draft, id, "left", other.id, "left");

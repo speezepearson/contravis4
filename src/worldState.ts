@@ -502,17 +502,6 @@ export class Dancer {
 
 export type WorldState = Record<ProtoId, ProtoDancerState>;
 
-/** Resolves all dancers' "matches" for a figure where dancers pair up. */
-export function resolveMatches(
-  cid: CalledIdentifier,
-  state: WorldState,
-  { roles }: { roles?: "same" | "different" } = {},
-): Record<ProtoId, Dancer> {
-  return buildProtoRecord((id) =>
-    Dancer.get(id, state).resolveMatch(cid, { roles }),
-  );
-}
-
 /** Connects two hands of two dancers. Throws an error if the hands are already in use, unless they are already paired with each other. */
 export function connectHands(
   state: WorldState,

@@ -97,4 +97,3 @@ export {
   type PersonInDirection,
   PersonInDirectionSchema,
 } from "../identifiers";
-export { resolveMatches } from "../worldState";

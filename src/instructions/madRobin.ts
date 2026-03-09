@@ -4,11 +4,11 @@ import { getRole, RoleSchema } from "../contraCore";
 import { ellipsePosition, TWO_PI } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
+import { Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
   resolveCardinalDirection,
-  resolveMatches,
 } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 
@@ -26,17 +26,19 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
   init,
   who,
 ) => {
-  const matches = resolveMatches(instr.cid, init, { roles: "different" });
+  const orig = (d: Dancer) => d.at(init);
+  const getMatch = (d: Dancer) =>
+    orig(d).resolveMatch(instr.cid, { roles: "different" });
 
   // Assert all pairs are on the same side of the set
   for (const id of who) {
-    const myX = init[id].pos.x;
-    const theirX = matches[id].pos.x;
-    if (Math.sign(myX) !== Math.sign(theirX)) {
+    const me = Dancer.get(id, init);
+    const them = getMatch(me);
+    if (Math.sign(me.pos.x) !== Math.sign(them.pos.x)) {
       throw new SnazzyError([
         { dancerId: id },
         " and ",
-        { dancerId: matches[id].id },
+        { dancerId: them.id },
         " are not on the same side of the set for mad robin",
       ]);
     }
@@ -50,8 +52,9 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
   let semiMinor = 0.25;
   for (const id of who) {
     if (getRole(id) === instr.whoInFront) {
-      const start = init[id].pos;
-      const end = matches[id].pos;
+      const me = Dancer.get(id, init);
+      const start = me.pos;
+      const end = getMatch(me).pos;
       const semiMajorDir = start.subtract(end).normalize();
       const semiMinorDir = semiMajorDir.rotateByDegrees(90);
       if (Math.sign(semiMinorDir.x) !== Math.sign(start.x)) {
@@ -68,7 +71,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
       dur: instr.beats,
       position: (dancer, frac) => {
         const start = dancer.pos;
-        const end = matches[dancer.protoId].pos;
+        const end = getMatch(dancer).pos;
         return ellipsePosition(start, end, semiMinor, phi * frac);
       },
       facing: (dancer) => {
@@ -78,7 +81,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
         ]);
       },
       hands: () => ({}),
-      interactedWith: (dancer) => [matches[dancer.protoId].id],
+      interactedWith: (dancer) => [getMatch(dancer).id],
     },
   ];
 };

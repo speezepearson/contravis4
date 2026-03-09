@@ -16,7 +16,6 @@ import {
   CardinalDirectionSchema,
   instructionBaseSchemaFields,
   resolveCardinalDirection,
-  resolveMatches,
 } from "./_base";
 import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
@@ -62,11 +61,10 @@ export function makeSwingSegments(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): Segment[] {
-  const matches = resolveMatches(instr.cid, init);
-
   const orig = (d: Dancer) => d.at(init);
+  const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
 
-  const getCenter = (d: Dancer) => avgPos(orig(d), matches[d.protoId]);
+  const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
 
   const getPlan = (d: Dancer) => {
     const me = orig(d);
@@ -138,12 +136,14 @@ export function makeSwingSegments(
   );
   const swingBeats = instr.beats - approachBeats - DISENGAGE_BEATS;
 
-  const swingHands: HandsFn = (dancer) =>
-    hold(
+  const swingHands: HandsFn = (dancer) => {
+    const matchId = getMatch(dancer).id;
+    return hold(
       isLark(dancer.protoId)
-        ? ["right", matches[dancer.protoId].id, "left"]
-        : ["left", matches[dancer.protoId].id, "right"],
+        ? ["right", matchId, "left"]
+        : ["left", matchId, "right"],
     );
+  };
 
   const segments: Segment[] = [
     {
@@ -153,7 +153,7 @@ export function makeSwingSegments(
       facing: (dancer, frac) =>
         lerpFacing(dancer.facing, getPlan(dancer).postApproach.facing, frac),
       hands: () => ({}),
-      interactedWith: (dancer) => [matches[dancer.protoId].id],
+      interactedWith: (dancer) => [getMatch(dancer).id],
     },
     {
       dur: swingBeats,

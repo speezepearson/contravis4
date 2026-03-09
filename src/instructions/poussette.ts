@@ -14,11 +14,7 @@ import {
 import { ellipsePosition, PI } from "../geometry";
 import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
-import {
-  instructionBaseSchemaFields,
-  resolveCardinalDirection,
-  resolveMatches,
-} from "./_base";
+import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
 import {
   advanceState,
   hold,
@@ -79,14 +75,16 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
   init,
   who,
 ) => {
-  const matches = resolveMatches("person_across", init, { roles: "different" });
+  const orig = (d: Dancer) => d.at(init);
+  const getMatch = (d: Dancer) =>
+    orig(d).resolveMatch("person_across", { roles: "different" });
 
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
     draft[id].facing = must(resolveCardinalDirection("across", draft[id].pos), [
       { dancerId: id },
       "too close to center, not sure which way to face",
     ]);
-    const match = matches[id];
+    const match = getMatch(Dancer.get(id, init));
     draft[id].hands = hold(
       ["left", match.id, "right"],
       ["right", match.id, "left"],
@@ -95,11 +93,10 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 
   const afterSetup = advanceState([setupSegment], init, who);
 
-  const handsFn = (dancer: Dancer) =>
-    hold(
-      ["left", matches[dancer.protoId].id, "right"],
-      ["right", matches[dancer.protoId].id, "left"],
-    );
+  const handsFn = (dancer: Dancer) => {
+    const matchId = getMatch(dancer).id;
+    return hold(["left", matchId, "right"], ["right", matchId, "left"]);
+  };
 
   const halfBeats = instr.full ? instr.beats / 2 : instr.beats;
 
@@ -111,7 +108,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
       afterSetup,
     ),
     hands: handsFn,
-    interactedWith: (dancer) => [matches[dancer.protoId].id],
+    interactedWith: (dancer) => [getMatch(dancer).id],
   };
 
   if (!instr.full) {

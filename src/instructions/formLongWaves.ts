@@ -5,7 +5,7 @@ import { ALL_PROTO_IDS, parseProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { must, safeThreshold } from "../utils";
 import { connectHands, Dancer, getDancerSide } from "../worldState";
-import { instructionBaseSchemaFields, resolveMatches } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormLongWavesInstructionSchema = z.object({
@@ -70,16 +70,26 @@ export const formLongWavesSegments: InstructionAnimator<
     );
   }
 
-  // Every dancer must have somebody on their left and right; resolveMatches
-  // throws if any dancer lacks a match on either side.
-  const leftMatches = resolveMatches("person_on_left", snappedState);
-  const rightMatches = resolveMatches("person_on_right", snappedState);
-
   return [
     makeImmediateSegment(init, (id, draft) => {
       draft[id].facing = snappedState[id].facing;
-      connectHands(draft, id, "left", leftMatches[id].id, "left");
-      connectHands(draft, id, "right", rightMatches[id].id, "right");
+      // Every dancer must have somebody on their left and right; resolveMatch
+      // throws if any dancer lacks a match on either side.
+      const snapped = Dancer.get(id, snappedState);
+      connectHands(
+        draft,
+        id,
+        "left",
+        snapped.resolveMatch("person_on_left").id,
+        "left",
+      );
+      connectHands(
+        draft,
+        id,
+        "right",
+        snapped.resolveMatch("person_on_right").id,
+        "right",
+      );
     }),
   ];
 };

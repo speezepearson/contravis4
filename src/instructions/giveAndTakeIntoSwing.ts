@@ -10,7 +10,6 @@ import {
   CardinalDirectionSchema,
   instructionBaseSchemaFields,
   resolveCardinalDirection,
-  resolveMatches,
 } from "./_base";
 import {
   getSegmentFrameAtFrac,
@@ -36,10 +35,13 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
 > = (instr, init, who) => {
   const approachDur = 1;
   const swingDur = instr.beats - approachDur;
-  const matches = resolveMatches(instr.cid, init, { roles: "different" });
+  const orig = (d: Dancer) => d.at(init);
+  const getMatch = (d: Dancer) =>
+    orig(d).resolveMatch(instr.cid, { roles: "different" });
+
   for (const id of ALL_PROTO_IDS) {
     const me = Dancer.get(id, init);
-    const them = matches[id];
+    const them = getMatch(me);
     if (getDancerSide(me) === getDancerSide(them)) {
       throw new SnazzyError([
         "dancers ",
@@ -51,12 +53,10 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     }
   }
 
-  const orig = (d: Dancer) => d.at(init);
-
   const getPlan = (d: Dancer) => {
     const amDrawer = parseProtoId(d.protoId).role === instr.drawerRole;
-    const drawer = amDrawer ? orig(d) : matches[d.protoId];
-    const drawee = amDrawer ? matches[d.protoId] : orig(d);
+    const drawer = amDrawer ? orig(d) : getMatch(d);
+    const drawee = amDrawer ? getMatch(d) : orig(d);
 
     const postApproachDrawerPos = drawer.pos;
     const postApproachDraweePos = drawer.pos.add(drawee.pos).divide(2);
@@ -94,7 +94,7 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
     dur: approachDur,
     position: linearTo((dancer) => getPlan(dancer).postApproach.pos),
     facing: lerpFacingTo((dancer) => getPlan(dancer).postApproach.facing),
-    interactedWith: (dancer: Dancer) => [matches[dancer.protoId].id],
+    interactedWith: (dancer: Dancer) => [getMatch(dancer).id],
   };
 
   const postApproach = getSegmentFrameAtFrac(approachSegment, init, who, 1);

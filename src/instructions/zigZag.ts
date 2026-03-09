@@ -13,7 +13,7 @@ import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { getSide, must } from "../utils";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, resolveMatches } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import {
   advanceState,
   hold,
@@ -40,11 +40,14 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
     throw new Error(`[zig zag] expected 4 dancers, got ${who.size}`);
   }
 
-  const matches = resolveMatches("person_across", init, { roles: "different" });
+  const orig = (d: Dancer) => d.at(init);
+  const getMatch = (d: Dancer) =>
+    orig(d).resolveMatch("person_across", { roles: "different" });
 
   // Assert all dancers face roughly up or down, and same direction as person across
   for (const id of who) {
-    const facing = init[id].facing;
+    const me = Dancer.get(id, init);
+    const facing = me.facing;
     if (Math.abs(facing.y) <= Math.abs(facing.x)) {
       throw new SnazzyError([
         "[zig zag] dancer ",
@@ -52,14 +55,13 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
         " is not facing roughly up or down",
       ]);
     }
-    const matchId = matches[id].protoId;
-    const matchFacing = init[matchId].facing;
-    if (Math.sign(facing.y) !== Math.sign(matchFacing.y)) {
+    const match = getMatch(me);
+    if (Math.sign(facing.y) !== Math.sign(match.facing.y)) {
       throw new SnazzyError([
         "[zig zag] dancer ",
         { dancerId: id },
         " and ",
-        { dancerId: matchId },
+        { dancerId: match.id },
         " face different vertical directions",
       ]);
     }
@@ -103,17 +105,17 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   // Setup: face exactly up or down, take inside hands
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
     draft[id].facing = isFacingUp(id) ? NORTH : SOUTH;
-    const match = matches[id];
+    const match = getMatch(Dancer.get(id, init));
     const myHand = insideHand(id);
     const theirHand = otherHand(myHand);
     draft[id].hands = hold([myHand, match.id, theirHand]);
   });
 
   const makeHandsFn = () => (dancer: Dancer) => {
-    const match = matches[dancer.protoId];
+    const matchId = getMatch(dancer).id;
     const myHand = insideHand(dancer.protoId);
     const theirHand = otherHand(myHand);
-    return hold([myHand, match.id, theirHand]);
+    return hold([myHand, matchId, theirHand]);
   };
 
   const segments: Segment[] = [setupSegment];
@@ -138,7 +140,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       dur: beatsPerZig,
       position,
       hands: makeHandsFn(),
-      interactedWith: (dancer) => [matches[dancer.protoId].id],
+      interactedWith: (dancer) => [getMatch(dancer).id],
     };
 
     segments.push(zigSegment);

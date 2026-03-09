@@ -1,11 +1,10 @@
 import { z } from "zod";
 
-import { connectHands } from "../worldState";
+import { connectHands, Dancer } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
   instructionBaseSchemaFields,
-  resolveMatches,
 } from "./_base";
 import {
   advanceState,
@@ -43,11 +42,11 @@ export const balanceAndSwingSegments: InstructionAnimator<
   }
 
   // 1. Take left hand with cid's right
-  const matches = resolveMatches(instr.cid, init);
   append([
     makeImmediateSegment(init, (pid, draft) => {
-      connectHands(draft, pid, "left", matches[pid].id, "right");
-      connectHands(draft, pid, "right", matches[pid].id, "left");
+      const match = Dancer.get(pid, init).resolveMatch(instr.cid);
+      connectHands(draft, pid, "left", match.id, "right");
+      connectHands(draft, pid, "right", match.id, "left");
     }),
   ]);
 
