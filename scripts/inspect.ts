@@ -128,16 +128,16 @@ function formatActiveInstruction(active: ActiveInstruction): string {
 function formatWorldState(ws: WorldState, label: string, t: number): string {
   const lines = [`${label} state (t=${t}):`];
   for (const id of ALL_PROTO_IDS) {
-    lines.push(formatDancer(id, Dancer.get(id, ws)));
+    lines.push(formatDancer(Dancer.get(id, ws)));
   }
   return lines.join("\n");
 }
 
-function formatDancer(id: ProtoId, d: Dancer): string {
+function formatDancer(d: Dancer): string {
   const pos = formatPos(d.pos);
   const facing = formatFacing(d.facing);
   const hands = formatHands(d.hands);
-  return `  ${id.padEnd(14)}  pos=${pos}  facing=${facing}  ${hands}`;
+  return `  ${d.protoId.padEnd(14)}  pos=${pos}  facing=${facing}  ${hands}`;
 }
 
 function formatPos(v: Vector): string {
