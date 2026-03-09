@@ -27,7 +27,10 @@ import {
 } from "react";
 import { z } from "zod";
 
-import { sortedExampleDances } from "../exampleDances";
+import {
+  contradbInstructionFrequencies,
+  sortedExampleDances,
+} from "../exampleDances";
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
 import { inferProgression } from "../inferProgression";
@@ -146,53 +149,60 @@ function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
 
 export type ActionOptionType = Instruction["type"];
 
-const ACTION_OPTIONS: ActionOptionType[] = [
-  "allemande",
-  "balance",
-  "balance_and_swing",
-  "balance_the_ring",
-  "bend_the_line",
-  "box_circulate",
-  "box_the_gnat",
-  "california_twirl",
-  "robins_chain",
-  "circle",
-  "do_si_do",
-  "down_the_hall",
-  "drop_hands",
-  "face",
-  "form_long_waves",
-  "form_short_waves",
-  "give_and_take_into_swing",
-  "greet_new_neighbors",
-  "hey",
-  "greet_shadow",
-  "long_line_in_center",
-  "long_lines_forward_back",
-  "mad_robin",
-  "meltdown_swing",
-  "pass_by",
-  "petronella",
-  "poussette",
-  "pull_by",
-  "right_left_through",
-  "roll_away",
-  "rory_o_more",
-  "shoulder_round",
-  "single_file_promenade",
-  "slice",
-  "square_through",
-  "star",
-  "split",
-  "step",
-  "swing",
-  "take_hands_in_rings",
-  "take_hands",
-  "turn_alone",
-  "turn_as_a_couple",
-  "up_the_hall",
-  "zig_zag",
-];
+const ACTION_OPTIONS: ActionOptionType[] = (
+  [
+    "allemande",
+    "balance",
+    "balance_and_swing",
+    "balance_the_ring",
+    "bend_the_line",
+    "box_circulate",
+    "box_the_gnat",
+    "california_twirl",
+    "robins_chain",
+    "circle",
+    "do_si_do",
+    "down_the_hall",
+    "drop_hands",
+    "face",
+    "form_long_waves",
+    "form_short_waves",
+    "give_and_take_into_swing",
+    "greet_new_neighbors",
+    "hey",
+    "greet_shadow",
+    "long_line_in_center",
+    "long_lines_forward_back",
+    "mad_robin",
+    "meltdown_swing",
+    "pass_by",
+    "petronella",
+    "poussette",
+    "pull_by",
+    "right_left_through",
+    "roll_away",
+    "rory_o_more",
+    "shoulder_round",
+    "single_file_promenade",
+    "slice",
+    "square_through",
+    "star",
+    "split",
+    "step",
+    "swing",
+    "take_hands_in_rings",
+    "take_hands",
+    "turn_alone",
+    "turn_as_a_couple",
+    "up_the_hall",
+    "zig_zag",
+  ] satisfies ActionOptionType[]
+).sort((a, b) => {
+  const freqA = contradbInstructionFrequencies.get(a) ?? 0;
+  const freqB = contradbInstructionFrequencies.get(b) ?? 0;
+  if (freqA !== freqB) return freqB - freqA;
+  return a.localeCompare(b);
+});
 const ACTION_LABELS: Record<ActionOptionType, string> = {
   allemande: "allemande",
   balance: "balance",
