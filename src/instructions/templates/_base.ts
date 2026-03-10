@@ -1,8 +1,12 @@
 import { z } from "zod";
 
 import { BeatsSchema, ProtoIdSchema, RoleSchema } from "../../contraCore";
+import {
+  CalledDirectionSchema,
+  pureDir,
+} from "../../directions";
 import { VectorSchema } from "../../geometry";
-import { CalledDirectionSchema, CalledIdentifierSchema } from "../_base";
+import { CalledIdentifierSchema } from "../../identifiers";
 
 // ── Shared sub-schemas ──────────────────────────────────────────────────
 
@@ -22,7 +26,7 @@ const relStateSchema = z.object({
  * vector in that direction) or a CalledIdentifier (resolves to the displacement
  * vector from the dancer to the identified person, scaling with distance).
  */
-export const BasisVectorSpecSchema = z.enum([
+export const BasisVectorSpecSchema = z.discriminatedUnion("type", [
   ...CalledDirectionSchema.options,
   ...CalledIdentifierSchema.options,
 ]);
@@ -32,11 +36,11 @@ export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
  * A basis spec in a template: either a fixed CalledDirection/CalledIdentifier,
  * or a placeholder for the choreographer to fill in.
  */
-export const BasisSpecSchema = z.enum([
+export const BasisSpecSchema = z.discriminatedUnion("type", [
   ...CalledDirectionSchema.options,
   ...CalledIdentifierSchema.options,
-  "choreographer_specified_direction",
-  "choreographer_specified_identifier",
+  z.object({ type: z.literal("choreographer_specified_direction") }),
+  z.object({ type: z.literal("choreographer_specified_identifier") }),
 ]);
 export type BasisSpec = z.infer<typeof BasisSpecSchema>;
 
@@ -51,8 +55,8 @@ export const TemplateBasisSchema = z.object({
 export type TemplateBasis = z.infer<typeof TemplateBasisSchema>;
 
 export const DEFAULT_TEMPLATE_BASIS: TemplateBasis = {
-  x: "on_right",
-  y: "in_front",
+  x: pureDir("on_right"),
+  y: pureDir("in_front"),
 };
 
 // ── LR template schema ─────────────────────────────────────────────────
