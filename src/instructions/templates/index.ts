@@ -4,6 +4,7 @@ import { assertNever, buildEnumRecord } from "../../utils";
 import type { LLRRInstructionTemplate, LRInstructionTemplate } from "./_base";
 import specialChainTemplate from "./specialChain";
 import specialCourtesyTurnTemplate from "./specialCourtesyTurn";
+import specialHeyTemplate from "./specialHey";
 import specialStarTemplate from "./specialStar";
 
 export const LRTemplateIdSchema = z.enum([
@@ -26,7 +27,7 @@ export const allLRTemplates: Record<LRTemplateId, LRInstructionTemplate> =
     }
   });
 
-export const LLRRTemplateIdSchema = z.enum(["specialStar"]);
+export const LLRRTemplateIdSchema = z.enum(["specialStar", "specialHey"]);
 export type LLRRTemplateId = z.infer<typeof LLRRTemplateIdSchema>;
 
 export const allLLRRTemplates: Record<LLRRTemplateId, LLRRInstructionTemplate> =
@@ -34,6 +35,8 @@ export const allLLRRTemplates: Record<LLRRTemplateId, LLRRInstructionTemplate> =
     switch (id) {
       case "specialStar":
         return specialStarTemplate;
+      case "specialHey":
+        return specialHeyTemplate;
       default:
         assertNever(id);
     }
