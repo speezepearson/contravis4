@@ -1,7 +1,7 @@
 import { produce } from "immer";
 import { Vector } from "vecti";
 
-import { parseProtoId } from "./contraCore";
+import { addOffsetToId, parseProtoId } from "./contraCore";
 import { buildProtoRecord, type WorldState } from "./worldState";
 
 export function averageFrames(frames: WorldState[]): WorldState {
@@ -45,6 +45,22 @@ export function shiftFrameByProgression(
     const dy = dir === "up" ? n : -n;
     return produce(frame[id], (draft) => {
       draft.pos = new Vector(draft.pos.x, draft.pos.y + dy);
+      // facing stays the same
+      draft.hands = {
+        left: draft.hands.left
+          ? {
+              theirId: addOffsetToId(draft.hands.left.theirId, dy),
+              theirHand: draft.hands.left.theirHand,
+            }
+          : undefined,
+        right: draft.hands.right
+          ? {
+              theirId: addOffsetToId(draft.hands.right.theirId, dy),
+              theirHand: draft.hands.right.theirHand,
+            }
+          : undefined,
+      };
+      // no other properties are (currently?) render-relevant
     });
   });
 }
