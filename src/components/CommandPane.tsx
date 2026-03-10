@@ -55,8 +55,7 @@ import {
 import type { Split } from "../instructions/split";
 import {
   allLRTemplates,
-  templateIds,
-  TemplateIdSchema,
+  LRTemplateIdSchema,
 } from "../instructions/templates/index";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
@@ -199,7 +198,7 @@ const ActionOptionTypeSchema = z.enum([
   "turn_as_a_couple",
   "up_the_hall",
   "zig_zag",
-  ...templateIds,
+  ...LRTemplateIdSchema.options,
 ]);
 export type ActionOptionType = z.infer<typeof ActionOptionTypeSchema>;
 export const ACTION_OPTION_TYPES = ActionOptionTypeSchema.options
@@ -312,7 +311,7 @@ const ACTION_LABELS = buildEnumRecord(ActionOptionTypeSchema, (t) => {
       return "zig zag";
   }
 
-  if (parses(TemplateIdSchema, t)) {
+  if (parses(LRTemplateIdSchema, t)) {
     return allLRTemplates[t].name;
   }
   assertNever(t);
