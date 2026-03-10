@@ -14,6 +14,8 @@ import { SearchableDropdown } from "./components/SearchableDropdown";
 import {
   ALL_PROTO_IDS,
   ALL_PROTO_IDS_SET,
+  flipProgDir,
+  parseProtoId,
   type ProtoId,
   ProtoIdSchema,
   type Role,
@@ -176,6 +178,30 @@ export default function InstructionDefinitionTool() {
   const [fieldsDisplayText, setFieldsDisplayText] = useState("");
   const [highlightedBasisSpec, setHighlightedBasisSpec] =
     useState<BasisVectorSpec | null>(null);
+  const [larksSymm, setLarksSymm] = useState(false);
+  const [robinsSymm, setRobinsSymm] = useState(false);
+
+  /**
+   * If LLRR symmetry is enabled for the given key's role, copy the value to
+   * the paired dancer. Returns a new states object (or the original if no
+   * mirroring applies).
+   */
+  const mirrorIfSymm = useCallback(
+    (
+      states: KeyframeEntry["states"],
+      key: StateKey,
+    ): KeyframeEntry["states"] => {
+      if (templateType !== "llrr") return states;
+      const parsed = parseProtoId(ProtoIdSchema.parse(key));
+      const symmEnabled = parsed.role === "lark" ? larksSymm : robinsSymm;
+      if (!symmEnabled) return states;
+      const paired = flipProgDir(ProtoIdSchema.parse(key));
+      const val = states[key];
+      if (!val) return states;
+      return { ...states, [paired]: val };
+    },
+    [templateType, larksSymm, robinsSymm],
+  );
 
   // Refs for animation-frame drawing (avoid re-render thrash during drag)
   const dragRef = useRef<DragState | null>(null);
@@ -694,13 +720,16 @@ export default function InstructionDefinitionTool() {
                   i === kfIdx
                     ? {
                         ...kf,
-                        states: {
-                          ...kf.states,
-                          [selectedStateKey]: {
-                            ...kf.states[selectedStateKey]!,
-                            relFacing: newRelFacing,
+                        states: mirrorIfSymm(
+                          {
+                            ...kf.states,
+                            [selectedStateKey]: {
+                              ...kf.states[selectedStateKey]!,
+                              relFacing: newRelFacing,
+                            },
                           },
-                        },
+                          selectedStateKey,
+                        ),
                       }
                     : kf,
                 ),
@@ -719,13 +748,16 @@ export default function InstructionDefinitionTool() {
               i === kfIdx
                 ? {
                     ...kf,
-                    states: {
-                      ...kf.states,
-                      [selectedStateKey]: {
-                        ...kf.states[selectedStateKey]!,
-                        relPos: newRelPos,
+                    states: mirrorIfSymm(
+                      {
+                        ...kf.states,
+                        [selectedStateKey]: {
+                          ...kf.states[selectedStateKey]!,
+                          relPos: newRelPos,
+                        },
                       },
-                    },
+                      selectedStateKey,
+                    ),
                   }
                 : kf,
             ),
@@ -742,6 +774,7 @@ export default function InstructionDefinitionTool() {
       selectedBasis,
       keyframes,
       updateTpl,
+      mirrorIfSymm,
       requestDraw,
     ],
   );
@@ -817,18 +850,19 @@ export default function InstructionDefinitionTool() {
 
         const slot = nextSlotForKey;
 
+        const kfValue = { relPos, relFacing };
+        const mirroredStates = (
+          base: KeyframeEntry["states"],
+        ): KeyframeEntry["states"] =>
+          mirrorIfSymm(
+            { ...base, [selectedStateKey]: kfValue },
+            selectedStateKey,
+          );
+
         const nextKeyframes = (() => {
           if (slot < keyframes.length) {
             return keyframes.map((kf, i) =>
-              i === slot
-                ? {
-                    ...kf,
-                    states: {
-                      ...kf.states,
-                      [selectedStateKey]: { relPos, relFacing },
-                    },
-                  }
-                : kf,
+              i === slot ? { ...kf, states: mirroredStates(kf.states) } : kf,
             );
           } else {
             const lastT =
@@ -837,9 +871,7 @@ export default function InstructionDefinitionTool() {
               ...keyframes,
               {
                 t: lastT + keyframeDuration,
-                states: {
-                  [selectedStateKey]: { relPos, relFacing },
-                },
+                states: mirroredStates({}),
               },
             ];
           }
@@ -862,6 +894,7 @@ export default function InstructionDefinitionTool() {
       keyframeDuration,
       nextSlotForKey,
       updateTpl,
+      mirrorIfSymm,
       endTransient,
       requestDraw,
     ],
@@ -1328,6 +1361,26 @@ export default function InstructionDefinitionTool() {
               </button>
             ))}
           </div>
+          {templateType === "llrr" && (
+            <div className="def-instr-symm-checks">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={larksSymm}
+                  onChange={(e) => setLarksSymm(e.target.checked)}
+                />{" "}
+                larks symm
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={robinsSymm}
+                  onChange={(e) => setRobinsSymm(e.target.checked)}
+                />{" "}
+                robins symm
+              </label>
+            </div>
+          )}
 
           <label>
             Keyframe duration:{" "}
