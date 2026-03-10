@@ -3,6 +3,7 @@ import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS_SET } from "../contraCore";
+import { labelId } from "../identifiers";
 import { animateSegments } from "./_segment";
 import { type AllemandeInstruction, allemandeSegments } from "./allemande";
 import { initFormationStates } from "./index";
@@ -16,7 +17,7 @@ function makeInstr(
     id: "00000000-0000-0000-0000-000000000000",
     beats: 8,
     type: "allemande",
-    cid: "neighbor",
+    cid: labelId("neighbor"),
     handedness: "left",
     rotations: 1.5,
     ...overrides,

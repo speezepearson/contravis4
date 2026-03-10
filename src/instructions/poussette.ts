@@ -14,7 +14,12 @@ import {
 import { ellipsePosition, PI } from "../geometry";
 import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
-import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  personInDir,
+  pureDir,
+  resolveCardinalDirection,
+} from "./_base";
 import {
   advanceState,
   hold,
@@ -50,7 +55,7 @@ export function makeHalfPoussetteArcPositionFn(
       start: init[id].pos,
       end: init[id].pos.add(
         Dancer.get(id, init)
-          .resolveCalledDirection("across")
+          .resolveCalledDirection(pureDir("across"))
           .rotateByDegrees(
             (isBacker ? 1 : -1) * { right: -90, left: 90 }[backerDir],
           ),
@@ -77,7 +82,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 ) => {
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch("person_across", { roles: "different" });
+    orig(d).resolveMatch(personInDir("across"), { roles: "different" });
 
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
     draft[id].facing = must(resolveCardinalDirection("across", draft[id].pos), [

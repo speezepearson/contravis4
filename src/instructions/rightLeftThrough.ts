@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import {
   advanceState,
   type InstructionAnimator,
@@ -40,7 +40,7 @@ export const rightLeftThroughSegments: InstructionAnimator<
         id,
         beats: pullByBeats,
         type: "pull_by",
-        cid: "person_across",
+        cid: personInDir("across"),
         hand: "right",
       },
       state,

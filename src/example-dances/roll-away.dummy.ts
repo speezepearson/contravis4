@@ -11,14 +11,14 @@ export default typedParse(DanceSchema, {
       beats: 2,
       type: "roll_away",
       roller: "lark",
-      rollee: "partner",
+      rollee: { type: "label", label: "partner" },
     },
     {
       id: "70e089f1-dacc-483b-9183-e24042dd9562",
       beats: 2,
       type: "roll_away",
       roller: "robin",
-      rollee: "partner",
+      rollee: { type: "label", label: "partner" },
     },
   ],
 });

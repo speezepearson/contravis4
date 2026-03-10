@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { labelId } from "../identifiers";
 import type { Instruction } from "../instructions/index";
 import { makeInstructionId } from "./fieldUtils";
 import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
@@ -9,7 +10,7 @@ function makeBalance(beats: number): Instruction {
     type: "balance",
     id: makeInstructionId(),
     beats,
-    cid: "partner",
+    cid: labelId("partner"),
   };
 }
 

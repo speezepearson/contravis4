@@ -51,7 +51,7 @@ export default typedParse(DanceSchema, {
       id: "72c55d4e-f699-43bc-b434-97d2bad3312d",
       beats: 12,
       type: "swing",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
       endFacing: "across",
     },
     {
@@ -69,7 +69,7 @@ export default typedParse(DanceSchema, {
           id: "1e291a48-4cd0-4946-aee9-206eeb0b20fe",
           beats: 8,
           type: "allemande",
-          cid: "opposite",
+          cid: { type: "label", label: "opposite" },
           handedness: "left",
           rotations: 1.5,
         },
@@ -80,7 +80,7 @@ export default typedParse(DanceSchema, {
       id: "ca4f103a-05ae-482f-b723-aa1b6530c8b2",
       beats: 8,
       type: "swing",
-      cid: "partner",
+      cid: { type: "label", label: "partner" },
       endFacing: "across",
     },
     {
@@ -116,14 +116,14 @@ export default typedParse(DanceSchema, {
       id: "6439499c-25d0-4cc2-a4c1-c4726c0bc760",
       beats: 4,
       type: "pass_by",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
       hand: "right",
     },
     {
       id: "b5a1c3d7-9e2f-4a08-b6c4-8d3e5f7a9b01",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: "person_in_front",
+      cid: { type: "PersonInDirection", dir: "in_front" },
     },
   ],
 });

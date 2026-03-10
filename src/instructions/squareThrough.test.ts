@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
+import { labelId } from "../identifiers";
 import { type WorldState } from "../worldState";
 import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 import { initFormationStates } from "./index";
@@ -15,8 +16,8 @@ const baseInstr = {
   id: "00000000-0000-0000-0000-000000000001",
   type: "square_through" as const,
   firstHand: "right" as const,
-  cid1: "neighbor" as const,
-  cid2: "partner" as const,
+  cid1: labelId("neighbor"),
+  cid2: labelId("partner"),
 };
 
 const instr4: SquareThroughInstruction = {

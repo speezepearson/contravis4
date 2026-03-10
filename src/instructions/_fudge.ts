@@ -16,6 +16,7 @@ import {
   getDancerSide,
   type WorldState,
 } from "../worldState";
+import { personInDir } from "./_base";
 import { addPositionDrift, advanceState, type Segment } from "./_segment";
 
 /**
@@ -109,7 +110,7 @@ export function fudgeToAlignY(
   const resultFinalState = advanceState(result, init, who);
   for (const id of ALL_PROTO_IDS) {
     const dancer = Dancer.get(id, resultFinalState);
-    const match = dancer.resolveMatch("person_across", {
+    const match = dancer.resolveMatch(personInDir("across"), {
       roles: "different",
     });
     if (Math.abs(dancer.pos.y - match.pos.y) > 0.01) {

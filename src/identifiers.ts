@@ -46,7 +46,9 @@ export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 export function labelId(label: Label): CalledIdentifier & { type: "label" } {
   return { type: "label", label };
 }
-export function personInDir(dir: PureDirection): CalledIdentifier & { type: "PersonInDirection" } {
+export function personInDir(
+  dir: PureDirection,
+): CalledIdentifier & { type: "PersonInDirection" } {
   return { type: "PersonInDirection", dir };
 }
 
@@ -71,9 +73,8 @@ export function calledIdentifierToKey(cid: CalledIdentifier): string {
 }
 
 export function calledIdentifierFromKey(key: string): CalledIdentifier {
-  const colonIndex = key.indexOf(":");
-  const type = key.slice(0, colonIndex);
-  const val = key.slice(colonIndex + 1);
+  const [type, ...rest] = key.split(":");
+  const val = rest.join(":");
   switch (type) {
     case "label":
       return labelId(LabelSchema.parse(val));

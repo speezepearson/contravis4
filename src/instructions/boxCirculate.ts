@@ -5,7 +5,7 @@ import { PI, revolve } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors } from "../utils";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import { type InstructionAnimator, lerpFacingTo } from "./_segment";
 
 export const BoxCirculateInstructionSchema = z.object({
@@ -44,7 +44,7 @@ export const boxCirculateSegments: InstructionAnimator<
       dur: instr.beats,
       position: (dancer, frac) => {
         if (outFacers.includes(dancer.protoId)) {
-          const match = dancer.resolveCalledIdentifier("person_on_right");
+          const match = dancer.resolveCalledIdentifier(personInDir("on_right"));
           if (!match)
             throw new SnazzyError([
               { dancerId: dancer.protoId },
@@ -55,7 +55,7 @@ export const boxCirculateSegments: InstructionAnimator<
             radians: -PI * frac,
           });
         } else {
-          const match = dancer.resolveCalledIdentifier("person_in_front");
+          const match = dancer.resolveCalledIdentifier(personInDir("in_front"));
           if (!match)
             throw new SnazzyError([
               { dancerId: dancer.protoId },

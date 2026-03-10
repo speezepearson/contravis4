@@ -1,5 +1,5 @@
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
+import { ALL_CALLED_IDENTIFIERS } from "../../instructions/_base";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
 
@@ -14,7 +14,7 @@ export function RobinsChainFields({
     <>
       {"to "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options}
+        options={ALL_CALLED_IDENTIFIERS}
         value={instruction.cid}
         onChange={(cid) => {
           const result = { ...instruction, cid };

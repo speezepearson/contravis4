@@ -29,7 +29,7 @@ export default typedParse(DanceSchema, {
       id: "61d270ca-c9e7-4636-9b01-30c8d5826fb8",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: "person_across",
+      cid: { type: "PersonInDirection", dir: "across" },
     },
     {
       id: "39cee54a-40cc-4839-a335-f8adaaa1b00a",
@@ -48,14 +48,14 @@ export default typedParse(DanceSchema, {
       id: "080d1615-d62a-42ee-893e-91292fb550b9",
       beats: 8,
       type: "do_si_do",
-      cid: "partner",
+      cid: { type: "label", label: "partner" },
       rotations: 1,
     },
     {
       id: "4cda5502-881b-435f-99ba-4fa1aa26a5f8",
       beats: 8,
       type: "do_si_do",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
       rotations: 1,
     },
     {
@@ -76,7 +76,7 @@ export default typedParse(DanceSchema, {
       id: "1ceae78f-b328-44a7-b7ab-b6334b7049e0",
       beats: 8,
       type: "do_si_do",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
       rotations: 1,
     },
     {

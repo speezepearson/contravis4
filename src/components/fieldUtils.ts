@@ -8,8 +8,8 @@ import {
   InstructionIdSchema,
   labelId,
   personInDir,
-  type PureDirection,
   pureDir,
+  type PureDirection,
 } from "../instructions/_base";
 import {
   type ActionOptionType,
@@ -22,7 +22,7 @@ import {
   allLRTemplates,
   LLRRTemplateIdSchema,
 } from "../instructions/templates/index";
-import { type Label, LabelSchema } from "../labels";
+import { type Label } from "../labels";
 import { assertNever, parses } from "../utils";
 
 /** Props for inline field components. */
@@ -179,7 +179,7 @@ export function makeDefaultInstruction(
           id,
           type: "roll_away",
           roller: "lark",
-          rollee: personInDir("on_right"),
+          rollee: { type: "PersonInDirection", dir: "on_right" },
           beats: 4,
         };
       case "rory_o_more":

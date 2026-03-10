@@ -2,7 +2,10 @@ import { z } from "zod";
 
 import { ShadowLabelSchema } from "../labels";
 import { must } from "../utils";
-import { instructionBaseSchemaFields, PersonInDirectionVariantSchema } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  PersonInDirectionVariantSchema,
+} from "./_base";
 import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetShadowInstructionSchema = z.object({

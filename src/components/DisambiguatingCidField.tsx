@@ -1,8 +1,10 @@
 import { useContext, useMemo } from "react";
 
 import {
+  ALL_CALLED_IDENTIFIERS,
   type CalledIdentifier,
-  CalledIdentifierSchema,
+  calledIdentifierFromKey,
+  calledIdentifierToKey,
 } from "../instructions/_base";
 import { try_ } from "../utils";
 import { Dancer } from "../worldState";
@@ -12,7 +14,7 @@ import { useInstructionEdit } from "./InstructionEditContext";
 import { CalledIdentifierHighlightContext } from "./RelationshipHighlightContext";
 
 const NONE = "" as const;
-type OptionValue = typeof NONE | CalledIdentifier;
+type OptionValue = typeof NONE | string;
 
 /** Inline field for an optional disambiguatingCid. Displays "(give hint)" when
  *  unset; clicking opens the CalledIdentifier options. Selecting the first
@@ -29,17 +31,28 @@ export function DisambiguatingCidField({
   const highlightRelationship = useContext(CalledIdentifierHighlightContext);
   const { worldState: dancerStates } = useInstructionEdit();
 
-  const sortedOptions = useMemo(() => {
-    const cidOptions = [...CalledIdentifierSchema.options];
-    if (!dancerStates) return cidOptions;
+  // Build key map for all CalledIdentifier values
+  const keyMap = useMemo(() => {
+    const map = new Map<string, CalledIdentifier>();
+    for (const cid of ALL_CALLED_IDENTIFIERS) {
+      map.set(calledIdentifierToKey(cid), cid);
+    }
+    return map;
+  }, []);
+
+  const sortedKeys = useMemo(() => {
+    const cidKeys = ALL_CALLED_IDENTIFIERS.map(calledIdentifierToKey);
+    if (!dancerStates) return cidKeys;
     const larkState = dancerStates["up_lark_0"];
-    cidOptions.sort((a, b) => {
+    cidKeys.sort((a, b) => {
+      const cidA = keyMap.get(a)!;
+      const cidB = keyMap.get(b)!;
       const targetA = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(a),
+        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(cidA),
       );
       if (targetA instanceof Error || !targetA) return 1;
       const targetB = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(b),
+        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(cidB),
       );
       if (targetB instanceof Error || !targetB) return -1;
       const distA = larkState.pos.subtract(targetA.pos).length();
@@ -47,33 +60,46 @@ export function DisambiguatingCidField({
       if (Math.abs(distA - distB) > 1e-6) return distA - distB;
       return a < b ? -1 : 1;
     });
-    return cidOptions;
-  }, [dancerStates]);
+    return cidKeys;
+  }, [dancerStates, keyMap]);
 
   const options: readonly OptionValue[] = useMemo(
-    () => [NONE, ...sortedOptions],
-    [sortedOptions],
+    () => [NONE, ...sortedKeys],
+    [sortedKeys],
   );
 
   return (
     <InlineDropdown
       options={options}
-      value={value ?? NONE}
+      value={value ? calledIdentifierToKey(value) : NONE}
       onChange={(v) => {
         if (v === NONE) {
           onChange(undefined);
           return;
         }
-        const cid = CalledIdentifierSchema.safeParse(v);
-        if (cid.success) onChange(cid.data);
-        else onInvalid?.();
+        const cid = keyMap.get(v);
+        if (cid) onChange(cid);
+        else {
+          try {
+            onChange(calledIdentifierFromKey(v));
+          } catch {
+            onInvalid?.();
+          }
+        }
       }}
       getLabel={(v) =>
         v === NONE
           ? "(give hint)"
-          : calledIdentifierToText(CalledIdentifierSchema.parse(v))
+          : calledIdentifierToText(keyMap.get(v) ?? calledIdentifierFromKey(v))
       }
-      onHighlight={highlightRelationship}
+      onHighlight={(v) => {
+        if (!v) {
+          highlightRelationship(null);
+          return;
+        }
+        const cid = keyMap.get(v);
+        if (cid) highlightRelationship(cid);
+      }}
     />
   );
 }

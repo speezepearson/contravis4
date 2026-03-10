@@ -23,7 +23,7 @@ export default typedParse(DanceSchema, {
       id: "659b3b45-0437-4eda-8501-012b52796c84",
       beats: 8,
       type: "robins_chain",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
     },
     {
       id: "4151df35-fbdc-491a-a62c-eac4468025bf",
@@ -42,13 +42,13 @@ export default typedParse(DanceSchema, {
       id: "c6217cc4-0a95-4855-b7f0-c971eda3ec9c",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: "person_across",
+      cid: { type: "PersonInDirection", dir: "across" },
     },
     {
       id: "e1b1f774-6951-485d-8eb6-c1c41afdab94",
       beats: 8,
       type: "do_si_do",
-      cid: "partner",
+      cid: { type: "label", label: "partner" },
       rotations: 1,
     },
     {
@@ -60,7 +60,7 @@ export default typedParse(DanceSchema, {
       id: "1737f73c-3af8-4bff-bd63-3eae7c771b00",
       beats: 4,
       type: "balance",
-      cid: "person_across",
+      cid: { type: "PersonInDirection", dir: "across" },
     },
     {
       id: "027759c2-a802-4d55-b316-c35439427f83",
@@ -71,7 +71,7 @@ export default typedParse(DanceSchema, {
       id: "9bb3d48b-11cd-42fc-8ac3-023ebb680ae1",
       beats: 4,
       type: "balance",
-      cid: "person_across",
+      cid: { type: "PersonInDirection", dir: "across" },
     },
     {
       id: "a53a536b-ad2c-4611-b906-58b61e31bed8",
@@ -96,7 +96,7 @@ export default typedParse(DanceSchema, {
       id: "6c3a2d96-9a12-442e-b8d2-52feee90ce06",
       beats: 16,
       type: "swing",
-      cid: "partner",
+      cid: { type: "label", label: "partner" },
       endFacing: "across",
     },
   ],

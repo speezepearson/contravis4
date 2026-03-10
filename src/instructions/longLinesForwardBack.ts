@@ -4,7 +4,11 @@ import { z } from "zod";
 import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { must } from "../utils";
-import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  personInDir,
+  resolveCardinalDirection,
+} from "./_base";
 import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
   hold,
@@ -62,7 +66,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         [
           "left",
           must(
-            dancer.resolveCalledIdentifier("person_on_left", {
+            dancer.resolveCalledIdentifier(personInDir("on_left"), {
               roles: "different",
             }),
             [{ dancerId: dancer.id }, "has nobody on the left"],
@@ -72,7 +76,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         [
           "right",
           must(
-            dancer.resolveCalledIdentifier("person_on_right", {
+            dancer.resolveCalledIdentifier(personInDir("on_right"), {
               roles: "different",
             }),
             [{ dancerId: dancer.id }, "has nobody on the right"],

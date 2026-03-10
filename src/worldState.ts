@@ -42,7 +42,6 @@ import {
   type InfallibleLabel,
   IrreducibleLabelSchema,
   type Label,
-  LabelSchema,
   neighborLabelOffsets,
   NeighborLabelSchema,
   OppositeLabelSchema,
@@ -779,7 +778,7 @@ export function setLabel(
         " should know ",
         { dancerId },
         " as their ",
-        { cid: "partner" },
+        { cid: labelId("partner") },
         ", not their ",
         { cid: labelId(label) },
       ]);

@@ -2,7 +2,8 @@ import { useContext, useMemo } from "react";
 
 import {
   type CalledIdentifier,
-  CalledIdentifierSchema,
+  calledIdentifierFromKey,
+  calledIdentifierToKey,
 } from "../instructions/_base";
 import { try_ } from "../utils";
 import { Dancer } from "../worldState";
@@ -17,7 +18,7 @@ export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
   onChange,
   onInvalid,
 }: {
-  options: CId[];
+  options: readonly CId[];
   value: CId;
   onChange: (value: CId) => void;
   onInvalid?: () => void;
@@ -25,16 +26,28 @@ export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
   const highlightRelationship = useContext(CalledIdentifierHighlightContext);
   const { worldState: dancerStates } = useInstructionEdit();
 
-  const sortedOptions = useMemo(() => {
-    if (!dancerStates) return options;
+  // Build a map from string key to the original CId object
+  const keyMap = useMemo(() => {
+    const map = new Map<string, CId>();
+    for (const opt of options) {
+      map.set(calledIdentifierToKey(opt), opt);
+    }
+    return map;
+  }, [options]);
+
+  const sortedKeys = useMemo(() => {
+    const keys = options.map(calledIdentifierToKey);
+    if (!dancerStates) return keys;
     const larkState = dancerStates["up_lark_0"];
-    return [...options].sort((a, b) => {
+    return [...keys].sort((a, b) => {
+      const cidA = keyMap.get(a)!;
+      const cidB = keyMap.get(b)!;
       const targetA = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(a),
+        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(cidA),
       );
       if (targetA instanceof Error || !targetA) return 1;
       const targetB = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(b),
+        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(cidB),
       );
       if (targetB instanceof Error || !targetB) return -1;
       const distA = larkState.pos.subtract(targetA.pos).length();
@@ -42,19 +55,40 @@ export function CalledIdentifierDropdown<CId extends CalledIdentifier>({
       if (Math.abs(distA - distB) > 1e-6) return distA - distB;
       return a < b ? -1 : 1;
     });
-  }, [options, dancerStates]);
+  }, [options, dancerStates, keyMap]);
 
   return (
     <InlineDropdown
-      options={sortedOptions}
-      value={value}
-      getLabel={(v) => calledIdentifierToText(CalledIdentifierSchema.parse(v))} // TODO: make InlineDropdown generic so v isn't typed as string here
-      onChange={(v) => {
-        const opt = options.find((o) => o === v);
-        if (opt) onChange(opt);
-        else onInvalid?.();
+      options={sortedKeys}
+      value={calledIdentifierToKey(value)}
+      getLabel={(k) => {
+        const cid = keyMap.get(k);
+        return cid ? calledIdentifierToText(cid) : k;
       }}
-      onHighlight={highlightRelationship}
+      onChange={(k) => {
+        const opt = keyMap.get(k);
+        if (opt) onChange(opt);
+        else {
+          try {
+            const parsed = calledIdentifierFromKey(k);
+            const match = options.find(
+              (o) => calledIdentifierToKey(o) === calledIdentifierToKey(parsed),
+            );
+            if (match) onChange(match);
+            else onInvalid?.();
+          } catch {
+            onInvalid?.();
+          }
+        }
+      }}
+      onHighlight={(k) => {
+        if (!k) {
+          highlightRelationship(null);
+          return;
+        }
+        const cid = keyMap.get(k);
+        if (cid) highlightRelationship(cid);
+      }}
     />
   );
 }

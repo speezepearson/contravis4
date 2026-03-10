@@ -10,7 +10,7 @@ export default typedParse(DanceSchema, {
       id: "74f48041-9e58-4835-9823-b206e9a5f3a8",
       beats: 16,
       type: "swing",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
       endFacing: "down",
     },
     {
@@ -39,7 +39,7 @@ export default typedParse(DanceSchema, {
       id: "eb128392-10cd-448e-879e-4659c95d2e00",
       beats: 0,
       type: "face",
-      direction: "towards_opposite",
+      direction: { type: "TowardsLabel", label: "opposite" },
     },
     {
       id: "28a5e2fd-d0fc-4de2-ad63-93ca76a108ae",

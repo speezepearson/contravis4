@@ -2,9 +2,12 @@ import { z } from "zod";
 
 import { HandSchema, otherHand } from "../contraCore";
 import {
-  CalledDirectionSchema,
+  type CalledDirection,
+  type CalledIdentifier,
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
+  towardsLabel,
+  towardsPerson,
 } from "./_base";
 import {
   advanceState,
@@ -30,8 +33,13 @@ export type SquareThroughInstruction = z.infer<
   typeof SquareThroughInstructionSchema
 >;
 
-function cidToDirection(cid: z.infer<typeof CalledIdentifierSchema>) {
-  return CalledDirectionSchema.parse(`towards_${cid}`);
+function cidToDirection(cid: CalledIdentifier): CalledDirection {
+  switch (cid.type) {
+    case "label":
+      return towardsLabel(cid.label);
+    case "PersonInDirection":
+      return towardsPerson(cid.dir);
+  }
 }
 
 export const squareThroughSegments: InstructionAnimator<

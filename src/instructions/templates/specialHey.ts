@@ -4,7 +4,10 @@ import { LLRRInstructionTemplateSchema } from "./_base";
 export default typedParse(LLRRInstructionTemplateSchema, {
   name: "hey (full, larks pass right)",
   defaultBeats: 8,
-  basis: { x: { type: "PureDirection", dir: "on_right" }, y: { type: "PureDirection", dir: "in_front" } },
+  basis: {
+    x: { type: "PureDirection", dir: "on_right" },
+    y: { type: "PureDirection", dir: "in_front" },
+  },
   fieldsDisplay: [],
   keyframes: [
     {

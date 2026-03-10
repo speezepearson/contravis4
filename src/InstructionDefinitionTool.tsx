@@ -14,10 +14,10 @@ import {
   type Role,
   RoleSchema,
 } from "./contraCore";
+import { type ContraAnimation } from "./instructions/_base";
 import {
-  CalledDirectionSchema,
-  CalledIdentifierSchema,
-  type ContraAnimation,
+  ALL_CALLED_DIRECTIONS,
+  ALL_CALLED_IDENTIFIERS,
 } from "./instructions/_base";
 import { animateSegments } from "./instructions/_segment";
 import {
@@ -26,7 +26,8 @@ import {
 } from "./instructions/index";
 import {
   type BasisSpec,
-  BasisSpecSchema,
+  basisSpecFromKey,
+  basisSpecToKey,
   type BasisVectorSpec,
   BasisVectorSpecSchema,
   DEFAULT_TEMPLATE_BASIS,
@@ -133,8 +134,8 @@ function resolvedBasisForDancer(
 
 // ── Basis dropdown label helper ──────────────────────────────────────────
 
-function basisSpecToText(spec: BasisSpec): string {
-  return spec.replace(/_/g, " ");
+function basisSpecKeyToText(key: string): string {
+  return key.replace(/_/g, " ");
 }
 
 // ── Export helpers ───────────────────────────────────────────────────────
@@ -283,12 +284,12 @@ export default function InstructionDefinitionTool() {
       assumed: BasisVectorSpec | undefined,
     ): BasisVectorSpec | null {
       if (
-        spec === "choreographer_specified_direction" ||
-        spec === "choreographer_specified_identifier"
+        spec.type === "choreographer_specified_direction" ||
+        spec.type === "choreographer_specified_identifier"
       ) {
         return assumed ?? null;
       }
-      return BasisVectorSpecSchema.parse(spec);
+      return spec;
     }
 
     function tryAxis(
@@ -997,7 +998,12 @@ export default function InstructionDefinitionTool() {
 
   // ── Render ───────────────────────────────────────────────────────────
 
-  const basisSpecOptions = BasisSpecSchema.options;
+  const basisSpecOptions: string[] = [
+    ...ALL_CALLED_DIRECTIONS.map(basisSpecToKey),
+    ...ALL_CALLED_IDENTIFIERS.map(basisSpecToKey),
+    "choreographer_specified_direction",
+    "choreographer_specified_identifier",
+  ];
 
   return (
     <div className="def-instr-layout">
@@ -1107,45 +1113,64 @@ export default function InstructionDefinitionTool() {
             X axis:{" "}
             <SearchableDropdown
               options={basisSpecOptions}
-              value={basis.x}
-              onChange={(spec) => updateTpl({ basis: { ...basis, x: spec } })}
-              onHighlight={(spec) => {
-                const parsed = BasisVectorSpecSchema.safeParse(spec);
+              value={basisSpecToKey(basis.x)}
+              onChange={(key) =>
+                updateTpl({ basis: { ...basis, x: basisSpecFromKey(key) } })
+              }
+              onHighlight={(key) => {
+                if (!key) {
+                  setHighlightedBasisSpec(null);
+                  return;
+                }
+                const parsed = BasisVectorSpecSchema.safeParse(
+                  basisSpecFromKey(key),
+                );
                 setHighlightedBasisSpec(parsed.success ? parsed.data : null);
               }}
-              getLabel={basisSpecToText}
+              getLabel={basisSpecKeyToText}
               selectOnly
             />
           </label>
           {basisErrors.x && (
             <div className="def-instr-error">{basisErrors.x}</div>
           )}
-          {(basis.x === "choreographer_specified_direction" ||
-            basis.x === "choreographer_specified_identifier") && (
+          {(basis.x.type === "choreographer_specified_direction" ||
+            basis.x.type === "choreographer_specified_identifier") && (
             <label>
               {"...assume X is: "}
               <SearchableDropdown
                 options={
-                  basis.x === "choreographer_specified_direction"
-                    ? CalledDirectionSchema.options
-                    : CalledIdentifierSchema.options
+                  basis.x.type === "choreographer_specified_direction"
+                    ? ALL_CALLED_DIRECTIONS.map(basisSpecToKey)
+                    : ALL_CALLED_IDENTIFIERS.map(basisSpecToKey)
                 }
-                value={
+                value={basisSpecToKey(
                   basis.assumedX ??
-                  (basis.x === "choreographer_specified_direction"
-                    ? CalledDirectionSchema.options[0]
-                    : CalledIdentifierSchema.options[0])
-                }
-                onChange={(spec) =>
+                    (basis.x.type === "choreographer_specified_direction"
+                      ? ALL_CALLED_DIRECTIONS[0]
+                      : ALL_CALLED_IDENTIFIERS[0]),
+                )}
+                onChange={(key) =>
                   updateTpl({
                     basis: {
                       ...basis,
-                      assumedX: BasisVectorSpecSchema.parse(spec),
+                      assumedX: BasisVectorSpecSchema.parse(
+                        basisSpecFromKey(key),
+                      ),
                     },
                   })
                 }
-                onHighlight={(spec) => setHighlightedBasisSpec(spec)}
-                getLabel={basisSpecToText}
+                onHighlight={(key) => {
+                  if (!key) {
+                    setHighlightedBasisSpec(null);
+                    return;
+                  }
+                  const parsed = BasisVectorSpecSchema.safeParse(
+                    basisSpecFromKey(key),
+                  );
+                  setHighlightedBasisSpec(parsed.success ? parsed.data : null);
+                }}
+                getLabel={basisSpecKeyToText}
                 selectOnly
               />
             </label>
@@ -1154,45 +1179,64 @@ export default function InstructionDefinitionTool() {
             Y axis:{" "}
             <SearchableDropdown
               options={basisSpecOptions}
-              value={basis.y}
-              onChange={(spec) => updateTpl({ basis: { ...basis, y: spec } })}
-              onHighlight={(spec) => {
-                const parsed = BasisVectorSpecSchema.safeParse(spec);
+              value={basisSpecToKey(basis.y)}
+              onChange={(key) =>
+                updateTpl({ basis: { ...basis, y: basisSpecFromKey(key) } })
+              }
+              onHighlight={(key) => {
+                if (!key) {
+                  setHighlightedBasisSpec(null);
+                  return;
+                }
+                const parsed = BasisVectorSpecSchema.safeParse(
+                  basisSpecFromKey(key),
+                );
                 setHighlightedBasisSpec(parsed.success ? parsed.data : null);
               }}
-              getLabel={basisSpecToText}
+              getLabel={basisSpecKeyToText}
               selectOnly
             />
           </label>
           {basisErrors.y && (
             <div className="def-instr-error">{basisErrors.y}</div>
           )}
-          {(basis.y === "choreographer_specified_direction" ||
-            basis.y === "choreographer_specified_identifier") && (
+          {(basis.y.type === "choreographer_specified_direction" ||
+            basis.y.type === "choreographer_specified_identifier") && (
             <label>
               {"...assume Y is: "}
               <SearchableDropdown
                 options={
-                  basis.y === "choreographer_specified_direction"
-                    ? CalledDirectionSchema.options
-                    : CalledIdentifierSchema.options
+                  basis.y.type === "choreographer_specified_direction"
+                    ? ALL_CALLED_DIRECTIONS.map(basisSpecToKey)
+                    : ALL_CALLED_IDENTIFIERS.map(basisSpecToKey)
                 }
-                value={
+                value={basisSpecToKey(
                   basis.assumedY ??
-                  (basis.y === "choreographer_specified_direction"
-                    ? CalledDirectionSchema.options[0]
-                    : CalledIdentifierSchema.options[0])
-                }
-                onChange={(spec) =>
+                    (basis.y.type === "choreographer_specified_direction"
+                      ? ALL_CALLED_DIRECTIONS[0]
+                      : ALL_CALLED_IDENTIFIERS[0]),
+                )}
+                onChange={(key) =>
                   updateTpl({
                     basis: {
                       ...basis,
-                      assumedY: BasisVectorSpecSchema.parse(spec),
+                      assumedY: BasisVectorSpecSchema.parse(
+                        basisSpecFromKey(key),
+                      ),
                     },
                   })
                 }
-                onHighlight={(spec) => setHighlightedBasisSpec(spec)}
-                getLabel={basisSpecToText}
+                onHighlight={(key) => {
+                  if (!key) {
+                    setHighlightedBasisSpec(null);
+                    return;
+                  }
+                  const parsed = BasisVectorSpecSchema.safeParse(
+                    basisSpecFromKey(key),
+                  );
+                  setHighlightedBasisSpec(parsed.success ? parsed.data : null);
+                }}
+                getLabel={basisSpecKeyToText}
                 selectOnly
               />
             </label>

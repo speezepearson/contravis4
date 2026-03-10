@@ -2,7 +2,7 @@ import type z from "zod";
 
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
+import { ALL_CALLED_IDENTIFIERS } from "../../instructions/_base";
 import { MadRobinInstructionSchema } from "../../instructions/madRobin";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
@@ -47,7 +47,7 @@ export function MadRobinFields({
       />
       {" with "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options}
+        options={ALL_CALLED_IDENTIFIERS}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />

@@ -15,7 +15,7 @@ export default typedParse(DanceSchema, {
       id: "85347ba0-d879-4fb1-a175-14dcddaeb24c",
       beats: 4,
       type: "pull_by",
-      cid: "partner",
+      cid: { type: "label", label: "partner" },
       hand: "right",
     },
   ],

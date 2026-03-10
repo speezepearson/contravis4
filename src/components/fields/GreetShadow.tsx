@@ -1,7 +1,7 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { PersonInDirectionSchema } from "../../instructions/_base";
+import { ALL_CALLED_IDENTIFIERS } from "../../instructions/_base";
 import { GreetShadowInstructionSchema } from "../../instructions/greetShadow";
 import { type ShadowLabel, ShadowLabelSchema } from "../../labels";
 import { typedSafeParse } from "../../utils";
@@ -37,7 +37,9 @@ export function GreetShadowFields({
     <>
       {": "}
       <CalledIdentifierDropdown
-        options={PersonInDirectionSchema.options}
+        options={ALL_CALLED_IDENTIFIERS.filter(
+          (cid) => cid.type === "PersonInDirection",
+        )}
         value={instruction.cid}
         onChange={(cid) => tryCommit({ cid })}
       />

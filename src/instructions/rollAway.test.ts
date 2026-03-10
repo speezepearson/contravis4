@@ -18,7 +18,7 @@ function makeInstr(
     beats: 2,
     type: "roll_away",
     roller: "lark",
-    rollee: "person_on_right",
+    rollee: { type: "PersonInDirection", dir: "on_right" },
     ...overrides,
   };
 }
@@ -29,7 +29,10 @@ describe("rollAway", () => {
       const init = produce(initFormationStates.improper, (draft) => {
         draft.up_robin_0.pos = new Vector(-1.5, -0.5);
       });
-      const instr = makeInstr({ roller: "lark", rollee: "person_on_right" });
+      const instr = makeInstr({
+        roller: "lark",
+        rollee: { type: "PersonInDirection", dir: "on_right" },
+      });
       expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
         "has no opposite-role",
       );
@@ -45,7 +48,10 @@ describe("rollAway", () => {
           draft[id].facing = NORTH;
         }
       });
-      const instr = makeInstr({ roller: "lark", rollee: "person_on_right" });
+      const instr = makeInstr({
+        roller: "lark",
+        rollee: { type: "PersonInDirection", dir: "on_right" },
+      });
       expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
         "both grabbed the same rollee",
       );
@@ -54,7 +60,10 @@ describe("rollAway", () => {
 
   describe("RTL with roller=lark", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ roller: "lark", rollee: "person_on_right" });
+    const instr = makeInstr({
+      roller: "lark",
+      rollee: { type: "PersonInDirection", dir: "on_right" },
+    });
     const animation = animateSegments(
       init,
       allProtos,

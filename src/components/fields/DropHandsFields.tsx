@@ -1,11 +1,29 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { DropHandsInstructionSchema } from "../../instructions/dropHands";
+import { labelId } from "../../instructions/_base";
+import {
+  type DropHandsInstruction,
+  DropHandsInstructionSchema,
+} from "../../instructions/dropHands";
+import { LabelSchema } from "../../labels";
 import { typedSafeParse } from "../../utils";
 import type { SubFormProps } from "../fieldUtils";
 import { DROP_WHICH_LABELS, DROP_WHICH_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
+
+function whichToKey(which: DropHandsInstruction["which"]): string {
+  if (typeof which === "string") return which;
+  if (which.type === "label") return which.label;
+  return `PersonInDirection:${which.dir}`;
+}
+
+function whichFromKey(key: string): DropHandsInstruction["which"] {
+  if (key === "both" || key === "left" || key === "right") return key;
+  return DropHandsInstructionSchema.shape.which.parse(
+    labelId(LabelSchema.parse(key)),
+  );
+}
 
 export function DropHandsFields({
   instruction,
@@ -33,11 +51,11 @@ export function DropHandsFields({
   return (
     <>
       <InlineDropdown
-        options={DROP_WHICH_OPTIONS}
-        value={instruction.which}
+        options={[...DROP_WHICH_OPTIONS]}
+        value={whichToKey(instruction.which)}
         onChange={(v) =>
           tryCommit({
-            which: DropHandsInstructionSchema.shape.which.parse(v),
+            which: whichFromKey(v),
           })
         }
         getLabel={(v) => DROP_WHICH_LABELS[v] ?? v}

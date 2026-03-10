@@ -107,13 +107,19 @@ export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 
 // ── Constructor helpers ─────────────────────────────────────────────────
 
-export function pureDir(dir: PureDirection): CalledDirection & { type: "PureDirection" } {
+export function pureDir(
+  dir: PureDirection,
+): CalledDirection & { type: "PureDirection" } {
   return { type: "PureDirection", dir };
 }
-export function towardsLabel(label: Label): CalledDirection & { type: "TowardsLabel" } {
+export function towardsLabel(
+  label: Label,
+): CalledDirection & { type: "TowardsLabel" } {
   return { type: "TowardsLabel", label };
 }
-export function towardsPerson(roughDir: PureDirection): CalledDirection & { type: "TowardsPerson" } {
+export function towardsPerson(
+  roughDir: PureDirection,
+): CalledDirection & { type: "TowardsPerson" } {
   return { type: "TowardsPerson", roughDir };
 }
 
@@ -141,9 +147,8 @@ export function calledDirectionToKey(cd: CalledDirection): string {
 }
 
 export function calledDirectionFromKey(key: string): CalledDirection {
-  const colonIndex = key.indexOf(":");
-  const type = key.slice(0, colonIndex);
-  const val = key.slice(colonIndex + 1);
+  const [type, ...rest] = key.split(":");
+  const val = rest.join(":");
   switch (type) {
     case "PureDirection":
       return pureDir(PureDirectionSchema.parse(val));

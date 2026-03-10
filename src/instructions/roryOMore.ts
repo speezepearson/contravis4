@@ -3,7 +3,7 @@ import { z } from "zod";
 import { HandSchema, otherHand } from "../contraCore";
 import { TWO_PI } from "../geometry";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, labelId } from "./_base";
 import {
   hold,
   type InstructionAnimator,
@@ -23,7 +23,10 @@ export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
   init,
 ) => {
   const cid = (
-    { left: "person_in_left_hand", right: "person_in_right_hand" } as const
+    {
+      left: labelId("person_in_left_hand"),
+      right: labelId("person_in_right_hand"),
+    } as const
   )[instr.direction];
 
   // CW for right, CCW for left

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, type DancerId } from "../contraCore";
 import { getDir } from "../geometry";
+import { labelId } from "../identifiers";
 import { must } from "../utils";
 import { Dancer } from "../worldState";
 import { getSegmentFrameAtFrac } from "./_segment";
@@ -69,7 +70,7 @@ describe("takeHandsInRings", () => {
     ).toThrow();
 
     // With hint "partner", should succeed
-    const instr = makeInstr({ disambiguatingCid: "partner" });
+    const instr = makeInstr({ disambiguatingCid: labelId("partner") });
     const segments = takeHandsInRingsSegments(
       instr,
       becketNoRecents,

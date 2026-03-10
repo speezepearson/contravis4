@@ -2,6 +2,7 @@ import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
+import { labelId } from "../identifiers";
 import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import { type StarInstruction, starSegments } from "./star";
@@ -128,7 +129,7 @@ describe("star", () => {
     ).toThrow();
 
     // With hint "partner", should succeed
-    const instr = makeInstr({ disambiguatingCid: "partner" });
+    const instr = makeInstr({ disambiguatingCid: labelId("partner") });
     const animation = animateSegments(
       becketNoRecents,
       allProtos,

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { PI, revolve } from "../geometry";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import {
   hold,
   type InstructionAnimator,
@@ -23,7 +23,7 @@ export const courtesyTurnSegments: InstructionAnimator<
   {
     dur: instr.beats,
     position: (dancer, frac) => {
-      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
         roles: "different",
       });
       const myPos = dancer.pos;
@@ -32,7 +32,7 @@ export const courtesyTurnSegments: InstructionAnimator<
     },
     facing: rotateFacingBy(() => PI),
     hands: (dancer) => {
-      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
         roles: "different",
       });
       return hold(["left", them.id, "left"], ["right", them.id, "right"]);

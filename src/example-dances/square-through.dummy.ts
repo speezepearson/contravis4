@@ -12,8 +12,8 @@ export default typedParse(DanceSchema, {
       type: "square_through",
       nPullBys: 4,
       firstHand: "right",
-      cid1: "neighbor",
-      cid2: "partner",
+      cid1: { type: "label", label: "neighbor" },
+      cid2: { type: "label", label: "partner" },
     },
   ],
 });
