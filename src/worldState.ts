@@ -56,7 +56,6 @@ import {
   NeighborLabelSchema,
   OppositeLabelSchema,
   type SettableLabel,
-  type ShadowLabel,
   ShadowLabelSchema,
 } from "./labels";
 import { SnazzyError, type SnazzySegment } from "./snazzyError";
@@ -84,22 +83,9 @@ type ResolveCalledIdentifierOpts = {
 export type Lark = Dancer & { role: "lark" };
 export type Robin = Dancer & { role: "robin" };
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 const ProtoDancerStateLabelsSchema = z
-  .partialRecord(IrreducibleLabelSchema, DancerIdSchema)
-  .superRefine((val, ctx) => {
-    const { partner, neighbor } = val;
-    if (partner === undefined || neighbor === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        message: "partner and neighbor are required",
-      });
-    }
-  }) as z.ZodType<
-  { partner: DancerId; neighbor: DancerId } & Partial<
-    Record<ShadowLabel, DancerId>
-  >
->;
+  .object({ partner: DancerIdSchema, neighbor: DancerIdSchema })
+  .extend(buildEnumRecord(ShadowLabelSchema, () => DancerIdSchema.optional()));
 
 export const ProtoDancerStateSchema = z
   .object({
