@@ -542,9 +542,15 @@ interface Props {
   setInstructions: (instructions: Instruction[]) => void;
   initFormation: InitFormation;
   setInitFormation: (formation: InitFormation) => void;
+  name: string;
+  setName: (name: string) => void;
+  author: string;
+  setAuthor: (author: string) => void;
   setDanceState: (state: {
     instructions: Instruction[];
     initFormation: InitFormation;
+    name: string;
+    author: string;
   }) => void;
   activeId: InstructionId | null;
   generateErrors: GenerateError[];
@@ -922,6 +928,10 @@ export default memo(function CommandPane({
   setInstructions,
   initFormation,
   setInitFormation,
+  name,
+  setName,
+  author,
+  setAuthor,
   setDanceState,
   activeId,
   generateErrors,
@@ -937,6 +947,7 @@ export default memo(function CommandPane({
   const [activeDragId, setActiveDragId] = useState<InstructionId | null>(null);
   const lastClickedIdRef = useRef<InstructionId | null>(null);
   const lastClickWasSelectRef = useRef(true);
+  const rememberedAuthorRef = useRef("");
 
   const prevInstructionsRef = useRef(instructions);
   useEffect(() => {
@@ -1182,7 +1193,12 @@ export default memo(function CommandPane({
   }
 
   function copyJson() {
-    const dance = { initFormation, instructions };
+    const dance = {
+      ...(name ? { name } : {}),
+      ...(author ? { author } : {}),
+      initFormation,
+      instructions,
+    };
     navigator.clipboard.writeText(JSON.stringify(dance, null, 2));
     setCopyFeedback("Copied!");
     setTimeout(() => setCopyFeedback(""), 1500);
@@ -1214,6 +1230,8 @@ export default memo(function CommandPane({
     setDanceState({
       initFormation: parsed.initFormation,
       instructions: parsed.instructions,
+      name: parsed.name ?? "",
+      author: parsed.author ?? "",
     });
   }
 
@@ -1300,12 +1318,23 @@ export default memo(function CommandPane({
 
   const dances = useMemo(() => sortedExampleDances(import.meta.env.DEV), []);
 
+  function handleClear() {
+    setDanceState({
+      initFormation: "improper",
+      instructions: [],
+      name: "",
+      author: rememberedAuthorRef.current,
+    });
+  }
+
   function handleLoadDance(filename: string) {
     const entry = dances.find((d) => d.filename === filename);
     if (!entry) return;
     setDanceState({
       initFormation: entry.dance.initFormation,
       instructions: entry.dance.instructions,
+      name: entry.dance.name ?? "",
+      author: entry.dance.author ?? "",
     });
   }
 
@@ -1324,8 +1353,33 @@ export default memo(function CommandPane({
               </option>
             ))}
           </select>
+          <button onClick={handleClear}>&lt;clear&gt;</button>
         </div>
       )}
+
+      <div className="dance-metadata">
+        <label>
+          Name:{" "}
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Dance name"
+          />
+        </label>
+        <label>
+          Author:{" "}
+          <input
+            type="text"
+            value={author}
+            onChange={(e) => {
+              setAuthor(e.target.value);
+              rememberedAuthorRef.current = e.target.value;
+            }}
+            placeholder="Choreographer"
+          />
+        </label>
+      </div>
 
       <div className="formation-selector">
         <label>Formation: </label>

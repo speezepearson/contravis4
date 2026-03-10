@@ -39,7 +39,12 @@ import { useUndoRedo } from "./useUndoRedo";
 import { isLocalStorageAvailable, try_ } from "./utils";
 import { Dancer, type WorldState } from "./worldState";
 
-type DanceState = { instructions: Instruction[]; initFormation: InitFormation };
+type DanceState = {
+  instructions: Instruction[];
+  initFormation: InitFormation;
+  name: string;
+  author: string;
+};
 
 const LOCALSTORAGE_KEY = "contravis4-dance";
 const GIF_OPTIONS_KEY = "contravis4-gif-options";
@@ -158,6 +163,14 @@ export default function App() {
         initialLoadResult && "dance" in initialLoadResult
           ? initialLoadResult.dance.initFormation
           : "improper",
+      name:
+        initialLoadResult && "dance" in initialLoadResult
+          ? (initialLoadResult.dance.name ?? "")
+          : "",
+      author:
+        initialLoadResult && "dance" in initialLoadResult
+          ? (initialLoadResult.dance.author ?? "")
+          : "",
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only compute once
     [],
@@ -172,18 +185,30 @@ export default function App() {
     redo,
   } = useUndoRedo(initialDanceState);
 
-  const { instructions, initFormation } = danceState;
+  const { instructions, initFormation, name, author } = danceState;
 
   const setInstructions = useCallback(
     (next: Instruction[]) =>
-      setDanceState({ instructions: next, initFormation }),
-    [setDanceState, initFormation],
+      setDanceState({ instructions: next, initFormation, name, author }),
+    [setDanceState, initFormation, name, author],
   );
 
   const setInitFormation = useCallback(
     (next: InitFormation) =>
-      setDanceState({ instructions, initFormation: next }),
-    [setDanceState, instructions],
+      setDanceState({ instructions, initFormation: next, name, author }),
+    [setDanceState, instructions, name, author],
+  );
+
+  const setName = useCallback(
+    (next: string) =>
+      setDanceState({ instructions, initFormation, name: next, author }),
+    [setDanceState, instructions, initFormation, author],
+  );
+
+  const setAuthor = useCallback(
+    (next: string) =>
+      setDanceState({ instructions, initFormation, name, author: next }),
+    [setDanceState, instructions, initFormation, name],
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 1);
@@ -199,9 +224,14 @@ export default function App() {
   // Persist dance to localStorage whenever it changes
   useEffect(() => {
     if (!isLocalStorageAvailable()) return;
-    const dance = { initFormation, instructions };
+    const dance = {
+      initFormation,
+      instructions,
+      ...(name ? { name } : {}),
+      ...(author ? { author } : {}),
+    };
     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
-  }, [instructions, initFormation]);
+  }, [instructions, initFormation, name, author]);
 
   // Persist GIF options to localStorage whenever they change
   useEffect(() => {
@@ -742,6 +772,10 @@ export default function App() {
     setInstructions,
     initFormation,
     setInitFormation,
+    name,
+    setName,
+    author,
+    setAuthor,
     setDanceState,
     activeId: activeInstructionId(instructions, beat),
     generateErrors,
