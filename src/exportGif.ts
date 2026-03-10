@@ -132,6 +132,7 @@ export function exportGif(
   } = options;
 
   const danceLength = animation.dur;
+  const gifLoopBeats = 2 * danceLength;
   const beatsPerSecond = bpm / 60;
   const beatStep = beatsPerSecond / fps;
   const delayMs = Math.round(1000 / fps);
@@ -144,12 +145,25 @@ export function exportGif(
     height: number;
   }[] = [];
 
-  for (let beat = 0; beat <= danceLength + beatStep / 2; beat += beatStep) {
-    const t = Math.min(beat, danceLength);
-    const frame = sampleFrame(animation, t, smoothness, inferredProgression);
+  for (let beat = 0; beat <= gifLoopBeats + beatStep / 2; beat += beatStep) {
+    const totalT = Math.min(beat, gifLoopBeats);
+    const rep = danceLength > 0 ? Math.floor(totalT / danceLength) : 0;
+    const t = danceLength > 0 ? totalT - rep * danceLength : totalT;
+    const clampedT = Math.min(t, danceLength);
+    const frame = sampleFrame(
+      animation,
+      clampedT,
+      smoothness,
+      inferredProgression,
+    );
     if (!frame) continue;
 
-    renderer.drawFrame(t, frame);
+    const shiftedFrame =
+      inferredProgression !== null && rep > 0
+        ? shiftFrameByProgression(frame, rep * inferredProgression)
+        : frame;
+
+    renderer.drawFrame(clampedT, shiftedFrame);
 
     // drawFrame clears to transparent then draws content on top.
     // Fill background behind the rendered content.
