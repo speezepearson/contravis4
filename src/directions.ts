@@ -11,14 +11,12 @@
  *     ("on_left", "in_front", "right_diagonal", "larks_left_robins_right", …)
  *     Resolves to a vector using only the dancer's own position and facing.
  *
- *   CalledDirection = PureDirection | TowardsLabelDirection | TowardsPersonDirection
+ *   CalledDirection = { type: 'PureDirection', dir } | { type: 'TowardsLabel', label } | { type: 'TowardsPerson', roughDir }
  *     The full set of directions that can appear in instruction schemas.
- *     The "towards_" variants resolve by finding a target dancer first, then
+ *     The "towards" variants resolve by finding a target dancer first, then
  *     returning the direction from the source dancer to that target:
- *       - TowardsLabelDirection ("towards_partner", "towards_neighbor", …)
- *           looks up the target by Label (see labels.ts).
- *       - TowardsPersonDirection ("towards_person_on_right", …)
- *           finds the nearest dancer in the given PureDirection.
+ *       - TowardsLabel: looks up the target by Label (see labels.ts).
+ *       - TowardsPerson: finds the nearest dancer in the given PureDirection.
  *
  * Resolution is done via Dancer methods (see worldState.ts):
  *   dancer.resolvePureDirection(dir)
@@ -37,13 +35,7 @@ import { z } from "zod";
 
 import { EAST, NORTH, SOUTH, WEST } from "./geometry";
 import { type Label, LabelSchema } from "./labels";
-import {
-  type AssertEquals,
-  assertNever,
-  buildEnumRecord,
-  getSide,
-  stripPrefix,
-} from "./utils";
+import { assertNever, getSide } from "./utils";
 
 export const CardinalDirectionSchema = z.enum(["up", "down", "across", "out"]);
 export type CardinalDirection = z.infer<typeof CardinalDirectionSchema>;
@@ -89,41 +81,77 @@ export const PureDirectionSchema = z.enum([
 ]);
 export type PureDirection = z.infer<typeof PureDirectionSchema>;
 
-// ── CalledDirection: resolves to a direction vector ─────────────────────
+// ── CalledDirection: discriminated union resolving to a direction vector ──
 
-export type TowardsLabelDirection = `towards_${Label}`;
-null satisfies AssertEquals<
-  TowardsLabelDirection,
-  z.infer<typeof TowardsLabelDirectionSchema>
->;
-export const TowardsLabelDirectionSchema = z.enum(
-  LabelSchema.options.map((l) => `towards_${l}` as const),
-);
+export const PureDirectionVariantSchema = z.object({
+  type: z.literal("PureDirection"),
+  dir: PureDirectionSchema,
+});
 
-export type TowardsPersonDirection = `towards_person_${PureDirection}`;
-null satisfies AssertEquals<
-  TowardsPersonDirection,
-  z.infer<typeof TowardsPersonDirectionSchema>
->;
-export const TowardsPersonDirectionSchema = z.enum(
-  PureDirectionSchema.options.map((d) => `towards_person_${d}` as const),
-);
+export const TowardsLabelVariantSchema = z.object({
+  type: z.literal("TowardsLabel"),
+  label: LabelSchema,
+});
 
-export const CalledDirectionSchema = z.enum([
-  ...PureDirectionSchema.options,
-  ...TowardsLabelDirectionSchema.options,
-  ...TowardsPersonDirectionSchema.options,
+export const TowardsPersonVariantSchema = z.object({
+  type: z.literal("TowardsPerson"),
+  roughDir: PureDirectionSchema,
+});
+
+export const CalledDirectionSchema = z.discriminatedUnion("type", [
+  PureDirectionVariantSchema,
+  TowardsLabelVariantSchema,
+  TowardsPersonVariantSchema,
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 
-// ── Lookup maps (used by Dancer methods in worldState.ts) ───────────────
+// ── Constructor helpers ─────────────────────────────────────────────────
 
-export const towardsToLabel: Record<TowardsLabelDirection, Label> =
-  buildEnumRecord(TowardsLabelDirectionSchema, (l) =>
-    stripPrefix("towards_", l),
-  );
+export function pureDir(dir: PureDirection): CalledDirection & { type: "PureDirection" } {
+  return { type: "PureDirection", dir };
+}
+export function towardsLabel(label: Label): CalledDirection & { type: "TowardsLabel" } {
+  return { type: "TowardsLabel", label };
+}
+export function towardsPerson(roughDir: PureDirection): CalledDirection & { type: "TowardsPerson" } {
+  return { type: "TowardsPerson", roughDir };
+}
 
-export const towardsPersonToDir: Record<TowardsPersonDirection, PureDirection> =
-  buildEnumRecord(TowardsPersonDirectionSchema, (d) =>
-    stripPrefix("towards_person_", d),
-  );
+// ── All possible CalledDirection values (for UI enumeration) ────────────
+
+export const ALL_CALLED_DIRECTIONS: CalledDirection[] = [
+  ...PureDirectionSchema.options.map((dir) => pureDir(dir)),
+  ...LabelSchema.options.map((label) => towardsLabel(label)),
+  ...PureDirectionSchema.options.map((roughDir) => towardsPerson(roughDir)),
+];
+
+// ── Serialization (for use as dropdown keys, etc.) ──────────────────────
+
+export function calledDirectionToKey(cd: CalledDirection): string {
+  switch (cd.type) {
+    case "PureDirection":
+      return `PureDirection:${cd.dir}`;
+    case "TowardsLabel":
+      return `TowardsLabel:${cd.label}`;
+    case "TowardsPerson":
+      return `TowardsPerson:${cd.roughDir}`;
+    default:
+      assertNever(cd);
+  }
+}
+
+export function calledDirectionFromKey(key: string): CalledDirection {
+  const colonIndex = key.indexOf(":");
+  const type = key.slice(0, colonIndex);
+  const val = key.slice(colonIndex + 1);
+  switch (type) {
+    case "PureDirection":
+      return pureDir(PureDirectionSchema.parse(val));
+    case "TowardsLabel":
+      return towardsLabel(LabelSchema.parse(val));
+    case "TowardsPerson":
+      return towardsPerson(PureDirectionSchema.parse(val));
+    default:
+      throw new Error(`Invalid CalledDirection key: ${key}`);
+  }
+}

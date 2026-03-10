@@ -77,23 +77,33 @@ export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
 
 // Re-export direction and identifier types/functions so existing imports continue to work.
 export {
+  ALL_CALLED_DIRECTIONS,
   type CalledDirection,
   CalledDirectionSchema,
+  calledDirectionFromKey,
+  calledDirectionToKey,
   type CardinalDirection,
   CardinalDirectionSchema,
   type PureDirection,
   PureDirectionSchema,
+  PureDirectionVariantSchema,
+  pureDir,
   resolveCardinalDirection,
-  type TowardsLabelDirection,
-  TowardsLabelDirectionSchema,
-  type TowardsPersonDirection,
-  TowardsPersonDirectionSchema,
+  TowardsLabelVariantSchema,
+  towardsLabel,
+  TowardsPersonVariantSchema,
+  towardsPerson,
 } from "../directions";
 export { getGroupOfFour, resolveRing, resolveShortLine } from "../formations";
 export {
+  ALL_CALLED_IDENTIFIERS,
   type CalledIdentifier,
   CalledIdentifierSchema,
+  calledIdentifierFromKey,
+  calledIdentifierToKey,
   inferRoleOfCalledIdentifier,
-  type PersonInDirection,
-  PersonInDirectionSchema,
+  labelId,
+  LabelVariantSchema,
+  personInDir,
+  PersonInDirectionVariantSchema,
 } from "../identifiers";
