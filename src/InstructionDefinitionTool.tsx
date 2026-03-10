@@ -597,6 +597,18 @@ export default function InstructionDefinitionTool() {
     requestDraw,
   ]);
 
+  const selectDancer = useCallback(
+    (id: ProtoId | null) => {
+      setSelectedDancer(id);
+      if (id) {
+        const key = stateKeyFor(id, templateType, initState);
+        const filled = keyframes.filter((kf) => kf.states[key] != null).length;
+        setNextSlotForKey(filled);
+      }
+    },
+    [templateType, initState, keyframes],
+  );
+
   // ── Mouse interaction ────────────────────────────────────────────────
 
   const handleMouseDown = useCallback(
@@ -811,13 +823,7 @@ export default function InstructionDefinitionTool() {
       if (drag.ghostKeyframeIndex != null) {
         // Ghost drag: already applied during mousemove.
       } else if (drag.dancerId && isClick) {
-        // Clicked on a dancer without dragging — select it.
-        setSelectedDancer(drag.dancerId);
-        const hitKey = stateKeyFor(drag.dancerId, templateType, initState);
-        const filled = keyframes.filter(
-          (kf) => kf.states[hitKey] != null,
-        ).length;
-        setNextSlotForKey(filled);
+        selectDancer(drag.dancerId);
       } else if (drag.dancerId) {
         // Init-state drag: already applied during mousemove.
       } else if (isClick) {
@@ -829,16 +835,7 @@ export default function InstructionDefinitionTool() {
           const cx = e.clientX - rect.left;
           const cy = e.clientY - rect.top;
           const hit = renderer.hitTestDancer(cx, cy, initState);
-          if (hit) {
-            setSelectedDancer(hit);
-            const hitKey = stateKeyFor(hit, templateType, initState);
-            const filled = keyframes.filter(
-              (kf) => kf.states[hitKey] != null,
-            ).length;
-            setNextSlotForKey(filled);
-          } else {
-            setSelectedDancer(null);
-          }
+          selectDancer(hit);
         }
       } else if (selectedDancer && selectedStateKey && selectedBasis) {
         // Drag on empty space with selected dancer = add keyframe
@@ -899,7 +896,6 @@ export default function InstructionDefinitionTool() {
       requestDraw();
     },
     [
-      templateType,
       selectedDancer,
       selectedStateKey,
       selectedBasis,
@@ -909,6 +905,7 @@ export default function InstructionDefinitionTool() {
       nextSlotForKey,
       updateTpl,
       mirrorIfSymm,
+      selectDancer,
       endTransient,
       requestDraw,
     ],
@@ -1303,14 +1300,7 @@ export default function InstructionDefinitionTool() {
               <button
                 key={id}
                 className={selectedDancer === id ? "active" : ""}
-                onClick={() => {
-                  setSelectedDancer(id);
-                  const key = stateKeyFor(id, templateType, initState);
-                  const filled = keyframes.filter(
-                    (kf) => kf.states[key] != null,
-                  ).length;
-                  setNextSlotForKey(filled);
-                }}
+                onClick={() => selectDancer(id)}
               >
                 {id.replace(/_0$/, "").replace(/_/g, " ")}
               </button>
