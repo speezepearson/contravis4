@@ -61,8 +61,6 @@ import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-type Mode = "init" | "keyframe";
-
 type TemplateType = "lr" | "llrr";
 
 /** In LR mode the key is a Role; in LLRR mode it's a ProtoId. */
@@ -135,7 +133,6 @@ export default function InstructionDefinitionTool() {
   const [keyframes, setKeyframes] = useState<KeyframeEntry[]>([]);
 
   // UI state
-  const [mode, setMode] = useState<Mode>("init");
   const [selectedDancer, setSelectedDancer] = useState<ProtoId | null>(null);
   const [keyframeDuration, setKeyframeDuration] = useState(1);
   // Tracks which keyframe slot the next click will fill for the current state key
@@ -255,7 +252,6 @@ export default function InstructionDefinitionTool() {
   const selectedDancerRef = useRef<ProtoId | null>(selectedDancer);
   const selectedStateKeyRef = useRef(selectedStateKey);
   const selectedBasisRef = useRef(selectedBasis);
-  const modeRef = useRef(mode);
   const previewAnimationRef = useRef(previewAnimation);
   const previewBeatRef = useRef(previewBeat);
   const previewPathFramesRef = useRef(previewPathFrames);
@@ -267,7 +263,6 @@ export default function InstructionDefinitionTool() {
     selectedDancerRef.current = selectedDancer;
     selectedStateKeyRef.current = selectedStateKey;
     selectedBasisRef.current = selectedBasis;
-    modeRef.current = mode;
     previewAnimationRef.current = previewAnimation;
     previewBeatRef.current = previewBeat;
     previewPathFramesRef.current = previewPathFrames;
@@ -281,7 +276,6 @@ export default function InstructionDefinitionTool() {
     const renderer = rendererRef.current;
     if (!renderer) return;
 
-    const curMode = modeRef.current;
     const curInitState = initStateRef.current;
     const curPreviewAnimation = previewAnimationRef.current;
     const curPreviewBeat = previewBeatRef.current;
@@ -307,7 +301,7 @@ export default function InstructionDefinitionTool() {
     }
 
     // Highlight selected dancer
-    if (curSelectedDancer && curMode === "keyframe") {
+    if (curSelectedDancer) {
       renderer.drawDancerHighlight(Dancer.get(curSelectedDancer, curInitState));
     }
 
@@ -461,7 +455,6 @@ export default function InstructionDefinitionTool() {
     selectedStateKey,
     selectedBasis,
     basis,
-    mode,
     keyframes,
     previewAnimation,
     previewBeat,
@@ -483,11 +476,39 @@ export default function InstructionDefinitionTool() {
       const cy = e.clientY - rect.top;
       const [wx, wy] = renderer.canvasToWorld(cx, cy);
 
-      if (mode === "init" && previewBeat === 0) {
-        // Hit test: which dancer did we click on?
+      // Hit-test ghost dancers first (for dragging existing keyframes)
+      if (selectedDancer && selectedStateKey && selectedBasis) {
+        const orig = Dancer.get(selectedDancer, initState);
+        const ghostHitRadius = 0.15; // world units
+        for (let i = 0; i < keyframes.length; i++) {
+          const roleState = keyframes[i].states[selectedStateKey];
+          if (!roleState) continue;
+          const ghostPos = relPosToWorldWithBasis(
+            roleState.relPos,
+            orig.pos,
+            selectedBasis.xBasis,
+            selectedBasis.yBasis,
+          );
+          const dist = Math.hypot(wx - ghostPos.x, wy - ghostPos.y);
+          if (dist < ghostHitRadius) {
+            dragRef.current = {
+              startWorldX: wx,
+              startWorldY: wy,
+              currentWorldX: wx,
+              currentWorldY: wy,
+              shiftKey: e.shiftKey,
+              ghostKeyframeIndex: i,
+            };
+            return;
+          }
+        }
+      }
+
+      // At t=0, hit-test real dancers for init-state dragging
+      if (previewBeat === 0) {
         const hit = renderer.hitTestDancer(cx, cy, initState);
         if (hit) {
-          const drag: DragState = {
+          dragRef.current = {
             startWorldX: wx,
             startWorldY: wy,
             currentWorldX: wx,
@@ -495,49 +516,20 @@ export default function InstructionDefinitionTool() {
             dancerId: hit,
             shiftKey: e.shiftKey,
           };
-          dragRef.current = drag;
+          return;
         }
-      } else if (mode === "keyframe") {
-        // Hit-test ghost dancers first
-        if (selectedDancer && selectedStateKey && selectedBasis) {
-          const orig = Dancer.get(selectedDancer, initState);
-          const ghostHitRadius = 0.15; // world units
-          for (let i = 0; i < keyframes.length; i++) {
-            const roleState = keyframes[i].states[selectedStateKey];
-            if (!roleState) continue;
-            const ghostPos = relPosToWorldWithBasis(
-              roleState.relPos,
-              orig.pos,
-              selectedBasis.xBasis,
-              selectedBasis.yBasis,
-            );
-            const dist = Math.hypot(wx - ghostPos.x, wy - ghostPos.y);
-            if (dist < ghostHitRadius) {
-              dragRef.current = {
-                startWorldX: wx,
-                startWorldY: wy,
-                currentWorldX: wx,
-                currentWorldY: wy,
-                shiftKey: e.shiftKey,
-                ghostKeyframeIndex: i,
-              };
-              return;
-            }
-          }
-        }
-
-        const drag: DragState = {
-          startWorldX: wx,
-          startWorldY: wy,
-          currentWorldX: wx,
-          currentWorldY: wy,
-          shiftKey: e.shiftKey,
-        };
-        dragRef.current = drag;
       }
+
+      // Generic drag (for adding keyframes or clicking empty space)
+      dragRef.current = {
+        startWorldX: wx,
+        startWorldY: wy,
+        currentWorldX: wx,
+        currentWorldY: wy,
+        shiftKey: e.shiftKey,
+      };
     },
     [
-      mode,
       previewBeat,
       initState,
       selectedDancer,
@@ -564,7 +556,7 @@ export default function InstructionDefinitionTool() {
         currentWorldY: wy,
       };
 
-      if (mode === "init" && dragRef.current.dancerId) {
+      if (dragRef.current.dancerId) {
         const id = dragRef.current.dancerId;
         if (dragRef.current.shiftKey) {
           // Change facing: facing = direction from dancer to mouse
@@ -586,7 +578,6 @@ export default function InstructionDefinitionTool() {
           initStateRef.current = next;
         }
       } else if (
-        mode === "keyframe" &&
         dragRef.current.ghostKeyframeIndex != null &&
         selectedDancer &&
         selectedStateKey &&
@@ -658,7 +649,6 @@ export default function InstructionDefinitionTool() {
       requestDraw();
     },
     [
-      mode,
       initState,
       selectedDancer,
       selectedStateKey,
@@ -679,91 +669,86 @@ export default function InstructionDefinitionTool() {
       );
       const isClick = dragDist < 0.02;
 
-      if (mode === "keyframe") {
-        if (drag.ghostKeyframeIndex != null) {
-          // Ghost drag already applied during mousemove; nothing to do.
-        } else if (isClick) {
-          // Click with no drag = select dancer
-          const renderer = rendererRef.current;
-          const canvas = canvasRef.current;
-          if (renderer && canvas) {
-            const rect = canvas.getBoundingClientRect();
-            const cx = e.clientX - rect.left;
-            const cy = e.clientY - rect.top;
-            const hit = renderer.hitTestDancer(cx, cy, initState);
-            if (hit) {
-              setSelectedDancer(hit);
-              // Reset slot counter: find how many existing keyframes already
-              // have data for this dancer's state key
-              const hitKey =
-                templateType === "llrr" ? hit : Dancer.get(hit, initState).role;
-              const filled = keyframes.filter(
-                (kf) => kf.states[hitKey] != null,
-              ).length;
-              setNextSlotForKey(filled);
-            }
+      if (drag.ghostKeyframeIndex != null || drag.dancerId) {
+        // Ghost drag or init-state drag: already applied during mousemove.
+      } else if (isClick) {
+        // Click = select dancer or deselect
+        const renderer = rendererRef.current;
+        const canvas = canvasRef.current;
+        if (renderer && canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const cx = e.clientX - rect.left;
+          const cy = e.clientY - rect.top;
+          const hit = renderer.hitTestDancer(cx, cy, initState);
+          if (hit) {
+            setSelectedDancer(hit);
+            const hitKey =
+              templateType === "llrr" ? hit : Dancer.get(hit, initState).role;
+            const filled = keyframes.filter(
+              (kf) => kf.states[hitKey] != null,
+            ).length;
+            setNextSlotForKey(filled);
+          } else {
+            setSelectedDancer(null);
           }
-        } else if (selectedDancer && selectedStateKey && selectedBasis) {
-          // Drag = add keyframe for current state key, merged into the next slot
-          const orig = Dancer.get(selectedDancer, initState);
-          const clickPos = new Vector(drag.startWorldX, drag.startWorldY);
-          const dragDir = new Vector(
-            drag.currentWorldX - drag.startWorldX,
-            drag.currentWorldY - drag.startWorldY,
-          );
-          const worldFacing =
-            dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
-
-          const relPos = worldToRelWithBasis(
-            clickPos,
-            orig.pos,
-            selectedBasis.xBasis,
-            selectedBasis.yBasis,
-          );
-          const relFacing = facingToRelWithBasis(
-            worldFacing,
-            selectedBasis.yBasis,
-          );
-
-          const slot = nextSlotForKey;
-
-          setKeyframes((prev) => {
-            if (slot < prev.length) {
-              // Merge into existing keyframe
-              return prev.map((kf, i) =>
-                i === slot
-                  ? {
-                      ...kf,
-                      states: {
-                        ...kf.states,
-                        [selectedStateKey]: { relPos, relFacing },
-                      },
-                    }
-                  : kf,
-              );
-            } else {
-              // Append new keyframe slot
-              const lastT = prev.length > 0 ? prev[prev.length - 1].t : 0;
-              return [
-                ...prev,
-                {
-                  t: lastT + keyframeDuration,
-                  states: {
-                    [selectedStateKey]: { relPos, relFacing },
-                  },
-                },
-              ];
-            }
-          });
-          setNextSlotForKey(slot + 1);
         }
+      } else if (selectedDancer && selectedStateKey && selectedBasis) {
+        // Drag on empty space with selected dancer = add keyframe
+        const orig = Dancer.get(selectedDancer, initState);
+        const clickPos = new Vector(drag.startWorldX, drag.startWorldY);
+        const dragDir = new Vector(
+          drag.currentWorldX - drag.startWorldX,
+          drag.currentWorldY - drag.startWorldY,
+        );
+        const worldFacing =
+          dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
+
+        const relPos = worldToRelWithBasis(
+          clickPos,
+          orig.pos,
+          selectedBasis.xBasis,
+          selectedBasis.yBasis,
+        );
+        const relFacing = facingToRelWithBasis(
+          worldFacing,
+          selectedBasis.yBasis,
+        );
+
+        const slot = nextSlotForKey;
+
+        setKeyframes((prev) => {
+          if (slot < prev.length) {
+            return prev.map((kf, i) =>
+              i === slot
+                ? {
+                    ...kf,
+                    states: {
+                      ...kf.states,
+                      [selectedStateKey]: { relPos, relFacing },
+                    },
+                  }
+                : kf,
+            );
+          } else {
+            const lastT = prev.length > 0 ? prev[prev.length - 1].t : 0;
+            return [
+              ...prev,
+              {
+                t: lastT + keyframeDuration,
+                states: {
+                  [selectedStateKey]: { relPos, relFacing },
+                },
+              },
+            ];
+          }
+        });
+        setNextSlotForKey(slot + 1);
       }
 
       dragRef.current = null;
       requestDraw();
     },
     [
-      mode,
       templateType,
       selectedDancer,
       selectedStateKey,
@@ -1131,154 +1116,128 @@ export default function InstructionDefinitionTool() {
           </div>
         </div>
 
-        {/* Mode selector */}
+        {/* Initial State */}
         <div className="def-instr-section">
-          <label>Mode: </label>
-          <button
-            className={mode === "init" ? "active" : ""}
-            onClick={() => setMode("init")}
-          >
-            Initial State
-          </button>
-          <button
-            className={mode === "keyframe" ? "active" : ""}
-            onClick={() => {
-              setPreviewBeat(0);
-              setMode("keyframe");
-            }}
-          >
-            Keyframes
-          </button>
+          <h3>Initial State</h3>
+          <p className="def-instr-hint">
+            Drag dancers to reposition. Shift+drag to change facing. Click to
+            select for keyframe editing.
+          </p>
+          <label>
+            Formation preset:{" "}
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  setInitState(
+                    resolveInitFormation(
+                      InitFormationNameSchema.parse(e.target.value),
+                    ),
+                  );
+                }
+              }}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Choose...
+              </option>
+              {InitFormationNameSchema.options.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="def-instr-paste">
+            <label>Paste WorldState JSON:</label>
+            <input
+              type="text"
+              placeholder="Paste JSON here"
+              className="def-instr-text-input wide"
+              onPaste={(e) => {
+                e.preventDefault();
+                handlePasteInitState(e.clipboardData.getData("text"));
+              }}
+            />
+          </div>
         </div>
 
-        {/* Init state controls */}
-        {mode === "init" && (
-          <div className="def-instr-section">
-            <h3>Initial State</h3>
-            <p className="def-instr-hint">
-              Click and drag dancers to move them. Shift+drag to change facing.
-            </p>
-            <label>
-              Formation preset:{" "}
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setInitState(
-                      resolveInitFormation(
-                        InitFormationNameSchema.parse(e.target.value),
-                      ),
-                    );
-                  }
+        {/* Keyframes */}
+        <div className="def-instr-section">
+          <h3>Keyframes</h3>
+          <div className="def-instr-dancer-select">
+            <label>Selected dancer: </label>
+            {ALL_PROTO_IDS.map((id) => (
+              <button
+                key={id}
+                className={selectedDancer === id ? "active" : ""}
+                onClick={() => {
+                  setSelectedDancer(id);
+                  const key =
+                    templateType === "llrr"
+                      ? id
+                      : Dancer.get(id, initState).role;
+                  const filled = keyframes.filter(
+                    (kf) => kf.states[key] != null,
+                  ).length;
+                  setNextSlotForKey(filled);
                 }}
-                defaultValue=""
               >
-                <option value="" disabled>
-                  Choose...
-                </option>
-                {InitFormationNameSchema.options.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="def-instr-paste">
-              <label>Paste WorldState JSON:</label>
-              <input
-                type="text"
-                placeholder="Paste JSON here"
-                className="def-instr-text-input wide"
-                onPaste={(e) => {
-                  e.preventDefault();
-                  handlePasteInitState(e.clipboardData.getData("text"));
-                }}
-              />
-            </div>
+                {id.replace(/_0$/, "").replace(/_/g, " ")}
+              </button>
+            ))}
           </div>
-        )}
 
-        {/* Keyframe controls */}
-        {mode === "keyframe" && (
-          <div className="def-instr-section">
-            <h3>Keyframes</h3>
-            <div className="def-instr-dancer-select">
-              <label>Dancer: </label>
-              {ALL_PROTO_IDS.map((id) => (
-                <button
-                  key={id}
-                  className={selectedDancer === id ? "active" : ""}
-                  onClick={() => {
-                    setSelectedDancer(id);
-                    const key =
-                      templateType === "llrr"
-                        ? id
-                        : Dancer.get(id, initState).role;
-                    const filled = keyframes.filter(
-                      (kf) => kf.states[key] != null,
-                    ).length;
-                    setNextSlotForKey(filled);
-                  }}
-                >
-                  {id.replace(/_0$/, "").replace(/_/g, " ")}
-                </button>
+          <label>
+            Keyframe duration:{" "}
+            <input
+              type="number"
+              value={keyframeDuration}
+              onChange={(e) => setKeyframeDuration(Number(e.target.value))}
+              className="def-instr-number-input"
+              min={0.25}
+              step={0.25}
+            />
+          </label>
+          {selectedDancer && (
+            <p className="def-instr-hint">
+              Drag on the canvas to add a keyframe. Position = click start,
+              facing = drag direction.
+            </p>
+          )}
+
+          {/* Keyframe list */}
+          {keyframes.length > 0 && (
+            <div className="def-instr-keyframe-list">
+              <h4>Keyframes ({keyframes.length})</h4>
+              {keyframes.map((kf, i) => (
+                <div key={i} className="def-instr-keyframe-item">
+                  <span>
+                    t={kf.t.toFixed(1)}
+                    {Object.entries(kf.states).map(([role, state]) =>
+                      state ? (
+                        <span key={role} className="def-instr-kf-role">
+                          {" "}
+                          {role}: ({state.relPos.x.toFixed(2)},{" "}
+                          {state.relPos.y.toFixed(2)}) f=
+                          {((state.relFacing * 180) / Math.PI).toFixed(0)}deg
+                        </span>
+                      ) : null,
+                    )}
+                  </span>
+                  <button
+                    className="delete-btn"
+                    onClick={() =>
+                      setKeyframes((prev) => prev.filter((_, j) => j !== i))
+                    }
+                  >
+                    x
+                  </button>
+                </div>
               ))}
+              <button onClick={() => setKeyframes([])}>Clear all</button>
             </div>
-
-            <label>
-              Keyframe duration:{" "}
-              <input
-                type="number"
-                value={keyframeDuration}
-                onChange={(e) => setKeyframeDuration(Number(e.target.value))}
-                className="def-instr-number-input"
-                min={0.25}
-                step={0.25}
-              />
-            </label>
-            {selectedDancer && (
-              <p className="def-instr-hint">
-                Click and drag on the canvas to add a keyframe. Position = click
-                start, facing = drag direction.
-              </p>
-            )}
-            {!selectedDancer && (
-              <p className="def-instr-hint">Select a dancer to begin.</p>
-            )}
-
-            {/* Keyframe list */}
-            {keyframes.length > 0 && (
-              <div className="def-instr-keyframe-list">
-                <h4>Keyframes ({keyframes.length})</h4>
-                {keyframes.map((kf, i) => (
-                  <div key={i} className="def-instr-keyframe-item">
-                    <span>
-                      t={kf.t.toFixed(1)}
-                      {Object.entries(kf.states).map(([role, state]) =>
-                        state ? (
-                          <span key={role} className="def-instr-kf-role">
-                            {" "}
-                            {role}: ({state.relPos.x.toFixed(2)},{" "}
-                            {state.relPos.y.toFixed(2)}) f=
-                            {((state.relFacing * 180) / Math.PI).toFixed(0)}deg
-                          </span>
-                        ) : null,
-                      )}
-                    </span>
-                    <button
-                      className="delete-btn"
-                      onClick={() =>
-                        setKeyframes((prev) => prev.filter((_, j) => j !== i))
-                      }
-                    >
-                      x
-                    </button>
-                  </div>
-                ))}
-                <button onClick={() => setKeyframes([])}>Clear all</button>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Preview controls */}
         {previewAnimation && (
