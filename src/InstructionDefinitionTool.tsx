@@ -14,13 +14,12 @@ import {
   type Role,
   RoleSchema,
 } from "./contraCore";
-import { lerpFacing as lerpFacingVec } from "./geometry";
 import {
   CalledDirectionSchema,
   CalledIdentifierSchema,
   type ContraAnimation,
 } from "./instructions/_base";
-import { animateSegments, type Segment } from "./instructions/_segment";
+import { animateSegments } from "./instructions/_segment";
 import {
   InitFormationNameSchema,
   resolveInitFormation,
@@ -45,6 +44,7 @@ import {
   resolveTemplateBasisAtInit,
   worldToRelWithBasis,
 } from "./instructions/templates/_basisResolution";
+import { buildKeyframeSegments } from "./instructions/templates/_keyframeSegments";
 import {
   allLLRRTemplates,
   allLRTemplates,
@@ -53,7 +53,7 @@ import {
 } from "./instructions/templates/index";
 import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
-import { buildEnumRecord, lerpVectors } from "./utils";
+import { buildEnumRecord } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -351,40 +351,13 @@ export default function InstructionDefinitionTool() {
         return cached;
       };
 
-      const segments: Segment[] = [];
-
-      for (const kf of keyframes) {
-        const dur = kf.dur * scale;
-
-        segments.push({
-          dur,
-          position: (dancer, frac) => {
-            const key = templateType === "llrr" ? dancer.protoId : dancer.role;
-            const state = kf.states[key];
-            if (!state) return dancer.pos;
-            const orig = dancer.at(initState);
-            const { xBasis, yBasis } = getBasis(dancer);
-            const worldTarget = relPosToWorldWithBasis(
-              state.relPos,
-              orig.pos,
-              xBasis,
-              yBasis,
-            );
-            return lerpVectors(dancer.pos, worldTarget, frac);
-          },
-          facing: (dancer, frac) => {
-            const key = templateType === "llrr" ? dancer.protoId : dancer.role;
-            const state = kf.states[key];
-            if (!state) return dancer.facing;
-            const { yBasis } = getBasis(dancer);
-            const worldFacing = relFacingToWorldWithBasis(
-              state.relFacing,
-              yBasis,
-            );
-            return lerpFacingVec(dancer.facing, worldFacing, frac);
-          },
-        });
-      }
+      const segments = buildKeyframeSegments(
+        keyframes,
+        initState,
+        scale,
+        (dancer) => (templateType === "llrr" ? dancer.protoId : dancer.role),
+        getBasis,
+      );
 
       return {
         previewAnimation: animateSegments(

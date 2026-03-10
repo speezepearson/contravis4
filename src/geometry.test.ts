@@ -1,7 +1,15 @@
 import { Vector } from "vecti";
 import { describe, expect, it } from "vitest";
 
-import { EAST, lerpFacing, NORTH, WEST } from "./geometry";
+import {
+  catmullRom,
+  catmullRomAngle,
+  EAST,
+  lerpFacing,
+  NORTH,
+  PI,
+  WEST,
+} from "./geometry";
 
 describe("lerpFacing", () => {
   it("lerps via short arc by default", () => {
@@ -58,5 +66,78 @@ describe("lerpFacing", () => {
     const normal = lerpFacing(NORTH, EAST, 0.5);
     // They should differ (forced goes the long way)
     expect(forced.x).not.toBeCloseTo(normal.x);
+  });
+});
+
+describe("catmullRom", () => {
+  it("returns p1 at t=0", () => {
+    const p0 = new Vector(0, 0);
+    const p1 = new Vector(1, 2);
+    const p2 = new Vector(3, 4);
+    const p3 = new Vector(5, 6);
+    const result = catmullRom(p0, p1, p2, p3, 0);
+    expect(result.x).toBeCloseTo(1);
+    expect(result.y).toBeCloseTo(2);
+  });
+
+  it("returns p2 at t=1", () => {
+    const p0 = new Vector(0, 0);
+    const p1 = new Vector(1, 2);
+    const p2 = new Vector(3, 4);
+    const p3 = new Vector(5, 6);
+    const result = catmullRom(p0, p1, p2, p3, 1);
+    expect(result.x).toBeCloseTo(3);
+    expect(result.y).toBeCloseTo(4);
+  });
+
+  it("passes through midpoint smoothly for collinear points", () => {
+    // Evenly spaced collinear points — midpoint should be the average of p1 and p2
+    const p0 = new Vector(0, 0);
+    const p1 = new Vector(1, 0);
+    const p2 = new Vector(2, 0);
+    const p3 = new Vector(3, 0);
+    const mid = catmullRom(p0, p1, p2, p3, 0.5);
+    expect(mid.x).toBeCloseTo(1.5);
+    expect(mid.y).toBeCloseTo(0);
+  });
+
+  it("curves smoothly for non-collinear points", () => {
+    // Triangle-like: (0,0) -> (0.5,1) -> (1,0) with surrounding context
+    const p0 = new Vector(-0.5, -1);
+    const p1 = new Vector(0, 0);
+    const p2 = new Vector(0.5, 1);
+    const p3 = new Vector(1, 0);
+    const mid = catmullRom(p0, p1, p2, p3, 0.5);
+    // Should be between p1 and p2, but the curve is influenced by p0 and p3
+    expect(mid.x).toBeCloseTo(0.25);
+    // y should be close to 0.5 (linear midpoint) but may differ due to curvature
+    expect(mid.y).toBeGreaterThan(0);
+    expect(mid.y).toBeLessThan(1);
+  });
+});
+
+describe("catmullRomAngle", () => {
+  it("returns a1 at t=0", () => {
+    expect(catmullRomAngle(0, PI / 2, PI, (3 * PI) / 2, 0)).toBeCloseTo(PI / 2);
+  });
+
+  it("returns a2 at t=1", () => {
+    expect(catmullRomAngle(0, PI / 2, PI, (3 * PI) / 2, 1)).toBeCloseTo(PI);
+  });
+
+  it("interpolates linearly for evenly spaced angles", () => {
+    const mid = catmullRomAngle(0, PI / 4, PI / 2, (3 * PI) / 4, 0.5);
+    expect(mid).toBeCloseTo((3 * PI) / 8);
+  });
+
+  it("handles wraparound across ±π boundary", () => {
+    // Angles near ±π: going from 3π/4 to -3π/4 (i.e. crossing the ±π boundary)
+    const a0 = PI / 2;
+    const a1 = (3 * PI) / 4;
+    const a2 = -(3 * PI) / 4; // = 5π/4 going the short way
+    const a3 = -PI / 2;
+    const mid = catmullRomAngle(a0, a1, a2, a3, 0.5);
+    // Should cross through ±π, midpoint ≈ π (or -π, same angle)
+    expect(Math.abs(Math.abs(mid) - PI)).toBeLessThan(0.1);
   });
 });
