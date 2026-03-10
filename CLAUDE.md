@@ -1,4 +1,4 @@
-- Don't use typecasts. No `x as Record<...>`. Consider using `buildEnumRecord` or `AppropriateZodSchema.parse` instead. If you can't figure it out, ask me for help.
+- Don't use typecasts. No `x as T` (`x as const` is okay). Precommit will rightly fail. Do not add eslint-disable directives on your own. Consider using `buildEnumRecord` or `AppropriateZodSchema.parse` instead. If you can't figure it out, ask me for help.
 
 - When writing Instructions, and comparing two floats that might be ~equal, lean towards using `safeThreshold` rather than plain comparisons like `a < b`, so that, if the result is kinda ambiguous / balanced on a knife's edge, we throw. Not a hard rule; use your judgement.
 

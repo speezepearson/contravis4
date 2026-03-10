@@ -1,6 +1,7 @@
-import type { LRInstructionTemplate } from "../templatedLRInstruction";
+import { typedParse } from "../../utils";
+import { LRInstructionTemplateSchema } from "./_base";
 
-export const specialChainTemplate: LRInstructionTemplate = {
+export default typedParse(LRInstructionTemplateSchema, {
   name: "special chain",
   defaultBeats: 8,
   matcher: { type: "choreographer_specified" },
@@ -8,4 +9,4 @@ export const specialChainTemplate: LRInstructionTemplate = {
   keyframes: [
     // TODO: fill in real keyframes once the definition UI exists
   ],
-};
+});

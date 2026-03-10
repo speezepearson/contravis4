@@ -1,57 +1,21 @@
 import type { Vector } from "vecti";
 import { z } from "zod";
 
-import { type Beats, BeatsSchema, RoleSchema } from "../contraCore";
-import { ccwRadsBetween, lerpFacing, NORTH, VectorSchema } from "../geometry";
+import { type Beats } from "../contraCore";
+import { ccwRadsBetween, lerpFacing, NORTH } from "../geometry";
 import { lerpVectors, must } from "../utils";
 import { Dancer } from "../worldState";
-import {
-  type CalledIdentifier,
-  CalledIdentifierSchema,
-  instructionBaseSchemaFields,
-} from "./_base";
+import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
-import { allLRTemplates, TemplateIdSchema } from "./templates/index";
-
-// ── Template schema ──────────────────────────────────────────────────────
-
-export const LRInstructionTemplateSchema = z.object({
-  name: z.string(),
-  defaultBeats: z.number(),
-  fieldsDisplay: z.array(
-    z.union([z.string(), z.object({ field: z.literal("matcher") })]),
-  ),
-  matcher: z.discriminatedUnion("type", [
-    z.object({ type: z.literal("hardcoded"), cid: CalledIdentifierSchema }),
-    z.object({ type: z.literal("choreographer_specified") }),
-  ]),
-  keyframes: z.array(
-    z.object({
-      t: BeatsSchema,
-      states: z.record(
-        RoleSchema,
-        z.object({ relPos: VectorSchema, relFacing: z.number() }),
-      ),
-    }),
-  ),
-});
-export type LRInstructionTemplate = z.infer<typeof LRInstructionTemplateSchema>;
-
-// ── Choreographer-specified fields ───────────────────────────────────────
-
-export const ChoreographerSpecifiedLRInstructionFieldsSchema = z.object({
-  matcher: CalledIdentifierSchema.optional(),
-});
-export type ChoreographerSpecifiedLRInstructionFields = z.infer<
-  typeof ChoreographerSpecifiedLRInstructionFieldsSchema
->;
+import { ChoreographerSpecifiedLRInstructionFieldsSchema } from "./templates/_base";
+import { allLRTemplates, LRTemplateIdSchema } from "./templates/index";
 
 // ── Instruction schema ───────────────────────────────────────────────────
 
 export const TemplatedLRInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("templated_lr"),
-  templateId: TemplateIdSchema,
+  templateId: LRTemplateIdSchema,
   fields: ChoreographerSpecifiedLRInstructionFieldsSchema,
 });
 export type TemplatedLRInstruction = z.infer<

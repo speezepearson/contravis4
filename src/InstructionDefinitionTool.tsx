@@ -28,8 +28,10 @@ import {
   InitFormationNameSchema,
   resolveInitFormation,
 } from "./instructions/index";
-import type { LRInstructionTemplate } from "./instructions/templatedLRInstruction";
-import { LRInstructionTemplateSchema } from "./instructions/templatedLRInstruction";
+import {
+  type LRInstructionTemplate,
+  LRInstructionTemplateSchema,
+} from "./instructions/templates/_base";
 import { buildEnumRecord, lerpVectors } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
