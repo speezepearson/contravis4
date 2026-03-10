@@ -104,6 +104,10 @@ import {
   takeHandsInRingsSegments,
 } from "./takeHandsInRings";
 import {
+  TemplatedLLRRInstructionSchema,
+  templatedLLRRSegments,
+} from "./templatedLLRRInstruction";
+import {
   TemplatedLRInstructionSchema,
   templatedLRSegments,
 } from "./templatedLRInstruction";
@@ -156,6 +160,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
   TakeHandsInstructionSchema,
+  TemplatedLLRRInstructionSchema,
   TemplatedLRInstructionSchema,
   TurnAloneInstructionSchema,
   TurnAsACoupleInstructionSchema,
@@ -210,6 +215,7 @@ export const atomicSegmentAnimators: {
   swing: swingSegments,
   take_hands_in_rings: takeHandsInRingsSegments,
   take_hands: takeHandsSegments,
+  templated_llrr: templatedLLRRSegments,
   templated_lr: templatedLRSegments,
   turn_alone: turnAloneSegments,
   turn_as_a_couple: turnAsACoupleSegments,

@@ -17,7 +17,11 @@ import {
   type InstructionId,
   InstructionSchema,
 } from "../instructions/index";
-import { allLRTemplates } from "../instructions/templates/index";
+import {
+  allLLRRTemplates,
+  allLRTemplates,
+  LLRRTemplateIdSchema,
+} from "../instructions/templates/index";
 import { type Label, LabelSchema } from "../labels";
 import { assertNever, parses } from "../utils";
 
@@ -264,7 +268,22 @@ export function makeDefaultInstruction(
       case "up_the_hall":
         return { id, type, beats: 6, distance: 1.5 };
       default: {
-        // Template IDs: create a templated_lr instruction
+        // Template IDs: create a templated_lr or templated_llrr instruction
+        if (parses(LLRRTemplateIdSchema, type)) {
+          const template = allLLRRTemplates[type];
+          return {
+            id,
+            type: "templated_llrr",
+            beats: template.defaultBeats,
+            templateId: type,
+            fields: {
+              matcher:
+                template.matcher.type === "choreographer_specified"
+                  ? "partner"
+                  : undefined,
+            },
+          };
+        }
         const _exhaustive: keyof typeof allLRTemplates = type;
         const template = allLRTemplates[_exhaustive];
         return {

@@ -14,6 +14,7 @@ import {
   ALL_PROTO_IDS,
   ALL_PROTO_IDS_SET,
   type ProtoId,
+  ProtoIdSchema,
   type Role,
   RoleSchema,
 } from "./contraCore";
@@ -29,6 +30,8 @@ import {
   resolveInitFormation,
 } from "./instructions/index";
 import {
+  type LLRRInstructionTemplate,
+  LLRRInstructionTemplateSchema,
   type LRInstructionTemplate,
   LRInstructionTemplateSchema,
 } from "./instructions/templates/_base";
@@ -39,9 +42,14 @@ import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 type Mode = "init" | "keyframe";
 
+type TemplateType = "lr" | "llrr";
+
+/** In LR mode the key is a Role; in LLRR mode it's a ProtoId. */
+type StateKey = Role | ProtoId;
+
 type KeyframeEntry = {
   t: number;
-  states: Partial<Record<Role, { relPos: Vector; relFacing: number }>>;
+  states: Partial<Record<StateKey, { relPos: Vector; relFacing: number }>>;
 };
 
 type MatcherConfig =
@@ -97,6 +105,7 @@ export default function InstructionDefinitionTool() {
   const rendererRef = useRef<Renderer | null>(null);
 
   // Template state
+  const [templateType, setTemplateType] = useState<TemplateType>("lr");
   const [name, setName] = useState("untitled");
   const [defaultBeats, setDefaultBeats] = useState(8);
   const [matcher, setMatcher] = useState<MatcherConfig>({
@@ -114,8 +123,8 @@ export default function InstructionDefinitionTool() {
   const [mode, setMode] = useState<Mode>("init");
   const [selectedDancer, setSelectedDancer] = useState<ProtoId | null>(null);
   const [keyframeDuration, setKeyframeDuration] = useState(1);
-  // Tracks which keyframe slot the next click will fill for the current role
-  const [nextSlotForRole, setNextSlotForRole] = useState(0);
+  // Tracks which keyframe slot the next click will fill for the current state key
+  const [nextSlotForKey, setNextSlotForKey] = useState(0);
   const [previewBeat, setPreviewBeat] = useState(0);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [fieldsDisplayText, setFieldsDisplayText] = useState("");
@@ -124,10 +133,12 @@ export default function InstructionDefinitionTool() {
   const dragRef = useRef<DragState | null>(null);
   const drawRafRef = useRef(0);
 
-  const selectedRole: Role | null = useMemo(() => {
+  /** The key used for keyframe state lookup — Role for LR, ProtoId for LLRR. */
+  const selectedStateKey: StateKey | null = useMemo(() => {
     if (!selectedDancer) return null;
+    if (templateType === "llrr") return selectedDancer;
     return Dancer.get(selectedDancer, initState).role;
-  }, [selectedDancer, initState]);
+  }, [selectedDancer, initState, templateType]);
 
   // ── Preview animation ───────────────────────────────────────────────
 
@@ -148,14 +159,16 @@ export default function InstructionDefinitionTool() {
         segments.push({
           dur,
           position: (dancer, frac) => {
-            const state = kf.states[dancer.role];
+            const key = templateType === "llrr" ? dancer.protoId : dancer.role;
+            const state = kf.states[key];
             if (!state) return dancer.pos;
             const orig = dancer.at(initState);
             const worldTarget = relToWorld(state.relPos, orig.pos, orig.facing);
             return lerpVectors(dancer.pos, worldTarget, frac);
           },
           facing: (dancer, frac) => {
-            const state = kf.states[dancer.role];
+            const key = templateType === "llrr" ? dancer.protoId : dancer.role;
+            const state = kf.states[key];
             if (!state) return dancer.facing;
             const orig = dancer.at(initState);
             const worldFacing = relFacingToWorld(state.relFacing, orig.facing);
@@ -171,7 +184,7 @@ export default function InstructionDefinitionTool() {
       // SWALLOW_EXCEPTION: template may be in an invalid intermediate state while editing
       return null;
     }
-  }, [keyframes, defaultBeats, initState]);
+  }, [keyframes, defaultBeats, initState, templateType]);
 
   // ── Drawing ──────────────────────────────────────────────────────────
 
@@ -180,7 +193,7 @@ export default function InstructionDefinitionTool() {
   const initStateRef = useRef(initState);
   const keyframesRef = useRef(keyframes);
   const selectedDancerRef = useRef<ProtoId | null>(selectedDancer);
-  const selectedRoleRef = useRef(selectedRole);
+  const selectedStateKeyRef = useRef(selectedStateKey);
   const modeRef = useRef(mode);
   const previewAnimationRef = useRef(previewAnimation);
   const previewBeatRef = useRef(previewBeat);
@@ -188,7 +201,7 @@ export default function InstructionDefinitionTool() {
     initStateRef.current = initState;
     keyframesRef.current = keyframes;
     selectedDancerRef.current = selectedDancer;
-    selectedRoleRef.current = selectedRole;
+    selectedStateKeyRef.current = selectedStateKey;
     modeRef.current = mode;
     previewAnimationRef.current = previewAnimation;
     previewBeatRef.current = previewBeat;
@@ -205,7 +218,7 @@ export default function InstructionDefinitionTool() {
     const curPreviewAnimation = previewAnimationRef.current;
     const curPreviewBeat = previewBeatRef.current;
     const curSelectedDancer = selectedDancerRef.current;
-    const curSelectedRole = selectedRoleRef.current;
+    const curSelectedStateKey = selectedStateKeyRef.current;
     const curKeyframes = keyframesRef.current;
 
     if (curMode === "keyframe" && curPreviewAnimation && curPreviewBeat > 0) {
@@ -223,13 +236,13 @@ export default function InstructionDefinitionTool() {
     }
 
     // Draw ghost dancers at keyframe positions
-    if (curSelectedDancer && curMode === "keyframe" && curSelectedRole) {
+    if (curSelectedDancer && curMode === "keyframe" && curSelectedStateKey) {
       const orig = Dancer.get(curSelectedDancer, curInitState);
       for (const kf of curKeyframes) {
-        const roleState = kf.states[curSelectedRole];
-        if (!roleState) continue;
-        const worldPos = relToWorld(roleState.relPos, orig.pos, orig.facing);
-        const worldFacing = relFacingToWorld(roleState.relFacing, orig.facing);
+        const keyState = kf.states[curSelectedStateKey];
+        if (!keyState) continue;
+        const worldPos = relToWorld(keyState.relPos, orig.pos, orig.facing);
+        const worldFacing = relFacingToWorld(keyState.relFacing, orig.facing);
         renderer.drawGhostDancer(
           curSelectedDancer,
           worldPos.x,
@@ -315,7 +328,7 @@ export default function InstructionDefinitionTool() {
   }, [
     initState,
     selectedDancer,
-    selectedRole,
+    selectedStateKey,
     mode,
     keyframes,
     previewAnimation,
@@ -352,11 +365,11 @@ export default function InstructionDefinitionTool() {
         }
       } else if (mode === "keyframe") {
         // Hit-test ghost dancers first
-        if (selectedDancer && selectedRole) {
+        if (selectedDancer && selectedStateKey) {
           const orig = Dancer.get(selectedDancer, initState);
           const ghostHitRadius = 0.15; // world units
           for (let i = 0; i < keyframes.length; i++) {
-            const roleState = keyframes[i].states[selectedRole];
+            const roleState = keyframes[i].states[selectedStateKey];
             if (!roleState) continue;
             const ghostPos = relToWorld(
               roleState.relPos,
@@ -388,7 +401,7 @@ export default function InstructionDefinitionTool() {
         dragRef.current = drag;
       }
     },
-    [mode, initState, selectedDancer, selectedRole, keyframes],
+    [mode, initState, selectedDancer, selectedStateKey, keyframes],
   );
 
   const handleMouseMove = useCallback(
@@ -433,16 +446,16 @@ export default function InstructionDefinitionTool() {
         mode === "keyframe" &&
         dragRef.current.ghostKeyframeIndex != null &&
         selectedDancer &&
-        selectedRole
+        selectedStateKey
       ) {
         const kfIdx = dragRef.current.ghostKeyframeIndex;
         const orig = Dancer.get(selectedDancer, initState);
         if (dragRef.current.shiftKey) {
           // Change ghost facing: facing = direction from ghost position to mouse
-          const roleState = keyframes[kfIdx].states[selectedRole];
-          if (roleState) {
+          const keyState = keyframes[kfIdx].states[selectedStateKey];
+          if (keyState) {
             const ghostWorldPos = relToWorld(
-              roleState.relPos,
+              keyState.relPos,
               orig.pos,
               orig.facing,
             );
@@ -455,8 +468,8 @@ export default function InstructionDefinitionTool() {
                       ...kf,
                       states: {
                         ...kf.states,
-                        [selectedRole]: {
-                          ...kf.states[selectedRole]!,
+                        [selectedStateKey]: {
+                          ...kf.states[selectedStateKey]!,
                           relFacing: newRelFacing,
                         },
                       },
@@ -480,8 +493,8 @@ export default function InstructionDefinitionTool() {
                   ...kf,
                   states: {
                     ...kf.states,
-                    [selectedRole]: {
-                      ...kf.states[selectedRole]!,
+                    [selectedStateKey]: {
+                      ...kf.states[selectedStateKey]!,
                       relPos: newRelPos,
                     },
                   },
@@ -495,7 +508,7 @@ export default function InstructionDefinitionTool() {
 
       requestDraw();
     },
-    [mode, initState, selectedDancer, selectedRole, keyframes, requestDraw],
+    [mode, initState, selectedDancer, selectedStateKey, keyframes, requestDraw],
   );
 
   const handleMouseUp = useCallback(
@@ -524,16 +537,17 @@ export default function InstructionDefinitionTool() {
             if (hit) {
               setSelectedDancer(hit);
               // Reset slot counter: find how many existing keyframes already
-              // have data for this dancer's role
-              const hitRole = Dancer.get(hit, initState).role;
+              // have data for this dancer's state key
+              const hitKey =
+                templateType === "llrr" ? hit : Dancer.get(hit, initState).role;
               const filled = keyframes.filter(
-                (kf) => kf.states[hitRole] != null,
+                (kf) => kf.states[hitKey] != null,
               ).length;
-              setNextSlotForRole(filled);
+              setNextSlotForKey(filled);
             }
           }
-        } else if (selectedDancer && selectedRole) {
-          // Drag = add keyframe for current role, merged into the next slot
+        } else if (selectedDancer && selectedStateKey) {
+          // Drag = add keyframe for current state key, merged into the next slot
           const orig = Dancer.get(selectedDancer, initState);
           const clickPos = new Vector(drag.startWorldX, drag.startWorldY);
           const dragDir = new Vector(
@@ -546,7 +560,7 @@ export default function InstructionDefinitionTool() {
           const relPos = worldToRel(clickPos, orig.pos, orig.facing);
           const relFacing = facingToRel(worldFacing, orig.facing);
 
-          const slot = nextSlotForRole;
+          const slot = nextSlotForKey;
 
           setKeyframes((prev) => {
             if (slot < prev.length) {
@@ -557,7 +571,7 @@ export default function InstructionDefinitionTool() {
                       ...kf,
                       states: {
                         ...kf.states,
-                        [selectedRole]: { relPos, relFacing },
+                        [selectedStateKey]: { relPos, relFacing },
                       },
                     }
                   : kf,
@@ -570,13 +584,13 @@ export default function InstructionDefinitionTool() {
                 {
                   t: lastT + keyframeDuration,
                   states: {
-                    [selectedRole]: { relPos, relFacing },
+                    [selectedStateKey]: { relPos, relFacing },
                   },
                 },
               ];
             }
           });
-          setNextSlotForRole(slot + 1);
+          setNextSlotForKey(slot + 1);
         }
       }
 
@@ -585,19 +599,37 @@ export default function InstructionDefinitionTool() {
     },
     [
       mode,
+      templateType,
       selectedDancer,
-      selectedRole,
+      selectedStateKey,
       initState,
       keyframes,
       keyframeDuration,
-      nextSlotForRole,
+      nextSlotForKey,
       requestDraw,
     ],
   );
 
   // ── Export / Import ──────────────────────────────────────────────────
 
-  const exportTemplate = useCallback((): LRInstructionTemplate => {
+  const exportTemplate = useCallback(():
+    | LRInstructionTemplate
+    | LLRRInstructionTemplate => {
+    if (templateType === "llrr") {
+      return {
+        name,
+        defaultBeats,
+        matcher,
+        fieldsDisplay,
+        keyframes: keyframes.map((kf) => ({
+          t: kf.t,
+          states: buildEnumRecord(
+            ProtoIdSchema,
+            (p) => kf.states[p] ?? { relPos: new Vector(0, 0), relFacing: 0 },
+          ),
+        })),
+      };
+    }
     return {
       name,
       defaultBeats,
@@ -611,7 +643,7 @@ export default function InstructionDefinitionTool() {
         ),
       })),
     };
-  }, [name, defaultBeats, matcher, fieldsDisplay, keyframes]);
+  }, [name, defaultBeats, matcher, fieldsDisplay, keyframes, templateType]);
 
   const exportTypeScript = useCallback(() => {
     const template = exportTemplate();
@@ -625,49 +657,60 @@ export default function InstructionDefinitionTool() {
       },
       2,
     );
+    const schemaName =
+      templateType === "llrr"
+        ? "LLRRInstructionTemplateSchema"
+        : "LRInstructionTemplateSchema";
     return [
       `import { typedParse } from "../../utils";`,
-      `import { LRInstructionTemplateSchema } from "../templatedLRInstruction";`,
+      `import { ${schemaName} } from "./_base";`,
       ``,
-      `export default typedParse(LRInstructionTemplateSchema, ${jsonBody});`,
+      `export default typedParse(${schemaName}, ${jsonBody});`,
       ``,
     ].join("\n");
-  }, [exportTemplate]);
+  }, [exportTemplate, templateType]);
 
-  const handleImportJson = useCallback((text: string) => {
-    setJsonError(null);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch (e) {
-      setJsonError(
-        `Invalid JSON: ${e instanceof SyntaxError ? e.message : String(e)}`,
+  const handleImportJson = useCallback(
+    (text: string) => {
+      setJsonError(null);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        setJsonError(
+          `Invalid JSON: ${e instanceof SyntaxError ? e.message : String(e)}`,
+        );
+        return;
+      }
+
+      const schema =
+        templateType === "llrr"
+          ? LLRRInstructionTemplateSchema
+          : LRInstructionTemplateSchema;
+      const result = schema.safeParse(parsed);
+      if (!result.success) {
+        setJsonError(
+          result.error.issues
+            .map((i) => `${i.path.join(".")}: ${i.message}`)
+            .join("\n"),
+        );
+        return;
+      }
+
+      const template = result.data;
+      setName(template.name);
+      setDefaultBeats(template.defaultBeats);
+      setMatcher(template.matcher);
+      setFieldsDisplay(template.fieldsDisplay);
+      setKeyframes(
+        template.keyframes.map((kf) => ({
+          t: kf.t,
+          states: kf.states,
+        })),
       );
-      return;
-    }
-
-    const result = LRInstructionTemplateSchema.safeParse(parsed);
-    if (!result.success) {
-      setJsonError(
-        result.error.issues
-          .map((i) => `${i.path.join(".")}: ${i.message}`)
-          .join("\n"),
-      );
-      return;
-    }
-
-    const template = result.data;
-    setName(template.name);
-    setDefaultBeats(template.defaultBeats);
-    setMatcher(template.matcher);
-    setFieldsDisplay(template.fieldsDisplay);
-    setKeyframes(
-      template.keyframes.map((kf) => ({
-        t: kf.t,
-        states: kf.states,
-      })),
-    );
-  }, []);
+    },
+    [templateType],
+  );
 
   const handlePasteInitState = useCallback((text: string) => {
     setJsonError(null);
@@ -699,7 +742,7 @@ export default function InstructionDefinitionTool() {
     setFieldsDisplayText(text);
     // Parse: text segments separated by {matcher}
     const parts = text.split(/\{matcher\}/g);
-    const result: LRInstructionTemplate["fieldsDisplay"] = [];
+    const result: LRInstructionTemplate["fieldsDisplay"] = []; // same type for both LR and LLRR
     for (let i = 0; i < parts.length; i++) {
       if (parts[i]) result.push(parts[i]);
       if (i < parts.length - 1) result.push({ field: "matcher" });
@@ -731,6 +774,21 @@ export default function InstructionDefinitionTool() {
         {/* Template metadata */}
         <div className="def-instr-section">
           <h3>Template</h3>
+          <label>
+            Type:{" "}
+            <select
+              value={templateType}
+              onChange={(e) => {
+                const next = e.target.value === "llrr" ? "llrr" : "lr";
+                setTemplateType(next);
+                setKeyframes([]);
+                setSelectedDancer(null);
+              }}
+            >
+              <option value="lr">LR (per-role)</option>
+              <option value="llrr">LLRR (per-dancer)</option>
+            </select>
+          </label>
           <label>
             Name:{" "}
             <input
@@ -880,11 +938,14 @@ export default function InstructionDefinitionTool() {
                   className={selectedDancer === id ? "active" : ""}
                   onClick={() => {
                     setSelectedDancer(id);
-                    const role = Dancer.get(id, initState).role;
+                    const key =
+                      templateType === "llrr"
+                        ? id
+                        : Dancer.get(id, initState).role;
                     const filled = keyframes.filter(
-                      (kf) => kf.states[role] != null,
+                      (kf) => kf.states[key] != null,
                     ).length;
-                    setNextSlotForRole(filled);
+                    setNextSlotForKey(filled);
                   }}
                 >
                   {id.replace(/_0$/, "").replace(/_/g, " ")}

@@ -54,7 +54,9 @@ import {
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
 import {
+  allLLRRTemplates,
   allLRTemplates,
+  LLRRTemplateIdSchema,
   LRTemplateIdSchema,
 } from "../instructions/templates/index";
 import type { SnazzySegment } from "../snazzyError";
@@ -101,6 +103,7 @@ import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
+import { TemplatedLLRRFields } from "./fields/TemplatedLLRRFields";
 import { TemplatedLRFields } from "./fields/TemplatedLRFields";
 import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
@@ -199,6 +202,7 @@ const ActionOptionTypeSchema = z.enum([
   "up_the_hall",
   "zig_zag",
   ...LRTemplateIdSchema.options,
+  ...LLRRTemplateIdSchema.options,
 ]);
 export type ActionOptionType = z.infer<typeof ActionOptionTypeSchema>;
 export const ACTION_OPTION_TYPES = ActionOptionTypeSchema.options
@@ -313,6 +317,9 @@ const ACTION_LABELS = buildEnumRecord(ActionOptionTypeSchema, (t) => {
 
   if (parses(LRTemplateIdSchema, t)) {
     return allLRTemplates[t].name;
+  }
+  if (parses(LLRRTemplateIdSchema, t)) {
+    return allLLRRTemplates[t].name;
   }
   assertNever(t);
 });
@@ -624,6 +631,7 @@ function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
     case "up_the_hall":
     case "zig_zag":
     case "templated_lr":
+    case "templated_llrr":
       return true;
     case "drop_hands":
     case "face":
@@ -692,7 +700,7 @@ function InlineForm({
     : ActionOptionTypeSchema.options.filter((o) => o !== "split");
 
   const actionOptionValue: ActionOptionType =
-    instruction.type === "templated_lr"
+    instruction.type === "templated_lr" || instruction.type === "templated_llrr"
       ? instruction.templateId
       : instruction.type;
 
@@ -858,6 +866,10 @@ function InlineForm({
             return <ZigZagFields {...common} instruction={instruction} />;
           case "templated_lr":
             return <TemplatedLRFields {...common} instruction={instruction} />;
+          case "templated_llrr":
+            return (
+              <TemplatedLLRRFields {...common} instruction={instruction} />
+            );
           default:
             assertNever(instruction);
         }
