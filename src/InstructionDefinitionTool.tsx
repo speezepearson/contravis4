@@ -212,8 +212,6 @@ export default function InstructionDefinitionTool() {
     endTransient,
     undo,
     redo,
-    canUndo,
-    canRedo,
   } = useUndoRedo<TemplateState>(INITIAL_TEMPLATE_STATE);
 
   const { templateType, name, defaultBeats, basis, initState, keyframes } = tpl;
@@ -1038,15 +1036,6 @@ export default function InstructionDefinitionTool() {
 
       <div className="def-instr-controls-column">
         <h2>Instruction Definition Tool</h2>
-
-        <div className="def-instr-section">
-          <button disabled={!canUndo} onClick={undo}>
-            Undo
-          </button>{" "}
-          <button disabled={!canRedo} onClick={redo}>
-            Redo
-          </button>
-        </div>
 
         {/* Template metadata */}
         <div className="def-instr-section">

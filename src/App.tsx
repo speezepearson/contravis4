@@ -166,8 +166,6 @@ export default function App() {
     endTransient,
     undo,
     redo,
-    canUndo,
-    canRedo,
   } = useUndoRedo(initialDanceState);
 
   const { instructions, initFormation } = danceState;
@@ -721,8 +719,8 @@ export default function App() {
   );
 
   const undoContextValue = useMemo(
-    () => ({ beginTransient, endTransient, undo, redo, canUndo, canRedo }),
-    [beginTransient, endTransient, undo, redo, canUndo, canRedo],
+    () => ({ beginTransient, endTransient, undo, redo }),
+    [beginTransient, endTransient, undo, redo],
   );
 
   const commandPaneProps = {
