@@ -302,7 +302,7 @@ export default function InstructionDefinitionTool() {
     renderer.drawFrame(0, curInitState);
 
     // Draw path lines (always, when we have keyframes)
-    if (curMode === "keyframe" && curPathFrames.length > 0) {
+    if (curPathFrames.length > 0) {
       renderer.drawPreviewKeyframes(curPathFrames);
     }
 
@@ -312,7 +312,7 @@ export default function InstructionDefinitionTool() {
     }
 
     // Draw basis arrows for ALL dancers in init state
-    if (curMode === "keyframe") {
+    {
       const curBasisTemplate = basisRef.current;
       for (const protoId of ALL_PROTO_IDS) {
         try {
@@ -335,7 +335,7 @@ export default function InstructionDefinitionTool() {
     }
 
     // Draw highlighted basis spec as a line from selected dancer
-    if (curSelectedDancer && curMode === "keyframe" && curHighlightedSpec) {
+    if (curSelectedDancer && curHighlightedSpec) {
       try {
         const dancer = Dancer.get(curSelectedDancer, curInitState);
         const vec = resolveBasisVector(
@@ -358,12 +358,7 @@ export default function InstructionDefinitionTool() {
     }
 
     // Draw ghost dancers at keyframe positions
-    if (
-      curSelectedDancer &&
-      curMode === "keyframe" &&
-      curSelectedStateKey &&
-      curBasis
-    ) {
+    if (curSelectedDancer && curSelectedStateKey && curBasis) {
       const orig = Dancer.get(curSelectedDancer, curInitState);
       for (const kf of curKeyframes) {
         const keyState = kf.states[curSelectedStateKey];
