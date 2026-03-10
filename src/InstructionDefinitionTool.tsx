@@ -56,6 +56,7 @@ import {
   LLRRTemplateIdSchema,
   LRTemplateIdSchema,
 } from "./instructions/templates/index";
+import { useUndoRedo } from "./useUndoRedo";
 import { buildEnumRecord, lerpVectors } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
@@ -69,6 +70,26 @@ type StateKey = Role | ProtoId;
 type KeyframeEntry = {
   t: number;
   states: Partial<Record<StateKey, { relPos: Vector; relFacing: number }>>;
+};
+
+type TemplateState = {
+  templateType: TemplateType;
+  name: string;
+  defaultBeats: number;
+  basis: TemplateBasis;
+  fieldsDisplay: LRInstructionTemplate["fieldsDisplay"];
+  initState: WorldState;
+  keyframes: KeyframeEntry[];
+};
+
+const INITIAL_TEMPLATE_STATE: TemplateState = {
+  templateType: "lr",
+  name: "untitled",
+  defaultBeats: 8,
+  basis: { ...DEFAULT_TEMPLATE_BASIS },
+  fieldsDisplay: [],
+  initState: resolveInitFormation("improper"),
+  keyframes: [],
 };
 
 type DragState = {
@@ -117,20 +138,33 @@ export default function InstructionDefinitionTool() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<Renderer | null>(null);
 
-  // Template state
-  const [templateType, setTemplateType] = useState<TemplateType>("lr");
-  const [name, setName] = useState("untitled");
-  const [defaultBeats, setDefaultBeats] = useState(8);
-  const [basis, setBasis] = useState<TemplateBasis>({
-    ...DEFAULT_TEMPLATE_BASIS,
-  });
-  const [fieldsDisplay, setFieldsDisplay] = useState<
-    LRInstructionTemplate["fieldsDisplay"]
-  >([]);
-  const [initState, setInitState] = useState<WorldState>(() =>
-    resolveInitFormation("improper"),
+  // Template state (undoable)
+  const {
+    state: tpl,
+    setState: setTpl,
+    beginTransient,
+    endTransient,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoRedo<TemplateState>(INITIAL_TEMPLATE_STATE);
+
+  const {
+    templateType,
+    name,
+    defaultBeats,
+    basis,
+    fieldsDisplay,
+    initState,
+    keyframes,
+  } = tpl;
+
+  // Convenience updaters
+  const updateTpl = useCallback(
+    (patch: Partial<TemplateState>) => setTpl({ ...tpl, ...patch }),
+    [tpl, setTpl],
   );
-  const [keyframes, setKeyframes] = useState<KeyframeEntry[]>([]);
 
   // UI state
   const [selectedDancer, setSelectedDancer] = useState<ProtoId | null>(null);
@@ -408,6 +442,25 @@ export default function InstructionDefinitionTool() {
     drawRafRef.current = requestAnimationFrame(() => draw());
   }, [draw]);
 
+  // ── Keyboard shortcuts ───────────────────────────────────────────────
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (
+        (e.ctrlKey || e.metaKey) &&
+        ((e.key === "z" && e.shiftKey) || e.key === "y")
+      ) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo]);
+
   // ── Canvas setup ─────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -491,6 +544,7 @@ export default function InstructionDefinitionTool() {
           );
           const dist = Math.hypot(wx - ghostPos.x, wy - ghostPos.y);
           if (dist < ghostHitRadius) {
+            beginTransient();
             dragRef.current = {
               startWorldX: wx,
               startWorldY: wy,
@@ -508,6 +562,7 @@ export default function InstructionDefinitionTool() {
       if (previewBeat === 0) {
         const hit = renderer.hitTestDancer(cx, cy, initState);
         if (hit) {
+          beginTransient();
           dragRef.current = {
             startWorldX: wx,
             startWorldY: wy,
@@ -536,6 +591,7 @@ export default function InstructionDefinitionTool() {
       selectedStateKey,
       selectedBasis,
       keyframes,
+      beginTransient,
     ],
   );
 
@@ -559,23 +615,19 @@ export default function InstructionDefinitionTool() {
       if (dragRef.current.dancerId) {
         const id = dragRef.current.dancerId;
         if (dragRef.current.shiftKey) {
-          // Change facing: facing = direction from dancer to mouse
           const dancer = initState[id];
           const dir = new Vector(wx - dancer.pos.x, wy - dancer.pos.y);
           if (dir.length() > 0.01) {
             const next = produce(initState, (draft) => {
               draft[id].facing = dir.normalize();
             });
-            setInitState(next);
-            initStateRef.current = next;
+            updateTpl({ initState: next });
           }
         } else {
-          // Move dancer
           const next = produce(initState, (draft) => {
             draft[id].pos = new Vector(wx, wy);
           });
-          setInitState(next);
-          initStateRef.current = next;
+          updateTpl({ initState: next });
         }
       } else if (
         dragRef.current.ghostKeyframeIndex != null &&
@@ -586,7 +638,6 @@ export default function InstructionDefinitionTool() {
         const kfIdx = dragRef.current.ghostKeyframeIndex;
         const orig = Dancer.get(selectedDancer, initState);
         if (dragRef.current.shiftKey) {
-          // Change ghost facing: facing = direction from ghost position to mouse
           const keyState = keyframes[kfIdx].states[selectedStateKey];
           if (keyState) {
             const ghostWorldPos = relPosToWorldWithBasis(
@@ -601,48 +652,47 @@ export default function InstructionDefinitionTool() {
                 dir.normalize(),
                 selectedBasis.yBasis,
               );
-              const next = keyframes.map((kf, i) =>
-                i === kfIdx
-                  ? {
-                      ...kf,
-                      states: {
-                        ...kf.states,
-                        [selectedStateKey]: {
-                          ...kf.states[selectedStateKey]!,
-                          relFacing: newRelFacing,
+              updateTpl({
+                keyframes: keyframes.map((kf, i) =>
+                  i === kfIdx
+                    ? {
+                        ...kf,
+                        states: {
+                          ...kf.states,
+                          [selectedStateKey]: {
+                            ...kf.states[selectedStateKey]!,
+                            relFacing: newRelFacing,
+                          },
                         },
-                      },
-                    }
-                  : kf,
-              );
-              setKeyframes(next);
-              keyframesRef.current = next;
+                      }
+                    : kf,
+                ),
+              });
             }
           }
         } else {
-          // Move ghost: update relPos
           const newRelPos = worldToRelWithBasis(
             new Vector(wx, wy),
             orig.pos,
             selectedBasis.xBasis,
             selectedBasis.yBasis,
           );
-          const next = keyframes.map((kf, i) =>
-            i === kfIdx
-              ? {
-                  ...kf,
-                  states: {
-                    ...kf.states,
-                    [selectedStateKey]: {
-                      ...kf.states[selectedStateKey]!,
-                      relPos: newRelPos,
+          updateTpl({
+            keyframes: keyframes.map((kf, i) =>
+              i === kfIdx
+                ? {
+                    ...kf,
+                    states: {
+                      ...kf.states,
+                      [selectedStateKey]: {
+                        ...kf.states[selectedStateKey]!,
+                        relPos: newRelPos,
+                      },
                     },
-                  },
-                }
-              : kf,
-          );
-          setKeyframes(next);
-          keyframesRef.current = next;
+                  }
+                : kf,
+            ),
+          });
         }
       }
 
@@ -654,6 +704,7 @@ export default function InstructionDefinitionTool() {
       selectedStateKey,
       selectedBasis,
       keyframes,
+      updateTpl,
       requestDraw,
     ],
   );
@@ -716,9 +767,9 @@ export default function InstructionDefinitionTool() {
 
         const slot = nextSlotForKey;
 
-        setKeyframes((prev) => {
-          if (slot < prev.length) {
-            return prev.map((kf, i) =>
+        const nextKeyframes = (() => {
+          if (slot < keyframes.length) {
+            return keyframes.map((kf, i) =>
               i === slot
                 ? {
                     ...kf,
@@ -730,9 +781,10 @@ export default function InstructionDefinitionTool() {
                 : kf,
             );
           } else {
-            const lastT = prev.length > 0 ? prev[prev.length - 1].t : 0;
+            const lastT =
+              keyframes.length > 0 ? keyframes[keyframes.length - 1].t : 0;
             return [
-              ...prev,
+              ...keyframes,
               {
                 t: lastT + keyframeDuration,
                 states: {
@@ -741,10 +793,12 @@ export default function InstructionDefinitionTool() {
               },
             ];
           }
-        });
+        })();
+        updateTpl({ keyframes: nextKeyframes });
         setNextSlotForKey(slot + 1);
       }
 
+      endTransient();
       dragRef.current = null;
       requestDraw();
     },
@@ -757,6 +811,8 @@ export default function InstructionDefinitionTool() {
       keyframes,
       keyframeDuration,
       nextSlotForKey,
+      updateTpl,
+      endTransient,
       requestDraw,
     ],
   );
@@ -822,19 +878,24 @@ export default function InstructionDefinitionTool() {
   }, [exportTemplate, templateType]);
 
   const loadTemplate = useCallback(
-    (template: LRInstructionTemplate | LLRRInstructionTemplate) => {
-      setName(template.name);
-      setDefaultBeats(template.defaultBeats);
-      setFieldsDisplay(template.fieldsDisplay);
-      setBasis(template.basis);
-      setKeyframes(
-        template.keyframes.map((kf) => ({
+    (
+      template: LRInstructionTemplate | LLRRInstructionTemplate,
+      type: TemplateType,
+    ) => {
+      setTpl({
+        ...tpl,
+        templateType: type,
+        name: template.name,
+        defaultBeats: template.defaultBeats,
+        fieldsDisplay: template.fieldsDisplay,
+        basis: template.basis,
+        keyframes: template.keyframes.map((kf) => ({
           t: kf.t,
           states: kf.states,
         })),
-      );
+      });
     },
-    [],
+    [tpl, setTpl],
   );
 
   const handleImportJson = useCallback(
@@ -864,54 +925,60 @@ export default function InstructionDefinitionTool() {
         return;
       }
 
-      loadTemplate(result.data);
+      loadTemplate(result.data, templateType);
     },
     [templateType, loadTemplate],
   );
 
-  const handlePasteInitState = useCallback((text: string) => {
-    setJsonError(null);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch (e) {
-      setJsonError(
-        `Invalid JSON: ${e instanceof SyntaxError ? e.message : String(e)}`,
-      );
-      return;
-    }
+  const handlePasteInitState = useCallback(
+    (text: string) => {
+      setJsonError(null);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        setJsonError(
+          `Invalid JSON: ${e instanceof SyntaxError ? e.message : String(e)}`,
+        );
+        return;
+      }
 
-    const result = WorldStateSchema.safeParse(parsed);
-    if (!result.success) {
-      setJsonError(
-        result.error.issues
-          .map((i) => `${i.path.join(".")}: ${i.message}`)
-          .join("\n"),
-      );
-      return;
-    }
-    setInitState(result.data);
-  }, []);
+      const result = WorldStateSchema.safeParse(parsed);
+      if (!result.success) {
+        setJsonError(
+          result.error.issues
+            .map((i) => `${i.path.join(".")}: ${i.message}`)
+            .join("\n"),
+        );
+        return;
+      }
+      updateTpl({ initState: result.data });
+    },
+    [updateTpl],
+  );
 
   // ── fieldsDisplay parsing ────────────────────────────────────────────
 
-  const handleFieldsDisplayChange = useCallback((text: string) => {
-    setFieldsDisplayText(text);
-    // Parse: text segments separated by {basis_x} or {basis_y}
-    const result: LRInstructionTemplate["fieldsDisplay"] = [];
-    const re = /\{(basis_x|basis_y)\}/g;
-    let lastIdx = 0;
-    let match: RegExpExecArray | null;
-    while ((match = re.exec(text)) !== null) {
-      const before = text.slice(lastIdx, match.index);
-      if (before) result.push(before);
-      result.push({ field: match[1] === "basis_x" ? "basis_x" : "basis_y" });
-      lastIdx = re.lastIndex;
-    }
-    const after = text.slice(lastIdx);
-    if (after) result.push(after);
-    setFieldsDisplay(result);
-  }, []);
+  const handleFieldsDisplayChange = useCallback(
+    (text: string) => {
+      setFieldsDisplayText(text);
+      // Parse: text segments separated by {basis_x} or {basis_y}
+      const result: LRInstructionTemplate["fieldsDisplay"] = [];
+      const re = /\{(basis_x|basis_y)\}/g;
+      let lastIdx = 0;
+      let match: RegExpExecArray | null;
+      while ((match = re.exec(text)) !== null) {
+        const before = text.slice(lastIdx, match.index);
+        if (before) result.push(before);
+        result.push({ field: match[1] === "basis_x" ? "basis_x" : "basis_y" });
+        lastIdx = re.lastIndex;
+      }
+      const after = text.slice(lastIdx);
+      if (after) result.push(after);
+      updateTpl({ fieldsDisplay: result });
+    },
+    [updateTpl],
+  );
 
   // ── Render ───────────────────────────────────────────────────────────
 
@@ -934,6 +1001,15 @@ export default function InstructionDefinitionTool() {
       <div className="def-instr-controls-column">
         <h2>Instruction Definition Tool</h2>
 
+        <div className="def-instr-section">
+          <button disabled={!canUndo} onClick={undo}>
+            Undo
+          </button>{" "}
+          <button disabled={!canRedo} onClick={redo}>
+            Redo
+          </button>
+        </div>
+
         {/* Template metadata */}
         <div className="def-instr-section">
           <h3>Template</h3>
@@ -943,10 +1019,12 @@ export default function InstructionDefinitionTool() {
               value={templateType}
               onChange={(e) => {
                 const next = e.target.value === "llrr" ? "llrr" : "lr";
-                setTemplateType(next);
-                setKeyframes([]);
+                updateTpl({
+                  templateType: next,
+                  keyframes: [],
+                  basis: { ...DEFAULT_TEMPLATE_BASIS },
+                });
                 setSelectedDancer(null);
-                setBasis({ ...DEFAULT_TEMPLATE_BASIS });
               }}
             >
               <option value="lr">LR (per-role)</option>
@@ -960,12 +1038,14 @@ export default function InstructionDefinitionTool() {
                 const val = e.target.value;
                 if (!val) return;
                 if (LRTemplateIdSchema.safeParse(val).success) {
-                  setTemplateType("lr");
-                  loadTemplate(allLRTemplates[LRTemplateIdSchema.parse(val)]);
+                  loadTemplate(
+                    allLRTemplates[LRTemplateIdSchema.parse(val)],
+                    "lr",
+                  );
                 } else if (LLRRTemplateIdSchema.safeParse(val).success) {
-                  setTemplateType("llrr");
                   loadTemplate(
                     allLLRRTemplates[LLRRTemplateIdSchema.parse(val)],
+                    "llrr",
                   );
                 }
                 e.target.value = "";
@@ -996,7 +1076,7 @@ export default function InstructionDefinitionTool() {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => updateTpl({ name: e.target.value })}
               className="def-instr-text-input"
             />
           </label>
@@ -1005,7 +1085,9 @@ export default function InstructionDefinitionTool() {
             <input
               type="number"
               value={defaultBeats}
-              onChange={(e) => setDefaultBeats(Number(e.target.value))}
+              onChange={(e) =>
+                updateTpl({ defaultBeats: Number(e.target.value) })
+              }
               className="def-instr-number-input"
               min={1}
             />
@@ -1020,7 +1102,7 @@ export default function InstructionDefinitionTool() {
             <SearchableDropdown
               options={basisSpecOptions}
               value={basis.x}
-              onChange={(spec) => setBasis((prev) => ({ ...prev, x: spec }))}
+              onChange={(spec) => updateTpl({ basis: { ...basis, x: spec } })}
               onHighlight={(spec) => {
                 const parsed = BasisVectorSpecSchema.safeParse(spec);
                 setHighlightedBasisSpec(parsed.success ? parsed.data : null);
@@ -1046,10 +1128,12 @@ export default function InstructionDefinitionTool() {
                     : CalledIdentifierSchema.options[0])
                 }
                 onChange={(spec) =>
-                  setBasis((prev) => ({
-                    ...prev,
-                    assumedX: BasisVectorSpecSchema.parse(spec),
-                  }))
+                  updateTpl({
+                    basis: {
+                      ...basis,
+                      assumedX: BasisVectorSpecSchema.parse(spec),
+                    },
+                  })
                 }
                 onHighlight={(spec) => setHighlightedBasisSpec(spec)}
                 getLabel={basisSpecToText}
@@ -1062,7 +1146,7 @@ export default function InstructionDefinitionTool() {
             <SearchableDropdown
               options={basisSpecOptions}
               value={basis.y}
-              onChange={(spec) => setBasis((prev) => ({ ...prev, y: spec }))}
+              onChange={(spec) => updateTpl({ basis: { ...basis, y: spec } })}
               onHighlight={(spec) => {
                 const parsed = BasisVectorSpecSchema.safeParse(spec);
                 setHighlightedBasisSpec(parsed.success ? parsed.data : null);
@@ -1088,10 +1172,12 @@ export default function InstructionDefinitionTool() {
                     : CalledIdentifierSchema.options[0])
                 }
                 onChange={(spec) =>
-                  setBasis((prev) => ({
-                    ...prev,
-                    assumedY: BasisVectorSpecSchema.parse(spec),
-                  }))
+                  updateTpl({
+                    basis: {
+                      ...basis,
+                      assumedY: BasisVectorSpecSchema.parse(spec),
+                    },
+                  })
                 }
                 onHighlight={(spec) => setHighlightedBasisSpec(spec)}
                 getLabel={basisSpecToText}
@@ -1128,11 +1214,11 @@ export default function InstructionDefinitionTool() {
             <select
               onChange={(e) => {
                 if (e.target.value) {
-                  setInitState(
-                    resolveInitFormation(
+                  updateTpl({
+                    initState: resolveInitFormation(
                       InitFormationNameSchema.parse(e.target.value),
                     ),
-                  );
+                  });
                 }
               }}
               defaultValue=""
@@ -1227,14 +1313,18 @@ export default function InstructionDefinitionTool() {
                   <button
                     className="delete-btn"
                     onClick={() =>
-                      setKeyframes((prev) => prev.filter((_, j) => j !== i))
+                      updateTpl({
+                        keyframes: keyframes.filter((_, j) => j !== i),
+                      })
                     }
                   >
                     x
                   </button>
                 </div>
               ))}
-              <button onClick={() => setKeyframes([])}>Clear all</button>
+              <button onClick={() => updateTpl({ keyframes: [] })}>
+                Clear all
+              </button>
             </div>
           )}
         </div>
