@@ -452,8 +452,10 @@ export default function App() {
         inferredProgression,
       });
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Uint8Array.buffer is ArrayBuffer at runtime but typed as ArrayBufferLike
-      const blob = new Blob([gifBytes.buffer as ArrayBuffer], {
+      if (!(gifBytes.buffer instanceof ArrayBuffer)) {
+        throw new Error("gifBytes.buffer is not an ArrayBuffer");
+      }
+      const blob = new Blob([gifBytes.buffer], {
         type: "image/gif",
       });
       const url = URL.createObjectURL(blob);
