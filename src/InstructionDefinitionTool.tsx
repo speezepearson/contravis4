@@ -262,15 +262,23 @@ export default function InstructionDefinitionTool() {
 
   // ── Preview animation ───────────────────────────────────────────────
 
-  const { previewAnimation, previewError } = useMemo((): {
+  const { previewAnimation, previewError, previewErrorKfIndex } = useMemo((): {
     previewAnimation: ContraAnimation | null;
     previewError: string | null;
+    previewErrorKfIndex: number | null;
   } => {
     if (keyframes.length === 0)
-      return { previewAnimation: null, previewError: null };
+      return {
+        previewAnimation: null,
+        previewError: null,
+        previewErrorKfIndex: null,
+      };
 
     const lastKfT = keyframes[keyframes.length - 1].t;
     const scale = lastKfT > 0 ? defaultBeats / lastKfT : 1;
+
+    // Scaled keyframe boundaries (for mapping error beat → keyframe index)
+    const scaledEnds = keyframes.map((kf) => kf.t * scale);
 
     try {
       // Pre-resolve basis for each dancer
@@ -331,11 +339,27 @@ export default function InstructionDefinitionTool() {
           segments,
         ),
         previewError: null,
+        previewErrorKfIndex: null,
       };
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Try to extract beat from error like "... at beat 2.50"
+      let errorKfIndex: number | null = null;
+      const beatMatch = /at beat ([\d.]+)/.exec(msg);
+      if (beatMatch) {
+        const errorBeat = parseFloat(beatMatch[1]);
+        // Find which segment (keyframe) the error beat falls in
+        for (let i = 0; i < scaledEnds.length; i++) {
+          if (errorBeat <= scaledEnds[i] + 1e-9) {
+            errorKfIndex = i;
+            break;
+          }
+        }
+      }
       return {
         previewAnimation: null,
-        previewError: e instanceof Error ? e.message : String(e),
+        previewError: msg,
+        previewErrorKfIndex: errorKfIndex,
       };
     }
   }, [keyframes, defaultBeats, initState, templateType, basis]);
@@ -1418,8 +1442,19 @@ export default function InstructionDefinitionTool() {
           {keyframes.length > 0 && (
             <div className="def-instr-keyframe-list">
               <h4>Keyframes ({keyframes.length})</h4>
+              {previewError && (
+                <div className="def-instr-error">{previewError}</div>
+              )}
               {keyframes.map((kf, i) => (
-                <div key={i} className="def-instr-keyframe-item">
+                <div
+                  key={i}
+                  className={
+                    "def-instr-keyframe-item" +
+                    (i === previewErrorKfIndex
+                      ? " def-instr-keyframe-error"
+                      : "")
+                  }
+                >
                   <span>
                     t={kf.t.toFixed(1)}
                     {Object.entries(kf.states).map(([role, state]) =>
@@ -1451,8 +1486,6 @@ export default function InstructionDefinitionTool() {
             </div>
           )}
         </div>
-
-        {previewError && <div className="def-instr-error">{previewError}</div>}
 
         {/* Preview controls */}
         {previewAnimation && (

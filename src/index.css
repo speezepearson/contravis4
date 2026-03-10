@@ -896,6 +896,11 @@ input[type="range"] {
   color: #ccc;
 }
 
+.def-instr-keyframe-error {
+  background: #3a1a1a;
+  outline: 1px solid #c00;
+}
+
 .def-instr-kf-role {
   color: #8ac;
 }
