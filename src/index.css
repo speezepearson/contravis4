@@ -894,6 +894,15 @@ input[type="range"] {
   font-size: 0.8em;
   font-family: monospace;
   color: #ccc;
+  cursor: pointer;
+}
+
+.def-instr-keyframe-item:hover {
+  background: #303060;
+}
+
+.def-instr-keyframe-active {
+  outline: 1px solid #88f;
 }
 
 .def-instr-keyframe-error {

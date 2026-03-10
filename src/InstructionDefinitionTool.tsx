@@ -1452,8 +1452,10 @@ export default function InstructionDefinitionTool() {
                     "def-instr-keyframe-item" +
                     (i === previewErrorKfIndex
                       ? " def-instr-keyframe-error"
-                      : "")
+                      : "") +
+                    (i === nextSlotForKey ? " def-instr-keyframe-active" : "")
                   }
+                  onClick={() => setNextSlotForKey(i)}
                 >
                   <span>
                     t={kf.t.toFixed(1)}
