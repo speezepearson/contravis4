@@ -18,8 +18,9 @@ import {
   type Role,
   RoleSchema,
 } from "./contraCore";
-import { ccwRadsBetween, lerpFacing as lerpFacingVec, NORTH } from "./geometry";
+import { lerpFacing as lerpFacingVec } from "./geometry";
 import {
+  CalledDirectionSchema,
   type CalledIdentifier,
   CalledIdentifierSchema,
   type ContraAnimation,
@@ -30,11 +31,29 @@ import {
   resolveInitFormation,
 } from "./instructions/index";
 import {
+  type Basis,
+  type BasisVectorSpec,
+  BasisVectorSpecSchema,
+  DEFAULT_BASIS,
   type LLRRInstructionTemplate,
   LLRRInstructionTemplateSchema,
   type LRInstructionTemplate,
   LRInstructionTemplateSchema,
 } from "./instructions/templates/_base";
+import {
+  facingToRelWithBasis,
+  getBasisForKey,
+  relFacingToWorldWithBasis,
+  relPosToWorldWithBasis,
+  resolveBasis,
+  worldToRelWithBasis,
+} from "./instructions/templates/_basisResolution";
+import {
+  allLLRRTemplates,
+  allLRTemplates,
+  LLRRTemplateIdSchema,
+  LRTemplateIdSchema,
+} from "./instructions/templates/index";
 import { buildEnumRecord, lerpVectors } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
@@ -69,32 +88,28 @@ type DragState = {
   ghostKeyframeIndex?: number;
 };
 
-// ── Coordinate helpers ───────────────────────────────────────────────────
+// ── Basis helpers ────────────────────────────────────────────────────────
 
-function worldToRel(
-  worldPos: Vector,
-  origPos: Vector,
-  origFacing: Vector,
-): Vector {
-  const angle = ccwRadsBetween(NORTH, origFacing);
-  return worldPos.subtract(origPos).rotateByRadians(-angle);
+function resolvedBasisForDancer(
+  basisRecord: Record<string, Basis>,
+  key: StateKey,
+  dancerId: ProtoId,
+  initState: WorldState,
+): { xBasis: Vector; yBasis: Vector } {
+  const basis = getBasisForKey(basisRecord, key);
+  try {
+    return resolveBasis(basis, Dancer.get(dancerId, initState));
+  } catch {
+    // SWALLOW_EXCEPTION: basis may reference identifiers that can't be resolved
+    // in the current init state; fall back to the default facing-based basis.
+    return resolveBasis(DEFAULT_BASIS, Dancer.get(dancerId, initState));
+  }
 }
 
-function facingToRel(worldFacing: Vector, origFacing: Vector): number {
-  return ccwRadsBetween(origFacing, worldFacing);
-}
+// ── Basis dropdown label helper ──────────────────────────────────────────
 
-function relToWorld(
-  relPos: Vector,
-  origPos: Vector,
-  origFacing: Vector,
-): Vector {
-  const angle = ccwRadsBetween(NORTH, origFacing);
-  return origPos.add(relPos.rotateByRadians(angle));
-}
-
-function relFacingToWorld(relFacing: number, origFacing: Vector): Vector {
-  return origFacing.rotateByRadians(relFacing);
+function basisSpecToText(spec: BasisVectorSpec): string {
+  return spec.replace(/_/g, " ");
 }
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -118,6 +133,7 @@ export default function InstructionDefinitionTool() {
     resolveInitFormation("improper"),
   );
   const [keyframes, setKeyframes] = useState<KeyframeEntry[]>([]);
+  const [basisRecord, setBasisRecord] = useState<Record<string, Basis>>({});
 
   // UI state
   const [mode, setMode] = useState<Mode>("init");
@@ -128,6 +144,8 @@ export default function InstructionDefinitionTool() {
   const [previewBeat, setPreviewBeat] = useState(0);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [fieldsDisplayText, setFieldsDisplayText] = useState("");
+  const [highlightedBasisSpec, setHighlightedBasisSpec] =
+    useState<BasisVectorSpec | null>(null);
 
   // Refs for animation-frame drawing (avoid re-render thrash during drag)
   const dragRef = useRef<DragState | null>(null);
@@ -140,6 +158,20 @@ export default function InstructionDefinitionTool() {
     return Dancer.get(selectedDancer, initState).role;
   }, [selectedDancer, initState, templateType]);
 
+  /** The resolved basis vectors for the selected dancer. */
+  const selectedBasis = useMemo((): {
+    xBasis: Vector;
+    yBasis: Vector;
+  } | null => {
+    if (!selectedDancer || !selectedStateKey) return null;
+    return resolvedBasisForDancer(
+      basisRecord,
+      selectedStateKey,
+      selectedDancer,
+      initState,
+    );
+  }, [selectedDancer, selectedStateKey, basisRecord, initState]);
+
   // ── Preview animation ───────────────────────────────────────────────
 
   const previewAnimation = useMemo((): ContraAnimation | null => {
@@ -149,6 +181,23 @@ export default function InstructionDefinitionTool() {
     const scale = lastKfT > 0 ? defaultBeats / lastKfT : 1;
 
     try {
+      // Pre-resolve basis for each dancer
+      const basisCache = new Map<string, { xBasis: Vector; yBasis: Vector }>();
+      const getBasis = (dancer: Dancer) => {
+        const key = templateType === "llrr" ? dancer.protoId : dancer.role;
+        let cached = basisCache.get(key);
+        if (!cached) {
+          cached = resolvedBasisForDancer(
+            basisRecord,
+            key,
+            dancer.protoId,
+            initState,
+          );
+          basisCache.set(key, cached);
+        }
+        return cached;
+      };
+
       const segments: Segment[] = [];
       let prevT = 0;
 
@@ -163,15 +212,24 @@ export default function InstructionDefinitionTool() {
             const state = kf.states[key];
             if (!state) return dancer.pos;
             const orig = dancer.at(initState);
-            const worldTarget = relToWorld(state.relPos, orig.pos, orig.facing);
+            const { xBasis, yBasis } = getBasis(dancer);
+            const worldTarget = relPosToWorldWithBasis(
+              state.relPos,
+              orig.pos,
+              xBasis,
+              yBasis,
+            );
             return lerpVectors(dancer.pos, worldTarget, frac);
           },
           facing: (dancer, frac) => {
             const key = templateType === "llrr" ? dancer.protoId : dancer.role;
             const state = kf.states[key];
             if (!state) return dancer.facing;
-            const orig = dancer.at(initState);
-            const worldFacing = relFacingToWorld(state.relFacing, orig.facing);
+            const { yBasis } = getBasis(dancer);
+            const worldFacing = relFacingToWorldWithBasis(
+              state.relFacing,
+              yBasis,
+            );
             return lerpFacingVec(dancer.facing, worldFacing, frac);
           },
         });
@@ -184,7 +242,20 @@ export default function InstructionDefinitionTool() {
       // SWALLOW_EXCEPTION: template may be in an invalid intermediate state while editing
       return null;
     }
-  }, [keyframes, defaultBeats, initState, templateType]);
+  }, [keyframes, defaultBeats, initState, templateType, basisRecord]);
+
+  // ── Sampled path frames for always-on path lines ───────────────────
+
+  const previewPathFrames = useMemo((): WorldState[] => {
+    if (!previewAnimation) return [];
+    const steps = Math.max(2, Math.ceil(previewAnimation.dur / 0.25));
+    const frames: WorldState[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * previewAnimation.dur;
+      frames.push(previewAnimation.getFrame(t));
+    }
+    return frames;
+  }, [previewAnimation]);
 
   // ── Drawing ──────────────────────────────────────────────────────────
 
@@ -194,17 +265,23 @@ export default function InstructionDefinitionTool() {
   const keyframesRef = useRef(keyframes);
   const selectedDancerRef = useRef<ProtoId | null>(selectedDancer);
   const selectedStateKeyRef = useRef(selectedStateKey);
+  const selectedBasisRef = useRef(selectedBasis);
   const modeRef = useRef(mode);
   const previewAnimationRef = useRef(previewAnimation);
   const previewBeatRef = useRef(previewBeat);
+  const previewPathFramesRef = useRef(previewPathFrames);
+  const highlightedBasisSpecRef = useRef(highlightedBasisSpec);
   useLayoutEffect(() => {
     initStateRef.current = initState;
     keyframesRef.current = keyframes;
     selectedDancerRef.current = selectedDancer;
     selectedStateKeyRef.current = selectedStateKey;
+    selectedBasisRef.current = selectedBasis;
     modeRef.current = mode;
     previewAnimationRef.current = previewAnimation;
     previewBeatRef.current = previewBeat;
+    previewPathFramesRef.current = previewPathFrames;
+    highlightedBasisSpecRef.current = highlightedBasisSpec;
   });
 
   // Stable draw – reads everything from refs so requestDraw never changes
@@ -219,7 +296,10 @@ export default function InstructionDefinitionTool() {
     const curPreviewBeat = previewBeatRef.current;
     const curSelectedDancer = selectedDancerRef.current;
     const curSelectedStateKey = selectedStateKeyRef.current;
+    const curBasis = selectedBasisRef.current;
     const curKeyframes = keyframesRef.current;
+    const curPathFrames = previewPathFramesRef.current;
+    const curHighlightedSpec = highlightedBasisSpecRef.current;
 
     if (curMode === "keyframe" && curPreviewAnimation && curPreviewBeat > 0) {
       const t = Math.min(curPreviewBeat, curPreviewAnimation.dur);
@@ -230,19 +310,68 @@ export default function InstructionDefinitionTool() {
     // Draw the base frame (this draws grid + all dancers)
     renderer.drawFrame(0, curInitState);
 
+    // Draw path lines (always, when we have keyframes)
+    if (curMode === "keyframe" && curPathFrames.length > 0) {
+      renderer.drawPreviewKeyframes(curPathFrames);
+    }
+
     // Highlight selected dancer
     if (curSelectedDancer && curMode === "keyframe") {
       renderer.drawDancerHighlight(Dancer.get(curSelectedDancer, curInitState));
     }
 
+    // Draw highlighted basis spec as a line from selected dancer
+    if (curSelectedDancer && curMode === "keyframe" && curHighlightedSpec) {
+      try {
+        const dancer = Dancer.get(curSelectedDancer, curInitState);
+        const vec = (() => {
+          if (CalledDirectionSchema.safeParse(curHighlightedSpec).success) {
+            return dancer.resolveCalledDirection(
+              CalledDirectionSchema.parse(curHighlightedSpec),
+            );
+          }
+          const target = dancer.resolveCalledIdentifier(
+            CalledIdentifierSchema.parse(curHighlightedSpec),
+          );
+          if (!target) return null;
+          return target.pos.subtract(dancer.pos);
+        })();
+        if (vec && vec.length() > 1e-6) {
+          renderer.drawRelationshipLines([
+            {
+              fromX: dancer.pos.x,
+              fromY: dancer.pos.y,
+              toX: dancer.pos.x + vec.x,
+              toY: dancer.pos.y + vec.y,
+            },
+          ]);
+        }
+      } catch {
+        // SWALLOW_EXCEPTION: spec may not be resolvable in the current init state
+      }
+    }
+
     // Draw ghost dancers at keyframe positions
-    if (curSelectedDancer && curMode === "keyframe" && curSelectedStateKey) {
+    if (
+      curSelectedDancer &&
+      curMode === "keyframe" &&
+      curSelectedStateKey &&
+      curBasis
+    ) {
       const orig = Dancer.get(curSelectedDancer, curInitState);
       for (const kf of curKeyframes) {
         const keyState = kf.states[curSelectedStateKey];
         if (!keyState) continue;
-        const worldPos = relToWorld(keyState.relPos, orig.pos, orig.facing);
-        const worldFacing = relFacingToWorld(keyState.relFacing, orig.facing);
+        const worldPos = relPosToWorldWithBasis(
+          keyState.relPos,
+          orig.pos,
+          curBasis.xBasis,
+          curBasis.yBasis,
+        );
+        const worldFacing = relFacingToWorldWithBasis(
+          keyState.relFacing,
+          curBasis.yBasis,
+        );
         renderer.drawGhostDancer(
           curSelectedDancer,
           worldPos.x,
@@ -329,10 +458,13 @@ export default function InstructionDefinitionTool() {
     initState,
     selectedDancer,
     selectedStateKey,
+    selectedBasis,
     mode,
     keyframes,
     previewAnimation,
     previewBeat,
+    previewPathFrames,
+    highlightedBasisSpec,
     requestDraw,
   ]);
 
@@ -365,16 +497,17 @@ export default function InstructionDefinitionTool() {
         }
       } else if (mode === "keyframe") {
         // Hit-test ghost dancers first
-        if (selectedDancer && selectedStateKey) {
+        if (selectedDancer && selectedStateKey && selectedBasis) {
           const orig = Dancer.get(selectedDancer, initState);
           const ghostHitRadius = 0.15; // world units
           for (let i = 0; i < keyframes.length; i++) {
             const roleState = keyframes[i].states[selectedStateKey];
             if (!roleState) continue;
-            const ghostPos = relToWorld(
+            const ghostPos = relPosToWorldWithBasis(
               roleState.relPos,
               orig.pos,
-              orig.facing,
+              selectedBasis.xBasis,
+              selectedBasis.yBasis,
             );
             const dist = Math.hypot(wx - ghostPos.x, wy - ghostPos.y);
             if (dist < ghostHitRadius) {
@@ -401,7 +534,14 @@ export default function InstructionDefinitionTool() {
         dragRef.current = drag;
       }
     },
-    [mode, initState, selectedDancer, selectedStateKey, keyframes],
+    [
+      mode,
+      initState,
+      selectedDancer,
+      selectedStateKey,
+      selectedBasis,
+      keyframes,
+    ],
   );
 
   const handleMouseMove = useCallback(
@@ -446,7 +586,8 @@ export default function InstructionDefinitionTool() {
         mode === "keyframe" &&
         dragRef.current.ghostKeyframeIndex != null &&
         selectedDancer &&
-        selectedStateKey
+        selectedStateKey &&
+        selectedBasis
       ) {
         const kfIdx = dragRef.current.ghostKeyframeIndex;
         const orig = Dancer.get(selectedDancer, initState);
@@ -454,14 +595,18 @@ export default function InstructionDefinitionTool() {
           // Change ghost facing: facing = direction from ghost position to mouse
           const keyState = keyframes[kfIdx].states[selectedStateKey];
           if (keyState) {
-            const ghostWorldPos = relToWorld(
+            const ghostWorldPos = relPosToWorldWithBasis(
               keyState.relPos,
               orig.pos,
-              orig.facing,
+              selectedBasis.xBasis,
+              selectedBasis.yBasis,
             );
             const dir = new Vector(wx - ghostWorldPos.x, wy - ghostWorldPos.y);
             if (dir.length() > 0.01) {
-              const newRelFacing = facingToRel(dir.normalize(), orig.facing);
+              const newRelFacing = facingToRelWithBasis(
+                dir.normalize(),
+                selectedBasis.yBasis,
+              );
               const next = keyframes.map((kf, i) =>
                 i === kfIdx
                   ? {
@@ -482,10 +627,11 @@ export default function InstructionDefinitionTool() {
           }
         } else {
           // Move ghost: update relPos
-          const newRelPos = worldToRel(
+          const newRelPos = worldToRelWithBasis(
             new Vector(wx, wy),
             orig.pos,
-            orig.facing,
+            selectedBasis.xBasis,
+            selectedBasis.yBasis,
           );
           const next = keyframes.map((kf, i) =>
             i === kfIdx
@@ -508,7 +654,15 @@ export default function InstructionDefinitionTool() {
 
       requestDraw();
     },
-    [mode, initState, selectedDancer, selectedStateKey, keyframes, requestDraw],
+    [
+      mode,
+      initState,
+      selectedDancer,
+      selectedStateKey,
+      selectedBasis,
+      keyframes,
+      requestDraw,
+    ],
   );
 
   const handleMouseUp = useCallback(
@@ -546,7 +700,7 @@ export default function InstructionDefinitionTool() {
               setNextSlotForKey(filled);
             }
           }
-        } else if (selectedDancer && selectedStateKey) {
+        } else if (selectedDancer && selectedStateKey && selectedBasis) {
           // Drag = add keyframe for current state key, merged into the next slot
           const orig = Dancer.get(selectedDancer, initState);
           const clickPos = new Vector(drag.startWorldX, drag.startWorldY);
@@ -557,8 +711,16 @@ export default function InstructionDefinitionTool() {
           const worldFacing =
             dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
 
-          const relPos = worldToRel(clickPos, orig.pos, orig.facing);
-          const relFacing = facingToRel(worldFacing, orig.facing);
+          const relPos = worldToRelWithBasis(
+            clickPos,
+            orig.pos,
+            selectedBasis.xBasis,
+            selectedBasis.yBasis,
+          );
+          const relFacing = facingToRelWithBasis(
+            worldFacing,
+            selectedBasis.yBasis,
+          );
 
           const slot = nextSlotForKey;
 
@@ -602,6 +764,7 @@ export default function InstructionDefinitionTool() {
       templateType,
       selectedDancer,
       selectedStateKey,
+      selectedBasis,
       initState,
       keyframes,
       keyframeDuration,
@@ -615,12 +778,21 @@ export default function InstructionDefinitionTool() {
   const exportTemplate = useCallback(():
     | LRInstructionTemplate
     | LLRRInstructionTemplate => {
+    const hasNonDefaultBasis = Object.keys(basisRecord).length > 0;
     if (templateType === "llrr") {
       return {
         name,
         defaultBeats,
         matcher,
         fieldsDisplay,
+        ...(hasNonDefaultBasis
+          ? {
+              basis: buildEnumRecord(
+                ProtoIdSchema,
+                (p) => basisRecord[p] ?? DEFAULT_BASIS,
+              ),
+            }
+          : {}),
         keyframes: keyframes.map((kf) => ({
           t: kf.t,
           states: buildEnumRecord(
@@ -635,6 +807,14 @@ export default function InstructionDefinitionTool() {
       defaultBeats,
       matcher,
       fieldsDisplay,
+      ...(hasNonDefaultBasis
+        ? {
+            basis: buildEnumRecord(
+              RoleSchema,
+              (r) => basisRecord[r] ?? DEFAULT_BASIS,
+            ),
+          }
+        : {}),
       keyframes: keyframes.map((kf) => ({
         t: kf.t,
         states: buildEnumRecord(
@@ -643,7 +823,15 @@ export default function InstructionDefinitionTool() {
         ),
       })),
     };
-  }, [name, defaultBeats, matcher, fieldsDisplay, keyframes, templateType]);
+  }, [
+    name,
+    defaultBeats,
+    matcher,
+    fieldsDisplay,
+    keyframes,
+    templateType,
+    basisRecord,
+  ]);
 
   const exportTypeScript = useCallback(() => {
     const template = exportTemplate();
@@ -669,6 +857,23 @@ export default function InstructionDefinitionTool() {
       ``,
     ].join("\n");
   }, [exportTemplate, templateType]);
+
+  const loadTemplate = useCallback(
+    (template: LRInstructionTemplate | LLRRInstructionTemplate) => {
+      setName(template.name);
+      setDefaultBeats(template.defaultBeats);
+      setMatcher(template.matcher);
+      setFieldsDisplay(template.fieldsDisplay);
+      setBasisRecord(template.basis ?? {});
+      setKeyframes(
+        template.keyframes.map((kf) => ({
+          t: kf.t,
+          states: kf.states,
+        })),
+      );
+    },
+    [],
+  );
 
   const handleImportJson = useCallback(
     (text: string) => {
@@ -697,19 +902,9 @@ export default function InstructionDefinitionTool() {
         return;
       }
 
-      const template = result.data;
-      setName(template.name);
-      setDefaultBeats(template.defaultBeats);
-      setMatcher(template.matcher);
-      setFieldsDisplay(template.fieldsDisplay);
-      setKeyframes(
-        template.keyframes.map((kf) => ({
-          t: kf.t,
-          states: kf.states,
-        })),
-      );
+      loadTemplate(result.data);
     },
-    [templateType],
+    [templateType, loadTemplate],
   );
 
   const handlePasteInitState = useCallback((text: string) => {
@@ -753,6 +948,11 @@ export default function InstructionDefinitionTool() {
   // ── Render ───────────────────────────────────────────────────────────
 
   const matcherCidOptions = CalledIdentifierSchema.options;
+  const basisVectorOptions = BasisVectorSpecSchema.options;
+
+  const selectedDancerBasis = selectedStateKey
+    ? getBasisForKey(basisRecord, selectedStateKey)
+    : DEFAULT_BASIS;
 
   return (
     <div className="def-instr-layout">
@@ -783,10 +983,49 @@ export default function InstructionDefinitionTool() {
                 setTemplateType(next);
                 setKeyframes([]);
                 setSelectedDancer(null);
+                setBasisRecord({});
               }}
             >
               <option value="lr">LR (per-role)</option>
               <option value="llrr">LLRR (per-dancer)</option>
+            </select>
+          </label>
+          <label>
+            Load template:{" "}
+            <select
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) return;
+                if (LRTemplateIdSchema.safeParse(val).success) {
+                  setTemplateType("lr");
+                  loadTemplate(allLRTemplates[LRTemplateIdSchema.parse(val)]);
+                } else if (LLRRTemplateIdSchema.safeParse(val).success) {
+                  setTemplateType("llrr");
+                  loadTemplate(
+                    allLLRRTemplates[LLRRTemplateIdSchema.parse(val)],
+                  );
+                }
+                e.target.value = "";
+              }}
+              value=""
+            >
+              <option value="" disabled>
+                Choose...
+              </option>
+              <optgroup label="LR templates">
+                {LRTemplateIdSchema.options.map((id) => (
+                  <option key={id} value={id}>
+                    {allLRTemplates[id].name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="LLRR templates">
+                {LLRRTemplateIdSchema.options.map((id) => (
+                  <option key={id} value={id}>
+                    {allLLRRTemplates[id].name}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </label>
           <label>
@@ -952,6 +1191,59 @@ export default function InstructionDefinitionTool() {
                 </button>
               ))}
             </div>
+
+            {/* Basis vector selection for the selected dancer */}
+            {selectedDancer && selectedStateKey && (
+              <div className="def-instr-basis">
+                <label>
+                  X basis:{" "}
+                  <select
+                    value={selectedDancerBasis.x}
+                    onChange={(e) => {
+                      const spec = BasisVectorSpecSchema.parse(e.target.value);
+                      setBasisRecord((prev) => ({
+                        ...prev,
+                        [selectedStateKey]: {
+                          ...(prev[selectedStateKey] ?? DEFAULT_BASIS),
+                          x: spec,
+                        },
+                      }));
+                    }}
+                    onMouseLeave={() => setHighlightedBasisSpec(null)}
+                  >
+                    {basisVectorOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {basisSpecToText(opt)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Y basis:{" "}
+                  <select
+                    value={selectedDancerBasis.y}
+                    onChange={(e) => {
+                      const spec = BasisVectorSpecSchema.parse(e.target.value);
+                      setBasisRecord((prev) => ({
+                        ...prev,
+                        [selectedStateKey]: {
+                          ...(prev[selectedStateKey] ?? DEFAULT_BASIS),
+                          y: spec,
+                        },
+                      }));
+                    }}
+                    onMouseLeave={() => setHighlightedBasisSpec(null)}
+                  >
+                    {basisVectorOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {basisSpecToText(opt)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+
             <label>
               Keyframe duration:{" "}
               <input

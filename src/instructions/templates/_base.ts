@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { BeatsSchema, ProtoIdSchema, RoleSchema } from "../../contraCore";
 import { VectorSchema } from "../../geometry";
-import { CalledIdentifierSchema } from "../_base";
+import { CalledDirectionSchema, CalledIdentifierSchema } from "../_base";
 
 // ── Shared sub-schemas ──────────────────────────────────────────────────
 
@@ -20,6 +20,25 @@ const relStateSchema = z.object({
   relFacing: z.number(),
 });
 
+/**
+ * A basis vector specification: either a CalledDirection (resolves to a unit
+ * vector in that direction) or a CalledIdentifier (resolves to the displacement
+ * vector from the dancer to the identified person, scaling with distance).
+ */
+export const BasisVectorSpecSchema = z.enum([
+  ...CalledDirectionSchema.options,
+  ...CalledIdentifierSchema.options,
+]);
+export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
+
+export const BasisSchema = z.object({
+  x: BasisVectorSpecSchema,
+  y: BasisVectorSpecSchema,
+});
+export type Basis = z.infer<typeof BasisSchema>;
+
+export const DEFAULT_BASIS: Basis = { x: "on_right", y: "in_front" };
+
 // ── LR template schema ─────────────────────────────────────────────────
 
 export const LRInstructionTemplateSchema = z.object({
@@ -27,6 +46,7 @@ export const LRInstructionTemplateSchema = z.object({
   defaultBeats: z.number(),
   fieldsDisplay: fieldsDisplaySchema,
   matcher: matcherSchema,
+  basis: z.record(RoleSchema, BasisSchema).optional(),
   keyframes: z.array(
     z.object({
       t: BeatsSchema,
@@ -43,6 +63,7 @@ export const LLRRInstructionTemplateSchema = z.object({
   defaultBeats: z.number(),
   fieldsDisplay: fieldsDisplaySchema,
   matcher: matcherSchema,
+  basis: z.record(ProtoIdSchema, BasisSchema).optional(),
   keyframes: z.array(
     z.object({
       t: BeatsSchema,

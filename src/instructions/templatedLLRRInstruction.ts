@@ -1,12 +1,17 @@
 import { z } from "zod";
 
 import { type Beats } from "../contraCore";
-import { ccwRadsBetween, lerpFacing, NORTH } from "../geometry";
+import { lerpFacing } from "../geometry";
 import { lerpVectors, must } from "../utils";
 import { Dancer } from "../worldState";
 import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
 import { ChoreographerSpecifiedLRInstructionFieldsSchema } from "./templates/_base";
+import {
+  relFacingToWorldWithBasis,
+  relPosToWorldWithBasis,
+  resolveInitBasis,
+} from "./templates/_basisResolution";
 import { allLLRRTemplates, LLRRTemplateIdSchema } from "./templates/index";
 
 // ── Instruction schema ───────────────────────────────────────────────────
@@ -20,23 +25,6 @@ export const TemplatedLLRRInstructionSchema = z.object({
 export type TemplatedLLRRInstruction = z.infer<
   typeof TemplatedLLRRInstructionSchema
 >;
-
-// ── Coordinate transforms ────────────────────────────────────────────────
-
-import type { Vector } from "vecti";
-
-function relPosToWorld(
-  relPos: Vector,
-  origPos: Vector,
-  origFacing: Vector,
-): Vector {
-  const angle = ccwRadsBetween(NORTH, origFacing);
-  return origPos.add(relPos.rotateByRadians(angle));
-}
-
-function relFacingToWorld(relFacing: number, origFacing: Vector): Vector {
-  return origFacing.rotateByRadians(relFacing);
-}
 
 // ── Animator ─────────────────────────────────────────────────────────────
 
@@ -67,6 +55,21 @@ export const templatedLLRRSegments: InstructionAnimator<
     return [];
   }
 
+  // Pre-resolve basis vectors for each proto dancer at init time.
+  const basisCache = new Map<
+    string,
+    { xBasis: import("vecti").Vector; yBasis: import("vecti").Vector }
+  >();
+  const getBasis = (dancer: Dancer) => {
+    const key = dancer.protoId;
+    let cached = basisCache.get(key);
+    if (!cached) {
+      cached = resolveInitBasis(template.basis, key, dancer.id, init);
+      basisCache.set(key, cached);
+    }
+    return cached;
+  };
+
   const lastKfT = template.keyframes[template.keyframes.length - 1].t;
   const scale = lastKfT > 0 ? instr.beats / lastKfT : 1;
 
@@ -85,15 +88,21 @@ export const templatedLLRRSegments: InstructionAnimator<
         if (!state) return dancer.pos;
 
         const orig = dancer.at(init);
-        const worldTarget = relPosToWorld(state.relPos, orig.pos, orig.facing);
+        const { xBasis, yBasis } = getBasis(dancer);
+        const worldTarget = relPosToWorldWithBasis(
+          state.relPos,
+          orig.pos,
+          xBasis,
+          yBasis,
+        );
         return lerpVectors(dancer.pos, worldTarget, frac);
       },
       facing: (dancer, frac) => {
         const state = kf.states[dancer.protoId];
         if (!state) return dancer.facing;
 
-        const orig = dancer.at(init);
-        const worldFacing = relFacingToWorld(state.relFacing, orig.facing);
+        const { yBasis } = getBasis(dancer);
+        const worldFacing = relFacingToWorldWithBasis(state.relFacing, yBasis);
         return lerpFacing(dancer.facing, worldFacing, frac);
       },
     });

@@ -1,13 +1,17 @@
-import type { Vector } from "vecti";
 import { z } from "zod";
 
 import { type Beats } from "../contraCore";
-import { ccwRadsBetween, lerpFacing, NORTH } from "../geometry";
+import { lerpFacing } from "../geometry";
 import { lerpVectors, must } from "../utils";
 import { Dancer } from "../worldState";
 import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
 import { ChoreographerSpecifiedLRInstructionFieldsSchema } from "./templates/_base";
+import {
+  relFacingToWorldWithBasis,
+  relPosToWorldWithBasis,
+  resolveInitBasis,
+} from "./templates/_basisResolution";
 import { allLRTemplates, LRTemplateIdSchema } from "./templates/index";
 
 // ── Instruction schema ───────────────────────────────────────────────────
@@ -21,29 +25,6 @@ export const TemplatedLRInstructionSchema = z.object({
 export type TemplatedLRInstruction = z.infer<
   typeof TemplatedLRInstructionSchema
 >;
-
-// ── Coordinate transforms ────────────────────────────────────────────────
-
-/**
- * Convert a relPos (in the dancer's initial coordinate system where the
- * dancer's initial facing = local "north" / +y) into world coordinates.
- */
-function relPosToWorld(
-  relPos: Vector,
-  origPos: Vector,
-  origFacing: Vector,
-): Vector {
-  const angle = ccwRadsBetween(NORTH, origFacing);
-  return origPos.add(relPos.rotateByRadians(angle));
-}
-
-/**
- * Convert a relFacing (a rotation in radians from the dancer's initial facing)
- * into a world facing vector.
- */
-function relFacingToWorld(relFacing: number, origFacing: Vector): Vector {
-  return origFacing.rotateByRadians(relFacing);
-}
 
 // ── Animator ─────────────────────────────────────────────────────────────
 
@@ -76,6 +57,21 @@ export const templatedLRSegments: InstructionAnimator<
     return [];
   }
 
+  // Pre-resolve basis vectors for each role at init time.
+  const basisCache = new Map<
+    string,
+    { xBasis: import("vecti").Vector; yBasis: import("vecti").Vector }
+  >();
+  const getBasis = (dancer: Dancer) => {
+    const key = dancer.role;
+    let cached = basisCache.get(key);
+    if (!cached) {
+      cached = resolveInitBasis(template.basis, key, dancer.id, init);
+      basisCache.set(key, cached);
+    }
+    return cached;
+  };
+
   // Scale keyframe times to fit the instruction's beats
   const lastKfT = template.keyframes[template.keyframes.length - 1].t;
   const scale = lastKfT > 0 ? instr.beats / lastKfT : 1;
@@ -91,21 +87,25 @@ export const templatedLRSegments: InstructionAnimator<
     segments.push({
       dur,
       position: (dancer, frac) => {
-        const role = dancer.role;
-        const state = kf.states[role];
+        const state = kf.states[dancer.role];
         if (!state) return dancer.pos;
 
         const orig = dancer.at(init);
-        const worldTarget = relPosToWorld(state.relPos, orig.pos, orig.facing);
+        const { xBasis, yBasis } = getBasis(dancer);
+        const worldTarget = relPosToWorldWithBasis(
+          state.relPos,
+          orig.pos,
+          xBasis,
+          yBasis,
+        );
         return lerpVectors(dancer.pos, worldTarget, frac);
       },
       facing: (dancer, frac) => {
-        const role = dancer.role;
-        const state = kf.states[role];
+        const state = kf.states[dancer.role];
         if (!state) return dancer.facing;
 
-        const orig = dancer.at(init);
-        const worldFacing = relFacingToWorld(state.relFacing, orig.facing);
+        const { yBasis } = getBasis(dancer);
+        const worldFacing = relFacingToWorldWithBasis(state.relFacing, yBasis);
         return lerpFacing(dancer.facing, worldFacing, frac);
       },
     });
