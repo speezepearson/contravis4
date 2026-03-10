@@ -1,9 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
-  status: "verified",
-  name: "Otter's Allemande",
-  author: "Ramya Rajan",
+export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
@@ -112,14 +110,14 @@ export default {
       type: "square_through",
       nPullBys: 4,
       firstHand: "right",
-      cid1: "neighbor",
-      cid2: "partner",
+      cid1: "partner",
+      cid2: "neighbor",
     },
     {
       id: "c7f2a4b8-3d6e-4901-a5c8-e9d1b3f7a205",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: "person_larks_right_robins_left",
+      cid: "person_in_front",
     },
   ],
-} satisfies Dance;
+});

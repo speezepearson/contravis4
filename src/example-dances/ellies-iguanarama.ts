@@ -1,6 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
+export default typedParse(DanceSchema, {
   status: "verified",
   name: "Ellie's Iguanarama",
   author: "Isaac Banner",
@@ -141,4 +142,4 @@ export default {
       cid: "person_across",
     },
   ],
-} satisfies Dance;
+});

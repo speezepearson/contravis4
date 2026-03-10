@@ -1,6 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
+export default typedParse(DanceSchema, {
   status: "dummy",
   name: "(dummy) Turn as a couple",
   initFormation: "improper",
@@ -24,4 +25,4 @@ export default {
       hand: "right",
     },
   ],
-} satisfies Dance;
+});

@@ -1,6 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
+export default typedParse(DanceSchema, {
   status: "verified",
   url: "https://contradb.com/dances/2515",
   name: "Basic Becket",
@@ -87,4 +88,4 @@ export default {
       full: false,
     },
   ],
-} satisfies Dance;
+});

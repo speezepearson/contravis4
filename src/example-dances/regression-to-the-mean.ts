@@ -1,6 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
+export default typedParse(DanceSchema, {
   status: "verified",
   url: "https://contradb.com/dances/3028",
   name: "Regression to the Mean",
@@ -84,4 +85,4 @@ export default {
       endFacing: "across",
     },
   ],
-} satisfies Dance;
+});

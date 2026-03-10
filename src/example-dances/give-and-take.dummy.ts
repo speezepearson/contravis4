@@ -1,6 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
+export default typedParse(DanceSchema, {
   status: "dummy",
   name: "(dummy) Give and take",
   initFormation: "improper",
@@ -33,4 +34,4 @@ export default {
       nPlaces: 3,
     },
   ],
-} satisfies Dance;
+});

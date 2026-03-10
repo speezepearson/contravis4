@@ -1,6 +1,7 @@
-import type { Dance } from "../instructions/index";
+import { DanceSchema } from "../instructions/index";
+import { typedParse } from "../utils";
 
-export default {
+export default typedParse(DanceSchema, {
   status: "verified",
   name: "Heartbreak Contra (A2 ring balance)",
   author: "Dugan Murphy",
@@ -125,4 +126,4 @@ export default {
       cid: "person_in_front",
     },
   ],
-} satisfies Dance;
+});
