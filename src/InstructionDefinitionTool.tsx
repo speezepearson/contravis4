@@ -386,69 +386,70 @@ export default function InstructionDefinitionTool() {
     if (curPreviewAnimation && curPreviewBeat > 0) {
       const t = Math.min(curPreviewBeat, curPreviewAnimation.dur);
       renderer.drawFrame(t, curPreviewAnimation.getFrame(t));
-      return;
-    }
+    } else {
+      // Draw the base frame (this draws grid + all dancers)
+      renderer.drawFrame(0, curInitState);
 
-    // Draw the base frame (this draws grid + all dancers)
-    renderer.drawFrame(0, curInitState);
+      // Highlight selected dancer
+      if (curSelectedDancer) {
+        renderer.drawDancerHighlight(
+          Dancer.get(curSelectedDancer, curInitState),
+        );
+      }
+
+      // Draw basis arrows for ALL dancers in init state
+      {
+        const curBasisTemplate = basisRef.current;
+        for (const protoId of ALL_PROTO_IDS) {
+          try {
+            const resolved = resolvedBasisForDancer(
+              curBasisTemplate,
+              protoId,
+              curInitState,
+            );
+            const dancer = Dancer.get(protoId, curInitState);
+            renderer.drawBasisArrows(
+              dancer.pos.x,
+              dancer.pos.y,
+              resolved.xBasis,
+              resolved.yBasis,
+            );
+          } catch {
+            // SWALLOW_EXCEPTION: basis may not be resolvable for this dancer
+          }
+        }
+      }
+
+      // Draw highlighted basis spec as a line from selected dancer
+      if (curSelectedDancer && curHighlightedSpec) {
+        try {
+          const dancer = Dancer.get(curSelectedDancer, curInitState);
+          const vec = resolveBasisVector(
+            BasisVectorSpecSchema.parse(curHighlightedSpec),
+            dancer,
+          );
+          if (vec.length() > 1e-6) {
+            renderer.drawRelationshipLines([
+              {
+                fromX: dancer.pos.x,
+                fromY: dancer.pos.y,
+                toX: dancer.pos.x + vec.x,
+                toY: dancer.pos.y + vec.y,
+              },
+            ]);
+          }
+        } catch {
+          // SWALLOW_EXCEPTION: spec may not be resolvable in the current init state
+        }
+      }
+    }
 
     // Draw path lines (always, when we have keyframes)
     if (curPathFrames.length > 0) {
       renderer.drawPreviewKeyframes(curPathFrames);
     }
 
-    // Highlight selected dancer
-    if (curSelectedDancer) {
-      renderer.drawDancerHighlight(Dancer.get(curSelectedDancer, curInitState));
-    }
-
-    // Draw basis arrows for ALL dancers in init state
-    {
-      const curBasisTemplate = basisRef.current;
-      for (const protoId of ALL_PROTO_IDS) {
-        try {
-          const resolved = resolvedBasisForDancer(
-            curBasisTemplate,
-            protoId,
-            curInitState,
-          );
-          const dancer = Dancer.get(protoId, curInitState);
-          renderer.drawBasisArrows(
-            dancer.pos.x,
-            dancer.pos.y,
-            resolved.xBasis,
-            resolved.yBasis,
-          );
-        } catch {
-          // SWALLOW_EXCEPTION: basis may not be resolvable for this dancer
-        }
-      }
-    }
-
-    // Draw highlighted basis spec as a line from selected dancer
-    if (curSelectedDancer && curHighlightedSpec) {
-      try {
-        const dancer = Dancer.get(curSelectedDancer, curInitState);
-        const vec = resolveBasisVector(
-          BasisVectorSpecSchema.parse(curHighlightedSpec),
-          dancer,
-        );
-        if (vec.length() > 1e-6) {
-          renderer.drawRelationshipLines([
-            {
-              fromX: dancer.pos.x,
-              fromY: dancer.pos.y,
-              toX: dancer.pos.x + vec.x,
-              toY: dancer.pos.y + vec.y,
-            },
-          ]);
-        }
-      } catch {
-        // SWALLOW_EXCEPTION: spec may not be resolvable in the current init state
-      }
-    }
-
-    // Draw ghost dancers at keyframe positions
+    // Draw ghost dancers at keyframe positions (selected dancer only)
     if (curSelectedDancer && curSelectedStateKey && curBasis) {
       const orig = Dancer.get(curSelectedDancer, curInitState);
       for (const kf of curKeyframes) {
