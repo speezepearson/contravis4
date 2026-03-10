@@ -651,6 +651,8 @@ export default function InstructionDefinitionTool() {
       };
     },
     [
+      canvasRef,
+      rendererRef,
       previewBeat,
       initState,
       selectedDancer,
@@ -771,6 +773,8 @@ export default function InstructionDefinitionTool() {
       requestDraw();
     },
     [
+      canvasRef,
+      rendererRef,
       initState,
       selectedDancer,
       selectedStateKey,
@@ -867,6 +871,8 @@ export default function InstructionDefinitionTool() {
       requestDraw();
     },
     [
+      canvasRef,
+      rendererRef,
       selectedDancer,
       selectedStateKey,
       selectedBasis,
