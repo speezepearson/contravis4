@@ -9,7 +9,6 @@ import {
 } from "react";
 import { Vector } from "vecti";
 
-import { Renderer } from "./components/Renderer";
 import { SearchableDropdown } from "./components/SearchableDropdown";
 import {
   ALL_PROTO_IDS,
@@ -58,6 +57,7 @@ import {
   LLRRTemplateIdSchema,
   LRTemplateIdSchema,
 } from "./instructions/templates/index";
+import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
 import { buildEnumRecord, lerpVectors } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
@@ -136,9 +136,8 @@ function basisSpecToText(spec: BasisSpec): string {
 // ── Component ────────────────────────────────────────────────────────────
 
 export default function InstructionDefinitionTool() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<Renderer | null>(null);
+  const { canvasRef, canvasContainerRef, rendererRef, drawFnRef, requestDraw } =
+    useCanvasRenderer();
 
   // Template state (undoable)
   const {
@@ -205,7 +204,6 @@ export default function InstructionDefinitionTool() {
 
   // Refs for animation-frame drawing (avoid re-render thrash during drag)
   const dragRef = useRef<DragState | null>(null);
-  const drawRafRef = useRef(0);
 
   /** The key used for keyframe state lookup — Role for LR, ProtoId for LLRR. */
   const selectedStateKey: StateKey | null = useMemo(() => {
@@ -538,10 +536,10 @@ export default function InstructionDefinitionTool() {
     }
   }, []);
 
-  const requestDraw = useCallback(() => {
-    cancelAnimationFrame(drawRafRef.current);
-    drawRafRef.current = requestAnimationFrame(() => draw());
-  }, [draw]);
+  // Keep drawFnRef in sync with draw
+  useEffect(() => {
+    drawFnRef.current = draw;
+  });
 
   // ── Keyboard shortcuts ───────────────────────────────────────────────
 
@@ -561,44 +559,6 @@ export default function InstructionDefinitionTool() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [undo, redo]);
-
-  // ── Canvas setup ─────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = canvasContainerRef.current;
-    if (!canvas || !container) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const applySize = () => {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      if (w === 0 || h === 0) return;
-      canvas.width = w;
-      canvas.height = h;
-      if (!rendererRef.current) {
-        rendererRef.current = new Renderer(ctx, w, h);
-      } else {
-        rendererRef.current.resize(w, h);
-      }
-      requestDraw();
-    };
-
-    applySize();
-
-    let resizeRaf = 0;
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(applySize);
-    });
-    observer.observe(container);
-
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(resizeRaf);
-    };
-  }, [requestDraw]);
 
   // Redraw when state changes
   useEffect(() => {

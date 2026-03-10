@@ -6,7 +6,6 @@ import {
   CalledIdentifierHighlightContext,
   DancerHighlightContext,
 } from "./components/RelationshipHighlightContext";
-import { Renderer } from "./components/Renderer";
 import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "./contraCore";
 import { exportGif, type GifOptions } from "./exportGif";
@@ -31,6 +30,7 @@ import {
   InstructionSchema,
 } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
+import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
 import { isLocalStorageAvailable, try_ } from "./utils";
 import { Dancer, type WorldState } from "./worldState";
@@ -112,13 +112,25 @@ function activeInstructionId(
 }
 
 export default function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<Renderer | null>(null);
+  const hoveredDancerRef = useRef<ProtoId | null>(null);
+  const {
+    canvasRef,
+    canvasContainerRef,
+    rendererRef,
+    drawFnRef: drawRef,
+    hoverFrameRef: lastFrameRef,
+    requestDraw,
+  } = useCanvasRenderer({
+    onHoverDancer: (hit) => {
+      if (hit !== hoveredDancerRef.current) {
+        hoveredDancerRef.current = hit;
+        requestDraw();
+      }
+    },
+  });
   const beatRef = useRef(0);
   const lastTimestampRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
-  const drawRef = useRef<() => void>(() => {});
 
   const [initialLoadResult] = useState(() => loadDanceFromLocalStorage());
   const [localStorageError, setLocalStorageError] = useState<string | null>(
@@ -241,10 +253,6 @@ export default function App() {
     }
     return frames;
   }, [hoveredInstructionId, instructions, animation]);
-
-  // Dancer hover: ref-based to avoid re-renders on fast mouse movements
-  const hoveredDancerRef = useRef<ProtoId | null>(null);
-  const lastFrameRef = useRef<WorldState | null>(null);
 
   // Relationship highlight: ref-based to avoid re-renders on fast mouse movements
   const highlightedRelRef = useRef<CalledIdentifier | null>(null);
@@ -473,85 +481,6 @@ export default function App() {
     const id = requestAnimationFrame(() => drawRef.current());
     return () => cancelAnimationFrame(id);
   }, [animation, previewFrames]);
-
-  // Initialize renderer + ResizeObserver
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = canvasContainerRef.current;
-    if (!canvas || !container) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const applySize = () => {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      if (w === 0 || h === 0) return;
-      canvas.width = w;
-      canvas.height = h;
-      if (!rendererRef.current) {
-        rendererRef.current = new Renderer(ctx, w, h);
-      } else {
-        rendererRef.current.resize(w, h);
-      }
-      drawRef.current();
-    };
-
-    applySize();
-
-    let hoverRaf = 0;
-    const onMouseMove = (e: MouseEvent) => {
-      const renderer = rendererRef.current;
-      const frame = lastFrameRef.current;
-      if (!renderer || !frame) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const hit = renderer.hitTestDancer(x, y, frame);
-      if (hit !== hoveredDancerRef.current) {
-        hoveredDancerRef.current = hit;
-        cancelAnimationFrame(hoverRaf);
-        hoverRaf = requestAnimationFrame(() => drawRef.current());
-      }
-    };
-    const onMouseLeave = () => {
-      if (hoveredDancerRef.current !== null) {
-        hoveredDancerRef.current = null;
-        cancelAnimationFrame(hoverRaf);
-        hoverRaf = requestAnimationFrame(() => drawRef.current());
-      }
-    };
-    const onWheel = (e: WheelEvent) => {
-      const renderer = rendererRef.current;
-      if (!renderer) return;
-      e.preventDefault();
-      const zoomFactor = 1.1;
-      const currentZoom = renderer.getZoom();
-      const newZoom =
-        e.deltaY < 0 ? currentZoom * zoomFactor : currentZoom / zoomFactor;
-      renderer.setZoom(Math.max(0.2, Math.min(5, newZoom)));
-      cancelAnimationFrame(hoverRaf);
-      hoverRaf = requestAnimationFrame(() => drawRef.current());
-    };
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseleave", onMouseLeave);
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-
-    let resizeRaf = 0;
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(applySize);
-    });
-    observer.observe(container);
-
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(resizeRaf);
-      cancelAnimationFrame(hoverRaf);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseleave", onMouseLeave);
-      canvas.removeEventListener("wheel", onWheel);
-    };
-  }, []);
 
   // Animation loop
   const animateRef = useRef<(timestamp: number) => void>(undefined);
