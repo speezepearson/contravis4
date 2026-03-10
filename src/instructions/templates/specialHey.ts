@@ -4,9 +4,7 @@ import { LLRRInstructionTemplateSchema } from "./_base";
 export default typedParse(LLRRInstructionTemplateSchema, {
   name: "hey (full, larks pass right)",
   defaultBeats: 8,
-  matcher: {
-    type: "choreographer_specified",
-  },
+  basis: { x: "on_right", y: "in_front" },
   fieldsDisplay: [],
   keyframes: [
     {

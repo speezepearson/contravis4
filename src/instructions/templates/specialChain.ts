@@ -4,8 +4,8 @@ import { LRInstructionTemplateSchema } from "./_base";
 export default typedParse(LRInstructionTemplateSchema, {
   name: "special chain",
   defaultBeats: 8,
-  matcher: { type: "choreographer_specified" },
-  fieldsDisplay: ["robins chain with a flourish to your", { field: "matcher" }],
+  basis: { x: "on_right", y: "in_front" },
+  fieldsDisplay: ["robins chain with a flourish to your", { field: "basis_x" }],
   keyframes: [
     // TODO: fill in real keyframes once the definition UI exists
   ],

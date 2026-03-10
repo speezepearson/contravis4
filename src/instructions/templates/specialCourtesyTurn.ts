@@ -4,9 +4,7 @@ import { LRInstructionTemplateSchema } from "./_base";
 export default typedParse(LRInstructionTemplateSchema, {
   name: "special courtesy turn",
   defaultBeats: 8,
-  matcher: {
-    type: "choreographer_specified",
-  },
+  basis: { x: "on_right", y: "in_front" },
   fieldsDisplay: [],
   keyframes: [
     {

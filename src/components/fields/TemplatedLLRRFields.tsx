@@ -1,12 +1,16 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
+import {
+  CalledDirectionSchema,
+  CalledIdentifierSchema,
+} from "../../instructions/_base";
 import { TemplatedLLRRInstructionSchema } from "../../instructions/templatedLLRRInstruction";
+import { BasisVectorSpecSchema } from "../../instructions/templates/_base";
 import { allLLRRTemplates } from "../../instructions/templates/index";
 import { typedSafeParse } from "../../utils";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
+import { InlineDropdown } from "../InlineDropdown";
 
 export function TemplatedLLRRFields({
   instruction,
@@ -33,16 +37,94 @@ export function TemplatedLLRRFields({
     else onInvalid?.();
   }
 
+  const basisX = template.basis.x;
+  const basisY = template.basis.y;
+
+  const dirOptions = CalledDirectionSchema.options;
+  const cidOptions = CalledIdentifierSchema.options;
+
   return (
     <>
-      {template?.matcher.type === "choreographer_specified" && (
+      {basisX === "choreographer_specified_direction" && (
         <>
-          {" with "}
-          <CalledIdentifierDropdown
-            options={CalledIdentifierSchema.options}
-            value={instruction.fields.matcher ?? "partner"}
-            onChange={(cid) =>
-              tryCommit({ fields: { ...instruction.fields, matcher: cid } })
+          {" basis X: "}
+          <InlineDropdown
+            options={[...dirOptions]}
+            value={
+              instruction.fields.basisX ??
+              template.basis.assumedX ??
+              BasisVectorSpecSchema.options[0]
+            }
+            onChange={(val) =>
+              tryCommit({
+                fields: {
+                  ...instruction.fields,
+                  basisX: BasisVectorSpecSchema.parse(val),
+                },
+              })
+            }
+          />
+        </>
+      )}
+      {basisX === "choreographer_specified_identifier" && (
+        <>
+          {" basis X: "}
+          <InlineDropdown
+            options={[...cidOptions]}
+            value={
+              instruction.fields.basisX ??
+              template.basis.assumedX ??
+              BasisVectorSpecSchema.options[0]
+            }
+            onChange={(val) =>
+              tryCommit({
+                fields: {
+                  ...instruction.fields,
+                  basisX: BasisVectorSpecSchema.parse(val),
+                },
+              })
+            }
+          />
+        </>
+      )}
+      {basisY === "choreographer_specified_direction" && (
+        <>
+          {" basis Y: "}
+          <InlineDropdown
+            options={[...dirOptions]}
+            value={
+              instruction.fields.basisY ??
+              template.basis.assumedY ??
+              BasisVectorSpecSchema.options[0]
+            }
+            onChange={(val) =>
+              tryCommit({
+                fields: {
+                  ...instruction.fields,
+                  basisY: BasisVectorSpecSchema.parse(val),
+                },
+              })
+            }
+          />
+        </>
+      )}
+      {basisY === "choreographer_specified_identifier" && (
+        <>
+          {" basis Y: "}
+          <InlineDropdown
+            options={[...cidOptions]}
+            value={
+              instruction.fields.basisY ??
+              template.basis.assumedY ??
+              BasisVectorSpecSchema.options[0]
+            }
+            onChange={(val) =>
+              tryCommit({
+                fields: {
+                  ...instruction.fields,
+                  basisY: BasisVectorSpecSchema.parse(val),
+                },
+              })
             }
           />
         </>

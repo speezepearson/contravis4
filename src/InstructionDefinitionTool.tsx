@@ -21,7 +21,6 @@ import {
 import { lerpFacing as lerpFacingVec } from "./geometry";
 import {
   CalledDirectionSchema,
-  type CalledIdentifier,
   CalledIdentifierSchema,
   type ContraAnimation,
 } from "./instructions/_base";
@@ -31,21 +30,23 @@ import {
   resolveInitFormation,
 } from "./instructions/index";
 import {
-  type Basis,
+  type BasisSpec,
+  BasisSpecSchema,
   type BasisVectorSpec,
   BasisVectorSpecSchema,
-  DEFAULT_BASIS,
+  DEFAULT_TEMPLATE_BASIS,
   type LLRRInstructionTemplate,
   LLRRInstructionTemplateSchema,
   type LRInstructionTemplate,
   LRInstructionTemplateSchema,
+  type TemplateBasis,
 } from "./instructions/templates/_base";
 import {
   facingToRelWithBasis,
-  getBasisForKey,
   relFacingToWorldWithBasis,
   relPosToWorldWithBasis,
-  resolveBasis,
+  resolveBasisVector,
+  resolveTemplateBasisAtInit,
   worldToRelWithBasis,
 } from "./instructions/templates/_basisResolution";
 import {
@@ -71,10 +72,6 @@ type KeyframeEntry = {
   states: Partial<Record<StateKey, { relPos: Vector; relFacing: number }>>;
 };
 
-type MatcherConfig =
-  | { type: "hardcoded"; cid: CalledIdentifier }
-  | { type: "choreographer_specified" };
-
 type DragState = {
   startWorldX: number;
   startWorldY: number;
@@ -91,24 +88,26 @@ type DragState = {
 // ── Basis helpers ────────────────────────────────────────────────────────
 
 function resolvedBasisForDancer(
-  basisRecord: Record<string, Basis>,
-  key: StateKey,
+  basis: TemplateBasis,
   dancerId: ProtoId,
   initState: WorldState,
 ): { xBasis: Vector; yBasis: Vector } {
-  const basis = getBasisForKey(basisRecord, key);
   try {
-    return resolveBasis(basis, Dancer.get(dancerId, initState));
+    return resolveTemplateBasisAtInit(basis, dancerId, initState);
   } catch {
     // SWALLOW_EXCEPTION: basis may reference identifiers that can't be resolved
     // in the current init state; fall back to the default facing-based basis.
-    return resolveBasis(DEFAULT_BASIS, Dancer.get(dancerId, initState));
+    return resolveTemplateBasisAtInit(
+      DEFAULT_TEMPLATE_BASIS,
+      dancerId,
+      initState,
+    );
   }
 }
 
 // ── Basis dropdown label helper ──────────────────────────────────────────
 
-function basisSpecToText(spec: BasisVectorSpec): string {
+function basisSpecToText(spec: BasisSpec): string {
   return spec.replace(/_/g, " ");
 }
 
@@ -123,8 +122,8 @@ export default function InstructionDefinitionTool() {
   const [templateType, setTemplateType] = useState<TemplateType>("lr");
   const [name, setName] = useState("untitled");
   const [defaultBeats, setDefaultBeats] = useState(8);
-  const [matcher, setMatcher] = useState<MatcherConfig>({
-    type: "choreographer_specified",
+  const [basis, setBasis] = useState<TemplateBasis>({
+    ...DEFAULT_TEMPLATE_BASIS,
   });
   const [fieldsDisplay, setFieldsDisplay] = useState<
     LRInstructionTemplate["fieldsDisplay"]
@@ -133,7 +132,6 @@ export default function InstructionDefinitionTool() {
     resolveInitFormation("improper"),
   );
   const [keyframes, setKeyframes] = useState<KeyframeEntry[]>([]);
-  const [basisRecord, setBasisRecord] = useState<Record<string, Basis>>({});
 
   // UI state
   const [mode, setMode] = useState<Mode>("init");
@@ -164,13 +162,8 @@ export default function InstructionDefinitionTool() {
     yBasis: Vector;
   } | null => {
     if (!selectedDancer || !selectedStateKey) return null;
-    return resolvedBasisForDancer(
-      basisRecord,
-      selectedStateKey,
-      selectedDancer,
-      initState,
-    );
-  }, [selectedDancer, selectedStateKey, basisRecord, initState]);
+    return resolvedBasisForDancer(basis, selectedDancer, initState);
+  }, [selectedDancer, selectedStateKey, basis, initState]);
 
   // ── Preview animation ───────────────────────────────────────────────
 
@@ -184,15 +177,10 @@ export default function InstructionDefinitionTool() {
       // Pre-resolve basis for each dancer
       const basisCache = new Map<string, { xBasis: Vector; yBasis: Vector }>();
       const getBasis = (dancer: Dancer) => {
-        const key = templateType === "llrr" ? dancer.protoId : dancer.role;
+        const key = dancer.protoId;
         let cached = basisCache.get(key);
         if (!cached) {
-          cached = resolvedBasisForDancer(
-            basisRecord,
-            key,
-            dancer.protoId,
-            initState,
-          );
+          cached = resolvedBasisForDancer(basis, dancer.protoId, initState);
           basisCache.set(key, cached);
         }
         return cached;
@@ -242,7 +230,7 @@ export default function InstructionDefinitionTool() {
       // SWALLOW_EXCEPTION: template may be in an invalid intermediate state while editing
       return null;
     }
-  }, [keyframes, defaultBeats, initState, templateType, basisRecord]);
+  }, [keyframes, defaultBeats, initState, templateType, basis]);
 
   // ── Sampled path frames for always-on path lines ───────────────────
 
@@ -271,6 +259,7 @@ export default function InstructionDefinitionTool() {
   const previewBeatRef = useRef(previewBeat);
   const previewPathFramesRef = useRef(previewPathFrames);
   const highlightedBasisSpecRef = useRef(highlightedBasisSpec);
+  const basisRef = useRef(basis);
   useLayoutEffect(() => {
     initStateRef.current = initState;
     keyframesRef.current = keyframes;
@@ -282,6 +271,7 @@ export default function InstructionDefinitionTool() {
     previewBeatRef.current = previewBeat;
     previewPathFramesRef.current = previewPathFrames;
     highlightedBasisSpecRef.current = highlightedBasisSpec;
+    basisRef.current = basis;
   });
 
   // Stable draw – reads everything from refs so requestDraw never changes
@@ -320,23 +310,38 @@ export default function InstructionDefinitionTool() {
       renderer.drawDancerHighlight(Dancer.get(curSelectedDancer, curInitState));
     }
 
+    // Draw basis arrows for ALL dancers in init state
+    if (curMode === "keyframe") {
+      const curBasisTemplate = basisRef.current;
+      for (const protoId of ALL_PROTO_IDS) {
+        try {
+          const resolved = resolvedBasisForDancer(
+            curBasisTemplate,
+            protoId,
+            curInitState,
+          );
+          const dancer = Dancer.get(protoId, curInitState);
+          renderer.drawBasisArrows(
+            dancer.pos.x,
+            dancer.pos.y,
+            resolved.xBasis,
+            resolved.yBasis,
+          );
+        } catch {
+          // SWALLOW_EXCEPTION: basis may not be resolvable for this dancer
+        }
+      }
+    }
+
     // Draw highlighted basis spec as a line from selected dancer
     if (curSelectedDancer && curMode === "keyframe" && curHighlightedSpec) {
       try {
         const dancer = Dancer.get(curSelectedDancer, curInitState);
-        const vec = (() => {
-          if (CalledDirectionSchema.safeParse(curHighlightedSpec).success) {
-            return dancer.resolveCalledDirection(
-              CalledDirectionSchema.parse(curHighlightedSpec),
-            );
-          }
-          const target = dancer.resolveCalledIdentifier(
-            CalledIdentifierSchema.parse(curHighlightedSpec),
-          );
-          if (!target) return null;
-          return target.pos.subtract(dancer.pos);
-        })();
-        if (vec && vec.length() > 1e-6) {
+        const vec = resolveBasisVector(
+          BasisVectorSpecSchema.parse(curHighlightedSpec),
+          dancer,
+        );
+        if (vec.length() > 1e-6) {
           renderer.drawRelationshipLines([
             {
               fromX: dancer.pos.x,
@@ -459,6 +464,7 @@ export default function InstructionDefinitionTool() {
     selectedDancer,
     selectedStateKey,
     selectedBasis,
+    basis,
     mode,
     keyframes,
     previewAnimation,
@@ -778,21 +784,12 @@ export default function InstructionDefinitionTool() {
   const exportTemplate = useCallback(():
     | LRInstructionTemplate
     | LLRRInstructionTemplate => {
-    const hasNonDefaultBasis = Object.keys(basisRecord).length > 0;
     if (templateType === "llrr") {
       return {
         name,
         defaultBeats,
-        matcher,
         fieldsDisplay,
-        ...(hasNonDefaultBasis
-          ? {
-              basis: buildEnumRecord(
-                ProtoIdSchema,
-                (p) => basisRecord[p] ?? DEFAULT_BASIS,
-              ),
-            }
-          : {}),
+        basis,
         keyframes: keyframes.map((kf) => ({
           t: kf.t,
           states: buildEnumRecord(
@@ -805,16 +802,8 @@ export default function InstructionDefinitionTool() {
     return {
       name,
       defaultBeats,
-      matcher,
       fieldsDisplay,
-      ...(hasNonDefaultBasis
-        ? {
-            basis: buildEnumRecord(
-              RoleSchema,
-              (r) => basisRecord[r] ?? DEFAULT_BASIS,
-            ),
-          }
-        : {}),
+      basis,
       keyframes: keyframes.map((kf) => ({
         t: kf.t,
         states: buildEnumRecord(
@@ -823,15 +812,7 @@ export default function InstructionDefinitionTool() {
         ),
       })),
     };
-  }, [
-    name,
-    defaultBeats,
-    matcher,
-    fieldsDisplay,
-    keyframes,
-    templateType,
-    basisRecord,
-  ]);
+  }, [name, defaultBeats, fieldsDisplay, keyframes, templateType, basis]);
 
   const exportTypeScript = useCallback(() => {
     const template = exportTemplate();
@@ -862,9 +843,8 @@ export default function InstructionDefinitionTool() {
     (template: LRInstructionTemplate | LLRRInstructionTemplate) => {
       setName(template.name);
       setDefaultBeats(template.defaultBeats);
-      setMatcher(template.matcher);
       setFieldsDisplay(template.fieldsDisplay);
-      setBasisRecord(template.basis ?? {});
+      setBasis(template.basis);
       setKeyframes(
         template.keyframes.map((kf) => ({
           t: kf.t,
@@ -935,24 +915,25 @@ export default function InstructionDefinitionTool() {
 
   const handleFieldsDisplayChange = useCallback((text: string) => {
     setFieldsDisplayText(text);
-    // Parse: text segments separated by {matcher}
-    const parts = text.split(/\{matcher\}/g);
-    const result: LRInstructionTemplate["fieldsDisplay"] = []; // same type for both LR and LLRR
-    for (let i = 0; i < parts.length; i++) {
-      if (parts[i]) result.push(parts[i]);
-      if (i < parts.length - 1) result.push({ field: "matcher" });
+    // Parse: text segments separated by {basis_x} or {basis_y}
+    const result: LRInstructionTemplate["fieldsDisplay"] = [];
+    const re = /\{(basis_x|basis_y)\}/g;
+    let lastIdx = 0;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+      const before = text.slice(lastIdx, match.index);
+      if (before) result.push(before);
+      result.push({ field: match[1] === "basis_x" ? "basis_x" : "basis_y" });
+      lastIdx = re.lastIndex;
     }
+    const after = text.slice(lastIdx);
+    if (after) result.push(after);
     setFieldsDisplay(result);
   }, []);
 
   // ── Render ───────────────────────────────────────────────────────────
 
-  const matcherCidOptions = CalledIdentifierSchema.options;
-  const basisVectorOptions = BasisVectorSpecSchema.options;
-
-  const selectedDancerBasis = selectedStateKey
-    ? getBasisForKey(basisRecord, selectedStateKey)
-    : DEFAULT_BASIS;
+  const basisSpecOptions = BasisSpecSchema.options;
 
   return (
     <div className="def-instr-layout">
@@ -983,7 +964,7 @@ export default function InstructionDefinitionTool() {
                 setTemplateType(next);
                 setKeyframes([]);
                 setSelectedDancer(null);
-                setBasisRecord({});
+                setBasis({ ...DEFAULT_TEMPLATE_BASIS });
               }}
             >
               <option value="lr">LR (per-role)</option>
@@ -1049,40 +1030,104 @@ export default function InstructionDefinitionTool() {
           </label>
         </div>
 
-        {/* Matcher */}
+        {/* Basis */}
         <div className="def-instr-section">
-          <h3>Matcher</h3>
-          <select
-            value={matcher.type}
-            onChange={(e) => {
-              if (e.target.value === "hardcoded") {
-                setMatcher({ type: "hardcoded", cid: "partner" });
-              } else {
-                setMatcher({ type: "choreographer_specified" });
-              }
-            }}
-          >
-            <option value="choreographer_specified">
-              Choreographer specified
-            </option>
-            <option value="hardcoded">Hardcoded</option>
-          </select>
-          {matcher.type === "hardcoded" && (
+          <h3>Basis</h3>
+          <label>
+            X axis:{" "}
             <select
-              value={matcher.cid}
-              onChange={(e) =>
-                setMatcher({
-                  type: "hardcoded",
-                  cid: CalledIdentifierSchema.parse(e.target.value),
-                })
-              }
+              value={basis.x}
+              onChange={(e) => {
+                const spec = BasisSpecSchema.parse(e.target.value);
+                setBasis((prev) => ({ ...prev, x: spec }));
+              }}
+              onMouseLeave={() => setHighlightedBasisSpec(null)}
             >
-              {matcherCidOptions.map((cid) => (
-                <option key={cid} value={cid}>
-                  {cid}
+              {basisSpecOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {basisSpecToText(opt)}
                 </option>
               ))}
             </select>
+          </label>
+          {(basis.x === "choreographer_specified_direction" ||
+            basis.x === "choreographer_specified_identifier") && (
+            <label>
+              {"...assume X is: "}
+              <select
+                value={basis.assumedX ?? ""}
+                onChange={(e) => {
+                  const spec = BasisVectorSpecSchema.parse(e.target.value);
+                  setBasis((prev) => ({ ...prev, assumedX: spec }));
+                }}
+                onMouseOver={(e) => {
+                  const val = e.currentTarget.value;
+                  if (val)
+                    setHighlightedBasisSpec(BasisVectorSpecSchema.parse(val));
+                }}
+                onMouseLeave={() => setHighlightedBasisSpec(null)}
+              >
+                <option value="" disabled>
+                  Choose...
+                </option>
+                {(basis.x === "choreographer_specified_direction"
+                  ? CalledDirectionSchema.options
+                  : CalledIdentifierSchema.options
+                ).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {basisSpecToText(opt)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            Y axis:{" "}
+            <select
+              value={basis.y}
+              onChange={(e) => {
+                const spec = BasisSpecSchema.parse(e.target.value);
+                setBasis((prev) => ({ ...prev, y: spec }));
+              }}
+              onMouseLeave={() => setHighlightedBasisSpec(null)}
+            >
+              {basisSpecOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {basisSpecToText(opt)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {(basis.y === "choreographer_specified_direction" ||
+            basis.y === "choreographer_specified_identifier") && (
+            <label>
+              {"...assume Y is: "}
+              <select
+                value={basis.assumedY ?? ""}
+                onChange={(e) => {
+                  const spec = BasisVectorSpecSchema.parse(e.target.value);
+                  setBasis((prev) => ({ ...prev, assumedY: spec }));
+                }}
+                onMouseOver={(e) => {
+                  const val = e.currentTarget.value;
+                  if (val)
+                    setHighlightedBasisSpec(BasisVectorSpecSchema.parse(val));
+                }}
+                onMouseLeave={() => setHighlightedBasisSpec(null)}
+              >
+                <option value="" disabled>
+                  Choose...
+                </option>
+                {(basis.y === "choreographer_specified_direction"
+                  ? CalledDirectionSchema.options
+                  : CalledIdentifierSchema.options
+                ).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {basisSpecToText(opt)}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
         </div>
 
@@ -1093,10 +1138,12 @@ export default function InstructionDefinitionTool() {
             type="text"
             value={fieldsDisplayText}
             onChange={(e) => handleFieldsDisplayChange(e.target.value)}
-            placeholder='e.g. "chain to your {matcher}"'
+            placeholder='e.g. "chain to your {basis_x}"'
             className="def-instr-text-input wide"
           />
-          <div className="def-instr-hint">Use {"{matcher}"} as placeholder</div>
+          <div className="def-instr-hint">
+            Use {"{basis_x}"} or {"{basis_y}"} as placeholders
+          </div>
         </div>
 
         {/* Mode selector */}
@@ -1191,58 +1238,6 @@ export default function InstructionDefinitionTool() {
                 </button>
               ))}
             </div>
-
-            {/* Basis vector selection for the selected dancer */}
-            {selectedDancer && selectedStateKey && (
-              <div className="def-instr-basis">
-                <label>
-                  X basis:{" "}
-                  <select
-                    value={selectedDancerBasis.x}
-                    onChange={(e) => {
-                      const spec = BasisVectorSpecSchema.parse(e.target.value);
-                      setBasisRecord((prev) => ({
-                        ...prev,
-                        [selectedStateKey]: {
-                          ...(prev[selectedStateKey] ?? DEFAULT_BASIS),
-                          x: spec,
-                        },
-                      }));
-                    }}
-                    onMouseLeave={() => setHighlightedBasisSpec(null)}
-                  >
-                    {basisVectorOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {basisSpecToText(opt)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Y basis:{" "}
-                  <select
-                    value={selectedDancerBasis.y}
-                    onChange={(e) => {
-                      const spec = BasisVectorSpecSchema.parse(e.target.value);
-                      setBasisRecord((prev) => ({
-                        ...prev,
-                        [selectedStateKey]: {
-                          ...(prev[selectedStateKey] ?? DEFAULT_BASIS),
-                          y: spec,
-                        },
-                      }));
-                    }}
-                    onMouseLeave={() => setHighlightedBasisSpec(null)}
-                  >
-                    {basisVectorOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {basisSpecToText(opt)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            )}
 
             <label>
               Keyframe duration:{" "}

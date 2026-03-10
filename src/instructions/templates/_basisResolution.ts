@@ -2,13 +2,17 @@ import { Vector } from "vecti";
 
 import { type DancerId } from "../../contraCore";
 import { CalledDirectionSchema } from "../../directions";
-import { parses } from "../../utils";
+import { must, parses } from "../../utils";
 import { Dancer, type WorldState } from "../../worldState";
-import type { Basis, BasisVectorSpec } from "./_base";
-import { DEFAULT_BASIS } from "./_base";
+import type {
+  BasisSpec,
+  BasisVectorSpec,
+  ChoreographerSpecifiedFields,
+  TemplateBasis,
+} from "./_base";
 
 /**
- * Resolve a BasisVectorSpec into a world-space vector for a given dancer.
+ * Resolve a concrete BasisVectorSpec into a world-space vector for a dancer.
  *
  * - CalledDirection → unit vector (via resolveCalledDirection)
  * - CalledIdentifier → displacement from dancer to target (non-unit, scales
@@ -37,15 +41,58 @@ export function resolveBasisVector(
   return disp;
 }
 
-/** Resolve the basis for a dancer, returning the world-space X and Y vectors. */
-export function resolveBasis(
-  basis: Basis,
+/**
+ * Resolve a BasisSpec (which may be choreographer_specified_*) into a concrete
+ * BasisVectorSpec by pulling from the instruction fields or the template's
+ * assumed default.
+ */
+function resolveSpec(
+  spec: BasisSpec,
+  fieldValue: BasisVectorSpec | undefined,
+  assumed: BasisVectorSpec | undefined,
+): BasisVectorSpec {
+  if (
+    spec === "choreographer_specified_direction" ||
+    spec === "choreographer_specified_identifier"
+  ) {
+    return must(fieldValue ?? assumed, [
+      `Choreographer-specified basis has no value and no assumed default`,
+    ]);
+  }
+  // It's already a concrete CalledDirection or CalledIdentifier
+  return spec;
+}
+
+/**
+ * Resolve the template's basis into world-space X and Y vectors for a dancer.
+ */
+export function resolveTemplateBasis(
+  basis: TemplateBasis,
+  fields: ChoreographerSpecifiedFields,
   dancer: Dancer,
 ): { xBasis: Vector; yBasis: Vector } {
+  const xSpec = resolveSpec(basis.x, fields.basisX, basis.assumedX);
+  const ySpec = resolveSpec(basis.y, fields.basisY, basis.assumedY);
   return {
-    xBasis: resolveBasisVector(basis.x, dancer),
-    yBasis: resolveBasisVector(basis.y, dancer),
+    xBasis: resolveBasisVector(xSpec, dancer),
+    yBasis: resolveBasisVector(ySpec, dancer),
   };
+}
+
+/**
+ * Resolve the template's basis for a dancer at init state, using assumed
+ * defaults (for template authoring / preview).
+ */
+export function resolveTemplateBasisAtInit(
+  basis: TemplateBasis,
+  dancerId: DancerId,
+  init: WorldState,
+): { xBasis: Vector; yBasis: Vector } {
+  return resolveTemplateBasis(
+    basis,
+    { basisX: basis.assumedX, basisY: basis.assumedY },
+    Dancer.get(dancerId, init),
+  );
 }
 
 /** Transform a relative position into world coordinates using basis vectors. */
@@ -100,32 +147,8 @@ export function facingToRelWithBasis(
   yBasis: Vector,
 ): number {
   const ref = yBasis.normalize();
-  // ccwRadsBetween returns the counter-clockwise angle from ref to worldFacing
   return Math.atan2(
     ref.x * worldFacing.y - ref.y * worldFacing.x,
     ref.x * worldFacing.x + ref.y * worldFacing.y,
   );
-}
-
-/** Look up the basis for a state key, falling back to DEFAULT_BASIS. */
-export function getBasisForKey(
-  basisRecord: Record<string, Basis> | undefined,
-  key: string,
-): Basis {
-  return basisRecord?.[key] ?? DEFAULT_BASIS;
-}
-
-/**
- * Resolve the basis vectors for a dancer at init time.
- * Returns the world-space X and Y basis vectors.
- */
-export function resolveInitBasis(
-  basisRecord: Record<string, Basis> | undefined,
-  key: string,
-  dancerId: DancerId,
-  init: WorldState,
-): { xBasis: Vector; yBasis: Vector } {
-  const basis = getBasisForKey(basisRecord, key);
-  const dancer = Dancer.get(dancerId, init);
-  return resolveBasis(basis, dancer);
 }

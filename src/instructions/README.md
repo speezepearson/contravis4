@@ -629,10 +629,11 @@ Couples zig-zag along the set, moving sideways in alternating directions.
 
 ### `templated_lr`
 
-A template-driven instruction type. The animation is defined by a set of keyframes with per-role relative positions and facings, looked up from a named template. Templates can have a hardcoded matcher (identifying who the dancer interacts with) or require the choreographer to specify one.
+A template-driven instruction type. The animation is defined by a set of keyframes with per-role (lark/robin) relative positions and facings, looked up from a named template. Each template defines a coordinate basis (two axes that can be CalledDirections, CalledIdentifiers, or choreographer-specified). If a basis axis is choreographer-specified, the choreographer provides it via the `fields`.
 
 - `templateId`: identifier of the template (e.g. `"specialChain"`)
-- `fields.matcher` _(optional)_: a CalledIdentifier, required when the template's matcher is `choreographer_specified`
+- `fields.basisX` _(optional)_: a BasisVectorSpec, required when the template's basis X is `choreographer_specified_direction` or `choreographer_specified_identifier`
+- `fields.basisY` _(optional)_: a BasisVectorSpec, required when the template's basis Y is `choreographer_specified_direction` or `choreographer_specified_identifier`
 
 ```json
 {
@@ -640,9 +641,25 @@ A template-driven instruction type. The animation is defined by a set of keyfram
   "beats": 8,
   "type": "templated_lr",
   "templateId": "specialChain",
-  "fields": {
-    "matcher": "partner"
-  }
+  "fields": {}
+}
+```
+
+### `templated_llrr`
+
+Like `templated_lr`, but keyframes are keyed by ProtoId (all four dancers independently: `up_lark_0`, `up_robin_0`, `down_lark_0`, `down_robin_0`) rather than by Role. Used for moves where each dancer has a unique path.
+
+- `templateId`: identifier of the template (e.g. `"specialHey"`)
+- `fields.basisX` _(optional)_: same as `templated_lr`
+- `fields.basisY` _(optional)_: same as `templated_lr`
+
+```json
+{
+  "id": "...",
+  "beats": 16,
+  "type": "templated_llrr",
+  "templateId": "specialHey",
+  "fields": {}
 }
 ```
 

@@ -2,15 +2,15 @@ import { z } from "zod";
 
 import { type Beats } from "../contraCore";
 import { lerpFacing } from "../geometry";
-import { lerpVectors, must } from "../utils";
+import { lerpVectors } from "../utils";
 import { Dancer } from "../worldState";
-import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
-import { ChoreographerSpecifiedLRInstructionFieldsSchema } from "./templates/_base";
+import { ChoreographerSpecifiedFieldsSchema } from "./templates/_base";
 import {
   relFacingToWorldWithBasis,
   relPosToWorldWithBasis,
-  resolveInitBasis,
+  resolveTemplateBasis,
 } from "./templates/_basisResolution";
 import { allLLRRTemplates, LLRRTemplateIdSchema } from "./templates/index";
 
@@ -20,7 +20,7 @@ export const TemplatedLLRRInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("templated_llrr"),
   templateId: LLRRTemplateIdSchema,
-  fields: ChoreographerSpecifiedLRInstructionFieldsSchema,
+  fields: ChoreographerSpecifiedFieldsSchema,
 });
 export type TemplatedLLRRInstruction = z.infer<
   typeof TemplatedLLRRInstructionSchema
@@ -32,24 +32,6 @@ export const templatedLLRRSegments: InstructionAnimator<
   TemplatedLLRRInstruction
 > = (instr, init) => {
   const template = allLLRRTemplates[instr.templateId];
-
-  const resolveMatcher = (): CalledIdentifier => {
-    switch (template.matcher.type) {
-      case "hardcoded":
-        return template.matcher.cid;
-      case "choreographer_specified":
-        return must(instr.fields.matcher, [
-          "choreographer-specified matcher is required for template ",
-          template.name,
-        ]);
-    }
-  };
-
-  const matcher = resolveMatcher();
-
-  const getInitMatch = (d: Dancer) =>
-    d.at(init).resolveMatch(matcher, { roles: "different" });
-  void getInitMatch;
 
   if (template.keyframes.length === 0) {
     return [];
@@ -64,7 +46,11 @@ export const templatedLLRRSegments: InstructionAnimator<
     const key = dancer.protoId;
     let cached = basisCache.get(key);
     if (!cached) {
-      cached = resolveInitBasis(template.basis, key, dancer.id, init);
+      cached = resolveTemplateBasis(
+        template.basis,
+        instr.fields,
+        dancer.at(init),
+      );
       basisCache.set(key, cached);
     }
     return cached;

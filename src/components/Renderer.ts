@@ -269,6 +269,54 @@ export class Renderer {
     ctx.globalAlpha = 1.0;
   }
 
+  /** Draw thin pale grey basis arrows from a dancer position. */
+  drawBasisArrows(
+    posX: number,
+    posY: number,
+    xBasis: { x: number; y: number },
+    yBasis: { x: number; y: number },
+  ) {
+    const ctx = this.ctx;
+    const arrowLen = 0.35; // world units
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 1;
+
+    for (const [vec, color] of [
+      [xBasis, "#999"],
+      [yBasis, "#999"],
+    ] as const) {
+      const len = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
+      if (len < 1e-9) continue;
+      const nx = (vec.x / len) * arrowLen;
+      const ny = (vec.y / len) * arrowLen;
+      const [ax, ay] = this.worldToCanvas(posX, posY);
+      const [bx, by] = this.worldToCanvas(posX + nx, posY + ny);
+
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+
+      // Small arrowhead
+      const headLen = 5 * this.zoom;
+      const angle = Math.atan2(by - ay, bx - ax);
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(
+        bx - headLen * Math.cos(angle - 0.4),
+        by - headLen * Math.sin(angle - 0.4),
+      );
+      ctx.moveTo(bx, by);
+      ctx.lineTo(
+        bx - headLen * Math.cos(angle + 0.4),
+        by - headLen * Math.sin(angle + 0.4),
+      );
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
   drawDancerHighlight(dancer: Dancer) {
     const ctx = this.ctx;
 

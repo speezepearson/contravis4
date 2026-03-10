@@ -7,21 +7,18 @@ import { CalledDirectionSchema, CalledIdentifierSchema } from "../_base";
 // ── Shared sub-schemas ──────────────────────────────────────────────────
 
 const fieldsDisplaySchema = z.array(
-  z.union([z.string(), z.object({ field: z.literal("matcher") })]),
+  z.union([z.string(), z.object({ field: z.enum(["basis_x", "basis_y"]) })]),
 );
-
-const matcherSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("hardcoded"), cid: CalledIdentifierSchema }),
-  z.object({ type: z.literal("choreographer_specified") }),
-]);
 
 const relStateSchema = z.object({
   relPos: VectorSchema,
   relFacing: z.number(),
 });
 
+// ── Basis vector types ──────────────────────────────────────────────────
+
 /**
- * A basis vector specification: either a CalledDirection (resolves to a unit
+ * A concrete basis vector value: either a CalledDirection (resolves to a unit
  * vector in that direction) or a CalledIdentifier (resolves to the displacement
  * vector from the dancer to the identified person, scaling with distance).
  */
@@ -31,13 +28,32 @@ export const BasisVectorSpecSchema = z.enum([
 ]);
 export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
 
-export const BasisSchema = z.object({
-  x: BasisVectorSpecSchema,
-  y: BasisVectorSpecSchema,
-});
-export type Basis = z.infer<typeof BasisSchema>;
+/**
+ * A basis spec in a template: either a fixed CalledDirection/CalledIdentifier,
+ * or a placeholder for the choreographer to fill in.
+ */
+export const BasisSpecSchema = z.enum([
+  ...CalledDirectionSchema.options,
+  ...CalledIdentifierSchema.options,
+  "choreographer_specified_direction",
+  "choreographer_specified_identifier",
+]);
+export type BasisSpec = z.infer<typeof BasisSpecSchema>;
 
-export const DEFAULT_BASIS: Basis = { x: "on_right", y: "in_front" };
+export const TemplateBasisSchema = z.object({
+  x: BasisSpecSchema,
+  y: BasisSpecSchema,
+  /** Default value for x when it's choreographer_specified_*. Also used during template authoring preview. */
+  assumedX: BasisVectorSpecSchema.optional(),
+  /** Default value for y when it's choreographer_specified_*. Also used during template authoring preview. */
+  assumedY: BasisVectorSpecSchema.optional(),
+});
+export type TemplateBasis = z.infer<typeof TemplateBasisSchema>;
+
+export const DEFAULT_TEMPLATE_BASIS: TemplateBasis = {
+  x: "on_right",
+  y: "in_front",
+};
 
 // ── LR template schema ─────────────────────────────────────────────────
 
@@ -45,8 +61,7 @@ export const LRInstructionTemplateSchema = z.object({
   name: z.string(),
   defaultBeats: z.number(),
   fieldsDisplay: fieldsDisplaySchema,
-  matcher: matcherSchema,
-  basis: z.record(RoleSchema, BasisSchema).optional(),
+  basis: TemplateBasisSchema,
   keyframes: z.array(
     z.object({
       t: BeatsSchema,
@@ -62,8 +77,7 @@ export const LLRRInstructionTemplateSchema = z.object({
   name: z.string(),
   defaultBeats: z.number(),
   fieldsDisplay: fieldsDisplaySchema,
-  matcher: matcherSchema,
-  basis: z.record(ProtoIdSchema, BasisSchema).optional(),
+  basis: TemplateBasisSchema,
   keyframes: z.array(
     z.object({
       t: BeatsSchema,
@@ -77,9 +91,10 @@ export type LLRRInstructionTemplate = z.infer<
 
 // ── Choreographer-specified fields ───────────────────────────────────────
 
-export const ChoreographerSpecifiedLRInstructionFieldsSchema = z.object({
-  matcher: CalledIdentifierSchema.optional(),
+export const ChoreographerSpecifiedFieldsSchema = z.object({
+  basisX: BasisVectorSpecSchema.optional(),
+  basisY: BasisVectorSpecSchema.optional(),
 });
-export type ChoreographerSpecifiedLRInstructionFields = z.infer<
-  typeof ChoreographerSpecifiedLRInstructionFieldsSchema
+export type ChoreographerSpecifiedFields = z.infer<
+  typeof ChoreographerSpecifiedFieldsSchema
 >;

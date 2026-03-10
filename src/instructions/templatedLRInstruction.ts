@@ -2,15 +2,15 @@ import { z } from "zod";
 
 import { type Beats } from "../contraCore";
 import { lerpFacing } from "../geometry";
-import { lerpVectors, must } from "../utils";
+import { lerpVectors } from "../utils";
 import { Dancer } from "../worldState";
-import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 import type { InstructionAnimator, Segment } from "./_segment";
-import { ChoreographerSpecifiedLRInstructionFieldsSchema } from "./templates/_base";
+import { ChoreographerSpecifiedFieldsSchema } from "./templates/_base";
 import {
   relFacingToWorldWithBasis,
   relPosToWorldWithBasis,
-  resolveInitBasis,
+  resolveTemplateBasis,
 } from "./templates/_basisResolution";
 import { allLRTemplates, LRTemplateIdSchema } from "./templates/index";
 
@@ -20,7 +20,7 @@ export const TemplatedLRInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("templated_lr"),
   templateId: LRTemplateIdSchema,
-  fields: ChoreographerSpecifiedLRInstructionFieldsSchema,
+  fields: ChoreographerSpecifiedFieldsSchema,
 });
 export type TemplatedLRInstruction = z.infer<
   typeof TemplatedLRInstructionSchema
@@ -32,26 +32,6 @@ export const templatedLRSegments: InstructionAnimator<
   TemplatedLRInstruction
 > = (instr, init) => {
   const template = allLRTemplates[instr.templateId];
-
-  const resolveMatcher = (): CalledIdentifier => {
-    switch (template.matcher.type) {
-      case "hardcoded":
-        return template.matcher.cid;
-      case "choreographer_specified":
-        return must(instr.fields.matcher, [
-          "choreographer-specified matcher is required for template ",
-          template.name,
-        ]);
-    }
-  };
-
-  const matcher = resolveMatcher();
-
-  // Compute the match for each dancer at init time.
-  // Not currently used in keyframe interpolation, but available for future use.
-  const getInitMatch = (d: Dancer) =>
-    d.at(init).resolveMatch(matcher, { roles: "different" });
-  void getInitMatch;
 
   if (template.keyframes.length === 0) {
     return [];
@@ -66,7 +46,11 @@ export const templatedLRSegments: InstructionAnimator<
     const key = dancer.role;
     let cached = basisCache.get(key);
     if (!cached) {
-      cached = resolveInitBasis(template.basis, key, dancer.id, init);
+      cached = resolveTemplateBasis(
+        template.basis,
+        instr.fields,
+        dancer.at(init),
+      );
       basisCache.set(key, cached);
     }
     return cached;

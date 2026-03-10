@@ -276,12 +276,7 @@ export function makeDefaultInstruction(
             type: "templated_llrr",
             beats: template.defaultBeats,
             templateId: type,
-            fields: {
-              matcher:
-                template.matcher.type === "choreographer_specified"
-                  ? "partner"
-                  : undefined,
-            },
+            fields: {},
           };
         }
         const _exhaustive: keyof typeof allLRTemplates = type;
@@ -291,12 +286,7 @@ export function makeDefaultInstruction(
           type: "templated_lr",
           beats: template.defaultBeats,
           templateId: _exhaustive,
-          fields: {
-            matcher:
-              template.matcher.type === "choreographer_specified"
-                ? "partner"
-                : undefined,
-          },
+          fields: {},
         };
       }
     }
