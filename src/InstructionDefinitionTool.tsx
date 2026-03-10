@@ -292,7 +292,7 @@ export default function InstructionDefinitionTool() {
     const curPathFrames = previewPathFramesRef.current;
     const curHighlightedSpec = highlightedBasisSpecRef.current;
 
-    if (curMode === "keyframe" && curPreviewAnimation && curPreviewBeat > 0) {
+    if (curPreviewAnimation && curPreviewBeat > 0) {
       const t = Math.min(curPreviewBeat, curPreviewAnimation.dur);
       renderer.drawFrame(t, curPreviewAnimation.getFrame(t));
       return;
@@ -483,7 +483,7 @@ export default function InstructionDefinitionTool() {
       const cy = e.clientY - rect.top;
       const [wx, wy] = renderer.canvasToWorld(cx, cy);
 
-      if (mode === "init") {
+      if (mode === "init" && previewBeat === 0) {
         // Hit test: which dancer did we click on?
         const hit = renderer.hitTestDancer(cx, cy, initState);
         if (hit) {
@@ -538,6 +538,7 @@ export default function InstructionDefinitionTool() {
     },
     [
       mode,
+      previewBeat,
       initState,
       selectedDancer,
       selectedStateKey,
@@ -1276,26 +1277,25 @@ export default function InstructionDefinitionTool() {
                 <button onClick={() => setKeyframes([])}>Clear all</button>
               </div>
             )}
+          </div>
+        )}
 
-            {/* Preview controls */}
-            {previewAnimation && (
-              <>
-                <h4>Preview</h4>
-                <label>
-                  Beat: {previewBeat.toFixed(2)} /{" "}
-                  {previewAnimation.dur.toFixed(2)}
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={previewAnimation.dur}
-                  step={0.05}
-                  value={previewBeat}
-                  onChange={(e) => setPreviewBeat(Number(e.target.value))}
-                  style={{ width: "100%" }}
-                />
-              </>
-            )}
+        {/* Preview controls */}
+        {previewAnimation && (
+          <div className="def-instr-section">
+            <h4>Preview</h4>
+            <label>
+              Beat: {previewBeat.toFixed(2)} / {previewAnimation.dur.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={previewAnimation.dur}
+              step={0.05}
+              value={previewBeat}
+              onChange={(e) => setPreviewBeat(Number(e.target.value))}
+              style={{ width: "100%" }}
+            />
           </div>
         )}
 
