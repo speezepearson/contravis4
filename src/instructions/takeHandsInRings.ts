@@ -1,4 +1,5 @@
-import _ from "lodash";
+import memoize from "lodash/memoize";
+import sortBy from "lodash/sortBy";
 import { z } from "zod";
 
 import {
@@ -53,14 +54,14 @@ export function makeRingSegment(
         preferRecent,
       ]
     : [preferCloser, preferOneInFront, preferRecent];
-  const getGroup = _.memoize((dancer: Dancer) =>
+  const getGroup = memoize((dancer: Dancer) =>
     getGroupOfFour(dancer, { by: tiebreakers }),
   );
   const final = mapWorldState(init, (dancer) => {
     const group = getGroup(dancer);
     const center = avgPos(...group);
     dancer.facing = getDir({ from: dancer.pos, to: center });
-    const [right, left] = _.sortBy(
+    const [right, left] = sortBy(
       group.filter((d) => d.role !== dancer.role),
       (d) =>
         ccwRadsBetween(dancer.facing, getDir({ from: dancer.pos, to: d.pos })),

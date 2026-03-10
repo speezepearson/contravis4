@@ -1,4 +1,4 @@
-import _ from "lodash";
+import isEqual_ from "lodash/isEqual";
 import { Vector } from "vecti";
 import { z } from "zod";
 
@@ -32,7 +32,7 @@ export function lerpVectors(
 }
 
 export function isEqual<T>(a: T, b: T): boolean {
-  return _.isEqual(a, b);
+  return isEqual_(a, b);
 }
 
 export function must<T>(x: T | null | undefined, msg?: SnazzySegment[]): T {
