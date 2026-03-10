@@ -8,7 +8,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
   fieldsDisplay: [],
   keyframes: [
     {
-      t: 1,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -41,7 +41,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 2,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -74,7 +74,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 3,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -107,7 +107,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 4,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -140,7 +140,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 5,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -173,7 +173,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 6,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -206,7 +206,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 7,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -239,7 +239,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 8,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -272,7 +272,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 9,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -305,7 +305,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 10,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -338,7 +338,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 11,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -371,7 +371,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 12,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -404,7 +404,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 13,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -437,7 +437,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 14,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -470,7 +470,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 15,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {
@@ -503,7 +503,7 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       },
     },
     {
-      t: 16,
+      dur: 1,
       states: {
         up_lark_0: {
           relPos: {

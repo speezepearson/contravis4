@@ -64,7 +64,7 @@ export const LRInstructionTemplateSchema = z.object({
   basis: TemplateBasisSchema,
   keyframes: z.array(
     z.object({
-      t: BeatsSchema,
+      dur: BeatsSchema,
       states: z.record(RoleSchema, relStateSchema),
     }),
   ),
@@ -80,7 +80,7 @@ export const LLRRInstructionTemplateSchema = z.object({
   basis: TemplateBasisSchema,
   keyframes: z.array(
     z.object({
-      t: BeatsSchema,
+      dur: BeatsSchema,
       states: z.record(ProtoIdSchema, relStateSchema),
     }),
   ),

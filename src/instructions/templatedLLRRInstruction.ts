@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { type Beats } from "../contraCore";
 import { lerpFacing } from "../geometry";
 import { lerpVectors } from "../utils";
 import { Dancer } from "../worldState";
@@ -56,16 +55,14 @@ export const templatedLLRRSegments: InstructionAnimator<
     return cached;
   };
 
-  const lastKfT = template.keyframes[template.keyframes.length - 1].t;
-  const scale = lastKfT > 0 ? instr.beats / lastKfT : 1;
+  const totalKfDur = template.keyframes.reduce((sum, kf) => sum + kf.dur, 0);
+  const scale = totalKfDur > 0 ? instr.beats / totalKfDur : 1;
 
   const segments: Segment[] = [];
-  let prevT: Beats = 0;
 
   for (let i = 0; i < template.keyframes.length; i++) {
     const kf = template.keyframes[i];
-    const scaledT = kf.t * scale;
-    const dur = scaledT - prevT;
+    const dur = kf.dur * scale;
 
     segments.push({
       dur,
@@ -92,8 +89,6 @@ export const templatedLLRRSegments: InstructionAnimator<
         return lerpFacing(dancer.facing, worldFacing, frac);
       },
     });
-
-    prevT = scaledT;
   }
 
   return segments;
