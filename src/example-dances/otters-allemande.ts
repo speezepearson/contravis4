@@ -2,6 +2,8 @@ import { DanceSchema } from "../instructions/index";
 import { typedParse } from "../utils";
 
 export default typedParse(DanceSchema, {
+  name: "Otter's Allemande",
+  author: "Ramya Rajan",
   initFormation: "improper",
   instructions: [
     {
