@@ -6,10 +6,10 @@ import {
   type CalledIdentifier,
   type CardinalDirection,
   InstructionIdSchema,
-  PersonInDirectionSchema,
+  labelId,
+  personInDir,
   type PureDirection,
-  PureDirectionSchema,
-  TowardsLabelDirectionSchema,
+  pureDir,
 } from "../instructions/_base";
 import {
   type ActionOptionType,
@@ -43,18 +43,18 @@ export function makeDefaultInstruction(
           id,
           type: "allemande",
           beats: 8,
-          cid: "neighbor",
+          cid: labelId("neighbor"),
           handedness: "right",
           rotations: 1,
         };
       case "balance":
-        return { id, type: "balance", beats: 4, cid: "partner" };
+        return { id, type: "balance", beats: 4, cid: labelId("partner") };
       case "balance_and_swing":
         return {
           id,
           type: "balance_and_swing",
           beats: 16,
-          cid: "partner",
+          cid: labelId("partner"),
           endFacing: "across",
         };
       case "balance_the_ring":
@@ -62,11 +62,11 @@ export function makeDefaultInstruction(
       case "box_circulate":
         return { id, type: "box_circulate", beats: 4 };
       case "box_the_gnat":
-        return { id, type: "box_the_gnat", beats: 4, cid: "partner" };
+        return { id, type: "box_the_gnat", beats: 4, cid: labelId("partner") };
       case "california_twirl":
         return { id, type: "california_twirl", beats: 4 };
       case "robins_chain":
-        return { id, type: "robins_chain", beats: 8, cid: "neighbor" };
+        return { id, type: "robins_chain", beats: 8, cid: labelId("neighbor") };
       case "circle":
         return {
           id,
@@ -80,13 +80,13 @@ export function makeDefaultInstruction(
           id,
           type: "do_si_do",
           beats: 8,
-          cid: "neighbor",
+          cid: labelId("neighbor"),
           rotations: 1,
         };
       case "drop_hands":
         return { id, type: "drop_hands", beats: 0, which: "both" };
       case "face":
-        return { id, type: "face", beats: 0, direction: "across" };
+        return { id, type: "face", beats: 0, direction: pureDir("across") };
       case "form_long_waves":
         return { id, type: "form_long_waves", beats: 0 };
       case "form_short_waves":
@@ -96,7 +96,7 @@ export function makeDefaultInstruction(
           id,
           type: "give_and_take_into_swing",
           beats: 16,
-          cid: "partner",
+          cid: labelId("partner"),
           drawerRole: "lark",
           endFacing: "across",
         };
@@ -118,7 +118,7 @@ export function makeDefaultInstruction(
           id,
           beats: 8,
           type: "mad_robin",
-          cid: "neighbor",
+          cid: labelId("neighbor"),
           rotations: 1,
           whoInFront: "lark",
         };
@@ -127,7 +127,7 @@ export function makeDefaultInstruction(
           id,
           type: "meltdown_swing",
           beats: 16,
-          cid: "neighbor",
+          cid: labelId("neighbor"),
           endFacing: "across",
         };
       case "pass_by":
@@ -135,7 +135,7 @@ export function makeDefaultInstruction(
           id,
           type: "pass_by",
           beats: 2,
-          cid: "neighbor",
+          cid: labelId("neighbor"),
           hand: "right",
         };
       case "petronella":
@@ -154,7 +154,7 @@ export function makeDefaultInstruction(
           id,
           type: "pull_by",
           beats: 2,
-          cid: "partner",
+          cid: labelId("partner"),
           hand: "right",
         };
       case "greet_new_neighbors":
@@ -162,14 +162,14 @@ export function makeDefaultInstruction(
           id,
           type: "greet_new_neighbors",
           beats: 0,
-          cid: "person_in_front",
+          cid: personInDir("in_front"),
         };
       case "greet_shadow":
         return {
           id,
           type: "greet_shadow",
           beats: 0,
-          cid: "person_in_front",
+          cid: personInDir("in_front"),
           label: "shadow",
         };
       case "right_left_through":
@@ -179,7 +179,7 @@ export function makeDefaultInstruction(
           id,
           type: "roll_away",
           roller: "lark",
-          rollee: "person_on_right",
+          rollee: personInDir("on_right"),
           beats: 4,
         };
       case "rory_o_more":
@@ -191,7 +191,7 @@ export function makeDefaultInstruction(
           id,
           type: "shoulder_round",
           beats: 8,
-          cid: "partner",
+          cid: labelId("partner"),
           handedness: "right",
           rotations: 1,
         };
@@ -202,8 +202,8 @@ export function makeDefaultInstruction(
           beats: 8,
           nPullBys: 4,
           firstHand: "right",
-          cid1: "neighbor",
-          cid2: "partner",
+          cid1: labelId("neighbor"),
+          cid2: labelId("partner"),
         };
       case "single_file_promenade":
         return {
@@ -228,16 +228,16 @@ export function makeDefaultInstruction(
           id,
           type: "step",
           beats: 1,
-          direction: "in_front",
+          direction: pureDir("in_front"),
           distance: 0,
-          facing: "across",
+          facing: pureDir("across"),
         };
       case "swing":
         return {
           id,
           type: "swing",
           beats: 16,
-          cid: "partner",
+          cid: labelId("partner"),
           endFacing: "across",
         };
       case "take_hands_in_rings":
@@ -247,7 +247,7 @@ export function makeDefaultInstruction(
           id,
           type: "take_hands",
           beats: 0,
-          cid: "partner",
+          cid: labelId("partner"),
           hand: "right",
         };
       case "turn_alone":
@@ -426,23 +426,27 @@ function personInDirectionToText(dir: PureDirection): string {
 }
 
 export function calledDirectionToText(dir: CalledDirection): string {
-  if (parses(PureDirectionSchema, dir)) return pureDirectionToText(dir);
-  if (parses(TowardsLabelDirectionSchema, dir)) {
-    const label = LabelSchema.parse(dir.slice("towards_".length));
-    return `towards ${labelToIdentifierText(label)}`;
+  switch (dir.type) {
+    case "PureDirection":
+      return pureDirectionToText(dir.dir);
+    case "TowardsLabel":
+      return `towards ${labelToIdentifierText(dir.label)}`;
+    case "TowardsPerson":
+      return `towards ${personInDirectionToText(dir.roughDir)}`;
+    default:
+      assertNever(dir);
   }
-  const pureDir = PureDirectionSchema.parse(
-    dir.slice("towards_person_".length),
-  );
-  return `towards ${personInDirectionToText(pureDir)}`;
 }
 
 export function calledIdentifierToText(cid: CalledIdentifier): string {
-  if (parses(PersonInDirectionSchema, cid)) {
-    const pureDir = PureDirectionSchema.parse(cid.slice("person_".length));
-    return personInDirectionToText(pureDir);
+  switch (cid.type) {
+    case "label":
+      return labelToIdentifierText(cid.label);
+    case "PersonInDirection":
+      return personInDirectionToText(cid.dir);
+    default:
+      assertNever(cid);
   }
-  return labelToIdentifierText(LabelSchema.parse(cid));
 }
 
 export const DIR_OPTIONS = ["up", "down", "across", "out"] as const;
