@@ -262,8 +262,12 @@ export default function InstructionDefinitionTool() {
 
   // ── Preview animation ───────────────────────────────────────────────
 
-  const previewAnimation = useMemo((): ContraAnimation | null => {
-    if (keyframes.length === 0) return null;
+  const { previewAnimation, previewError } = useMemo((): {
+    previewAnimation: ContraAnimation | null;
+    previewError: string | null;
+  } => {
+    if (keyframes.length === 0)
+      return { previewAnimation: null, previewError: null };
 
     const lastKfT = keyframes[keyframes.length - 1].t;
     const scale = lastKfT > 0 ? defaultBeats / lastKfT : 1;
@@ -320,10 +324,19 @@ export default function InstructionDefinitionTool() {
         prevT = scaledT;
       }
 
-      return animateSegments(initState, ALL_PROTO_IDS_SET, segments);
-    } catch {
-      // SWALLOW_EXCEPTION: template may be in an invalid intermediate state while editing
-      return null;
+      return {
+        previewAnimation: animateSegments(
+          initState,
+          ALL_PROTO_IDS_SET,
+          segments,
+        ),
+        previewError: null,
+      };
+    } catch (e) {
+      return {
+        previewAnimation: null,
+        previewError: e instanceof Error ? e.message : String(e),
+      };
     }
   }, [keyframes, defaultBeats, initState, templateType, basis]);
 
@@ -1438,6 +1451,8 @@ export default function InstructionDefinitionTool() {
             </div>
           )}
         </div>
+
+        {previewError && <div className="def-instr-error">{previewError}</div>}
 
         {/* Preview controls */}
         {previewAnimation && (
