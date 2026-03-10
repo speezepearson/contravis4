@@ -55,11 +55,11 @@ import {
 import type { Split } from "../instructions/split";
 import {
   allLRTemplates,
-  type TemplateId,
   templateIds,
+  TemplateIdSchema,
 } from "../instructions/templates/index";
 import type { SnazzySegment } from "../snazzyError";
-import { assertNever, indexOf } from "../utils";
+import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceAndSwingFields } from "./fields/BalanceAndSwingFields";
@@ -153,67 +153,59 @@ function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   );
 }
 
-export type ActionOptionType =
-  | Exclude<Instruction["type"], "templated_lr">
-  | TemplateId;
-
-const ACTION_OPTIONS: ActionOptionType[] = (
-  [
-    "allemande",
-    "balance",
-    "balance_and_swing",
-    "balance_the_ring",
-    "bend_the_line",
-    "box_circulate",
-    "box_the_gnat",
-    "california_twirl",
-    "robins_chain",
-    "circle",
-    "do_si_do",
-    "down_the_hall",
-    "drop_hands",
-    "face",
-    "form_long_waves",
-    "form_short_waves",
-    "give_and_take_into_swing",
-    "greet_new_neighbors",
-    "hey",
-    "greet_shadow",
-    "long_line_in_center",
-    "long_lines_forward_back",
-    "mad_robin",
-    "meltdown_swing",
-    "pass_by",
-    "petronella",
-    "poussette",
-    "pull_by",
-    "right_left_through",
-    "roll_away",
-    "rory_o_more",
-    "shoulder_round",
-    "single_file_promenade",
-    "slice",
-    "square_through",
-    "star",
-    "split",
-    "step",
-    "swing",
-    "take_hands_in_rings",
-    "take_hands",
-    "turn_alone",
-    "turn_as_a_couple",
-    "up_the_hall",
-    "zig_zag",
-    ...templateIds,
-  ] satisfies ActionOptionType[]
-)
+const ActionOptionTypeSchema = z.enum([
+  "allemande",
+  "balance",
+  "balance_and_swing",
+  "balance_the_ring",
+  "bend_the_line",
+  "box_circulate",
+  "box_the_gnat",
+  "california_twirl",
+  "robins_chain",
+  "circle",
+  "do_si_do",
+  "down_the_hall",
+  "drop_hands",
+  "face",
+  "form_long_waves",
+  "form_short_waves",
+  "give_and_take_into_swing",
+  "greet_new_neighbors",
+  "hey",
+  "greet_shadow",
+  "long_line_in_center",
+  "long_lines_forward_back",
+  "mad_robin",
+  "meltdown_swing",
+  "pass_by",
+  "petronella",
+  "poussette",
+  "pull_by",
+  "right_left_through",
+  "roll_away",
+  "rory_o_more",
+  "shoulder_round",
+  "single_file_promenade",
+  "slice",
+  "square_through",
+  "star",
+  "split",
+  "step",
+  "swing",
+  "take_hands_in_rings",
+  "take_hands",
+  "turn_alone",
+  "turn_as_a_couple",
+  "up_the_hall",
+  "zig_zag",
+  ...templateIds,
+]);
+export type ActionOptionType = z.infer<typeof ActionOptionTypeSchema>;
+export const ACTION_OPTION_TYPES = ActionOptionTypeSchema.options
   .sort((a, b) => {
-    /* eslint-disable @typescript-eslint/consistent-type-assertions -- templates won't be in the frequency map; DEFAULT_VALUE: 0 sorts them alphabetically at the end */
-    const freqA =
-      contradbInstructionFrequencies.get(a as AtomicInstruction["type"]) ?? 0;
-    const freqB =
-      contradbInstructionFrequencies.get(b as AtomicInstruction["type"]) ?? 0;
-    /* eslint-enable @typescript-eslint/consistent-type-assertions */
+    const freqA = contradbInstructionFrequencies.get(a) ?? 0;
+    const freqB = contradbInstructionFrequencies.get(b) ?? 0;
     if (freqA !== freqB) return freqB - freqA;
     return a.localeCompare(b);
   })
@@ -225,58 +217,106 @@ const ACTION_OPTIONS: ActionOptionType[] = (
     return acc;
   }, [])
   .concat("greet_new_neighbors");
-/* eslint-disable @typescript-eslint/consistent-type-assertions -- Object.fromEntries widens keys to string; exact keys ensured by ACTION_OPTIONS */
-const ACTION_LABELS: Record<ActionOptionType, string> = {
-  allemande: "allemande",
-  balance: "balance",
-  balance_and_swing: "balance & swing",
-  balance_the_ring: "balance the ring",
-  bend_the_line: "bend the line",
-  box_circulate: "box circulate",
-  box_the_gnat: "box the gnat",
-  california_twirl: "California twirl",
-  robins_chain: "robins chain",
-  circle: "circle",
-  do_si_do: "do si do",
-  down_the_hall: "down the hall",
-  drop_hands: "drop hands",
-  face: "face",
-  form_long_waves: "form long waves",
-  form_short_waves: "form short waves",
-  give_and_take_into_swing: "give & take",
-  hey: "hey",
-  long_line_in_center: "long line in center",
-  long_lines_forward_back: "long lines forward & back",
-  mad_robin: "mad robin",
-  meltdown_swing: "meltdown swing",
-  pass_by: "pass by",
-  petronella: "petronella",
-  poussette: "poussette",
-  pull_by: "pull by",
-  greet_new_neighbors: "greet new neighbors",
-  greet_shadow: "greet shadow",
-  right_left_through: "right & left through",
-  roll_away: "roll away",
-  rory_o_more: "Rory O'More",
-  shoulder_round: "shoulder round",
-  single_file_promenade: "single file promenade",
-  slice: "slice",
-  square_through: "square through",
-  star: "star",
-  split: "split",
-  step: "step",
-  swing: "swing",
-  take_hands_in_rings: "take hands in rings",
-  take_hands: "take hands",
-  turn_alone: "turn alone",
-  turn_as_a_couple: "turn as a couple",
-  up_the_hall: "up the hall",
-  zig_zag: "zig zag",
-  ...Object.fromEntries(
-    Object.entries(allLRTemplates).map(([id, t]) => [id, t.name]),
-  ),
-} as Record<ActionOptionType, string>;
-/* eslint-enable @typescript-eslint/consistent-type-assertions */
+
+const ACTION_LABELS = buildEnumRecord(ActionOptionTypeSchema, (t) => {
+  switch (t) {
+    case "allemande":
+      return "allemande";
+    case "balance":
+      return "balance";
+    case "balance_and_swing":
+      return "balance & swing";
+    case "balance_the_ring":
+      return "balance the ring";
+    case "bend_the_line":
+      return "bend the line";
+    case "box_circulate":
+      return "box circulate";
+    case "box_the_gnat":
+      return "box the gnat";
+    case "california_twirl":
+      return "California twirl";
+    case "robins_chain":
+      return "robins chain";
+    case "circle":
+      return "circle";
+    case "do_si_do":
+      return "do si do";
+    case "down_the_hall":
+      return "down the hall";
+    case "drop_hands":
+      return "drop hands";
+    case "face":
+      return "face";
+    case "form_long_waves":
+      return "form long waves";
+    case "form_short_waves":
+      return "form short waves";
+    case "give_and_take_into_swing":
+      return "give & take";
+    case "hey":
+      return "hey";
+    case "long_line_in_center":
+      return "long line in center";
+    case "long_lines_forward_back":
+      return "long lines forward & back";
+    case "mad_robin":
+      return "mad robin";
+    case "meltdown_swing":
+      return "meltdown swing";
+    case "pass_by":
+      return "pass by";
+    case "petronella":
+      return "petronella";
+    case "poussette":
+      return "poussette";
+    case "pull_by":
+      return "pull by";
+    case "greet_new_neighbors":
+      return "greet new neighbors";
+    case "greet_shadow":
+      return "greet shadow";
+    case "right_left_through":
+      return "right & left through";
+    case "roll_away":
+      return "roll away";
+    case "rory_o_more":
+      return "Rory O'More";
+    case "shoulder_round":
+      return "shoulder round";
+    case "single_file_promenade":
+      return "single file promenade";
+    case "slice":
+      return "slice";
+    case "square_through":
+      return "square through";
+    case "star":
+      return "star";
+    case "split":
+      return "split";
+    case "step":
+      return "step";
+    case "swing":
+      return "swing";
+    case "take_hands_in_rings":
+      return "take hands in rings";
+    case "take_hands":
+      return "take hands";
+    case "turn_alone":
+      return "turn alone";
+    case "turn_as_a_couple":
+      return "turn as a couple";
+    case "up_the_hall":
+      return "up the hall";
+    case "zig_zag":
+      return "zig zag";
+  }
+
+  if (parses(TemplateIdSchema, t)) {
+    return allLRTemplates[t].name;
+  }
+  assertNever(t);
+});
 
 function splitGroupLabel(by: Split["by"], list: "A" | "B"): string {
   if (by === "role") return list === "A" ? "Larks" : "Robins";
@@ -649,8 +689,8 @@ function InlineForm({
   const [valid, setValid] = useState(true);
 
   const actionOptions = allowContainers
-    ? ACTION_OPTIONS
-    : ACTION_OPTIONS.filter((o) => o !== "split");
+    ? ActionOptionTypeSchema.options
+    : ActionOptionTypeSchema.options.filter((o) => o !== "split");
 
   const actionOptionValue: ActionOptionType =
     instruction.type === "templated_lr"

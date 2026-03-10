@@ -6,21 +6,17 @@ import { describe, expect, it } from "vitest";
 
 import { generateDanceAnimation } from "./generate";
 import { inferProgression } from "./inferProgression";
-import type { Dance } from "./instructions/index";
 import { initFormationStates } from "./instructions/index";
+import { loadDance } from "./testHelpers";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dir = resolve(__dirname, "example-dances");
-const files = readdirSync(dir).filter((f: string) => f.endsWith(".ts"));
-
-async function loadDance(file: string): Promise<Dance> {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
-  const mod = (await import(resolve(dir, file))) as { default: Dance };
-  return mod.default;
-}
+const files = readdirSync(dir)
+  .filter((f: string) => f.endsWith(".ts"))
+  .map((f) => resolve(dir, f));
 
 describe("verified dances have valid nonzero progressions", () => {
-  it.each(files)("%s", async (file: string) => {
+  it.each(files)("%s", async (file) => {
     const dance = await loadDance(file);
     if (dance.status !== "verified") return;
     const initState =
@@ -44,7 +40,7 @@ describe("verified dances have valid nonzero progressions", () => {
 });
 
 describe("verified dances are 64 beats long", () => {
-  it.each(files)("%s", async (file: string) => {
+  it.each(files)("%s", async (file) => {
     const dance = await loadDance(file);
     if (dance.status !== "verified") return;
     const initState =

@@ -20,6 +20,8 @@ import {
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
+import { typeUnknownJSONParse } from "../src/utils";
+import { loadDance } from "./lib";
 
 enableMapSet();
 
@@ -178,9 +180,7 @@ async function generateKeyframesInProcess(): Promise<AllResults> {
   const results: AllResults = {};
   for (const path of dancePaths) {
     try {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
-      const mod = (await import(resolve(path))) as { default: Dance };
-      const dance = mod.default;
+      const dance = await loadDance(path);
       parsedDances.set(path, dance);
       const { animation, errors } = generateDanceAnimation(
         dance.instructions,
@@ -201,8 +201,7 @@ async function generateKeyframesInProcess(): Promise<AllResults> {
         frames.push({
           t,
           // Round-trip through JSON so we compare plain objects, not Vector instances.
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, narrowing to unknown
-          state: JSON.parse(JSON.stringify(animation.getFrame(t))) as unknown,
+          state: typeUnknownJSONParse(JSON.stringify(animation.getFrame(t))),
         });
       }
       results[path] = { frames };
@@ -388,10 +387,8 @@ function formatFieldDiff(diff: DiffDetail): string {
   }
 
   for (const dancerId of Object.keys(current).sort()) {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- PlainDancer is accessed as generic record for field iteration
-    const cDancer = current[dancerId] as Record<string, unknown> | undefined;
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- PlainDancer is accessed as generic record for field iteration
-    const wDancer = worktree[dancerId] as Record<string, unknown> | undefined;
+    const cDancer = current[dancerId];
+    const wDancer = worktree[dancerId];
     if (!cDancer || !wDancer) continue;
     for (const field of ["pos", "facing", "hands", "labels"]) {
       const cVal = JSON.stringify(cDancer[field]);

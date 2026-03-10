@@ -59,8 +59,9 @@ export function InlineNumber({
         value: Number(value) || 0,
         moved: false,
       };
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- e.target is always an HTMLElement in pointer events but the DOM types return EventTarget
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      if (!(e.target instanceof HTMLElement))
+        throw new Error("e.target is not an HTMLElement???");
+      e.target.setPointerCapture(e.pointerId);
       beginTransient();
     },
     [open, value, beginTransient],

@@ -156,3 +156,7 @@ export function getSingleton<T>(arr: T[]): T | undefined {
   if (arr.length !== 1) return undefined;
   return arr[0];
 }
+
+export function typeUnknownJSONParse(x: string): unknown {
+  return JSON.parse(x);
+}

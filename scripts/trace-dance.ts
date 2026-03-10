@@ -7,7 +7,6 @@
  * On error, prints the error and the state at the point of failure, then continues.
  */
 
-import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import { enableMapSet } from "immer";
@@ -16,13 +15,14 @@ import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { makeAtomicInstructionSegments } from "../src/instructions/_atomic";
 import { animateSegments } from "../src/instructions/_segment";
-import type { Dance, Instruction } from "../src/instructions/index";
+import type { Instruction } from "../src/instructions/index";
 import {
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
 import { splitAnimator } from "../src/instructions/split";
 import type { WorldState } from "../src/worldState";
+import { loadDance } from "./lib";
 
 enableMapSet();
 
@@ -37,9 +37,7 @@ if (!file) {
   process.exit(1);
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
-const mod = (await import(resolve(file))) as { default: Dance };
-const dance = mod.default;
+const dance = await loadDance(file);
 
 const initState = resolveInitFormation(dance.initFormation);
 

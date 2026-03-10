@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import { enableMapSet } from "immer";
@@ -7,12 +6,13 @@ import type { Vector } from "vecti";
 import { ALL_PROTO_IDS, type DancerId, type Hand } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
 import { EAST, NORTH, PI, SOUTH, WEST } from "../src/geometry";
-import type { Dance, Instruction } from "../src/instructions/index";
+import type { Instruction } from "../src/instructions/index";
 import {
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
 import { Dancer, type WorldState } from "../src/worldState";
+import { loadDance } from "./lib";
 
 enableMapSet();
 
@@ -37,9 +37,7 @@ if (!Number.isFinite(time) || time < 0) {
   process.exit(1);
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
-const mod = (await import(resolve(dancePath))) as { default: Dance };
-const dance = mod.default;
+const dance = await loadDance(dancePath);
 
 const { animation, errors } = generateDanceAnimation(
   dance.instructions,

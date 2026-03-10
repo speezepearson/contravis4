@@ -1,10 +1,8 @@
-import { resolve } from "node:path";
-
 import { enableMapSet } from "immer";
 
 import { generateDanceAnimation } from "../src/generate";
-import type { Dance } from "../src/instructions/index";
 import { danceLength, resolveInitFormation } from "../src/instructions/index";
+import { loadDance } from "./lib";
 
 enableMapSet();
 
@@ -14,9 +12,7 @@ const results: Record<
 > = {};
 for (const path of process.argv.slice(2)) {
   try {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
-    const mod = (await import(resolve(path))) as { default: Dance };
-    const dance = mod.default;
+    const dance = await loadDance(path);
     const { animation, errors } = generateDanceAnimation(
       dance.instructions,
       resolveInitFormation(dance.initFormation),

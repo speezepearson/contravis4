@@ -8,6 +8,7 @@ import { typedParse } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
 import { getSplitDuration, SplitSchema } from "./split";
+import type { TemplateId } from "./templates/index";
 
 export { type InstructionId, InstructionIdSchema } from "./_base";
 
@@ -16,6 +17,10 @@ export const InstructionSchema = z.discriminatedUnion("type", [
   SplitSchema,
 ]);
 export type Instruction = z.infer<typeof InstructionSchema>;
+
+export type ActionOptionType =
+  | Exclude<Instruction["type"], "templated_lr">
+  | TemplateId;
 
 export function instructionDuration(instr: Instruction): Beats {
   switch (instr.type) {

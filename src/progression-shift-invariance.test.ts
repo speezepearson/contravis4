@@ -17,9 +17,13 @@ import {
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
 import { inferProgression } from "./inferProgression";
-import type { Dance } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
-import { OtherDirLabelSchema, SameDirLabelSchema } from "./labels";
+import {
+  IrreducibleLabelSchema,
+  OtherDirLabelSchema,
+  SameDirLabelSchema,
+} from "./labels";
+import { loadDance } from "./testHelpers";
 import { assertNever, parses, typedParse } from "./utils";
 import { ProtoDancerStateSchema, type WorldState } from "./worldState";
 
@@ -52,8 +56,7 @@ function progressInitFormation(state: WorldState): WorldState {
           neighbor: incr(draft[id].labels.neighbor),
           ...Object.fromEntries(
             Object.entries(draft[id].labels).map(([labelStr, theirId]) => {
-              // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic label key from Object.entries
-              const label = labelStr as keyof (typeof draft)[ProtoId]["labels"];
+              const label = IrreducibleLabelSchema.parse(labelStr);
               return [
                 label,
                 parses(SameDirLabelSchema, label)
@@ -80,11 +83,7 @@ function progressionDelta(protoId: ProtoId) {
 describe("progression shift invariance", () => {
   for (const file of files) {
     it(file, async () => {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- dynamic import of known dance module shape
-      const mod = (await import(resolve(exampleDancesDir, file))) as {
-        default: Dance;
-      };
-      const dance = mod.default;
+      const dance = await loadDance(resolve(exampleDancesDir, file));
       if (dance.instructions.length === 0) return;
       if (dance.status !== "verified") return;
       const initState = resolveInitFormation(dance.initFormation);

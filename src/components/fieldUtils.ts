@@ -12,6 +12,7 @@ import {
   TowardsLabelDirectionSchema,
 } from "../instructions/_base";
 import {
+  type ActionOptionType,
   type Instruction,
   type InstructionId,
   InstructionSchema,
@@ -19,7 +20,6 @@ import {
 import { allLRTemplates } from "../instructions/templates/index";
 import { type Label, LabelSchema } from "../labels";
 import { assertNever, parses } from "../utils";
-import type { ActionOptionType } from "./CommandPane";
 
 /** Props for inline field components. */
 export interface SubFormProps {

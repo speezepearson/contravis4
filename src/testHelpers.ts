@@ -1,5 +1,6 @@
 import fc from "fast-check";
 import { Vector } from "vecti";
+import z from "zod";
 
 import {
   ALL_PROTO_IDS,
@@ -17,6 +18,7 @@ import {
   RoleSchema,
 } from "./contraCore";
 import { NORTH } from "./geometry";
+import { type Dance, DanceSchema } from "./instructions";
 import {
   type SettableLabel,
   SettableLabelSchema,
@@ -158,3 +160,7 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
       return state;
     },
   );
+
+export async function loadDance(file: string): Promise<Dance> {
+  return z.object({ default: DanceSchema }).parse(await import(file)).default;
+}

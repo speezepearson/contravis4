@@ -24,10 +24,13 @@ import {
   type ContraAnimation,
 } from "./instructions/_base";
 import { animateSegments, type Segment } from "./instructions/_segment";
-import { resolveInitFormation } from "./instructions/index";
+import {
+  InitFormationNameSchema,
+  resolveInitFormation,
+} from "./instructions/index";
 import type { LRInstructionTemplate } from "./instructions/templatedLRInstruction";
 import { LRInstructionTemplateSchema } from "./instructions/templatedLRInstruction";
-import { lerpVectors } from "./utils";
+import { buildEnumRecord, lerpVectors } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -600,12 +603,10 @@ export default function InstructionDefinitionTool() {
       fieldsDisplay,
       keyframes: keyframes.map((kf) => ({
         t: kf.t,
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Object.fromEntries returns Record<string, ...>; keys are filtered RoleSchema.options
-        states: Object.fromEntries(
-          RoleSchema.options
-            .filter((r) => kf.states[r] != null)
-            .map((r) => [r, kf.states[r]!]),
-        ) as Record<Role, { relPos: Vector; relFacing: number }>,
+        states: buildEnumRecord(
+          RoleSchema,
+          (r) => kf.states[r] ?? { relPos: new Vector(0, 0), relFacing: 0 },
+        ),
       })),
     };
   }, [name, defaultBeats, matcher, fieldsDisplay, keyframes]);
@@ -618,8 +619,7 @@ export default function InstructionDefinitionTool() {
         if (value instanceof Vector) {
           return { x: value.x, y: value.y };
         }
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.stringify replacer must return unknown
-        return value as unknown;
+        return value;
       },
       2,
     );
@@ -801,8 +801,7 @@ export default function InstructionDefinitionTool() {
               onChange={(e) =>
                 setMatcher({
                   type: "hardcoded",
-                  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- value comes from <select> whose <option>s are CalledIdentifierSchema.options
-                  cid: e.target.value as CalledIdentifier,
+                  cid: CalledIdentifierSchema.parse(e.target.value),
                 })
               }
             >
@@ -842,12 +841,7 @@ export default function InstructionDefinitionTool() {
                   if (e.target.value) {
                     setInitState(
                       resolveInitFormation(
-                        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- value comes from <select> whose <option>s are the listed formation strings
-                        e.target.value as
-                          | "improper"
-                          | "becket"
-                          | "becket_ccw"
-                          | "proper",
+                        InitFormationNameSchema.parse(e.target.value),
                       ),
                     );
                   }
@@ -857,10 +851,11 @@ export default function InstructionDefinitionTool() {
                 <option value="" disabled>
                   Choose...
                 </option>
-                <option value="improper">Improper</option>
-                <option value="becket">Becket</option>
-                <option value="becket_ccw">Becket CCW</option>
-                <option value="proper">Proper</option>
+                {InitFormationNameSchema.options.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
               </select>
             </label>
             <div className="def-instr-paste">

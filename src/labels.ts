@@ -100,6 +100,3 @@ export type SameDirLabel = z.infer<typeof SameDirLabelSchema>;
 export type ShadowLabel = z.infer<typeof ShadowLabelSchema>;
 export type IrreducibleLabel = z.infer<typeof IrreducibleLabelSchema>;
 export type SettableLabel = z.infer<typeof SettableLabelSchema>;
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- AssertExtends doesn't work with RHS never
-null as unknown as OtherDirLabel & SameDirLabel satisfies never;
