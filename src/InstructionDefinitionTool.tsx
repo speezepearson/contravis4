@@ -1,12 +1,5 @@
 import { produce } from "immer";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Vector } from "vecti";
 
 import { SearchableDropdown } from "./components/SearchableDropdown";
@@ -377,90 +370,43 @@ export default function InstructionDefinitionTool() {
 
   // ── Drawing ──────────────────────────────────────────────────────────
 
-  // Refs mirroring draw-relevant state so `draw` can be stable (no stale
-  // closures) and `requestDraw` / canvas-setup never re-trigger.
-  const initStateRef = useRef(initState);
-  const keyframesRef = useRef(keyframes);
-  const selectedDancerRef = useRef<ProtoId | null>(selectedDancer);
-  const selectedStateKeyRef = useRef(selectedStateKey);
-  const selectedBasisRef = useRef(selectedBasis);
-  const previewAnimationRef = useRef(previewAnimation);
-  const previewBeatRef = useRef(previewBeat);
-  const previewPathFramesRef = useRef(previewPathFrames);
-  const highlightedBasisSpecRef = useRef(highlightedBasisSpec);
-  const basisRef = useRef(basis);
-  useLayoutEffect(() => {
-    initStateRef.current = initState;
-    keyframesRef.current = keyframes;
-    selectedDancerRef.current = selectedDancer;
-    selectedStateKeyRef.current = selectedStateKey;
-    selectedBasisRef.current = selectedBasis;
-    previewAnimationRef.current = previewAnimation;
-    previewBeatRef.current = previewBeat;
-    previewPathFramesRef.current = previewPathFrames;
-    highlightedBasisSpecRef.current = highlightedBasisSpec;
-    basisRef.current = basis;
-  });
-
-  // Stable draw – reads everything from refs so requestDraw never changes
-  // and the canvas-setup effect only runs once.
+  // draw closes over state directly; drawFnRef keeps the canvas hook current.
   const draw = useCallback(() => {
     const renderer = rendererRef.current;
     if (!renderer) return;
 
-    const curInitState = initStateRef.current;
-    const curPreviewAnimation = previewAnimationRef.current;
-    const curPreviewBeat = previewBeatRef.current;
-    const curSelectedDancer = selectedDancerRef.current;
-    const curSelectedStateKey = selectedStateKeyRef.current;
-    const curBasis = selectedBasisRef.current;
-    const curKeyframes = keyframesRef.current;
-    const curPathFrames = previewPathFramesRef.current;
-    const curHighlightedSpec = highlightedBasisSpecRef.current;
-
-    if (curPreviewAnimation && curPreviewBeat > 0) {
-      const t = Math.min(curPreviewBeat, curPreviewAnimation.dur);
-      renderer.drawFrame(t, curPreviewAnimation.getFrame(t));
+    if (previewAnimation && previewBeat > 0) {
+      const t = Math.min(previewBeat, previewAnimation.dur);
+      renderer.drawFrame(t, previewAnimation.getFrame(t));
     } else {
-      // Draw the base frame (this draws grid + all dancers)
-      renderer.drawFrame(0, curInitState);
+      renderer.drawFrame(0, initState);
 
-      // Highlight selected dancer
-      if (curSelectedDancer) {
-        renderer.drawDancerHighlight(
-          Dancer.get(curSelectedDancer, curInitState),
-        );
+      if (selectedDancer) {
+        renderer.drawDancerHighlight(Dancer.get(selectedDancer, initState));
       }
 
       // Draw basis arrows for ALL dancers in init state
-      {
-        const curBasisTemplate = basisRef.current;
-        for (const protoId of ALL_PROTO_IDS) {
-          try {
-            const resolved = resolvedBasisForDancer(
-              curBasisTemplate,
-              protoId,
-              curInitState,
-            );
-            const dancer = Dancer.get(protoId, curInitState);
-            renderer.drawBasisArrows(
-              dancer.pos.x,
-              dancer.pos.y,
-              resolved.xBasis,
-              resolved.yBasis,
-            );
-          } catch {
-            // SWALLOW_EXCEPTION: basis may not be resolvable for this dancer
-          }
+      for (const protoId of ALL_PROTO_IDS) {
+        try {
+          const resolved = resolvedBasisForDancer(basis, protoId, initState);
+          const dancer = Dancer.get(protoId, initState);
+          renderer.drawBasisArrows(
+            dancer.pos.x,
+            dancer.pos.y,
+            resolved.xBasis,
+            resolved.yBasis,
+          );
+        } catch {
+          // SWALLOW_EXCEPTION: basis may not be resolvable for this dancer
         }
       }
 
       // Draw highlighted basis spec as a line from selected dancer
-      if (curSelectedDancer && curHighlightedSpec) {
+      if (selectedDancer && highlightedBasisSpec) {
         try {
-          const dancer = Dancer.get(curSelectedDancer, curInitState);
+          const dancer = Dancer.get(selectedDancer, initState);
           const vec = resolveBasisVector(
-            BasisVectorSpecSchema.parse(curHighlightedSpec),
+            BasisVectorSpecSchema.parse(highlightedBasisSpec),
             dancer,
           );
           if (vec.length() > 1e-6) {
@@ -480,28 +426,28 @@ export default function InstructionDefinitionTool() {
     }
 
     // Draw path lines (always, when we have keyframes)
-    if (curPathFrames.length > 0) {
-      renderer.drawPreviewKeyframes(curPathFrames);
+    if (previewPathFrames.length > 0) {
+      renderer.drawPreviewKeyframes(previewPathFrames);
     }
 
     // Draw ghost dancers at keyframe positions (selected dancer only)
-    if (curSelectedDancer && curSelectedStateKey && curBasis) {
-      const orig = Dancer.get(curSelectedDancer, curInitState);
-      for (const kf of curKeyframes) {
-        const keyState = kf.states[curSelectedStateKey];
+    if (selectedDancer && selectedStateKey && selectedBasis) {
+      const orig = Dancer.get(selectedDancer, initState);
+      for (const kf of keyframes) {
+        const keyState = kf.states[selectedStateKey];
         if (!keyState) continue;
         const worldPos = relPosToWorldWithBasis(
           keyState.relPos,
           orig.pos,
-          curBasis.xBasis,
-          curBasis.yBasis,
+          selectedBasis.xBasis,
+          selectedBasis.yBasis,
         );
         const worldFacing = relFacingToWorldWithBasis(
           keyState.relFacing,
-          curBasis.yBasis,
+          selectedBasis.yBasis,
         );
         renderer.drawGhostDancer(
-          curSelectedDancer,
+          selectedDancer,
           worldPos.x,
           worldPos.y,
           worldFacing,
@@ -526,7 +472,7 @@ export default function InstructionDefinitionTool() {
         const dragFacing =
           dragDir.length() > 0.01 ? dragDir.normalize() : orig.facing;
         renderer.drawGhostDancer(
-          curSelectedDancer,
+          selectedDancer,
           dragPos.x,
           dragPos.y,
           dragFacing,
@@ -534,9 +480,20 @@ export default function InstructionDefinitionTool() {
         );
       }
     }
-  }, []);
+  }, [
+    initState,
+    basis,
+    selectedDancer,
+    selectedStateKey,
+    selectedBasis,
+    keyframes,
+    previewAnimation,
+    previewBeat,
+    previewPathFrames,
+    highlightedBasisSpec,
+    rendererRef,
+  ]);
 
-  // Keep drawFnRef in sync with draw
   useEffect(() => {
     drawFnRef.current = draw;
   });
