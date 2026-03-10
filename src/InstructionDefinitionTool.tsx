@@ -2,6 +2,7 @@ import { produce } from "immer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Vector } from "vecti";
 
+import { InlineNumber } from "./components/InlineNumber";
 import { SearchableDropdown } from "./components/SearchableDropdown";
 import {
   ALL_PROTO_IDS,
@@ -13,13 +14,12 @@ import {
   type Role,
   RoleSchema,
 } from "./contraCore";
-import { lerpFacing as lerpFacingVec } from "./geometry";
 import {
   CalledDirectionSchema,
   CalledIdentifierSchema,
   type ContraAnimation,
 } from "./instructions/_base";
-import { animateSegments, type Segment } from "./instructions/_segment";
+import { animateSegments } from "./instructions/_segment";
 import {
   InitFormationNameSchema,
   resolveInitFormation,
@@ -44,6 +44,7 @@ import {
   resolveTemplateBasisAtInit,
   worldToRelWithBasis,
 } from "./instructions/templates/_basisResolution";
+import { buildKeyframeSegments } from "./instructions/templates/_keyframeSegments";
 import {
   allLLRRTemplates,
   allLRTemplates,
@@ -52,7 +53,7 @@ import {
 } from "./instructions/templates/index";
 import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
-import { buildEnumRecord, lerpVectors } from "./utils";
+import { buildEnumRecord } from "./utils";
 import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -73,7 +74,7 @@ function stateKeyFor(
 }
 
 type KeyframeEntry = {
-  t: number;
+  dur: number;
   states: Partial<Record<StateKey, { relPos: Vector; relFacing: number }>>;
 };
 
@@ -150,7 +151,7 @@ function exportTemplate(
       fieldsDisplay,
       basis,
       keyframes: keyframes.map((kf) => ({
-        t: kf.t,
+        dur: kf.dur,
         states: buildEnumRecord(
           ProtoIdSchema,
           (p) => kf.states[p] ?? { relPos: new Vector(0, 0), relFacing: 0 },
@@ -164,7 +165,7 @@ function exportTemplate(
     fieldsDisplay,
     basis,
     keyframes: keyframes.map((kf) => ({
-      t: kf.t,
+      dur: kf.dur,
       states: buildEnumRecord(
         RoleSchema,
         (r) => kf.states[r] ?? { relPos: new Vector(0, 0), relFacing: 0 },
@@ -212,8 +213,6 @@ export default function InstructionDefinitionTool() {
     endTransient,
     undo,
     redo,
-    canUndo,
-    canRedo,
   } = useUndoRedo<TemplateState>(INITIAL_TEMPLATE_STATE);
 
   const { templateType, name, defaultBeats, basis, initState, keyframes } = tpl;
@@ -328,11 +327,16 @@ export default function InstructionDefinitionTool() {
         previewErrorKfIndex: null,
       };
 
-    const lastKfT = keyframes[keyframes.length - 1].t;
-    const scale = lastKfT > 0 ? defaultBeats / lastKfT : 1;
+    const totalKfDur = keyframes.reduce((sum, kf) => sum + kf.dur, 0);
+    const scale = totalKfDur > 0 ? defaultBeats / totalKfDur : 1;
 
     // Scaled keyframe boundaries (for mapping error beat → keyframe index)
-    const scaledEnds = keyframes.map((kf) => kf.t * scale);
+    const scaledEnds: number[] = [];
+    for (const kf of keyframes) {
+      const prev =
+        scaledEnds.length > 0 ? scaledEnds[scaledEnds.length - 1] : 0;
+      scaledEnds.push(prev + kf.dur * scale);
+    }
 
     try {
       // Pre-resolve basis for each dancer
@@ -347,44 +351,13 @@ export default function InstructionDefinitionTool() {
         return cached;
       };
 
-      const segments: Segment[] = [];
-      let prevT = 0;
-
-      for (const kf of keyframes) {
-        const scaledT = kf.t * scale;
-        const dur = scaledT - prevT;
-
-        segments.push({
-          dur,
-          position: (dancer, frac) => {
-            const key = templateType === "llrr" ? dancer.protoId : dancer.role;
-            const state = kf.states[key];
-            if (!state) return dancer.pos;
-            const orig = dancer.at(initState);
-            const { xBasis, yBasis } = getBasis(dancer);
-            const worldTarget = relPosToWorldWithBasis(
-              state.relPos,
-              orig.pos,
-              xBasis,
-              yBasis,
-            );
-            return lerpVectors(dancer.pos, worldTarget, frac);
-          },
-          facing: (dancer, frac) => {
-            const key = templateType === "llrr" ? dancer.protoId : dancer.role;
-            const state = kf.states[key];
-            if (!state) return dancer.facing;
-            const { yBasis } = getBasis(dancer);
-            const worldFacing = relFacingToWorldWithBasis(
-              state.relFacing,
-              yBasis,
-            );
-            return lerpFacingVec(dancer.facing, worldFacing, frac);
-          },
-        });
-
-        prevT = scaledT;
-      }
+      const segments = buildKeyframeSegments(
+        keyframes,
+        initState,
+        scale,
+        (dancer) => (templateType === "llrr" ? dancer.protoId : dancer.role),
+        getBasis,
+      );
 
       return {
         previewAnimation: animateSegments(
@@ -678,6 +651,8 @@ export default function InstructionDefinitionTool() {
       };
     },
     [
+      canvasRef,
+      rendererRef,
       previewBeat,
       initState,
       selectedDancer,
@@ -798,6 +773,8 @@ export default function InstructionDefinitionTool() {
       requestDraw();
     },
     [
+      canvasRef,
+      rendererRef,
       initState,
       selectedDancer,
       selectedStateKey,
@@ -876,12 +853,10 @@ export default function InstructionDefinitionTool() {
               i === slot ? { ...kf, states: mirroredStates(kf.states) } : kf,
             );
           } else {
-            const lastT =
-              keyframes.length > 0 ? keyframes[keyframes.length - 1].t : 0;
             return [
               ...keyframes,
               {
-                t: lastT + keyframeDuration,
+                dur: keyframeDuration,
                 states: mirroredStates({}),
               },
             ];
@@ -896,6 +871,8 @@ export default function InstructionDefinitionTool() {
       requestDraw();
     },
     [
+      canvasRef,
+      rendererRef,
       selectedDancer,
       selectedStateKey,
       selectedBasis,
@@ -928,7 +905,7 @@ export default function InstructionDefinitionTool() {
         fieldsDisplay: template.fieldsDisplay,
         basis: template.basis,
         keyframes: template.keyframes.map((kf) => ({
-          t: kf.t,
+          dur: kf.dur,
           states: kf.states,
         })),
       });
@@ -1038,15 +1015,6 @@ export default function InstructionDefinitionTool() {
 
       <div className="def-instr-controls-column">
         <h2>Instruction Definition Tool</h2>
-
-        <div className="def-instr-section">
-          <button disabled={!canUndo} onClick={undo}>
-            Undo
-          </button>{" "}
-          <button disabled={!canRedo} onClick={redo}>
-            Redo
-          </button>
-        </div>
 
         {/* Template metadata */}
         <div className="def-instr-section">
@@ -1352,43 +1320,118 @@ export default function InstructionDefinitionTool() {
               {previewError && (
                 <div className="def-instr-error">{previewError}</div>
               )}
-              {keyframes.map((kf, i) => (
-                <div
-                  key={i}
-                  className={
-                    "def-instr-keyframe-item" +
-                    (i === previewErrorKfIndex
-                      ? " def-instr-keyframe-error"
-                      : "") +
-                    (i === nextSlotForKey ? " def-instr-keyframe-active" : "")
-                  }
-                  onClick={() => setNextSlotForKey(i)}
-                >
-                  <span>
-                    t={kf.t.toFixed(1)}
-                    {Object.entries(kf.states).map(([role, state]) =>
-                      state ? (
-                        <span key={role} className="def-instr-kf-role">
-                          {" "}
-                          {role}: ({state.relPos.x.toFixed(2)},{" "}
-                          {state.relPos.y.toFixed(2)}) f=
-                          {((state.relFacing * 180) / Math.PI).toFixed(0)}deg
-                        </span>
-                      ) : null,
-                    )}
-                  </span>
-                  <button
-                    className="delete-btn"
-                    onClick={() =>
-                      updateTpl({
-                        keyframes: keyframes.filter((_, j) => j !== i),
-                      })
+              {keyframes.map((kf, i) => {
+                const updateKf = (patch: Partial<KeyframeEntry>) =>
+                  updateTpl({
+                    keyframes: keyframes.map((k, j) =>
+                      j === i ? { ...k, ...patch } : k,
+                    ),
+                  });
+                const updateState = (
+                  role: StateKey,
+                  patch: Partial<{ relPos: Vector; relFacing: number }>,
+                ) => {
+                  const prev = kf.states[role];
+                  if (!prev) return;
+                  updateKf({
+                    states: {
+                      ...kf.states,
+                      [role]: { ...prev, ...patch },
+                    },
+                  });
+                };
+                return (
+                  <div
+                    key={i}
+                    className={
+                      "def-instr-keyframe-item" +
+                      (i === previewErrorKfIndex
+                        ? " def-instr-keyframe-error"
+                        : "") +
+                      (i === nextSlotForKey ? " def-instr-keyframe-active" : "")
                     }
+                    onClick={() => setNextSlotForKey(i)}
                   >
-                    x
-                  </button>
-                </div>
-              ))}
+                    <span>
+                      dur=
+                      <InlineNumber
+                        value={kf.dur.toFixed(1)}
+                        onTextChange={(v) => updateKf({ dur: Number(v) })}
+                        onDrag={(n) => updateKf({ dur: n })}
+                        step={keyframeDuration}
+                      />
+                      {Object.entries(kf.states).map(([roleStr, state]) => {
+                        const role =
+                          RoleSchema.or(ProtoIdSchema).parse(roleStr);
+                        return state ? (
+                          <span key={roleStr} className="def-instr-kf-role">
+                            {" "}
+                            {roleStr}: (
+                            <InlineNumber
+                              value={state.relPos.x.toFixed(2)}
+                              onTextChange={(v) =>
+                                updateState(role, {
+                                  relPos: new Vector(Number(v), state.relPos.y),
+                                })
+                              }
+                              onDrag={(n) =>
+                                updateState(role, {
+                                  relPos: new Vector(n, state.relPos.y),
+                                })
+                              }
+                              step={0.05}
+                            />
+                            ,{" "}
+                            <InlineNumber
+                              value={state.relPos.y.toFixed(2)}
+                              onTextChange={(v) =>
+                                updateState(role, {
+                                  relPos: new Vector(state.relPos.x, Number(v)),
+                                })
+                              }
+                              onDrag={(n) =>
+                                updateState(role, {
+                                  relPos: new Vector(state.relPos.x, n),
+                                })
+                              }
+                              step={0.05}
+                            />
+                            ) f=
+                            <InlineNumber
+                              value={(
+                                (state.relFacing * 180) /
+                                Math.PI
+                              ).toFixed(0)}
+                              onTextChange={(v) =>
+                                updateState(role, {
+                                  relFacing: (Number(v) * Math.PI) / 180,
+                                })
+                              }
+                              onDrag={(n) =>
+                                updateState(role, {
+                                  relFacing: (n * Math.PI) / 180,
+                                })
+                              }
+                              step={5}
+                              suffix="°"
+                            />
+                          </span>
+                        ) : null;
+                      })}
+                    </span>
+                    <button
+                      className="delete-btn"
+                      onClick={() =>
+                        updateTpl({
+                          keyframes: keyframes.filter((_, j) => j !== i),
+                        })
+                      }
+                    >
+                      x
+                    </button>
+                  </div>
+                );
+              })}
               <button onClick={() => updateTpl({ keyframes: [] })}>
                 Clear all
               </button>

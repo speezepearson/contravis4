@@ -8,7 +8,7 @@ export default typedParse(LRInstructionTemplateSchema, {
   fieldsDisplay: [],
   keyframes: [
     {
-      t: 1,
+      dur: 1,
       states: {
         lark: {
           relPos: {
@@ -27,7 +27,7 @@ export default typedParse(LRInstructionTemplateSchema, {
       },
     },
     {
-      t: 2,
+      dur: 1,
       states: {
         lark: {
           relPos: {
@@ -46,7 +46,7 @@ export default typedParse(LRInstructionTemplateSchema, {
       },
     },
     {
-      t: 3,
+      dur: 1,
       states: {
         lark: {
           relPos: {
@@ -65,7 +65,7 @@ export default typedParse(LRInstructionTemplateSchema, {
       },
     },
     {
-      t: 4,
+      dur: 1,
       states: {
         lark: {
           relPos: {

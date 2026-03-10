@@ -84,3 +84,77 @@ export function roughlySameDir(
 export function getDist(a: Vector, b: Vector): number {
   return a.subtract(b).length();
 }
+
+// ── Catmull-Rom interpolation ─────────────────────────────────────────
+
+/**
+ * Catmull-Rom spline interpolation between p1 and p2.
+ * p0 and p3 are the surrounding control points that influence the curve's tangents.
+ * t is in [0, 1] where 0 = p1 and 1 = p2.
+ */
+export function catmullRom(
+  p0: Vector,
+  p1: Vector,
+  p2: Vector,
+  p3: Vector,
+  t: number,
+): Vector {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return new Vector(
+    catmullRom1D(p0.x, p1.x, p2.x, p3.x, t, t2, t3),
+    catmullRom1D(p0.y, p1.y, p2.y, p3.y, t, t2, t3),
+  );
+}
+
+function catmullRom1D(
+  v0: number,
+  v1: number,
+  v2: number,
+  v3: number,
+  t: number,
+  t2: number,
+  t3: number,
+): number {
+  // Standard Catmull-Rom matrix form:
+  // q(t) = 0.5 * ((2*v1) + (-v0+v2)*t + (2*v0-5*v1+4*v2-v3)*t² + (-v0+3*v1-3*v2+v3)*t³)
+  return (
+    0.5 *
+    (2 * v1 +
+      (-v0 + v2) * t +
+      (2 * v0 - 5 * v1 + 4 * v2 - v3) * t2 +
+      (-v0 + 3 * v1 - 3 * v2 + v3) * t3)
+  );
+}
+
+/**
+ * Catmull-Rom interpolation for angles (in radians).
+ * Handles wraparound by working with angular differences.
+ */
+export function catmullRomAngle(
+  a0: number,
+  a1: number,
+  a2: number,
+  a3: number,
+  t: number,
+): number {
+  // Convert to cumulative deltas relative to a1 to handle wraparound
+  const d01 = normalizeAngle(a1 - a0);
+  const d12 = normalizeAngle(a2 - a1);
+  const d23 = normalizeAngle(a3 - a2);
+  // Remap to "unwrapped" values relative to a1
+  const u0 = -d01; // a0 relative to a1
+  const u1 = 0; // a1 is origin
+  const u2 = d12; // a2 relative to a1
+  const u3 = d12 + d23; // a3 relative to a1
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return a1 + catmullRom1D(u0, u1, u2, u3, t, t2, t3);
+}
+
+function normalizeAngle(a: number): number {
+  let r = a % TWO_PI;
+  if (r > PI) r -= TWO_PI;
+  if (r < -PI) r += TWO_PI;
+  return r;
+}

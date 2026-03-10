@@ -170,8 +170,6 @@ export default function App() {
     endTransient,
     undo,
     redo,
-    canUndo,
-    canRedo,
   } = useUndoRedo(initialDanceState);
 
   const { instructions, initFormation } = danceState;
@@ -391,7 +389,14 @@ export default function App() {
     }
 
     setBeat(beatRef.current);
-  }, [animation, inferredProgression, previewFrames, smoothness]);
+  }, [
+    rendererRef,
+    lastFrameRef,
+    animation,
+    inferredProgression,
+    previewFrames,
+    smoothness,
+  ]);
 
   // Keep drawRef in sync so stable callbacks can always call the latest draw
   useEffect(() => {
@@ -423,7 +428,7 @@ export default function App() {
   useEffect(() => {
     nProgressionsRef.current = 0;
     drawRef.current();
-  }, [animation, smoothness]);
+  }, [drawRef, animation, smoothness]);
 
   const setHighlightedRelationship = useCallback(
     (cid: CalledIdentifier | null) => {
@@ -433,16 +438,19 @@ export default function App() {
         drawRef.current(),
       );
     },
-    [],
+    [drawRef],
   );
 
-  const setHighlightedDancer = useCallback((id: DancerId | null) => {
-    highlightedDancerRef.current = id;
-    cancelAnimationFrame(highlightDancerRafRef.current);
-    highlightDancerRafRef.current = requestAnimationFrame(() =>
-      drawRef.current(),
-    );
-  }, []);
+  const setHighlightedDancer = useCallback(
+    (id: DancerId | null) => {
+      highlightedDancerRef.current = id;
+      cancelAnimationFrame(highlightDancerRafRef.current);
+      highlightDancerRafRef.current = requestAnimationFrame(() =>
+        drawRef.current(),
+      );
+    },
+    [drawRef],
+  );
 
   const downloadGif = useCallback(() => {
     if (!animation) return;
@@ -484,7 +492,7 @@ export default function App() {
   useEffect(() => {
     const id = requestAnimationFrame(() => drawRef.current());
     return () => cancelAnimationFrame(id);
-  }, [animation, previewFrames]);
+  }, [drawRef, animation, previewFrames]);
 
   // Animation loop
   const animateRef = useRef<(timestamp: number) => void>(undefined);
@@ -540,7 +548,7 @@ export default function App() {
       rendererRef.current?.clearTrails();
       drawRef.current();
     },
-    [DANCE_LENGTH],
+    [drawRef, rendererRef, DANCE_LENGTH],
   );
 
   // Keyboard shortcuts
@@ -585,7 +593,7 @@ export default function App() {
         drawRef.current();
       }
     },
-    [instructions],
+    [drawRef, rendererRef, instructions],
   );
 
   const handleSkipToInstruction = useCallback(
@@ -598,7 +606,7 @@ export default function App() {
         drawRef.current();
       }
     },
-    [instructions],
+    [drawRef, rendererRef, instructions],
   );
 
   const scrubberValue =
@@ -725,8 +733,8 @@ export default function App() {
   );
 
   const undoContextValue = useMemo(
-    () => ({ beginTransient, endTransient, undo, redo, canUndo, canRedo }),
-    [beginTransient, endTransient, undo, redo, canUndo, canRedo],
+    () => ({ beginTransient, endTransient, undo, redo }),
+    [beginTransient, endTransient, undo, redo],
   );
 
   const commandPaneProps = {

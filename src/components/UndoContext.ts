@@ -5,15 +5,11 @@ export const UndoContext = createContext<{
   endTransient: () => void;
   undo: () => void;
   redo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
 }>({
   beginTransient: () => {},
   endTransient: () => {},
   undo: () => {},
   redo: () => {},
-  canUndo: false,
-  canRedo: false,
 });
 
 export function useUndo() {

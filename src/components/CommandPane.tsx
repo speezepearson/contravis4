@@ -118,7 +118,6 @@ import {
   DancerHighlightContext,
 } from "./RelationshipHighlightContext";
 import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
-import { useUndo } from "./UndoContext";
 
 function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   const highlightRel = useContext(CalledIdentifierHighlightContext);
@@ -931,7 +930,6 @@ export default memo(function CommandPane({
   onEditInstruction,
   onSkipToInstruction,
 }: Props) {
-  const { undo, redo, canUndo, canRedo } = useUndo();
   const [newlyAddedId, setNewlyAddedId] = useState<InstructionId | null>(null);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [pasteFeedback, setPasteFeedback] = useState("");
@@ -1328,25 +1326,6 @@ export default memo(function CommandPane({
           </select>
         </div>
       )}
-
-      <div className="undo-redo-bar">
-        <button
-          className="undo-btn"
-          onClick={undo}
-          disabled={!canUndo}
-          title="Undo (Ctrl+Z)"
-        >
-          Undo
-        </button>
-        <button
-          className="redo-btn"
-          onClick={redo}
-          disabled={!canRedo}
-          title="Redo (Ctrl+Shift+Z)"
-        >
-          Redo
-        </button>
-      </div>
 
       <div className="formation-selector">
         <label>Formation: </label>
