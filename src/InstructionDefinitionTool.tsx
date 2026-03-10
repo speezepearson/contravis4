@@ -35,7 +35,7 @@ import { Dancer, type WorldState, WorldStateSchema } from "./worldState";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-type Mode = "init" | "keyframe" | "preview";
+type Mode = "init" | "keyframe";
 
 type KeyframeEntry = {
   t: number;
@@ -206,7 +206,7 @@ export default function InstructionDefinitionTool() {
     const curSelectedRole = selectedRoleRef.current;
     const curKeyframes = keyframesRef.current;
 
-    if (curMode === "preview" && curPreviewAnimation) {
+    if (curMode === "keyframe" && curPreviewAnimation && curPreviewBeat > 0) {
       const t = Math.min(curPreviewBeat, curPreviewAnimation.dur);
       renderer.drawFrame(t, curPreviewAnimation.getFrame(t));
       return;
@@ -726,33 +726,6 @@ export default function InstructionDefinitionTool() {
       <div className="def-instr-controls-column">
         <h2>Instruction Definition Tool</h2>
 
-        {/* Mode selector */}
-        <div className="def-instr-section">
-          <label>Mode: </label>
-          <button
-            className={mode === "init" ? "active" : ""}
-            onClick={() => setMode("init")}
-          >
-            Initial State
-          </button>
-          <button
-            className={mode === "keyframe" ? "active" : ""}
-            onClick={() => setMode("keyframe")}
-          >
-            Keyframes
-          </button>
-          <button
-            className={mode === "preview" ? "active" : ""}
-            onClick={() => {
-              setPreviewBeat(0);
-              setMode("preview");
-            }}
-            disabled={!previewAnimation}
-          >
-            Preview
-          </button>
-        </div>
-
         {/* Template metadata */}
         <div className="def-instr-section">
           <h3>Template</h3>
@@ -825,6 +798,26 @@ export default function InstructionDefinitionTool() {
             className="def-instr-text-input wide"
           />
           <div className="def-instr-hint">Use {"{matcher}"} as placeholder</div>
+        </div>
+
+        {/* Mode selector */}
+        <div className="def-instr-section">
+          <label>Mode: </label>
+          <button
+            className={mode === "init" ? "active" : ""}
+            onClick={() => setMode("init")}
+          >
+            Initial State
+          </button>
+          <button
+            className={mode === "keyframe" ? "active" : ""}
+            onClick={() => {
+              setPreviewBeat(0);
+              setMode("keyframe");
+            }}
+          >
+            Keyframes
+          </button>
         </div>
 
         {/* Init state controls */}
@@ -949,33 +942,26 @@ export default function InstructionDefinitionTool() {
                 <button onClick={() => setKeyframes([])}>Clear all</button>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Preview controls */}
-        {mode === "preview" && previewAnimation && (
-          <div className="def-instr-section">
-            <h3>Preview</h3>
-            <label>
-              Beat: {previewBeat.toFixed(2)} / {previewAnimation.dur.toFixed(2)}
-            </label>
-            <input
-              type="range"
-              min={0}
-              max={previewAnimation.dur}
-              step={0.05}
-              value={previewBeat}
-              onChange={(e) => setPreviewBeat(Number(e.target.value))}
-              style={{ width: "100%" }}
-            />
-          </div>
-        )}
-        {mode === "preview" && !previewAnimation && (
-          <div className="def-instr-section">
-            <h3>Preview</h3>
-            <p className="def-instr-hint">
-              No keyframes defined. Add keyframes first.
-            </p>
+            {/* Preview controls */}
+            {previewAnimation && (
+              <>
+                <h4>Preview</h4>
+                <label>
+                  Beat: {previewBeat.toFixed(2)} /{" "}
+                  {previewAnimation.dur.toFixed(2)}
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={previewAnimation.dur}
+                  step={0.05}
+                  value={previewBeat}
+                  onChange={(e) => setPreviewBeat(Number(e.target.value))}
+                  style={{ width: "100%" }}
+                />
+              </>
+            )}
           </div>
         )}
 
