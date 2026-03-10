@@ -11,6 +11,7 @@ import { basename, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import { enableMapSet } from "immer";
+import { z } from "zod";
 
 import { generateDanceAnimation } from "../src/generate";
 import {
@@ -68,11 +69,19 @@ function log(msg: string): void {
 // Types
 // ---------------------------------------------------------------------------
 
-type FrameData = { t: number; state: unknown };
-type DanceOk = { frames: FrameData[] };
-type DanceErr = { error: string };
-type DanceResult = DanceOk | DanceErr;
-type AllResults = Record<string, DanceResult>;
+const FrameDataSchema = z.object({ t: z.number(), state: z.unknown() });
+type FrameData = z.infer<typeof FrameDataSchema>;
+
+const DanceOkSchema = z.object({ frames: z.array(FrameDataSchema) });
+type DanceOk = z.infer<typeof DanceOkSchema>;
+
+const DanceErrSchema = z.object({ error: z.string() });
+
+const DanceResultSchema = z.union([DanceOkSchema, DanceErrSchema]);
+type DanceResult = z.infer<typeof DanceResultSchema>;
+
+const AllResultsSchema = z.record(z.string(), DanceResultSchema);
+type AllResults = z.infer<typeof AllResultsSchema>;
 
 function isOk(r: DanceResult): r is DanceOk {
   return "frames" in r;
@@ -235,16 +244,16 @@ function generateKeyframesFromWorktree(worktreeDir: string): AllResults {
 
   let stdout: string;
   try {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- encoding: "utf-8" makes execFileSync return string
-    stdout = execFileSync(tsxBin, [genScript, ...dancePaths], opts) as string;
+    stdout = z
+      .string()
+      .parse(execFileSync(tsxBin, [genScript, ...dancePaths], opts));
   } catch (e: unknown) {
     const stderr =
       e && typeof e === "object" && "stderr" in e ? String(e.stderr) : "";
     throw new Error(`Worktree generator failed:\n${stderr || String(e)}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- JSON.parse returns any, trusting subprocess output shape
-  return JSON.parse(stdout) as AllResults;
+  return AllResultsSchema.parse(JSON.parse(stdout));
 }
 
 // ---------------------------------------------------------------------------
@@ -256,11 +265,11 @@ function normalize(val: unknown): unknown {
   if (typeof val === "number") return Math.round(val * 1e6) / 1e6;
   if (Array.isArray(val)) return val.map(normalize);
   if (val !== null && typeof val === "object") {
+    const rec = z.record(z.string(), z.unknown()).parse(val);
     return Object.fromEntries(
-      Object.keys(val)
+      Object.keys(rec)
         .sort()
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- val is known to be a non-null object here
-        .map((k) => [k, normalize((val as Record<string, unknown>)[k])]),
+        .map((k) => [k, normalize(rec[k])]),
     );
   }
   return val;
@@ -283,8 +292,7 @@ function compareDance(
     const errSide = isOk(current) ? worktree : current;
     return {
       status: "fail",
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- errSide is known to be DanceErr from the conditional above
-      message: `Only ${side} errored: ${(errSide as DanceErr).error}`,
+      message: `Only ${side} errored: ${DanceErrSchema.parse(errSide).error}`,
     };
   }
 
@@ -353,16 +361,19 @@ function formatPos(p: { x: number; y: number }): string {
   return `(${fmt(p.x)}, ${fmt(p.y)})`;
 }
 
-type PlainDancer = {
-  pos?: { x: number; y: number };
-  facing?: { x: number; y: number };
-  [k: string]: unknown;
-};
+const PlainXYSchema = z.object({ x: z.number(), y: z.number() });
+const PlainDancerSchema = z
+  .object({
+    pos: PlainXYSchema.optional(),
+    facing: PlainXYSchema.optional(),
+  })
+  .passthrough();
+const PlainWorldStateSchema = z.record(z.string(), PlainDancerSchema);
 
 function formatInitState(state: unknown): string {
-  if (!state || typeof state !== "object") return "    (unavailable)";
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- state shape is trusted after null check
-  const dancers = state as Record<string, PlainDancer>;
+  const parsed = PlainWorldStateSchema.safeParse(state);
+  if (!parsed.success) return "    (unavailable)";
+  const dancers = parsed.data;
   const ids = Object.keys(dancers).sort();
   return ids
     .map((id) => {
@@ -375,10 +386,10 @@ function formatInitState(state: unknown): string {
 }
 
 function formatFieldDiff(diff: DiffDetail): string {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- diff fields are normalized world states
-  const current = diff.current as Record<string, PlainDancer> | null;
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- diff fields are normalized world states
-  const worktree = diff.worktree as Record<string, PlainDancer> | null;
+  const currentParsed = PlainWorldStateSchema.safeParse(diff.current);
+  const worktreeParsed = PlainWorldStateSchema.safeParse(diff.worktree);
+  const current = currentParsed.success ? currentParsed.data : null;
+  const worktree = worktreeParsed.success ? worktreeParsed.data : null;
   if (!current || !worktree) {
     return [
       `    current:  ${JSON.stringify(diff.current)?.slice(0, 200)}`,
