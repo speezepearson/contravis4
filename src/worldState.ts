@@ -27,12 +27,7 @@ import {
 import {
   type CalledDirection,
   type PureDirection,
-  PureDirectionSchema,
   resolveCardinalDirection,
-  TowardsLabelDirectionSchema,
-  TowardsPersonDirectionSchema,
-  towardsPersonToDir,
-  towardsToLabel,
 } from "./directions";
 import {
   getDir,
@@ -42,11 +37,7 @@ import {
   roughlySameDir,
   VectorSchema,
 } from "./geometry";
-import {
-  type CalledIdentifier,
-  type PersonInDirection,
-  personInToDir,
-} from "./identifiers";
+import { type CalledIdentifier, labelId } from "./identifiers";
 import {
   type InfallibleLabel,
   IrreducibleLabelSchema,
@@ -256,7 +247,7 @@ export class Dancer {
       throw new SnazzyError([
         { dancerId: this.id },
         " is too far from their ",
-        { cid: label },
+        { cid: labelId(label) },
         " to resolve them clearly",
       ]);
     }
@@ -310,32 +301,33 @@ export class Dancer {
     dir: CalledDirection,
     opts: ResolveLabelOpts = {},
   ): Vector {
-    if (parses(PureDirectionSchema, dir)) {
-      return this.resolvePureDirection(dir);
+    switch (dir.type) {
+      case "PureDirection":
+        return this.resolvePureDirection(dir.dir);
+      case "TowardsLabel": {
+        const them = this.resolveLabel(dir.label, opts);
+        if (!them)
+          throw new SnazzyError([
+            { dancerId: this.id },
+            " has no ",
+            { cid: labelId(dir.label) },
+          ]);
+        return getDir({ from: this.pos, to: them.pos });
+      }
+      case "TowardsPerson": {
+        const pureDirVec = this.resolvePureDirection(dir.roughDir);
+        const them = this.findDancerInDirection(pureDirVec);
+        if (!them)
+          throw new SnazzyError([
+            { dancerId: this.id },
+            " has nobody ",
+            dir.roughDir,
+          ]);
+        return getDir({ from: this.pos, to: them.pos });
+      }
+      default:
+        assertNever(dir);
     }
-    if (parses(TowardsLabelDirectionSchema, dir)) {
-      const label = towardsToLabel[dir];
-      const them = this.resolveLabel(label, opts);
-      if (!them)
-        throw new SnazzyError([
-          { dancerId: this.id },
-          " has no ",
-          { cid: label },
-        ]);
-      return getDir({ from: this.pos, to: them.pos });
-    }
-    if (parses(TowardsPersonDirectionSchema, dir)) {
-      const pureDir = towardsPersonToDir[dir];
-      const pureDirVec = this.resolvePureDirection(pureDir);
-      const them = this.findDancerInDirection(pureDirVec);
-      if (!them)
-        throw new SnazzyError([{ dancerId: this.id }, " has nobody ", pureDir]);
-      return getDir({
-        from: this.pos,
-        to: them.pos,
-      });
-    }
-    assertNever(dir);
   }
 
   /** For a "towards" CalledDirection, resolves the target person. Returns undefined for pure directions. */
@@ -343,13 +335,18 @@ export class Dancer {
     dir: CalledDirection,
     opts: ResolveLabelOpts = {},
   ): Dancer | undefined {
-    if (parses(PureDirectionSchema, dir)) return undefined;
-    if (parses(TowardsLabelDirectionSchema, dir)) {
-      return this.resolveLabel(towardsToLabel[dir], opts) ?? undefined;
+    switch (dir.type) {
+      case "PureDirection":
+        return undefined;
+      case "TowardsLabel":
+        return this.resolveLabel(dir.label, opts) ?? undefined;
+      case "TowardsPerson": {
+        const pureDirVec = this.resolvePureDirection(dir.roughDir);
+        return this.findDancerInDirection(pureDirVec) ?? undefined;
+      }
+      default:
+        assertNever(dir);
     }
-    const pureDir = towardsPersonToDir[dir];
-    const pureDirVec = this.resolvePureDirection(pureDir);
-    return this.findDancerInDirection(pureDirVec) ?? undefined;
   }
 
   /** Find the dancer best described by "the person to your [...]", if any. */
@@ -435,38 +432,48 @@ export class Dancer {
 
   // ── Identifier resolution ──────────────────────────────────────────
 
-  static readonly dirFudges: Partial<Record<PersonInDirection, number>> = {
-    person_on_right: 0.2,
-    person_on_left: 0.2,
-    person_larks_left_robins_right: 0.2,
-    person_larks_right_robins_left: 0.2,
+  static readonly dirFudges: Partial<Record<PureDirection, number>> = {
+    on_right: 0.2,
+    on_left: 0.2,
+    larks_left_robins_right: 0.2,
+    larks_right_robins_left: 0.2,
   };
   resolveCalledIdentifier(
     cid: CalledIdentifier,
     { roles, ...opts }: ResolveCalledIdentifierOpts = {},
   ): Dancer | undefined {
-    if (parses(LabelSchema, cid))
-      return this.resolveLabel(cid, opts) ?? undefined;
-    const pureDir = this.resolvePureDirection(personInToDir[cid]);
+    switch (cid.type) {
+      case "label":
+        return this.resolveLabel(cid.label, opts) ?? undefined;
+      case "PersonInDirection": {
+        const pureDirVec = this.resolvePureDirection(cid.dir);
 
-    // If the caller says "on your right" dancers will intuitively resolve that to "the person 60deg to my right" more than "the person 120deg to my right"
-    // even though those are the same angle from "my right". So, for "right" and "left", special case, we fudge a bit towards the dancer's facing dir.
-    const dir = lerpFacing(pureDir, this.facing, Dancer.dirFudges[cid] ?? 0);
-    const res = this.findDancerInDirection(dir, { roles });
-    if (!res) return undefined;
-    if (roles === "same" && res.role !== this.role)
-      throw new SnazzyError([
-        "it's crazy to ask for somebody's ",
-        { cid },
-        ` with the ${roles} role`,
-      ]);
-    if (roles === "different" && res.role === this.role)
-      throw new SnazzyError([
-        "it's crazy to ask for somebody's ",
-        { cid },
-        ` with the ${roles} role`,
-      ]);
-    return res;
+        // If the caller says "on your right" dancers will intuitively resolve that to "the person 60deg to my right" more than "the person 120deg to my right"
+        // even though those are the same angle from "my right". So, for "right" and "left", special case, we fudge a bit towards the dancer's facing dir.
+        const dir = lerpFacing(
+          pureDirVec,
+          this.facing,
+          Dancer.dirFudges[cid.dir] ?? 0,
+        );
+        const res = this.findDancerInDirection(dir, { roles });
+        if (!res) return undefined;
+        if (roles === "same" && res.role !== this.role)
+          throw new SnazzyError([
+            "it's crazy to ask for somebody's ",
+            { cid },
+            ` with the ${roles} role`,
+          ]);
+        if (roles === "different" && res.role === this.role)
+          throw new SnazzyError([
+            "it's crazy to ask for somebody's ",
+            { cid },
+            ` with the ${roles} role`,
+          ]);
+        return res;
+      }
+      default:
+        assertNever(cid);
+    }
   }
 
   /** Resolves this dancer's "match" for a figure where dancers pair up. */
@@ -643,7 +650,7 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
       throw new SnazzyError([
         { dancerId: id },
         " has no ",
-        { cid: "neighbor" },
+        { cid: labelId("neighbor") },
       ]);
     for (const label of IrreducibleLabelSchema.options) {
       const theirId = dancer.labels[label];
@@ -653,9 +660,9 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
         throw new SnazzyError([
           { dancerId: id },
           "'s ",
-          { cid: label },
+          { cid: labelId(label) },
           " thinks their ",
-          { cid: label },
+          { cid: labelId(label) },
           ` is ${theirSymmetricPointer} -- this should never be asymmetric!`,
         ]);
     }
@@ -698,7 +705,7 @@ export function setLabel(
   if (projectDancerIdToProtoId(dancerId) === protoId) {
     throw new SnazzyError([
       "Cannot set ",
-      { cid: label },
+      { cid: labelId(label) },
       " of ",
       { dancerId: protoId },
       " to ",
@@ -710,7 +717,7 @@ export function setLabel(
   if (dancerRole === protoRole) {
     throw new SnazzyError([
       "Cannot set ",
-      { cid: label },
+      { cid: labelId(label) },
       " of ",
       { dancerId: protoId },
       " to ",
@@ -723,7 +730,7 @@ export function setLabel(
     if (dancerDir === protoDir) {
       throw new SnazzyError([
         "Cannot set ",
-        { cid: label },
+        { cid: labelId(label) },
         " of ",
         { dancerId: protoId },
         " to ",
@@ -746,7 +753,7 @@ export function setLabel(
     if (protoDir !== dancerDir) {
       throw new SnazzyError([
         "Cannot set ",
-        { cid: label },
+        { cid: labelId(label) },
         " of ",
         { dancerId: protoId },
         " to ",
@@ -760,7 +767,7 @@ export function setLabel(
         "Shadows should never change: ",
         { dancerId: protoId },
         " already has ",
-        { cid: label },
+        { cid: labelId(label) },
         ` ${existingShadow}, can't set to `,
         { dancerId },
       ]);
@@ -774,7 +781,7 @@ export function setLabel(
         " as their ",
         { cid: "partner" },
         ", not their ",
-        { cid: label },
+        { cid: labelId(label) },
       ]);
     }
     state[protoId].labels[label] = dancerId;

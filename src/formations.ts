@@ -1,13 +1,13 @@
 import { ALL_PROTO_IDS, type ProtoId } from "./contraCore";
 import { getDir, getDist } from "./geometry";
-import type { CalledIdentifier } from "./identifiers";
+import { type CalledIdentifier, labelId } from "./identifiers";
 import { SnazzyError } from "./snazzyError";
 import { indexOf, isNTuple, must, type NTuple, safeThreshold } from "./utils";
 import { Dancer, findNearbyDancers, getCycle } from "./worldState";
 
 export function resolveRing(dancer: Dancer): NTuple<4, Dancer> {
   return getCycle(dancer, (d) =>
-    must(d.resolveCalledIdentifier("person_in_right_hand"), [
+    must(d.resolveCalledIdentifier(labelId("person_in_right_hand")), [
       { dancerId: d.id },
       "has nobody in their right hand",
     ]),
