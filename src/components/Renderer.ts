@@ -277,7 +277,6 @@ export class Renderer {
     yBasis: { x: number; y: number },
   ) {
     const ctx = this.ctx;
-    const arrowLen = 0.35; // world units
     ctx.globalAlpha = 0.3;
     ctx.lineWidth = 1;
 
@@ -287,10 +286,8 @@ export class Renderer {
     ] as const) {
       const len = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
       if (len < 1e-9) continue;
-      const nx = (vec.x / len) * arrowLen;
-      const ny = (vec.y / len) * arrowLen;
       const [ax, ay] = this.worldToCanvas(posX, posY);
-      const [bx, by] = this.worldToCanvas(posX + nx, posY + ny);
+      const [bx, by] = this.worldToCanvas(posX + vec.x, posY + vec.y);
 
       ctx.strokeStyle = color;
       ctx.beginPath();

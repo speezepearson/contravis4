@@ -10,6 +10,7 @@ import {
 import { Vector } from "vecti";
 
 import { Renderer } from "./components/Renderer";
+import { SearchableDropdown } from "./components/SearchableDropdown";
 import {
   ALL_PROTO_IDS,
   ALL_PROTO_IDS_SET,
@@ -1035,98 +1036,86 @@ export default function InstructionDefinitionTool() {
           <h3>Basis</h3>
           <label>
             X axis:{" "}
-            <select
+            <SearchableDropdown
+              options={basisSpecOptions}
               value={basis.x}
-              onChange={(e) => {
-                const spec = BasisSpecSchema.parse(e.target.value);
-                setBasis((prev) => ({ ...prev, x: spec }));
+              onChange={(spec) => setBasis((prev) => ({ ...prev, x: spec }))}
+              onHighlight={(spec) => {
+                const parsed = BasisVectorSpecSchema.safeParse(spec);
+                setHighlightedBasisSpec(parsed.success ? parsed.data : null);
               }}
-              onMouseLeave={() => setHighlightedBasisSpec(null)}
-            >
-              {basisSpecOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {basisSpecToText(opt)}
-                </option>
-              ))}
-            </select>
+              getLabel={basisSpecToText}
+              selectOnly
+            />
           </label>
           {(basis.x === "choreographer_specified_direction" ||
             basis.x === "choreographer_specified_identifier") && (
             <label>
               {"...assume X is: "}
-              <select
-                value={basis.assumedX ?? ""}
-                onChange={(e) => {
-                  const spec = BasisVectorSpecSchema.parse(e.target.value);
-                  setBasis((prev) => ({ ...prev, assumedX: spec }));
-                }}
-                onMouseOver={(e) => {
-                  const val = e.currentTarget.value;
-                  if (val)
-                    setHighlightedBasisSpec(BasisVectorSpecSchema.parse(val));
-                }}
-                onMouseLeave={() => setHighlightedBasisSpec(null)}
-              >
-                <option value="" disabled>
-                  Choose...
-                </option>
-                {(basis.x === "choreographer_specified_direction"
-                  ? CalledDirectionSchema.options
-                  : CalledIdentifierSchema.options
-                ).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {basisSpecToText(opt)}
-                  </option>
-                ))}
-              </select>
+              <SearchableDropdown
+                options={
+                  basis.x === "choreographer_specified_direction"
+                    ? CalledDirectionSchema.options
+                    : CalledIdentifierSchema.options
+                }
+                value={
+                  basis.assumedX ??
+                  (basis.x === "choreographer_specified_direction"
+                    ? CalledDirectionSchema.options[0]
+                    : CalledIdentifierSchema.options[0])
+                }
+                onChange={(spec) =>
+                  setBasis((prev) => ({
+                    ...prev,
+                    assumedX: BasisVectorSpecSchema.parse(spec),
+                  }))
+                }
+                onHighlight={(spec) => setHighlightedBasisSpec(spec)}
+                getLabel={basisSpecToText}
+                selectOnly
+              />
             </label>
           )}
           <label>
             Y axis:{" "}
-            <select
+            <SearchableDropdown
+              options={basisSpecOptions}
               value={basis.y}
-              onChange={(e) => {
-                const spec = BasisSpecSchema.parse(e.target.value);
-                setBasis((prev) => ({ ...prev, y: spec }));
+              onChange={(spec) => setBasis((prev) => ({ ...prev, y: spec }))}
+              onHighlight={(spec) => {
+                const parsed = BasisVectorSpecSchema.safeParse(spec);
+                setHighlightedBasisSpec(parsed.success ? parsed.data : null);
               }}
-              onMouseLeave={() => setHighlightedBasisSpec(null)}
-            >
-              {basisSpecOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {basisSpecToText(opt)}
-                </option>
-              ))}
-            </select>
+              getLabel={basisSpecToText}
+              selectOnly
+            />
           </label>
           {(basis.y === "choreographer_specified_direction" ||
             basis.y === "choreographer_specified_identifier") && (
             <label>
               {"...assume Y is: "}
-              <select
-                value={basis.assumedY ?? ""}
-                onChange={(e) => {
-                  const spec = BasisVectorSpecSchema.parse(e.target.value);
-                  setBasis((prev) => ({ ...prev, assumedY: spec }));
-                }}
-                onMouseOver={(e) => {
-                  const val = e.currentTarget.value;
-                  if (val)
-                    setHighlightedBasisSpec(BasisVectorSpecSchema.parse(val));
-                }}
-                onMouseLeave={() => setHighlightedBasisSpec(null)}
-              >
-                <option value="" disabled>
-                  Choose...
-                </option>
-                {(basis.y === "choreographer_specified_direction"
-                  ? CalledDirectionSchema.options
-                  : CalledIdentifierSchema.options
-                ).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {basisSpecToText(opt)}
-                  </option>
-                ))}
-              </select>
+              <SearchableDropdown
+                options={
+                  basis.y === "choreographer_specified_direction"
+                    ? CalledDirectionSchema.options
+                    : CalledIdentifierSchema.options
+                }
+                value={
+                  basis.assumedY ??
+                  (basis.y === "choreographer_specified_direction"
+                    ? CalledDirectionSchema.options[0]
+                    : CalledIdentifierSchema.options[0])
+                }
+                onChange={(spec) =>
+                  setBasis((prev) => ({
+                    ...prev,
+                    assumedY: BasisVectorSpecSchema.parse(spec),
+                  }))
+                }
+                onHighlight={(spec) => setHighlightedBasisSpec(spec)}
+                getLabel={basisSpecToText}
+                selectOnly
+              />
             </label>
           )}
         </div>
