@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { averageFrames, shiftFrameByProgression } from "./averageFrames";
+import {
+  averageFrames,
+  shiftFrameByProgression,
+  shiftFrameUniformly,
+} from "./averageFrames";
 import CommandPane from "./components/CommandPane";
 import {
   CalledIdentifierHighlightContext,
@@ -324,7 +328,7 @@ export default function App() {
     }
 
     if (frame && nProgressionsRef.current !== 0) {
-      frame = shiftFrameByProgression(frame, nProgressionsRef.current);
+      frame = shiftFrameUniformly(frame, nProgressionsRef.current);
     }
 
     if (frame) {

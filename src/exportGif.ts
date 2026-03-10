@@ -1,6 +1,10 @@
 import * as _gifencNs from "gifenc";
 
-import { averageFrames, shiftFrameByProgression } from "./averageFrames";
+import {
+  averageFrames,
+  shiftFrameByProgression,
+  shiftFrameUniformly,
+} from "./averageFrames";
 import { Renderer } from "./components/Renderer";
 import type { ContraAnimation } from "./instructions/_base";
 import type { WorldState } from "./worldState";
@@ -160,7 +164,7 @@ export function exportGif(
 
     const shiftedFrame =
       inferredProgression !== null && rep > 0
-        ? shiftFrameByProgression(frame, rep * inferredProgression)
+        ? shiftFrameUniformly(frame, rep * inferredProgression)
         : frame;
 
     renderer.drawFrame(clampedT, shiftedFrame);

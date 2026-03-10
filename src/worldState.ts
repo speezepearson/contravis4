@@ -663,7 +663,8 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
       const holding = dancer.hands[hand];
       if (!holding) continue;
       const { theirId, theirHand } = holding;
-      const theirSymmetricPointer = Dancer.get(theirId, state).hands[theirHand];
+      const them = Dancer.get(theirId, state);
+      const theirSymmetricPointer = them.hands[theirHand];
       if (!isEqual(theirSymmetricPointer, { theirId: id, theirHand: hand }))
         throw new SnazzyError([
           { dancerId: id },
@@ -671,6 +672,14 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
           { dancerId: theirId },
           `'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
         ]);
+      if (getDist(them.pos, dancer.pos) > 2) {
+        throw new SnazzyError([
+          { dancerId: id },
+          ` and `,
+          { dancerId: theirId },
+          ` are holding hands, but super far away from each other`,
+        ]);
+      }
     }
   }
   return state;

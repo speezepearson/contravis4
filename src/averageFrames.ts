@@ -1,7 +1,7 @@
 import { produce } from "immer";
 import { Vector } from "vecti";
 
-import { addOffsetToId, parseProtoId } from "./contraCore";
+import { parseProtoId } from "./contraCore";
 import { buildProtoRecord, type WorldState } from "./worldState";
 
 export function averageFrames(frames: WorldState[]): WorldState {
@@ -35,7 +35,8 @@ export function averageFrames(frames: WorldState[]): WorldState {
   });
 }
 
-/** Shift every dancer by `n` meters in their progression direction (NORTH for up, SOUTH for down). */
+/** Shift every dancer by `n` meters in their progression direction (NORTH for up, SOUTH for down).
+ *  Used for aligning frames across cycle boundaries during smoothing. */
 export function shiftFrameByProgression(
   frame: WorldState,
   n: number,
@@ -45,22 +46,17 @@ export function shiftFrameByProgression(
     const dy = dir === "up" ? n : -n;
     return produce(frame[id], (draft) => {
       draft.pos = new Vector(draft.pos.x, draft.pos.y + dy);
-      // facing stays the same
-      draft.hands = {
-        left: draft.hands.left
-          ? {
-              theirId: addOffsetToId(draft.hands.left.theirId, dy),
-              theirHand: draft.hands.left.theirHand,
-            }
-          : undefined,
-        right: draft.hands.right
-          ? {
-              theirId: addOffsetToId(draft.hands.right.theirId, dy),
-              theirHand: draft.hands.right.theirHand,
-            }
-          : undefined,
-      };
-      // no other properties are (currently?) render-relevant
+    });
+  });
+}
+
+/** Shift ALL dancers uniformly by `dy` meters along the line (positive = north).
+ *  Used for rendering progression offsets — keeps all 8 proto dancers within
+ *  one hands-four so the tiling renderer draws hand connections correctly. */
+export function shiftFrameUniformly(frame: WorldState, dy: number): WorldState {
+  return buildProtoRecord((id) => {
+    return produce(frame[id], (draft) => {
+      draft.pos = new Vector(draft.pos.x, draft.pos.y + dy);
     });
   });
 }
