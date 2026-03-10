@@ -136,6 +136,68 @@ function basisSpecToText(spec: BasisSpec): string {
   return spec.replace(/_/g, " ");
 }
 
+// ── Export helpers ───────────────────────────────────────────────────────
+
+function exportTemplate(
+  tpl: TemplateState,
+): LRInstructionTemplate | LLRRInstructionTemplate {
+  const { templateType, name, defaultBeats, fieldsDisplay, basis, keyframes } =
+    tpl;
+  if (templateType === "llrr") {
+    return {
+      name,
+      defaultBeats,
+      fieldsDisplay,
+      basis,
+      keyframes: keyframes.map((kf) => ({
+        t: kf.t,
+        states: buildEnumRecord(
+          ProtoIdSchema,
+          (p) => kf.states[p] ?? { relPos: new Vector(0, 0), relFacing: 0 },
+        ),
+      })),
+    };
+  }
+  return {
+    name,
+    defaultBeats,
+    fieldsDisplay,
+    basis,
+    keyframes: keyframes.map((kf) => ({
+      t: kf.t,
+      states: buildEnumRecord(
+        RoleSchema,
+        (r) => kf.states[r] ?? { relPos: new Vector(0, 0), relFacing: 0 },
+      ),
+    })),
+  };
+}
+
+function exportTypeScript(tpl: TemplateState): string {
+  const template = exportTemplate(tpl);
+  const jsonBody = JSON.stringify(
+    template,
+    (_key, value) => {
+      if (value instanceof Vector) {
+        return { x: value.x, y: value.y };
+      }
+      return value;
+    },
+    2,
+  );
+  const schemaName =
+    tpl.templateType === "llrr"
+      ? "LLRRInstructionTemplateSchema"
+      : "LRInstructionTemplateSchema";
+  return [
+    `import { typedParse } from "../../utils";`,
+    `import { ${schemaName} } from "./_base";`,
+    ``,
+    `export default typedParse(${schemaName}, ${jsonBody});`,
+    ``,
+  ].join("\n");
+}
+
 // ── Component ────────────────────────────────────────────────────────────
 
 export default function InstructionDefinitionTool() {
@@ -154,15 +216,7 @@ export default function InstructionDefinitionTool() {
     canRedo,
   } = useUndoRedo<TemplateState>(INITIAL_TEMPLATE_STATE);
 
-  const {
-    templateType,
-    name,
-    defaultBeats,
-    basis,
-    fieldsDisplay,
-    initState,
-    keyframes,
-  } = tpl;
+  const { templateType, name, defaultBeats, basis, initState, keyframes } = tpl;
 
   // Convenience updaters
   const updateTpl = useCallback(
@@ -862,63 +916,7 @@ export default function InstructionDefinitionTool() {
 
   // ── Export / Import ──────────────────────────────────────────────────
 
-  const exportTemplate = useCallback(():
-    | LRInstructionTemplate
-    | LLRRInstructionTemplate => {
-    if (templateType === "llrr") {
-      return {
-        name,
-        defaultBeats,
-        fieldsDisplay,
-        basis,
-        keyframes: keyframes.map((kf) => ({
-          t: kf.t,
-          states: buildEnumRecord(
-            ProtoIdSchema,
-            (p) => kf.states[p] ?? { relPos: new Vector(0, 0), relFacing: 0 },
-          ),
-        })),
-      };
-    }
-    return {
-      name,
-      defaultBeats,
-      fieldsDisplay,
-      basis,
-      keyframes: keyframes.map((kf) => ({
-        t: kf.t,
-        states: buildEnumRecord(
-          RoleSchema,
-          (r) => kf.states[r] ?? { relPos: new Vector(0, 0), relFacing: 0 },
-        ),
-      })),
-    };
-  }, [name, defaultBeats, fieldsDisplay, keyframes, templateType, basis]);
-
-  const exportTypeScript = useCallback(() => {
-    const template = exportTemplate();
-    const jsonBody = JSON.stringify(
-      template,
-      (_key, value) => {
-        if (value instanceof Vector) {
-          return { x: value.x, y: value.y };
-        }
-        return value;
-      },
-      2,
-    );
-    const schemaName =
-      templateType === "llrr"
-        ? "LLRRInstructionTemplateSchema"
-        : "LRInstructionTemplateSchema";
-    return [
-      `import { typedParse } from "../../utils";`,
-      `import { ${schemaName} } from "./_base";`,
-      ``,
-      `export default typedParse(${schemaName}, ${jsonBody});`,
-      ``,
-    ].join("\n");
-  }, [exportTemplate, templateType]);
+  const exportedTypeScript = useMemo(() => exportTypeScript(tpl), [tpl]);
 
   const loadTemplate = useCallback(
     (
@@ -1431,10 +1429,10 @@ export default function InstructionDefinitionTool() {
         <div className="def-instr-section">
           <h3>Export / Import</h3>
           <div className="json-io">
-            <textarea readOnly rows={8} value={exportTypeScript()} />
+            <textarea readOnly rows={8} value={exportedTypeScript} />
             <button
               onClick={() => {
-                void navigator.clipboard.writeText(exportTypeScript());
+                void navigator.clipboard.writeText(exportedTypeScript);
               }}
             >
               Copy to clipboard
