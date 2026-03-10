@@ -846,6 +846,12 @@ input[type="range"] {
   width: 6em;
 }
 
+.def-instr-error {
+  font-size: 0.8em;
+  color: #c00;
+  margin-top: 2px;
+}
+
 .def-instr-hint {
   font-size: 0.8em;
   color: #666;

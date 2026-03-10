@@ -197,6 +197,43 @@ export default function InstructionDefinitionTool() {
     return resolvedBasisForDancer(basis, selectedDancer, initState);
   }, [selectedDancer, selectedStateKey, basis, initState]);
 
+  /** Per-axis basis resolution errors (checked against all dancers). */
+  const basisErrors = useMemo((): { x: string | null; y: string | null } => {
+    function concreteSpec(
+      spec: BasisSpec,
+      assumed: BasisVectorSpec | undefined,
+    ): BasisVectorSpec | null {
+      if (
+        spec === "choreographer_specified_direction" ||
+        spec === "choreographer_specified_identifier"
+      ) {
+        return assumed ?? null;
+      }
+      return BasisVectorSpecSchema.parse(spec);
+    }
+
+    function tryAxis(
+      spec: BasisSpec,
+      assumed: BasisVectorSpec | undefined,
+    ): string | null {
+      const concrete = concreteSpec(spec, assumed);
+      if (!concrete) return "No assumed default provided";
+      for (const protoId of ALL_PROTO_IDS) {
+        try {
+          resolveBasisVector(concrete, Dancer.get(protoId, initState));
+        } catch (e) {
+          return e instanceof Error ? e.message : String(e);
+        }
+      }
+      return null;
+    }
+
+    return {
+      x: tryAxis(basis.x, basis.assumedX),
+      y: tryAxis(basis.y, basis.assumedY),
+    };
+  }, [basis, initState]);
+
   // ── Preview animation ───────────────────────────────────────────────
 
   const previewAnimation = useMemo((): ContraAnimation | null => {
@@ -1111,6 +1148,9 @@ export default function InstructionDefinitionTool() {
               selectOnly
             />
           </label>
+          {basisErrors.x && (
+            <div className="def-instr-error">{basisErrors.x}</div>
+          )}
           {(basis.x === "choreographer_specified_direction" ||
             basis.x === "choreographer_specified_identifier") && (
             <label>
@@ -1155,6 +1195,9 @@ export default function InstructionDefinitionTool() {
               selectOnly
             />
           </label>
+          {basisErrors.y && (
+            <div className="def-instr-error">{basisErrors.y}</div>
+          )}
           {(basis.y === "choreographer_specified_direction" ||
             basis.y === "choreographer_specified_identifier") && (
             <label>
