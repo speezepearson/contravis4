@@ -757,8 +757,21 @@ export default function InstructionDefinitionTool() {
       );
       const isClick = dragDist < 0.02;
 
-      if (drag.ghostKeyframeIndex != null || drag.dancerId) {
-        // Ghost drag or init-state drag: already applied during mousemove.
+      if (drag.ghostKeyframeIndex != null) {
+        // Ghost drag: already applied during mousemove.
+      } else if (drag.dancerId && isClick) {
+        // Clicked on a dancer without dragging — select it.
+        setSelectedDancer(drag.dancerId);
+        const hitKey =
+          templateType === "llrr"
+            ? drag.dancerId
+            : Dancer.get(drag.dancerId, initState).role;
+        const filled = keyframes.filter(
+          (kf) => kf.states[hitKey] != null,
+        ).length;
+        setNextSlotForKey(filled);
+      } else if (drag.dancerId) {
+        // Init-state drag: already applied during mousemove.
       } else if (isClick) {
         // Click = select dancer or deselect
         const renderer = rendererRef.current;
