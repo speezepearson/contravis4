@@ -62,6 +62,16 @@ type TemplateType = "lr" | "llrr";
 /** In LR mode the key is a Role; in LLRR mode it's a ProtoId. */
 type StateKey = Role | ProtoId;
 
+function stateKeyFor(
+  dancerId: ProtoId,
+  templateType: TemplateType,
+  initState: WorldState,
+): StateKey {
+  return templateType === "llrr"
+    ? dancerId
+    : Dancer.get(dancerId, initState).role;
+}
+
 type KeyframeEntry = {
   t: number;
   states: Partial<Record<StateKey, { relPos: Vector; relFacing: number }>>;
@@ -201,8 +211,7 @@ export default function InstructionDefinitionTool() {
   /** The key used for keyframe state lookup — Role for LR, ProtoId for LLRR. */
   const selectedStateKey: StateKey | null = useMemo(() => {
     if (!selectedDancer) return null;
-    if (templateType === "llrr") return selectedDancer;
-    return Dancer.get(selectedDancer, initState).role;
+    return stateKeyFor(selectedDancer, templateType, initState);
   }, [selectedDancer, initState, templateType]);
 
   /** The resolved basis vectors for the selected dancer. */
@@ -750,10 +759,7 @@ export default function InstructionDefinitionTool() {
       } else if (drag.dancerId && isClick) {
         // Clicked on a dancer without dragging — select it.
         setSelectedDancer(drag.dancerId);
-        const hitKey =
-          templateType === "llrr"
-            ? drag.dancerId
-            : Dancer.get(drag.dancerId, initState).role;
+        const hitKey = stateKeyFor(drag.dancerId, templateType, initState);
         const filled = keyframes.filter(
           (kf) => kf.states[hitKey] != null,
         ).length;
@@ -771,8 +777,7 @@ export default function InstructionDefinitionTool() {
           const hit = renderer.hitTestDancer(cx, cy, initState);
           if (hit) {
             setSelectedDancer(hit);
-            const hitKey =
-              templateType === "llrr" ? hit : Dancer.get(hit, initState).role;
+            const hitKey = stateKeyFor(hit, templateType, initState);
             const filled = keyframes.filter(
               (kf) => kf.states[hitKey] != null,
             ).length;
@@ -1302,10 +1307,7 @@ export default function InstructionDefinitionTool() {
                 className={selectedDancer === id ? "active" : ""}
                 onClick={() => {
                   setSelectedDancer(id);
-                  const key =
-                    templateType === "llrr"
-                      ? id
-                      : Dancer.get(id, initState).role;
+                  const key = stateKeyFor(id, templateType, initState);
                   const filled = keyframes.filter(
                     (kf) => kf.states[key] != null,
                   ).length;
