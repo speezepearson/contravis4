@@ -51,7 +51,7 @@ export function shiftFrameByProgression(
 }
 
 /** Shift ALL dancers uniformly by `dy` meters along the line (positive = north).
- *  Used for rendering progression offsets — keeps all 8 proto dancers within
+ *  Used for rendering progression offsets — keeps all 4 proto dancers within
  *  one hands-four so the tiling renderer draws hand connections correctly. */
 export function shiftFrameUniformly(frame: WorldState, dy: number): WorldState {
   return buildProtoRecord((id) => {
