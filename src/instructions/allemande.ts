@@ -1,4 +1,4 @@
-import _ from "lodash";
+import memoize from "lodash/memoize";
 import { z } from "zod";
 
 import { type Beats, HandSchema } from "../contraCore";
@@ -57,7 +57,7 @@ export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  const getMatch = _.memoize((d: Dancer) => {
+  const getMatch = memoize((d: Dancer) => {
     return orig(d).resolveMatch(instr.cid);
   });
 
