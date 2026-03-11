@@ -36,6 +36,7 @@ export const LabelVariantSchema = z.object({
 export const PersonInDirectionVariantSchema = z.object({
   type: z.literal("PersonInDirection"),
   dir: PureDirectionSchema,
+  onlyRole: z.enum(['same', 'different']),
 });
 
 // Base: the atomic identifier types (no wrappers).
@@ -45,21 +46,14 @@ export const BaseCalledIdentifierSchema = z.discriminatedUnion("type", [
 ]);
 export type BaseCalledIdentifier = z.infer<typeof BaseCalledIdentifierSchema>;
 
-// Wrapper variants.
-const RoleFilteredIdentifierVariantSchema = z.object({
-  type: z.literal("roleFiltered"),
-  role: RoleSchema,
-  base: BaseCalledIdentifierSchema,
-});
-
-const ByRoleIdentifierVariantSchema = z.object({
-  type: z.literal("byRole"),
+const PerRoleIdentifierVariantSchema = z.object({
+  type: z.literal("PerRole"),
   larks: BaseCalledIdentifierSchema,
   robins: BaseCalledIdentifierSchema,
 });
 
-const ByProgDirIdentifierVariantSchema = z.object({
-  type: z.literal("byProgDir"),
+const PerProgDirIdentifierVariantSchema = z.object({
+  type: z.literal("PerProgDir"),
   ups: BaseCalledIdentifierSchema,
   downs: BaseCalledIdentifierSchema,
 });
@@ -68,9 +62,8 @@ const ByProgDirIdentifierVariantSchema = z.object({
 export const CalledIdentifierSchema = z.discriminatedUnion("type", [
   LabelVariantSchema,
   PersonInDirectionVariantSchema,
-  RoleFilteredIdentifierVariantSchema,
-  ByRoleIdentifierVariantSchema,
-  ByProgDirIdentifierVariantSchema,
+  PerRoleIdentifierVariantSchema,
+  PerProgDirIdentifierVariantSchema,
 ]);
 export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 

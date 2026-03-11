@@ -107,14 +107,14 @@ export const BaseCalledDirectionSchema = z.discriminatedUnion("type", [
 export type BaseCalledDirection = z.infer<typeof BaseCalledDirectionSchema>;
 
 // Wrapper variants.
-const ByRoleDirectionVariantSchema = z.object({
-  type: z.literal("byRole"),
+const PerRoleDirectionVariantSchema = z.object({
+  type: z.literal("PerRole"),
   larks: BaseCalledDirectionSchema,
   robins: BaseCalledDirectionSchema,
 });
 
-const ByProgDirDirectionVariantSchema = z.object({
-  type: z.literal("byProgDir"),
+const PerProgDirDirectionVariantSchema = z.object({
+  type: z.literal("PerProgDir"),
   ups: BaseCalledDirectionSchema,
   downs: BaseCalledDirectionSchema,
 });
@@ -124,8 +124,8 @@ export const CalledDirectionSchema = z.discriminatedUnion("type", [
   PureDirectionVariantSchema,
   TowardsLabelVariantSchema,
   TowardsPersonVariantSchema,
-  ByRoleDirectionVariantSchema,
-  ByProgDirDirectionVariantSchema,
+  PerRoleDirectionVariantSchema,
+  PerProgDirDirectionVariantSchema,
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 
@@ -146,17 +146,17 @@ export function towardsPerson(
 ): BaseCalledDirection & { type: "TowardsPerson" } {
   return { type: "TowardsPerson", roughDir };
 }
-export function byRoleDir(
+export function perRoleDir(
   larks: BaseCalledDirection,
   robins: BaseCalledDirection,
-): CalledDirection & { type: "byRole" } {
-  return { type: "byRole", larks, robins };
+): CalledDirection & { type: "PerRole" } {
+  return { type: "PerRole", larks, robins };
 }
-export function byProgDirDir(
+export function perProgDirDir(
   ups: BaseCalledDirection,
   downs: BaseCalledDirection,
-): CalledDirection & { type: "byProgDir" } {
-  return { type: "byProgDir", ups, downs };
+): CalledDirection & { type: "PerProgDir" } {
+  return { type: "PerProgDir", ups, downs };
 }
 
 // ── All possible base CalledDirection values (for UI enumeration) ────────
@@ -226,14 +226,14 @@ export function calledDirectionFromKey(key: string): CalledDirection {
       return baseCalledDirectionFromKey(key);
     case "byRole": {
       const [larksKey, robinsKey] = val.split("|");
-      return byRoleDir(
+      return perRoleDir(
         baseCalledDirectionFromKey(larksKey),
         baseCalledDirectionFromKey(robinsKey),
       );
     }
     case "byProgDir": {
       const [upsKey, downsKey] = val.split("|");
-      return byProgDirDir(
+      return perProgDirDir(
         baseCalledDirectionFromKey(upsKey),
         baseCalledDirectionFromKey(downsKey),
       );
