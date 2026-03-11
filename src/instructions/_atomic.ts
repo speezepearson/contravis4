@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { ProtoId } from "../contraCore";
 import type { WorldState } from "../worldState";
-import { type InstructionAnimator, type Segment } from "./_segment";
+import { type Segment } from "./_segment";
 import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
 import { BalanceInstructionSchema, balanceSegments } from "./balance";
 import {
@@ -169,68 +169,103 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
 ]);
 export type AtomicInstruction = z.infer<typeof AtomicInstructionSchema>;
 
-/** Registry mapping each atomic instruction type to its segment animator. */
-export const atomicSegmentAnimators: {
-  [K in AtomicInstruction["type"]]: InstructionAnimator<
-    Extract<AtomicInstruction, { type: K }>
-  >;
-} = {
-  allemande: allemandeSegments,
-  balance: balanceSegments,
-  balance_and_swing: balanceAndSwingSegments,
-  balance_the_ring: balanceTheRingSegments,
-  bend_the_line: bendTheLineSegments,
-  box_circulate: boxCirculateSegments,
-  box_the_gnat: boxTheGnatSegments,
-  california_twirl: californiaTwirlSegments,
-  robins_chain: robinsChainSegments,
-  circle: circleSegments,
-  do_si_do: doSiDoSegments,
-  down_the_hall: downTheHallSegments,
-  drop_hands: dropHandsSegments,
-  face: faceSegments,
-  form_long_waves: formLongWavesSegments,
-  form_short_waves: formShortWavesSegments,
-  give_and_take_into_swing: giveAndTakeIntoSwingSegments,
-  hey: heySegments,
-  greet_new_neighbors: greetNewNeighborsSegments,
-  greet_shadow: greetShadowSegments,
-  long_line_in_center: longLineInCenterSegments,
-  long_lines_forward_back: longLinesForwardBackSegments,
-  mad_robin: madRobinSegments,
-  meltdown_swing: meltdownSwingSegments,
-  pass_by: passBySegments,
-  petronella: petronellaSegments,
-  poussette: poussetteSegments,
-  pull_by: pullBySegments,
-  right_left_through: rightLeftThroughSegments,
-  roll_away: rollAwaySegments,
-  rory_o_more: roryOMoreSegments,
-  shoulder_round: shoulderRoundSegments,
-  single_file_promenade: singleFilePromenadeSegments,
-  slice: sliceSegments,
-  square_through: squareThroughSegments,
-  star: starSegments,
-  step: stepSegments,
-  swing: swingSegments,
-  take_hands_in_rings: takeHandsInRingsSegments,
-  take_hands: takeHandsSegments,
-  templated_llrr: templatedLLRRSegments,
-  templated_lr: templatedLRSegments,
-  turn_alone: turnAloneSegments,
-  turn_as_a_couple: turnAsACoupleSegments,
-  up_the_hall: upTheHallSegments,
-  zig_zag: zigZagSegments,
-};
-
 export function makeAtomicInstructionSegments(
   instr: AtomicInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): Segment[] {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- narrowing discriminated union lookup
-  const segAnimator = atomicSegmentAnimators[instr.type] as InstructionAnimator<
-    typeof instr
-  >;
-  return segAnimator(instr, init, who);
+  switch (instr.type) {
+    case "allemande":
+      return allemandeSegments(instr, init, who);
+    case "balance":
+      return balanceSegments(instr, init, who);
+    case "balance_and_swing":
+      return balanceAndSwingSegments(instr, init, who);
+    case "balance_the_ring":
+      return balanceTheRingSegments(instr, init, who);
+    case "bend_the_line":
+      return bendTheLineSegments(instr, init, who);
+    case "box_circulate":
+      return boxCirculateSegments(instr, init, who);
+    case "box_the_gnat":
+      return boxTheGnatSegments(instr, init, who);
+    case "california_twirl":
+      return californiaTwirlSegments(instr, init, who);
+    case "circle":
+      return circleSegments(instr, init, who);
+    case "do_si_do":
+      return doSiDoSegments(instr, init, who);
+    case "down_the_hall":
+      return downTheHallSegments(instr, init, who);
+    case "drop_hands":
+      return dropHandsSegments(instr, init, who);
+    case "face":
+      return faceSegments(instr, init, who);
+    case "form_long_waves":
+      return formLongWavesSegments(instr, init, who);
+    case "form_short_waves":
+      return formShortWavesSegments(instr, init, who);
+    case "give_and_take_into_swing":
+      return giveAndTakeIntoSwingSegments(instr, init, who);
+    case "greet_new_neighbors":
+      return greetNewNeighborsSegments(instr, init, who);
+    case "greet_shadow":
+      return greetShadowSegments(instr, init, who);
+    case "hey":
+      return heySegments(instr, init, who);
+    case "long_line_in_center":
+      return longLineInCenterSegments(instr, init, who);
+    case "long_lines_forward_back":
+      return longLinesForwardBackSegments(instr, init, who);
+    case "mad_robin":
+      return madRobinSegments(instr, init, who);
+    case "meltdown_swing":
+      return meltdownSwingSegments(instr, init, who);
+    case "pass_by":
+      return passBySegments(instr, init, who);
+    case "petronella":
+      return petronellaSegments(instr, init, who);
+    case "poussette":
+      return poussetteSegments(instr, init, who);
+    case "pull_by":
+      return pullBySegments(instr, init, who);
+    case "right_left_through":
+      return rightLeftThroughSegments(instr, init, who);
+    case "robins_chain":
+      return robinsChainSegments(instr, init, who);
+    case "roll_away":
+      return rollAwaySegments(instr, init, who);
+    case "rory_o_more":
+      return roryOMoreSegments(instr, init, who);
+    case "shoulder_round":
+      return shoulderRoundSegments(instr, init, who);
+    case "single_file_promenade":
+      return singleFilePromenadeSegments(instr, init, who);
+    case "slice":
+      return sliceSegments(instr, init, who);
+    case "square_through":
+      return squareThroughSegments(instr, init, who);
+    case "star":
+      return starSegments(instr, init, who);
+    case "step":
+      return stepSegments(instr, init, who);
+    case "swing":
+      return swingSegments(instr, init, who);
+    case "take_hands":
+      return takeHandsSegments(instr, init, who);
+    case "take_hands_in_rings":
+      return takeHandsInRingsSegments(instr, init, who);
+    case "templated_llrr":
+      return templatedLLRRSegments(instr, init, who);
+    case "templated_lr":
+      return templatedLRSegments(instr, init, who);
+    case "turn_alone":
+      return turnAloneSegments(instr, init, who);
+    case "turn_as_a_couple":
+      return turnAsACoupleSegments(instr, init, who);
+    case "up_the_hall":
+      return upTheHallSegments(instr, init, who);
+    case "zig_zag":
+      return zigZagSegments(instr, init, who);
+  }
 }
