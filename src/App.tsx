@@ -439,7 +439,7 @@ export default function App() {
     assignToGlobalThis("__debug", {
       scrub: (beat: number) => {
         beatRef.current = beat;
-        nProgressionsRef.current = 0;
+        nProgressionsRef.current %= 2;
         rendererRef.current?.clearTrails();
         drawRef.current();
       },
@@ -456,7 +456,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    nProgressionsRef.current = 0;
+    nProgressionsRef.current %= 2;
     drawRef.current();
   }, [drawRef, animation, smoothness]);
 
@@ -574,7 +574,7 @@ export default function App() {
     (val: number) => {
       const pct = val / 1000;
       beatRef.current = pct * DANCE_LENGTH;
-      nProgressionsRef.current = 0;
+      nProgressionsRef.current %= 2;
       rendererRef.current?.clearTrails();
       drawRef.current();
     },
@@ -618,7 +618,7 @@ export default function App() {
       const startBeat = findInstructionStartBeat(instructions, id);
       if (startBeat !== null) {
         beatRef.current = startBeat;
-        nProgressionsRef.current = 0;
+        nProgressionsRef.current %= 2;
         rendererRef.current?.clearTrails();
         drawRef.current();
       }
@@ -631,7 +631,7 @@ export default function App() {
       const startBeat = findInstructionStartBeat(instructions, id);
       if (startBeat !== null) {
         beatRef.current = startBeat;
-        nProgressionsRef.current = 0;
+        nProgressionsRef.current %= 2;
         rendererRef.current?.clearTrails();
         drawRef.current();
       }
@@ -664,9 +664,6 @@ export default function App() {
           onChange={(e) => scrub(Number(e.target.value))}
         />
         <div className="beat-display">Beat {beat.toFixed(1)}</div>
-        {nProgressionsRef.current !== 0 && (
-          <div className="beat-display">Prog {nProgressionsRef.current}</div>
-        )}
       </div>
       <div className="controls">
         <span className="speed-display">{bpm} BPM</span>
