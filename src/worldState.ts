@@ -410,12 +410,15 @@ export class Dancer {
 
     for (const otherProtoId of ALL_PROTO_IDS) {
       if (otherProtoId === this.protoId) continue;
-      if (roles === "same" && getRole(otherProtoId) !== this.role)
-        continue;
-      if (roles === "different" && getRole(otherProtoId) === this.role)
+      const [targetRepresentative] = findNearbyDancers(
+        this.pos,
+        otherProtoId,
+        this.worldState,
+      );
+      if (roles === "same" && targetRepresentative.role !== this.role) continue;
+      if (roles === "different" && targetRepresentative.role === this.role)
         continue;
 
-      const [targetRepresentative] = findNearbyDancers(this.pos, otherProtoId, this.worldState);
       for (let o = -5; o <= 5; o++) {
         const target = targetRepresentative.addOffset(o);
         const disp = target.pos.subtract(this.pos);
