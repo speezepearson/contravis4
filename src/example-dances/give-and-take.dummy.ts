@@ -10,7 +10,7 @@ export default typedParse(DanceSchema, {
       id: "6400a287-e028-4359-8987-085228107d73",
       beats: 8,
       type: "give_and_take_into_swing",
-      cid: "partner",
+      cid: { type: "label", label: "partner" },
       drawerRole: "lark",
       endFacing: "across",
     },
@@ -24,7 +24,7 @@ export default typedParse(DanceSchema, {
       id: "b7d49fd5-b2d0-4776-bc5a-cbcd7b7aa61b",
       beats: 0,
       type: "face",
-      direction: "towards_opposite",
+      direction: { type: "TowardsLabel", label: "opposite" },
     },
     {
       id: "32a0d2fd-5148-4d61-a762-a88b42963cf5",

@@ -14,7 +14,7 @@ export default typedParse(DanceSchema, {
           id: "f1e8ea71-f5b8-4759-9777-ff41cdfa589c",
           beats: 0,
           type: "face",
-          direction: "across",
+          direction: { type: "PureDirection", dir: "across" },
         },
       ],
       robins: [
@@ -22,7 +22,7 @@ export default typedParse(DanceSchema, {
           id: "8e72bfc9-b85c-41ce-a542-b2341bc14a0a",
           beats: 0,
           type: "face",
-          direction: "out",
+          direction: { type: "PureDirection", dir: "out" },
         },
       ],
     },

@@ -13,7 +13,7 @@ import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { getSide, must } from "../utils";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import {
   advanceState,
   hold,
@@ -42,7 +42,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
 
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch("person_across", { roles: "different" });
+    orig(d).resolveMatch(personInDir("across"), { roles: "different" });
 
   // Assert all dancers face roughly up or down, and same direction as person across
   for (const id of who) {

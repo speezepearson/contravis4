@@ -4,7 +4,10 @@ import { LRInstructionTemplateSchema } from "./_base";
 export default typedParse(LRInstructionTemplateSchema, {
   name: "special courtesy turn",
   defaultBeats: 8,
-  basis: { x: "on_right", y: "in_front" },
+  basis: {
+    x: { type: "PureDirection", dir: "on_right" },
+    y: { type: "PureDirection", dir: "in_front" },
+  },
   fieldsDisplay: [],
   keyframes: [
     {

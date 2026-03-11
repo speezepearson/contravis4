@@ -1,10 +1,6 @@
 import * as Popover from "@radix-ui/react-popover";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  type CalledIdentifier,
-  CalledIdentifierSchema,
-} from "../instructions/_base";
 import { indexOf } from "../utils";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { SearchableDropdown } from "./SearchableDropdown";
@@ -16,7 +12,8 @@ interface Props<T extends string> {
   placeholder?: string;
   getLabel?: (value: T) => string;
   onInvalid?: () => void;
-  onHighlight?: (cid: CalledIdentifier | null) => void;
+  /** Called when the user hovers over an option (or the current value). Passes the string value or null on leave. */
+  onHighlight?: (value: string | null) => void;
   autoFocus?: boolean;
 }
 
@@ -96,10 +93,7 @@ export function InlineDropdown<T extends string>({
               handleOpenChange(!open);
             }
           }}
-          onMouseEnter={() => {
-            const cid = CalledIdentifierSchema.safeParse(value);
-            if (cid.success) onHighlight?.(cid.data);
-          }}
+          onMouseEnter={() => onHighlight?.(value)}
           onMouseLeave={() => onHighlight?.(null)}
         >
           {displayText}
@@ -123,10 +117,7 @@ export function InlineDropdown<T extends string>({
             placeholder={placeholder}
             selectOnly
             getLabel={getLabel}
-            onHighlight={(v) => {
-              const cid = CalledIdentifierSchema.safeParse(v);
-              if (cid.success) onHighlight?.(cid.data);
-            }}
+            onHighlight={(v) => onHighlight?.(v)}
           />
         </Popover.Content>
       </Popover.Portal>

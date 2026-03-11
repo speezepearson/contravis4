@@ -2,7 +2,7 @@ import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
-  CalledIdentifierSchema,
+  ALL_CALLED_IDENTIFIERS,
   inferRoleOfCalledIdentifier,
 } from "../../instructions/_base";
 import { BoxTheGnatInstructionSchema } from "../../instructions/boxTheGnat";
@@ -37,7 +37,7 @@ export function BoxTheGnatFields({
     <>
       {"with "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options.filter(
+        options={ALL_CALLED_IDENTIFIERS.filter(
           (cid) => inferRoleOfCalledIdentifier(cid) !== "same",
         )}
         value={instruction.cid}

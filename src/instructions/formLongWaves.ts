@@ -5,7 +5,7 @@ import { ALL_PROTO_IDS, parseProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { must, safeThreshold } from "../utils";
 import { connectHands, Dancer, getDancerSide } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormLongWavesInstructionSchema = z.object({
@@ -80,14 +80,14 @@ export const formLongWavesSegments: InstructionAnimator<
         draft,
         id,
         "left",
-        snapped.resolveMatch("person_on_left").id,
+        snapped.resolveMatch(personInDir("on_left")).id,
         "left",
       );
       connectHands(
         draft,
         id,
         "right",
-        snapped.resolveMatch("person_on_right").id,
+        snapped.resolveMatch(personInDir("on_right")).id,
         "right",
       );
     }),

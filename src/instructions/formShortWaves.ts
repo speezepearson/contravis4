@@ -7,7 +7,7 @@ import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must, safeThreshold } from "../utils";
 import { connectHands, Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, pureDir } from "./_base";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormShortWavesInstructionSchema = z.object({
@@ -74,10 +74,10 @@ export const formShortWavesSegments: InstructionAnimator<
         draft[id].facing.multiply(-0.1),
       );
       const onLeft = Dancer.get(id, draft).findDancerInCalledDirection(
-        "on_left",
+        pureDir("on_left"),
       );
       const onRight = Dancer.get(id, draft).findDancerInCalledDirection(
-        "on_right",
+        pureDir("on_right"),
       );
       if (onLeft) connectHands(draft, id, "left", onLeft.id, "left");
       if (onRight) connectHands(draft, id, "right", onRight.id, "right");

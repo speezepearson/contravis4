@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ccwRadsBetween, PI } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import { type InstructionAnimator } from "./_segment";
 import { californiaTwirlSegments } from "./californiaTwirl";
 
@@ -21,7 +21,7 @@ export const turnAsACoupleSegments: InstructionAnimator<
   const checked = new Set<string>();
   for (const id of who) {
     const them = Dancer.get(id, init).resolveMatch(
-      "person_larks_right_robins_left",
+      personInDir("larks_right_robins_left"),
     );
     const pairKey = [id, them.id].sort().join(",");
     if (checked.has(pairKey)) continue;

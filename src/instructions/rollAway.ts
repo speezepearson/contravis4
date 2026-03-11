@@ -23,10 +23,12 @@ import { Dancer } from "../worldState";
 import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
 import { hold, type InstructionAnimator } from "./_segment";
 
-export const RolleeSpecSchema = z.enum([
-  "person_on_right",
-  "person_on_left",
-  ...IrreducibleLabelSchema.options,
+export const RolleeSpecSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("PersonInDirection"),
+    dir: z.enum(["on_right", "on_left"]),
+  }),
+  z.object({ type: z.literal("label"), label: IrreducibleLabelSchema }),
 ]);
 export type RolleeSpec = z.infer<typeof RolleeSpecSchema>;
 null satisfies AssertExtends<RolleeSpec, CalledIdentifier>;

@@ -2,10 +2,12 @@ import type z from "zod";
 
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
+import { labelId, personInDir } from "../../instructions/_base";
 import {
   RollAwayInstructionSchema,
   RolleeSpecSchema,
 } from "../../instructions/rollAway";
+import { IrreducibleLabelSchema } from "../../labels";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
@@ -47,7 +49,11 @@ export function RollAwayFields({
       />
       {" roll away "}
       <CalledIdentifierDropdown
-        options={[...RolleeSpecSchema.options]}
+        options={[
+          personInDir("on_right"),
+          personInDir("on_left"),
+          ...IrreducibleLabelSchema.options.map((l) => labelId(l)),
+        ]}
         value={instruction.rollee}
         onChange={(v) => tryCommit({ rollee: RolleeSpecSchema.parse(v) })}
       />

@@ -3,13 +3,11 @@
  *
  * A "called identifier" resolves to a specific dancer (not a direction vector).
  *
- *   CalledIdentifier = Label | PersonInDirection
+ *   CalledIdentifier = { type: 'label', label } | { type: 'PersonInDirection', dir }
  *     The full set of identifiers that can appear in instruction schemas
  *     (e.g. as the "cid" field of a swing or allemande).
- *       - Label ("partner", "neighbor", "shadow_2", …)
- *           resolved via Dancer.resolveLabel using relationship tracking.
- *       - PersonInDirection ("person_on_right", "person_in_front", …)
- *           finds the nearest dancer in the given PureDirection (see directions.ts).
+ *       - label: resolved via Dancer.resolveLabel using relationship tracking.
+ *       - PersonInDirection: finds the nearest dancer in the given PureDirection.
  *
  * Resolution is done via Dancer methods (see worldState.ts):
  *   dancer.resolveCalledIdentifier(cid)
@@ -22,35 +20,78 @@
 import { z } from "zod";
 
 import { type PureDirection, PureDirectionSchema } from "./directions";
-import { LabelSchema } from "./labels";
-import { buildEnumRecord, stripPrefix } from "./utils";
+import { type Label, LabelSchema } from "./labels";
+import { assertNever } from "./utils";
 
-// ── CalledIdentifier: "the person [X]" — identifies a specific dancer ───
+// ── CalledIdentifier: discriminated union identifying a specific dancer ───
 
-export type PersonInDirection = `person_${PureDirection}`;
+export const LabelVariantSchema = z.object({
+  type: z.literal("label"),
+  label: LabelSchema,
+});
 
-export const PersonInDirectionSchema = z.enum(
-  PureDirectionSchema.options.map((d) => `person_${d}` as const),
-);
+export const PersonInDirectionVariantSchema = z.object({
+  type: z.literal("PersonInDirection"),
+  dir: PureDirectionSchema,
+});
 
-export const CalledIdentifierSchema = z.enum([
-  ...LabelSchema.options,
-  ...PersonInDirectionSchema.options,
+export const CalledIdentifierSchema = z.discriminatedUnion("type", [
+  LabelVariantSchema,
+  PersonInDirectionVariantSchema,
 ]);
 export type CalledIdentifier = z.infer<typeof CalledIdentifierSchema>;
 
-// ── Lookup map (used by Dancer methods in worldState.ts) ────────────────
+// ── Constructor helpers ─────────────────────────────────────────────────
 
-export const personInToDir = buildEnumRecord(PersonInDirectionSchema, (d) =>
-  stripPrefix("person_", d),
-);
+export function labelId(label: Label): CalledIdentifier & { type: "label" } {
+  return { type: "label", label };
+}
+export function personInDir(
+  dir: PureDirection,
+): CalledIdentifier & { type: "PersonInDirection" } {
+  return { type: "PersonInDirection", dir };
+}
+
+// ── All possible CalledIdentifier values (for UI enumeration) ───────────
+
+export const ALL_CALLED_IDENTIFIERS: CalledIdentifier[] = [
+  ...LabelSchema.options.map((label) => labelId(label)),
+  ...PureDirectionSchema.options.map((dir) => personInDir(dir)),
+];
+
+// ── Serialization (for use as dropdown keys, etc.) ──────────────────────
+
+export function calledIdentifierToKey(cid: CalledIdentifier): string {
+  switch (cid.type) {
+    case "label":
+      return `label:${cid.label}`;
+    case "PersonInDirection":
+      return `PersonInDirection:${cid.dir}`;
+    default:
+      assertNever(cid);
+  }
+}
+
+export function calledIdentifierFromKey(key: string): CalledIdentifier {
+  const [type, ...rest] = key.split(":");
+  const val = rest.join(":");
+  switch (type) {
+    case "label":
+      return labelId(LabelSchema.parse(val));
+    case "PersonInDirection":
+      return personInDir(PureDirectionSchema.parse(val));
+    default:
+      throw new Error(`Invalid CalledIdentifier key: ${key}`);
+  }
+}
 
 // ── Pure functions ──────────────────────────────────────────────────────
 
 export function inferRoleOfCalledIdentifier(
   cid: CalledIdentifier,
 ): "same" | "different" | null {
-  switch (cid) {
+  if (cid.type === "PersonInDirection") return null;
+  switch (cid.label) {
     case "neighbor":
     case "next_neighbor":
     case "next_x2_neighbor":

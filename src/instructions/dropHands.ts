@@ -9,7 +9,7 @@ export const DropHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("drop_hands"),
   beats: z.literal(0),
-  which: z.enum(["both", "left", "right", ...CalledIdentifierSchema.options]),
+  which: z.union([z.enum(["both", "left", "right"]), CalledIdentifierSchema]),
 });
 export type DropHandsInstruction = z.infer<typeof DropHandsInstructionSchema>;
 

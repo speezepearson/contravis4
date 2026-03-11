@@ -109,7 +109,11 @@ import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
 import { ZigZagFields } from "./fields/ZigZagFields";
-import { makeDefaultInstruction, makeInstructionId } from "./fieldUtils";
+import {
+  calledIdentifierToText,
+  makeDefaultInstruction,
+  makeInstructionId,
+} from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
@@ -146,7 +150,7 @@ function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
             onMouseEnter={() => highlightRel(seg.cid)}
             onMouseLeave={() => highlightRel(null)}
           >
-            {seg.cid}
+            {calledIdentifierToText(seg.cid)}
           </span>
         );
       })}

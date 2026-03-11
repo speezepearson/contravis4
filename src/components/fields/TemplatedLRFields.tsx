@@ -2,6 +2,8 @@ import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
+  ALL_CALLED_DIRECTIONS,
+  ALL_CALLED_IDENTIFIERS,
   CalledDirectionSchema,
   CalledIdentifierSchema,
 } from "../../instructions/_base";
@@ -9,8 +11,9 @@ import { TemplatedLRInstructionSchema } from "../../instructions/templatedLRInst
 import { BasisVectorSpecSchema } from "../../instructions/templates/_base";
 import { allLRTemplates } from "../../instructions/templates/index";
 import { typedSafeParse } from "../../utils";
+import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
+import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
 import type { SubFormProps } from "../fieldUtils";
-import { InlineDropdown } from "../InlineDropdown";
 
 export function TemplatedLRFields({
   instruction,
@@ -40,21 +43,18 @@ export function TemplatedLRFields({
   const basisX = template.basis.x;
   const basisY = template.basis.y;
 
-  const dirOptions = CalledDirectionSchema.options;
-  const cidOptions = CalledIdentifierSchema.options;
-
   return (
     <>
-      {basisX === "choreographer_specified_direction" && (
+      {basisX.type === "choreographer_specified_direction" && (
         <>
           {" basis X: "}
-          <InlineDropdown
-            options={[...dirOptions]}
-            value={
+          <CalledDirectionDropdown
+            options={ALL_CALLED_DIRECTIONS}
+            value={CalledDirectionSchema.parse(
               instruction.fields.basisX ??
-              template.basis.assumedX ??
-              BasisVectorSpecSchema.options[0]
-            }
+                template.basis.assumedX ??
+                ALL_CALLED_DIRECTIONS[0],
+            )}
             onChange={(val) =>
               tryCommit({
                 fields: {
@@ -66,16 +66,16 @@ export function TemplatedLRFields({
           />
         </>
       )}
-      {basisX === "choreographer_specified_identifier" && (
+      {basisX.type === "choreographer_specified_identifier" && (
         <>
           {" basis X: "}
-          <InlineDropdown
-            options={[...cidOptions]}
-            value={
+          <CalledIdentifierDropdown
+            options={ALL_CALLED_IDENTIFIERS}
+            value={CalledIdentifierSchema.parse(
               instruction.fields.basisX ??
-              template.basis.assumedX ??
-              BasisVectorSpecSchema.options[0]
-            }
+                template.basis.assumedX ??
+                ALL_CALLED_IDENTIFIERS[0],
+            )}
             onChange={(val) =>
               tryCommit({
                 fields: {
@@ -87,16 +87,16 @@ export function TemplatedLRFields({
           />
         </>
       )}
-      {basisY === "choreographer_specified_direction" && (
+      {basisY.type === "choreographer_specified_direction" && (
         <>
           {" basis Y: "}
-          <InlineDropdown
-            options={[...dirOptions]}
-            value={
+          <CalledDirectionDropdown
+            options={ALL_CALLED_DIRECTIONS}
+            value={CalledDirectionSchema.parse(
               instruction.fields.basisY ??
-              template.basis.assumedY ??
-              BasisVectorSpecSchema.options[0]
-            }
+                template.basis.assumedY ??
+                ALL_CALLED_DIRECTIONS[0],
+            )}
             onChange={(val) =>
               tryCommit({
                 fields: {
@@ -108,16 +108,16 @@ export function TemplatedLRFields({
           />
         </>
       )}
-      {basisY === "choreographer_specified_identifier" && (
+      {basisY.type === "choreographer_specified_identifier" && (
         <>
           {" basis Y: "}
-          <InlineDropdown
-            options={[...cidOptions]}
-            value={
+          <CalledIdentifierDropdown
+            options={ALL_CALLED_IDENTIFIERS}
+            value={CalledIdentifierSchema.parse(
               instruction.fields.basisY ??
-              template.basis.assumedY ??
-              BasisVectorSpecSchema.options[0]
-            }
+                template.basis.assumedY ??
+                ALL_CALLED_IDENTIFIERS[0],
+            )}
             onChange={(val) =>
               tryCommit({
                 fields: {

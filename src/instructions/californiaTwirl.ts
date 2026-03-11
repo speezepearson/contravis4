@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
-import { instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields, personInDir } from "./_base";
 import {
   arc,
   hold,
@@ -24,16 +24,19 @@ export const californiaTwirlSegments: InstructionAnimator<
 > = (instr): Segment[] => [
   {
     dur: instr.beats,
-    position: arc("person_larks_right_robins_left", {
+    position: arc(personInDir("larks_right_robins_left"), {
       semiMinor: 0.25,
       phi: PI,
     }),
     facing: lerpFacingTo(
       (dancer) => {
         // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
-        const them = dancer.resolveMatch("person_larks_right_robins_left", {
-          roles: "different",
-        });
+        const them = dancer.resolveMatch(
+          personInDir("larks_right_robins_left"),
+          {
+            roles: "different",
+          },
+        );
         const myRole = parseProtoId(dancer.protoId).role;
         return getDir({
           from: dancer.pos,
@@ -45,7 +48,7 @@ export const californiaTwirlSegments: InstructionAnimator<
       },
     ),
     hands: (dancer) => {
-      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
         roles: "different",
       });
       return isLark(dancer.protoId)
@@ -53,7 +56,7 @@ export const californiaTwirlSegments: InstructionAnimator<
         : hold(["left", them.id, "right"]);
     },
     interactedWith: (dancer) => [
-      dancer.resolveMatch("person_larks_right_robins_left").id,
+      dancer.resolveMatch(personInDir("larks_right_robins_left")).id,
     ],
   },
 ];

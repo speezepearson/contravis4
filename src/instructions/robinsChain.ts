@@ -4,7 +4,11 @@ import { type DancerId } from "../contraCore";
 import { lerpFacing, PI, revolve } from "../geometry";
 import { must } from "../utils";
 import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
-import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
+import {
+  CalledIdentifierSchema,
+  instructionBaseSchemaFields,
+  personInDir,
+} from "./_base";
 import {
   hold,
   type InstructionAnimator,
@@ -40,7 +44,7 @@ export const robinsChainSegments: InstructionAnimator<
   /** Lark → robin being sent away (setcounterclockwise from lark). */
   const getSendee = (dancer: Lark): Robin => {
     const res = must(
-      dancer.resolveCalledIdentifier("person_setcounterclockwise", {
+      dancer.resolveCalledIdentifier(personInDir("setcounterclockwise"), {
         roles: "different",
       }),
       [
@@ -107,7 +111,7 @@ export const robinsChainSegments: InstructionAnimator<
   const courtesyTurn: Segment = {
     dur: halfBeats,
     position: (dancer, frac) => {
-      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
         roles: "different",
       });
       const center = dancer.pos.add(them.pos).divide(2);
@@ -115,13 +119,13 @@ export const robinsChainSegments: InstructionAnimator<
     },
     facing: rotateFacingBy(() => PI),
     hands: (dancer) => {
-      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
         roles: "different",
       });
       return hold(["left", them.id, "left"], ["right", them.id, "right"]);
     },
     interactedWith: (dancer): DancerId[] => {
-      const them = dancer.resolveMatch("person_larks_right_robins_left", {
+      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
         roles: "different",
       });
       return [them.id];

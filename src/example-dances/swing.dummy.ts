@@ -10,7 +10,7 @@ export default typedParse(DanceSchema, {
       id: "1423e7f6-5df0-4c99-83ff-e26cdb14a6a6",
       beats: 16,
       type: "swing",
-      cid: "neighbor",
+      cid: { type: "label", label: "neighbor" },
       endFacing: "across",
     },
   ],

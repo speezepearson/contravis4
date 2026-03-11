@@ -3,7 +3,7 @@ import type z from "zod";
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
-  CalledIdentifierSchema,
+  ALL_CALLED_IDENTIFIERS,
   inferRoleOfCalledIdentifier,
 } from "../../instructions/_base";
 import { GiveAndTakeIntoSwingInstructionSchema } from "../../instructions/giveAndTakeIntoSwing";
@@ -50,7 +50,7 @@ export function GiveAndTakeIntoSwingFields({
       />
       {" draw "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options.filter(
+        options={ALL_CALLED_IDENTIFIERS.filter(
           (cid) => inferRoleOfCalledIdentifier(cid) !== "same",
         )}
         value={instruction.cid}

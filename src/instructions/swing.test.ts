@@ -8,6 +8,8 @@ import {
   getProgDirVec,
   isLark,
 } from "../contraCore";
+import { towardsLabel } from "../directions";
+import { labelId, personInDir } from "../identifiers";
 import { type InfallibleLabel } from "../labels";
 import { Dancer, type WorldState } from "../worldState";
 import { animateSegments } from "./_segment";
@@ -49,7 +51,7 @@ function initWithPartnerDistance(distance: number) {
 describe("robin disengage rotation", () => {
   it("robin disengage should be at most a half turn in 16-beat neighbor swing", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({ cid: "neighbor", endFacing: "across" });
+    const instr = makeInstr({ cid: labelId("neighbor"), endFacing: "across" });
     const segments = swingSegments(instr, init, allProtos);
     const animation = animateSegments(init, allProtos, segments);
 
@@ -87,7 +89,7 @@ describe("swing approach/orbit speed matching", () => {
   for (const distance of [0.25, 0.5, 1.0, 1.5]) {
     it(`velocity is smooth at approach→swing boundary (distance=${distance}m)`, () => {
       const init = initWithPartnerDistance(distance);
-      const instr = makeInstr({ cid: "partner", endFacing: "up" });
+      const instr = makeInstr({ cid: labelId("partner"), endFacing: "up" });
       const segments = swingSegments(instr, init, allProtos);
       const animation = animateSegments(init, allProtos, segments);
 
@@ -130,7 +132,9 @@ describe("swing endFacing=across snaps to half-integer grid", () => {
     },
   ]) {
     it(`every dancer ends at x=±0.5 and y=multiple of 0.5 (${label})`, () => {
-      const cid = label.includes("neighbor") ? "neighbor" : "partner";
+      const cid = label.includes("neighbor")
+        ? labelId("neighbor")
+        : labelId("partner");
       const final = swingFinalState(init, { endFacing: "across", cid });
 
       for (const id of allProtos) {
@@ -164,7 +168,7 @@ describe("post-swing alignment", () => {
   const base = produce(initFormationStates.improper, (draft) => {
     for (const id of ALL_PROTO_IDS)
       draft[id].facing = Dancer.get(id, draft).resolveCalledDirection(
-        "towards_partner",
+        towardsLabel("partner"),
       );
     draft.up_robin_0.pos = new Vector(0, draft.up_lark_0.pos.y);
     draft.down_robin_0.pos = new Vector(0, draft.down_lark_0.pos.y);
@@ -207,18 +211,18 @@ describe("post-swing alignment", () => {
     "$name: larks draw partners and end facing across → end up across from $expectedAcross",
     ({ init, expectedAcross }) => {
       const final = swingFinalState(init, {
-        cid: "partner",
+        cid: labelId("partner"),
         endFacing: "across",
       });
 
       for (const id of ALL_PROTO_IDS) {
         const actualAcross = Dancer.get(id, final).resolveCalledIdentifier(
-          "person_across",
+          personInDir("across"),
         );
         const expectedAcrossDancer = Dancer.get(
           id,
           final,
-        ).resolveCalledIdentifier(expectedAcross);
+        ).resolveCalledIdentifier(labelId(expectedAcross));
         expect(
           actualAcross?.id,
           `${id} should end up across from ${expectedAcrossDancer?.id}, but got ${actualAcross?.id}`,

@@ -1,8 +1,7 @@
 import { Vector } from "vecti";
 
 import { type DancerId } from "../../contraCore";
-import { CalledDirectionSchema } from "../../directions";
-import { must, parses } from "../../utils";
+import { must } from "../../utils";
 import { Dancer, type WorldState } from "../../worldState";
 import type {
   BasisSpec,
@@ -14,31 +13,37 @@ import type {
 /**
  * Resolve a concrete BasisVectorSpec into a world-space vector for a dancer.
  *
- * - CalledDirection → unit vector (via resolveCalledDirection)
- * - CalledIdentifier → displacement from dancer to target (non-unit, scales
- *   with distance)
+ * - CalledDirection variants (PureDirection, TowardsLabel, TowardsPerson)
+ *   → unit vector (via resolveCalledDirection)
+ * - CalledIdentifier variants (label, PersonInDirection)
+ *   → displacement from dancer to target (non-unit, scales with distance)
  */
 export function resolveBasisVector(
   spec: BasisVectorSpec,
   dancer: Dancer,
 ): Vector {
-  if (parses(CalledDirectionSchema, spec)) {
-    return dancer.resolveCalledDirection(spec);
+  switch (spec.type) {
+    case "PureDirection":
+    case "TowardsLabel":
+    case "TowardsPerson":
+      return dancer.resolveCalledDirection(spec);
+    case "label":
+    case "PersonInDirection": {
+      const target = dancer.resolveCalledIdentifier(spec);
+      if (!target) {
+        throw new Error(
+          `Can't resolve basis vector for ${dancer.id}: no matching dancer found`,
+        );
+      }
+      const disp = target.pos.subtract(dancer.pos);
+      if (disp.length() < 1e-9) {
+        throw new Error(
+          `Basis vector for ${dancer.id} is zero-length (target is at same position)`,
+        );
+      }
+      return disp;
+    }
   }
-  // CalledIdentifier: raw displacement vector (non-normalized)
-  const target = dancer.resolveCalledIdentifier(spec);
-  if (!target) {
-    throw new Error(
-      `Can't resolve basis vector "${spec}" for ${dancer.id}: no matching dancer found`,
-    );
-  }
-  const disp = target.pos.subtract(dancer.pos);
-  if (disp.length() < 1e-9) {
-    throw new Error(
-      `Basis vector "${spec}" for ${dancer.id} is zero-length (target is at same position)`,
-    );
-  }
-  return disp;
 }
 
 /**
@@ -52,8 +57,8 @@ function resolveSpec(
   assumed: BasisVectorSpec | undefined,
 ): BasisVectorSpec {
   if (
-    spec === "choreographer_specified_direction" ||
-    spec === "choreographer_specified_identifier"
+    spec.type === "choreographer_specified_direction" ||
+    spec.type === "choreographer_specified_identifier"
   ) {
     return must(fieldValue ?? assumed, [
       `Choreographer-specified basis has no value and no assumed default`,

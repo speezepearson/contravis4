@@ -6,10 +6,19 @@ export type SnazzySegment =
   | { dancerId: DancerId }
   | { cid: CalledIdentifier };
 
+function cidToString(cid: CalledIdentifier): string {
+  switch (cid.type) {
+    case "label":
+      return cid.label;
+    case "PersonInDirection":
+      return `person_${cid.dir}`;
+  }
+}
+
 function segmentToString(seg: SnazzySegment): string {
   if (typeof seg === "string") return seg;
   if ("dancerId" in seg) return seg.dancerId;
-  return seg.cid;
+  return cidToString(seg.cid);
 }
 
 export class SnazzyError extends Error {

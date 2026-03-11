@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
+import { labelId } from "../identifiers";
 import { type WorldState } from "../worldState";
 import { animateSegments, getSegmentFrameAtFrac } from "./_segment";
 import {
@@ -15,7 +16,7 @@ const instr: BalanceAndSwingInstruction = {
   id: "00000000-0000-0000-0000-000000000001",
   beats: 16,
   type: "balance_and_swing",
-  cid: "neighbor",
+  cid: labelId("neighbor"),
   endFacing: "across",
 };
 

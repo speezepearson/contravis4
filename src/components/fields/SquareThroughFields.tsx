@@ -2,7 +2,7 @@ import type z from "zod";
 
 import { HandSchema, otherHand } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { CalledIdentifierSchema } from "../../instructions/_base";
+import { ALL_CALLED_IDENTIFIERS } from "../../instructions/_base";
 import { SquareThroughInstructionSchema } from "../../instructions/squareThrough";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
@@ -57,13 +57,13 @@ export function SquareThroughFields({
       />
       {": "}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options}
+        options={ALL_CALLED_IDENTIFIERS}
         value={instruction.cid1}
         onChange={(cid1) => tryCommit({ cid1 })}
       />
       {` pull by ${instruction.firstHand}, `}
       <CalledIdentifierDropdown
-        options={CalledIdentifierSchema.options}
+        options={ALL_CALLED_IDENTIFIERS}
         value={instruction.cid2}
         onChange={(cid2) => tryCommit({ cid2 })}
       />

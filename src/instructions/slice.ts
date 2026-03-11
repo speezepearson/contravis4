@@ -6,7 +6,11 @@ import { roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors, must } from "../utils";
 import { connectHands, Dancer, getDancerSide } from "../worldState";
-import { instructionBaseSchemaFields, resolveCardinalDirection } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  personInDir,
+  resolveCardinalDirection,
+} from "./_base";
 import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
 import {
   advanceState,
@@ -29,7 +33,7 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
   who,
 ) => {
   // Pair up with cid = larks_right_robins_left
-  const cid = "person_larks_right_robins_left" as const;
+  const cid = personInDir("larks_right_robins_left");
 
   // Assert all dancers face roughly across
   for (const id of who) {

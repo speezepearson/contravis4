@@ -2,7 +2,10 @@ import { z } from "zod";
 
 import { ShadowLabelSchema } from "../labels";
 import { must } from "../utils";
-import { instructionBaseSchemaFields, PersonInDirectionSchema } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  PersonInDirectionVariantSchema,
+} from "./_base";
 import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetShadowInstructionSchema = z.object({
@@ -10,7 +13,7 @@ export const GreetShadowInstructionSchema = z.object({
   type: z.literal("greet_shadow"),
   beats: z.literal(0),
   label: ShadowLabelSchema,
-  cid: PersonInDirectionSchema,
+  cid: PersonInDirectionVariantSchema,
 });
 export type GreetShadowInstruction = z.infer<
   typeof GreetShadowInstructionSchema

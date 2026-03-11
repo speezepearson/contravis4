@@ -1,14 +1,17 @@
 import { z } from "zod";
 
 import { must } from "../utils";
-import { instructionBaseSchemaFields, PersonInDirectionSchema } from "./_base";
+import {
+  instructionBaseSchemaFields,
+  PersonInDirectionVariantSchema,
+} from "./_base";
 import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetNewNeighborsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
   type: z.literal("greet_new_neighbors"),
   beats: z.literal(0),
-  cid: PersonInDirectionSchema,
+  cid: PersonInDirectionVariantSchema,
 });
 export type GreetNewNeighborsInstruction = z.infer<
   typeof GreetNewNeighborsInstructionSchema
