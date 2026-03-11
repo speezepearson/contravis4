@@ -13,6 +13,7 @@ import {
 } from "../instructions/_base";
 import { type Label, LabelSchema } from "../labels";
 import { calledDirectionToText } from "./fieldUtils";
+import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { SearchableDropdown } from "./SearchableDropdown";
 
@@ -69,10 +70,6 @@ function pureDirectionLabel(dir: PureDirection): string {
       return "left diagonal";
     case "right_diagonal":
       return "right diagonal";
-    case "larks_left_robins_right":
-      return "larks left / robins right";
-    case "larks_right_robins_left":
-      return "larks right / robins left";
     case "setclockwise":
       return "set clockwise";
     case "setcounterclockwise":
@@ -165,8 +162,6 @@ const PURE_DIR_OPTIONS: PureDirection[] = [
   "behind",
   "left_diagonal",
   "right_diagonal",
-  "larks_left_robins_right",
-  "larks_right_robins_left",
   "setclockwise",
   "setcounterclockwise",
 ];
@@ -296,15 +291,13 @@ export function CalledDirectionEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">label:</span>
-                  <SearchableDropdown
+                  <InlineDropdown
                     options={LABEL_OPTIONS}
                     value={value.label}
                     getLabel={labelToShort}
                     onChange={(label) =>
                       onChange(towardsLabel(LabelSchema.parse(label)))
                     }
-                    onCommit={() => {}}
-                    selectOnly
                   />
                 </div>
               </div>
@@ -314,15 +307,13 @@ export function CalledDirectionEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">roughly:</span>
-                  <SearchableDropdown
+                  <InlineDropdown
                     options={PURE_DIR_OPTIONS}
                     value={value.roughDir}
                     getLabel={pureDirectionLabel}
                     onChange={(dir) =>
                       onChange(towardsPerson(dir satisfies PureDirection))
                     }
-                    onCommit={() => {}}
-                    selectOnly
                   />
                 </div>
               </div>
