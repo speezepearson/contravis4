@@ -4,8 +4,7 @@ import { useMemo, useState } from "react";
 import {
   ALL_BASE_CALLED_DIRECTIONS,
   type BaseCalledDirection,
-  baseCalledDirectionFromKey,
-  baseCalledDirectionToKey,
+  BaseCalledDirectionSchema,
   type CalledDirection,
   pureDir,
   type PureDirection,
@@ -13,8 +12,6 @@ import {
   towardsPerson,
 } from "../instructions/_base";
 import { type Label, LabelSchema } from "../labels";
-import { try_ } from "../utils";
-import { Dancer } from "../worldState";
 import { calledDirectionToText } from "./fieldUtils";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { SearchableDropdown } from "./SearchableDropdown";
@@ -112,6 +109,7 @@ function labelToShort(label: string): string {
 
 function buildCategories(
   options: readonly BaseCalledDirection[],
+  allowComposites: boolean,
 ): DirectionCategory[] {
   const cats: DirectionCategory[] = [];
   const seenPure = new Set<PureDirection>();
@@ -130,8 +128,10 @@ function buildCategories(
     cats.push({ kind: "towards_person" });
   }
 
-  cats.push({ kind: "per_role" });
-  cats.push({ kind: "per_prog_dir" });
+  if (allowComposites) {
+    cats.push({ kind: "per_role" });
+    cats.push({ kind: "per_prog_dir" });
+  }
 
   return cats;
 }
@@ -171,101 +171,27 @@ const PURE_DIR_OPTIONS: PureDirection[] = [
   "setcounterclockwise",
 ];
 
-// ── Flat base direction dropdown (used in PerRole/PerProgDir sub-sections) ─
-
-function BaseDirectionDropdown({
-  options,
-  value,
-  onChange,
-}: {
-  options: readonly BaseCalledDirection[];
-  value: BaseCalledDirection;
-  onChange: (value: BaseCalledDirection) => void;
-}) {
-  const { worldState: dancerStates } = useInstructionEdit();
-
-  const keyMap = useMemo(() => {
-    const map = new Map<string, BaseCalledDirection>();
-    for (const opt of options) {
-      map.set(baseCalledDirectionToKey(opt), opt);
-    }
-    return map;
-  }, [options]);
-
-  const sortedKeys = useMemo(() => {
-    const pureKeys: string[] = [];
-    const otherKeys: string[] = [];
-    for (const opt of options) {
-      const key = baseCalledDirectionToKey(opt);
-      if (opt.type === "PureDirection") pureKeys.push(key);
-      else otherKeys.push(key);
-    }
-
-    if (!dancerStates) return [...pureKeys, ...otherKeys];
-    const larkState = dancerStates["up_lark_0"];
-    otherKeys.sort((a, b) => {
-      const dirA = keyMap.get(a)!;
-      const dirB = keyMap.get(b)!;
-      const targetA = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledDirectionTarget(
-          dirA,
-        ),
-      );
-      if (targetA instanceof Error || !targetA) return 1;
-      const targetB = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledDirectionTarget(
-          dirB,
-        ),
-      );
-      if (targetB instanceof Error || !targetB) return -1;
-      const distA = larkState.pos.subtract(targetA.pos).length();
-      const distB = larkState.pos.subtract(targetB.pos).length();
-      if (Math.abs(distA - distB) > 1e-6) return distA - distB;
-      return a < b ? -1 : 1;
-    });
-    return [...pureKeys, ...otherKeys];
-  }, [options, dancerStates, keyMap]);
-
-  return (
-    <SearchableDropdown
-      options={sortedKeys}
-      value={baseCalledDirectionToKey(value)}
-      getLabel={(k) => {
-        const dir = keyMap.get(k);
-        return dir ? calledDirectionToText(dir) : k;
-      }}
-      onChange={(k) => {
-        const opt = keyMap.get(k);
-        if (opt) onChange(opt);
-        else {
-          try {
-            onChange(baseCalledDirectionFromKey(k));
-          } catch {
-            // ignore invalid keys
-          }
-        }
-      }}
-      selectOnly
-    />
-  );
-}
-
 // ── Main CalledDirectionEditor ──────────────────────────────────────────
 
 export function CalledDirectionEditor({
   value,
   onChange,
   baseOptions,
+  allowComposites = true,
 }: {
   value: CalledDirection;
   onChange: (value: CalledDirection) => void;
   baseOptions?: readonly BaseCalledDirection[];
+  allowComposites?: boolean;
 }) {
   const options = baseOptions ?? ALL_BASE_CALLED_DIRECTIONS;
   const [open, setOpen] = useState(false);
   const { onPopoverOpen } = useInstructionEdit();
 
-  const categories = useMemo(() => buildCategories(options), [options]);
+  const categories = useMemo(
+    () => buildCategories(options, allowComposites),
+    [options, allowComposites],
+  );
   const categoryKeys = useMemo(() => categories.map(categoryKey), [categories]);
   const categoryKeyMap = useMemo(() => {
     const map = new Map<string, DirectionCategory>();
@@ -298,6 +224,8 @@ export function CalledDirectionEditor({
     switch (cat.kind) {
       case "pure":
         onChange(pureDir(cat.dir));
+        // Pure direction is a leaf category — close the popover
+        setOpen(false);
         break;
       case "towards_label":
         if (value.type === "TowardsLabel") break;
@@ -361,10 +289,6 @@ export function CalledDirectionEditor({
                 return cat ? categoryLabel(cat) : k;
               }}
               onChange={handleCategoryChange}
-              onCommit={() => {
-                // Close if user selected a pure direction (no sub-options needed)
-                if (value.type === "PureDirection") setOpen(false);
-              }}
               selectOnly
             />
 
@@ -408,18 +332,30 @@ export function CalledDirectionEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">larks:</span>
-                  <BaseDirectionDropdown
-                    options={options}
+                  <CalledDirectionEditor
                     value={value.larks}
-                    onChange={(larks) => onChange({ ...value, larks })}
+                    onChange={(larks) =>
+                      onChange({
+                        ...value,
+                        larks: BaseCalledDirectionSchema.parse(larks),
+                      })
+                    }
+                    baseOptions={options}
+                    allowComposites={false}
                   />
                 </div>
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">robins:</span>
-                  <BaseDirectionDropdown
-                    options={options}
+                  <CalledDirectionEditor
                     value={value.robins}
-                    onChange={(robins) => onChange({ ...value, robins })}
+                    onChange={(robins) =>
+                      onChange({
+                        ...value,
+                        robins: BaseCalledDirectionSchema.parse(robins),
+                      })
+                    }
+                    baseOptions={options}
+                    allowComposites={false}
                   />
                 </div>
               </div>
@@ -429,18 +365,30 @@ export function CalledDirectionEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">ups:</span>
-                  <BaseDirectionDropdown
-                    options={options}
+                  <CalledDirectionEditor
                     value={value.ups}
-                    onChange={(ups) => onChange({ ...value, ups })}
+                    onChange={(ups) =>
+                      onChange({
+                        ...value,
+                        ups: BaseCalledDirectionSchema.parse(ups),
+                      })
+                    }
+                    baseOptions={options}
+                    allowComposites={false}
                   />
                 </div>
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">downs:</span>
-                  <BaseDirectionDropdown
-                    options={options}
+                  <CalledDirectionEditor
                     value={value.downs}
-                    onChange={(downs) => onChange({ ...value, downs })}
+                    onChange={(downs) =>
+                      onChange({
+                        ...value,
+                        downs: BaseCalledDirectionSchema.parse(downs),
+                      })
+                    }
+                    baseOptions={options}
+                    allowComposites={false}
                   />
                 </div>
               </div>

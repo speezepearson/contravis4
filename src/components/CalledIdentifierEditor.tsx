@@ -4,8 +4,7 @@ import { useContext, useMemo, useState } from "react";
 import {
   ALL_BASE_CALLED_IDENTIFIERS,
   type BaseCalledIdentifier,
-  baseCalledIdentifierFromKey,
-  baseCalledIdentifierToKey,
+  BaseCalledIdentifierSchema,
   type CalledIdentifier,
   labelId,
   type OnlyRole,
@@ -13,8 +12,6 @@ import {
   type PureDirection,
 } from "../instructions/_base";
 import { LabelSchema } from "../labels";
-import { try_ } from "../utils";
-import { Dancer } from "../worldState";
 import { calledIdentifierToText } from "./fieldUtils";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { CalledIdentifierHighlightContext } from "./RelationshipHighlightContext";
@@ -81,6 +78,7 @@ function labelToShort(label: string): string {
 
 function buildCategories(
   options: readonly BaseCalledIdentifier[],
+  allowComposites: boolean,
 ): IdentifierCategory[] {
   const cats: IdentifierCategory[] = [];
   const seenLabels = new Set<string>();
@@ -96,9 +94,10 @@ function buildCategories(
     cats.push({ kind: "person_in_direction" });
   }
 
-  // Always offer split options (they apply on top of base options)
-  cats.push({ kind: "per_role" });
-  cats.push({ kind: "per_prog_dir" });
+  if (allowComposites) {
+    cats.push({ kind: "per_role" });
+    cats.push({ kind: "per_prog_dir" });
+  }
 
   return cats;
 }
@@ -168,84 +167,6 @@ function onlyRoleLabel(role: OnlyRole): string {
   return role === "different" ? "different role" : "same role";
 }
 
-// ── Flat base identifier dropdown (used in PerRole/PerProgDir sub-sections) ─
-
-function BaseIdentifierDropdown({
-  options,
-  value,
-  onChange,
-  onInvalid,
-}: {
-  options: readonly BaseCalledIdentifier[];
-  value: BaseCalledIdentifier;
-  onChange: (value: BaseCalledIdentifier) => void;
-  onInvalid?: () => void;
-}) {
-  const highlightRelationship = useContext(CalledIdentifierHighlightContext);
-  const { worldState: dancerStates } = useInstructionEdit();
-
-  const keyMap = useMemo(() => {
-    const map = new Map<string, BaseCalledIdentifier>();
-    for (const opt of options) {
-      map.set(baseCalledIdentifierToKey(opt), opt);
-    }
-    return map;
-  }, [options]);
-
-  const sortedKeys = useMemo(() => {
-    const keys = options.map(baseCalledIdentifierToKey);
-    if (!dancerStates) return keys;
-    const larkState = dancerStates["up_lark_0"];
-    return [...keys].sort((a, b) => {
-      const cidA = keyMap.get(a)!;
-      const cidB = keyMap.get(b)!;
-      const targetA = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(cidA),
-      );
-      if (targetA instanceof Error || !targetA) return 1;
-      const targetB = try_(() =>
-        Dancer.get("up_lark_0", dancerStates).resolveCalledIdentifier(cidB),
-      );
-      if (targetB instanceof Error || !targetB) return -1;
-      const distA = larkState.pos.subtract(targetA.pos).length();
-      const distB = larkState.pos.subtract(targetB.pos).length();
-      if (Math.abs(distA - distB) > 1e-6) return distA - distB;
-      return a < b ? -1 : 1;
-    });
-  }, [options, dancerStates, keyMap]);
-
-  return (
-    <SearchableDropdown
-      options={sortedKeys}
-      value={baseCalledIdentifierToKey(value)}
-      getLabel={(k) => {
-        const cid = keyMap.get(k);
-        return cid ? calledIdentifierToText(cid) : k;
-      }}
-      onChange={(k) => {
-        const opt = keyMap.get(k);
-        if (opt) onChange(opt);
-        else {
-          try {
-            onChange(baseCalledIdentifierFromKey(k));
-          } catch {
-            onInvalid?.();
-          }
-        }
-      }}
-      onHighlight={(k) => {
-        if (!k) {
-          highlightRelationship(null);
-          return;
-        }
-        const cid = keyMap.get(k);
-        if (cid) highlightRelationship(cid);
-      }}
-      selectOnly
-    />
-  );
-}
-
 // ── Main CalledIdentifierEditor ─────────────────────────────────────────
 
 export function CalledIdentifierEditor({
@@ -253,18 +174,23 @@ export function CalledIdentifierEditor({
   onChange,
   baseOptions,
   onInvalid,
+  allowComposites = true,
 }: {
   value: CalledIdentifier;
   onChange: (value: CalledIdentifier) => void;
   baseOptions?: readonly BaseCalledIdentifier[];
   onInvalid?: () => void;
+  allowComposites?: boolean;
 }) {
   const options = baseOptions ?? ALL_BASE_CALLED_IDENTIFIERS;
   const [open, setOpen] = useState(false);
   const { onPopoverOpen } = useInstructionEdit();
   const highlightRelationship = useContext(CalledIdentifierHighlightContext);
 
-  const categories = useMemo(() => buildCategories(options), [options]);
+  const categories = useMemo(
+    () => buildCategories(options, allowComposites),
+    [options, allowComposites],
+  );
   const categoryKeys = useMemo(() => categories.map(categoryKey), [categories]);
   const categoryKeyMap = useMemo(() => {
     const map = new Map<string, IdentifierCategory>();
@@ -307,6 +233,8 @@ export function CalledIdentifierEditor({
     switch (cat.kind) {
       case "label":
         onChange(labelId(LabelSchema.parse(cat.label)));
+        // Label is a leaf category — close the popover
+        setOpen(false);
         break;
       case "person_in_direction":
         if (value.type === "PersonInDirection") break;
@@ -324,6 +252,19 @@ export function CalledIdentifierEditor({
         onChange({ type: "PerProgDir", ups: base, downs: base });
         break;
       }
+    }
+  }
+
+  function handleCategoryHighlight(key: string | null) {
+    if (!key) {
+      highlightRelationship(null);
+      return;
+    }
+    const cat = categoryKeyMap.get(key);
+    if (cat?.kind === "label") {
+      highlightRelationship(labelId(LabelSchema.parse(cat.label)));
+    } else {
+      highlightRelationship(null);
     }
   }
 
@@ -373,10 +314,7 @@ export function CalledIdentifierEditor({
                 return cat ? categoryLabel(cat) : k;
               }}
               onChange={handleCategoryChange}
-              onCommit={() => {
-                // Close if user selected a simple label (no sub-options needed)
-                if (value.type === "label") setOpen(false);
-              }}
+              onHighlight={handleCategoryHighlight}
               selectOnly
             />
 
@@ -415,20 +353,32 @@ export function CalledIdentifierEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">larks:</span>
-                  <BaseIdentifierDropdown
-                    options={options}
+                  <CalledIdentifierEditor
                     value={value.larks}
-                    onChange={(larks) => onChange({ ...value, larks })}
+                    onChange={(larks) =>
+                      onChange({
+                        ...value,
+                        larks: BaseCalledIdentifierSchema.parse(larks),
+                      })
+                    }
+                    baseOptions={options}
                     onInvalid={onInvalid}
+                    allowComposites={false}
                   />
                 </div>
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">robins:</span>
-                  <BaseIdentifierDropdown
-                    options={options}
+                  <CalledIdentifierEditor
                     value={value.robins}
-                    onChange={(robins) => onChange({ ...value, robins })}
+                    onChange={(robins) =>
+                      onChange({
+                        ...value,
+                        robins: BaseCalledIdentifierSchema.parse(robins),
+                      })
+                    }
+                    baseOptions={options}
                     onInvalid={onInvalid}
+                    allowComposites={false}
                   />
                 </div>
               </div>
@@ -438,20 +388,32 @@ export function CalledIdentifierEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">ups:</span>
-                  <BaseIdentifierDropdown
-                    options={options}
+                  <CalledIdentifierEditor
                     value={value.ups}
-                    onChange={(ups) => onChange({ ...value, ups })}
+                    onChange={(ups) =>
+                      onChange({
+                        ...value,
+                        ups: BaseCalledIdentifierSchema.parse(ups),
+                      })
+                    }
+                    baseOptions={options}
                     onInvalid={onInvalid}
+                    allowComposites={false}
                   />
                 </div>
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">downs:</span>
-                  <BaseIdentifierDropdown
-                    options={options}
+                  <CalledIdentifierEditor
                     value={value.downs}
-                    onChange={(downs) => onChange({ ...value, downs })}
+                    onChange={(downs) =>
+                      onChange({
+                        ...value,
+                        downs: BaseCalledIdentifierSchema.parse(downs),
+                      })
+                    }
+                    baseOptions={options}
                     onInvalid={onInvalid}
+                    allowComposites={false}
                   />
                 </div>
               </div>
