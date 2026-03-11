@@ -49,17 +49,15 @@ function cidToDirection(cid: CalledIdentifier): CalledDirection {
     case "label":
     case "PersonInDirection":
       return baseCidToDirection(cid);
-    case "roleFiltered":
-      return baseCidToDirection(cid.base);
-    case "byRole":
+    case "PerRole":
       return {
-        type: "byRole",
+        type: "PerRole",
         larks: baseCidToDirection(cid.larks),
         robins: baseCidToDirection(cid.robins),
       };
-    case "byProgDir":
+    case "PerProgDir":
       return {
-        type: "byProgDir",
+        type: "PerProgDir",
         ups: baseCidToDirection(cid.ups),
         downs: baseCidToDirection(cid.downs),
       };

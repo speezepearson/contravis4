@@ -207,10 +207,10 @@ export function calledDirectionToKey(cd: CalledDirection): string {
     case "TowardsLabel":
     case "TowardsPerson":
       return baseCalledDirectionToKey(cd);
-    case "byRole":
-      return `byRole:${baseCalledDirectionToKey(cd.larks)}|${baseCalledDirectionToKey(cd.robins)}`;
-    case "byProgDir":
-      return `byProgDir:${baseCalledDirectionToKey(cd.ups)}|${baseCalledDirectionToKey(cd.downs)}`;
+    case "PerRole":
+      return `PerRole:${baseCalledDirectionToKey(cd.larks)}|${baseCalledDirectionToKey(cd.robins)}`;
+    case "PerProgDir":
+      return `PerProgDir:${baseCalledDirectionToKey(cd.ups)}|${baseCalledDirectionToKey(cd.downs)}`;
     default:
       assertNever(cd);
   }
@@ -224,14 +224,14 @@ export function calledDirectionFromKey(key: string): CalledDirection {
     case "TowardsLabel":
     case "TowardsPerson":
       return baseCalledDirectionFromKey(key);
-    case "byRole": {
+    case "PerRole": {
       const [larksKey, robinsKey] = val.split("|");
       return perRoleDir(
         baseCalledDirectionFromKey(larksKey),
         baseCalledDirectionFromKey(robinsKey),
       );
     }
-    case "byProgDir": {
+    case "PerProgDir": {
       const [upsKey, downsKey] = val.split("|");
       return perProgDirDir(
         baseCalledDirectionFromKey(upsKey),

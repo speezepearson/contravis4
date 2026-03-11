@@ -42,7 +42,7 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
 
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch(personInDir("across"), { roles: "different" });
+    orig(d).resolveMatch(personInDir("across", "different"));
 
   // Assert all dancers face roughly up or down, and same direction as person across
   for (const id of who) {

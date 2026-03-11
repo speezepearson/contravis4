@@ -33,10 +33,10 @@ export const robinsChainSegments: InstructionAnimator<
 
   /** Robin → receiving lark (given by cid). */
   const getReceiver = (dancer: Robin): Lark => {
-    const res = must(
-      dancer.resolveCalledIdentifier(instr.cid, { roles: "different" }),
-      [{ dancerId: dancer.id }, "has no receiver lark for chain"],
-    );
+    const res = must(dancer.resolveCalledIdentifier(instr.cid), [
+      { dancerId: dancer.id },
+      "has no receiver lark for chain",
+    ]);
     if (!res.isLark()) throw new Error("programming error");
     return res;
   };
@@ -44,9 +44,9 @@ export const robinsChainSegments: InstructionAnimator<
   /** Lark → robin being sent away (setcounterclockwise from lark). */
   const getSendee = (dancer: Lark): Robin => {
     const res = must(
-      dancer.resolveCalledIdentifier(personInDir("setcounterclockwise"), {
-        roles: "different",
-      }),
+      dancer.resolveCalledIdentifier(
+        personInDir("setcounterclockwise", "different"),
+      ),
       [
         { dancerId: dancer.id },
         "has no robin in setcounterclockwise direction to send on a chain",
@@ -111,23 +111,23 @@ export const robinsChainSegments: InstructionAnimator<
   const courtesyTurn: Segment = {
     dur: halfBeats,
     position: (dancer, frac) => {
-      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
-        roles: "different",
-      });
+      const them = dancer.resolveMatch(
+        personInDir("larks_right_robins_left", "different"),
+      );
       const center = dancer.pos.add(them.pos).divide(2);
       return revolve(dancer.pos, { around: center, radians: PI * frac });
     },
     facing: rotateFacingBy(() => PI),
     hands: (dancer) => {
-      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
-        roles: "different",
-      });
+      const them = dancer.resolveMatch(
+        personInDir("larks_right_robins_left", "different"),
+      );
       return hold(["left", them.id, "left"], ["right", them.id, "right"]);
     },
     interactedWith: (dancer): DancerId[] => {
-      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
-        roles: "different",
-      });
+      const them = dancer.resolveMatch(
+        personInDir("larks_right_robins_left", "different"),
+      );
       return [them.id];
     },
   };

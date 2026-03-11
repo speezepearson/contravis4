@@ -50,8 +50,8 @@ export function RollAwayFields({
       {" roll away "}
       <CalledIdentifierEditor
         baseOptions={[
-          personInDir("on_right"),
-          personInDir("on_left"),
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
           ...IrreducibleLabelSchema.options.map((l) => labelId(l)),
         ]}
         value={instruction.rollee}

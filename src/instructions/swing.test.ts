@@ -217,7 +217,7 @@ describe("post-swing alignment", () => {
 
       for (const id of ALL_PROTO_IDS) {
         const actualAcross = Dancer.get(id, final).resolveCalledIdentifier(
-          personInDir("across"),
+          personInDir("across", "different"),
         );
         const expectedAcrossDancer = Dancer.get(
           id,

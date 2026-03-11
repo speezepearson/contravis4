@@ -80,14 +80,14 @@ export const formLongWavesSegments: InstructionAnimator<
         draft,
         id,
         "left",
-        snapped.resolveMatch(personInDir("on_left")).id,
+        snapped.resolveMatch(personInDir("on_left", "different")).id,
         "left",
       );
       connectHands(
         draft,
         id,
         "right",
-        snapped.resolveMatch(personInDir("on_right")).id,
+        snapped.resolveMatch(personInDir("on_right", "different")).id,
         "right",
       );
     }),

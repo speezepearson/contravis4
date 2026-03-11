@@ -3,13 +3,12 @@
  *
  * A "called identifier" resolves to a specific dancer (not a direction vector).
  *
- *   BaseCalledIdentifier = { type: 'label', label } | { type: 'PersonInDirection', dir }
+ *   BaseCalledIdentifier = { type: 'label', label } | { type: 'PersonInDirection', dir, onlyRole }
  *     The atomic identifier types: label or person-in-direction.
  *
  *   CalledIdentifier = BaseCalledIdentifier
- *     | { type: 'roleFiltered', role, base }   — only match dancers with the given role
- *     | { type: 'byRole', larks, robins }       — different identifier for larks vs robins
- *     | { type: 'byProgDir', ups, downs }       — different identifier for ups vs downs
+ *     | { type: 'PerRole', larks, robins }       — different identifier for larks vs robins
+ *     | { type: 'PerProgDir', ups, downs }       — different identifier for ups vs downs
  *
  * Resolution is done via Dancer methods (see worldState.ts):
  *   dancer.resolveCalledIdentifier(cid)
@@ -21,12 +20,15 @@
 
 import { z } from "zod";
 
-import { type ProgressionDir, type Role, RoleSchema } from "./contraCore";
+import { type ProgressionDir, type Role } from "./contraCore";
 import { type PureDirection, PureDirectionSchema } from "./directions";
 import { type Label, LabelSchema } from "./labels";
 import { assertNever } from "./utils";
 
 // ── CalledIdentifier: discriminated union identifying a specific dancer ───
+
+export const OnlyRoleSchema = z.enum(["same", "different"]);
+export type OnlyRole = z.infer<typeof OnlyRoleSchema>;
 
 export const LabelVariantSchema = z.object({
   type: z.literal("label"),
@@ -36,7 +38,7 @@ export const LabelVariantSchema = z.object({
 export const PersonInDirectionVariantSchema = z.object({
   type: z.literal("PersonInDirection"),
   dir: PureDirectionSchema,
-  onlyRole: z.enum(['same', 'different']),
+  onlyRole: OnlyRoleSchema,
 });
 
 // Base: the atomic identifier types (no wrappers).
@@ -76,33 +78,30 @@ export function labelId(
 }
 export function personInDir(
   dir: PureDirection,
+  onlyRole: OnlyRole,
 ): BaseCalledIdentifier & { type: "PersonInDirection" } {
-  return { type: "PersonInDirection", dir };
+  return { type: "PersonInDirection", dir, onlyRole };
 }
-export function roleFilteredId(
-  role: Role,
-  base: BaseCalledIdentifier,
-): CalledIdentifier & { type: "roleFiltered" } {
-  return { type: "roleFiltered", role, base };
-}
-export function byRoleId(
+export function perRoleId(
   larks: BaseCalledIdentifier,
   robins: BaseCalledIdentifier,
-): CalledIdentifier & { type: "byRole" } {
-  return { type: "byRole", larks, robins };
+): CalledIdentifier & { type: "PerRole" } {
+  return { type: "PerRole", larks, robins };
 }
-export function byProgDirId(
+export function perProgDirId(
   ups: BaseCalledIdentifier,
   downs: BaseCalledIdentifier,
-): CalledIdentifier & { type: "byProgDir" } {
-  return { type: "byProgDir", ups, downs };
+): CalledIdentifier & { type: "PerProgDir" } {
+  return { type: "PerProgDir", ups, downs };
 }
 
 // ── All possible base CalledIdentifier values (for UI enumeration) ───────
 
 export const ALL_BASE_CALLED_IDENTIFIERS: BaseCalledIdentifier[] = [
   ...LabelSchema.options.map((label) => labelId(label)),
-  ...PureDirectionSchema.options.map((dir) => personInDir(dir)),
+  ...PureDirectionSchema.options.flatMap((dir) =>
+    OnlyRoleSchema.options.map((onlyRole) => personInDir(dir, onlyRole)),
+  ),
 ];
 
 /** @deprecated Use ALL_BASE_CALLED_IDENTIFIERS instead */
@@ -116,7 +115,7 @@ export function baseCalledIdentifierToKey(cid: BaseCalledIdentifier): string {
     case "label":
       return `label:${cid.label}`;
     case "PersonInDirection":
-      return `PersonInDirection:${cid.dir}`;
+      return `PersonInDirection:${cid.dir}:${cid.onlyRole}`;
     default:
       assertNever(cid);
   }
@@ -128,8 +127,13 @@ export function baseCalledIdentifierFromKey(key: string): BaseCalledIdentifier {
   switch (type) {
     case "label":
       return labelId(LabelSchema.parse(val));
-    case "PersonInDirection":
-      return personInDir(PureDirectionSchema.parse(val));
+    case "PersonInDirection": {
+      const [dir, onlyRole] = val.split(":");
+      return personInDir(
+        PureDirectionSchema.parse(dir),
+        OnlyRoleSchema.parse(onlyRole),
+      );
+    }
     default:
       throw new Error(`Invalid BaseCalledIdentifier key: ${key}`);
   }
@@ -140,12 +144,10 @@ export function calledIdentifierToKey(cid: CalledIdentifier): string {
     case "label":
     case "PersonInDirection":
       return baseCalledIdentifierToKey(cid);
-    case "roleFiltered":
-      return `roleFiltered:${cid.role}:${baseCalledIdentifierToKey(cid.base)}`;
-    case "byRole":
-      return `byRole:${baseCalledIdentifierToKey(cid.larks)}|${baseCalledIdentifierToKey(cid.robins)}`;
-    case "byProgDir":
-      return `byProgDir:${baseCalledIdentifierToKey(cid.ups)}|${baseCalledIdentifierToKey(cid.downs)}`;
+    case "PerRole":
+      return `PerRole:${baseCalledIdentifierToKey(cid.larks)}|${baseCalledIdentifierToKey(cid.robins)}`;
+    case "PerProgDir":
+      return `PerProgDir:${baseCalledIdentifierToKey(cid.ups)}|${baseCalledIdentifierToKey(cid.downs)}`;
     default:
       assertNever(cid);
   }
@@ -158,21 +160,16 @@ export function calledIdentifierFromKey(key: string): CalledIdentifier {
     case "label":
     case "PersonInDirection":
       return baseCalledIdentifierFromKey(key);
-    case "roleFiltered": {
-      const role = RoleSchema.parse(val.split(":")[0]);
-      const baseKey = val.split(":").slice(1).join(":");
-      return roleFilteredId(role, baseCalledIdentifierFromKey(baseKey));
-    }
-    case "byRole": {
+    case "PerRole": {
       const [larksKey, robinsKey] = val.split("|");
-      return byRoleId(
+      return perRoleId(
         baseCalledIdentifierFromKey(larksKey),
         baseCalledIdentifierFromKey(robinsKey),
       );
     }
-    case "byProgDir": {
+    case "PerProgDir": {
       const [upsKey, downsKey] = val.split("|");
-      return byProgDirId(
+      return perProgDirId(
         baseCalledIdentifierFromKey(upsKey),
         baseCalledIdentifierFromKey(downsKey),
       );
@@ -189,7 +186,7 @@ export function inferRoleOfCalledIdentifier(
 ): "same" | "different" | null {
   switch (cid.type) {
     case "PersonInDirection":
-      return null;
+      return cid.onlyRole;
     case "label":
       switch (cid.label) {
         case "neighbor":
@@ -211,10 +208,8 @@ export function inferRoleOfCalledIdentifier(
           return "same";
       }
       return null;
-    case "roleFiltered":
-      return inferRoleOfCalledIdentifier(cid.base);
-    case "byRole":
-    case "byProgDir":
+    case "PerRole":
+    case "PerProgDir":
       return null;
     default:
       assertNever(cid);
@@ -234,11 +229,9 @@ export function resolveCalledIdentifierForDancer(
     case "label":
     case "PersonInDirection":
       return cid;
-    case "roleFiltered":
-      return cid.base;
-    case "byRole":
+    case "PerRole":
       return role === "lark" ? cid.larks : cid.robins;
-    case "byProgDir":
+    case "PerProgDir":
       return progDir === "up" ? cid.ups : cid.downs;
     default:
       assertNever(cid);

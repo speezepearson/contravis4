@@ -49,8 +49,16 @@ export const longLineInCenterSegments: InstructionAnimator<
       hands: (dancer) => {
         if (getRole(dancer.protoId) !== instr.role) return {};
         return hold(
-          ["left", dancer.resolveMatch(personInDir("on_left")).id, "left"],
-          ["right", dancer.resolveMatch(personInDir("on_right")).id, "right"],
+          [
+            "left",
+            dancer.resolveMatch(personInDir("on_left", "same")).id,
+            "left",
+          ],
+          [
+            "right",
+            dancer.resolveMatch(personInDir("on_right", "same")).id,
+            "right",
+          ],
         );
       },
     },

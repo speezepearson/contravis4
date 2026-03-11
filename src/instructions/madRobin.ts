@@ -27,8 +27,7 @@ export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
   who,
 ) => {
   const orig = (d: Dancer) => d.at(init);
-  const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch(instr.cid, { roles: "different" });
+  const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
 
   // Assert all pairs are on the same side of the set
   for (const id of who) {

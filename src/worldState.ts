@@ -472,10 +472,16 @@ export class Dancer {
           this.facing,
           Dancer.dirFudges[cid.dir] ?? 0,
         );
-        return this.findDancerInDirection(dir, { roles: cid.onlyRole, ...opts });
+        return this.findDancerInDirection(dir, {
+          roles: cid.onlyRole,
+          ...opts,
+        });
       }
       case "PerRole":
-        return this.resolveCalledIdentifier(this.isLark() ? cid.larks : cid.robins, opts);
+        return this.resolveCalledIdentifier(
+          this.isLark() ? cid.larks : cid.robins,
+          opts,
+        );
       case "PerProgDir":
         return this.resolveCalledIdentifier(
           this.dir === "up" ? cid.ups : cid.downs,

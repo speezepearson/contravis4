@@ -13,15 +13,15 @@ import { calledDirectionToText } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
 
-type DirectionMode = "plain" | "byRole" | "byProgDir";
+type DirectionMode = "plain" | "PerRole" | "PerProgDir";
 
 const MODE_LABELS: Record<DirectionMode, string> = {
   plain: "plain",
-  byRole: "by role",
-  byProgDir: "by dir",
+  PerRole: "by role",
+  PerProgDir: "by dir",
 };
 
-const MODE_OPTIONS: DirectionMode[] = ["plain", "byRole", "byProgDir"];
+const MODE_OPTIONS: DirectionMode[] = ["plain", "PerRole", "PerProgDir"];
 
 function getMode(dir: CalledDirection): DirectionMode {
   switch (dir.type) {
@@ -29,10 +29,10 @@ function getMode(dir: CalledDirection): DirectionMode {
     case "TowardsLabel":
     case "TowardsPerson":
       return "plain";
-    case "byRole":
-      return "byRole";
-    case "byProgDir":
-      return "byProgDir";
+    case "PerRole":
+      return "PerRole";
+    case "PerProgDir":
+      return "PerProgDir";
   }
 }
 
@@ -42,9 +42,9 @@ function getBaseValue(dir: CalledDirection): BaseCalledDirection {
     case "TowardsLabel":
     case "TowardsPerson":
       return dir;
-    case "byRole":
+    case "PerRole":
       return dir.larks;
-    case "byProgDir":
+    case "PerProgDir":
       return dir.ups;
   }
 }
@@ -144,11 +144,11 @@ export function CalledDirectionEditor({
       case "plain":
         onChange(base);
         break;
-      case "byRole":
-        onChange({ type: "byRole", larks: base, robins: base });
+      case "PerRole":
+        onChange({ type: "PerRole", larks: base, robins: base });
         break;
-      case "byProgDir":
-        onChange({ type: "byProgDir", ups: base, downs: base });
+      case "PerProgDir":
+        onChange({ type: "PerProgDir", ups: base, downs: base });
         break;
     }
   }
@@ -168,7 +168,7 @@ export function CalledDirectionEditor({
           onChange={onChange}
         />
       )}
-      {mode === "byRole" && value.type === "byRole" && (
+      {mode === "PerRole" && value.type === "PerRole" && (
         <>
           {"larks: "}
           <BaseDirectionDropdown
@@ -184,7 +184,7 @@ export function CalledDirectionEditor({
           />
         </>
       )}
-      {mode === "byProgDir" && value.type === "byProgDir" && (
+      {mode === "PerProgDir" && value.type === "PerProgDir" && (
         <>
           {"ups: "}
           <BaseDirectionDropdown

@@ -11,12 +11,10 @@ function cidToString(cid: CalledIdentifier): string {
     case "label":
       return cid.label;
     case "PersonInDirection":
-      return `person_${cid.dir}`;
-    case "roleFiltered":
-      return `${cid.role}_${cidToString(cid.base)}`;
-    case "byRole":
+      return `person_${cid.dir}_${cid.onlyRole}`;
+    case "PerRole":
       return `larks_${cidToString(cid.larks)}_robins_${cidToString(cid.robins)}`;
-    case "byProgDir":
+    case "PerProgDir":
       return `ups_${cidToString(cid.ups)}_downs_${cidToString(cid.downs)}`;
   }
 }

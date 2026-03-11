@@ -40,7 +40,7 @@ export const rightLeftThroughSegments: InstructionAnimator<
         id,
         beats: pullByBeats,
         type: "pull_by",
-        cid: personInDir("across"),
+        cid: personInDir("across", "different"),
         hand: "right",
       },
       state,

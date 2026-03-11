@@ -33,7 +33,7 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
   who,
 ) => {
   // Pair up with cid = larks_right_robins_left
-  const cid = personInDir("larks_right_robins_left");
+  const cid = personInDir("larks_right_robins_left", "different");
 
   // Assert all dancers face roughly across
   for (const id of who) {

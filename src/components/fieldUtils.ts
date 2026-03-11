@@ -162,14 +162,14 @@ export function makeDefaultInstruction(
           id,
           type: "greet_new_neighbors",
           beats: 0,
-          cid: personInDir("in_front"),
+          cid: personInDir("in_front", "different"),
         };
       case "greet_shadow":
         return {
           id,
           type: "greet_shadow",
           beats: 0,
-          cid: personInDir("in_front"),
+          cid: personInDir("in_front", "different"),
           label: "shadow",
         };
       case "right_left_through":
@@ -179,7 +179,11 @@ export function makeDefaultInstruction(
           id,
           type: "roll_away",
           roller: "lark",
-          rollee: { type: "PersonInDirection", dir: "on_right" },
+          rollee: {
+            type: "PersonInDirection",
+            dir: "on_right",
+            onlyRole: "different",
+          },
           beats: 4,
         };
       case "rory_o_more":
@@ -433,9 +437,9 @@ export function calledDirectionToText(dir: CalledDirection): string {
       return `towards ${labelToIdentifierText(dir.label)}`;
     case "TowardsPerson":
       return `towards ${personInDirectionToText(dir.roughDir)}`;
-    case "byRole":
+    case "PerRole":
       return `(larks: ${calledDirectionToText(dir.larks)}, robins: ${calledDirectionToText(dir.robins)})`;
-    case "byProgDir":
+    case "PerProgDir":
       return `(ups: ${calledDirectionToText(dir.ups)}, downs: ${calledDirectionToText(dir.downs)})`;
     default:
       assertNever(dir);
@@ -447,12 +451,10 @@ export function calledIdentifierToText(cid: CalledIdentifier): string {
     case "label":
       return labelToIdentifierText(cid.label);
     case "PersonInDirection":
-      return personInDirectionToText(cid.dir);
-    case "roleFiltered":
-      return `${cid.role}: ${calledIdentifierToText(cid.base)}`;
-    case "byRole":
+      return `${personInDirectionToText(cid.dir)} (${cid.onlyRole} role)`;
+    case "PerRole":
       return `(larks: ${calledIdentifierToText(cid.larks)}, robins: ${calledIdentifierToText(cid.robins)})`;
-    case "byProgDir":
+    case "PerProgDir":
       return `(ups: ${calledIdentifierToText(cid.ups)}, downs: ${calledIdentifierToText(cid.downs)})`;
     default:
       assertNever(cid);

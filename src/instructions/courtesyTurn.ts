@@ -23,18 +23,18 @@ export const courtesyTurnSegments: InstructionAnimator<
   {
     dur: instr.beats,
     position: (dancer, frac) => {
-      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
-        roles: "different",
-      });
+      const them = dancer.resolveMatch(
+        personInDir("larks_right_robins_left", "different"),
+      );
       const myPos = dancer.pos;
       const center = myPos.add(them.pos).divide(2);
       return revolve(myPos, { around: center, radians: PI * frac });
     },
     facing: rotateFacingBy(() => PI),
     hands: (dancer) => {
-      const them = dancer.resolveMatch(personInDir("larks_right_robins_left"), {
-        roles: "different",
-      });
+      const them = dancer.resolveMatch(
+        personInDir("larks_right_robins_left", "different"),
+      );
       return hold(["left", them.id, "left"], ["right", them.id, "right"]);
     },
   },

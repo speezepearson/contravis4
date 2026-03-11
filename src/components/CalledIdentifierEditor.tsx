@@ -1,6 +1,5 @@
 import { useContext, useMemo } from "react";
 
-import type { Role } from "../contraCore";
 import {
   ALL_BASE_CALLED_IDENTIFIERS,
   type BaseCalledIdentifier,
@@ -15,35 +14,25 @@ import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { CalledIdentifierHighlightContext } from "./RelationshipHighlightContext";
 
-type IdentifierMode = "plain" | "byRole" | "byProgDir" | "roleFiltered";
+type IdentifierMode = "plain" | "PerRole" | "PerProgDir";
 
 const MODE_LABELS: Record<IdentifierMode, string> = {
   plain: "plain",
-  byRole: "by role",
-  byProgDir: "by dir",
-  roleFiltered: "filter",
+  PerRole: "by role",
+  PerProgDir: "by dir",
 };
 
-const MODE_OPTIONS: IdentifierMode[] = [
-  "plain",
-  "byRole",
-  "byProgDir",
-  "roleFiltered",
-];
-
-const ROLE_OPTIONS: Role[] = ["lark", "robin"];
+const MODE_OPTIONS: IdentifierMode[] = ["plain", "PerRole", "PerProgDir"];
 
 function getMode(cid: CalledIdentifier): IdentifierMode {
   switch (cid.type) {
     case "label":
     case "PersonInDirection":
       return "plain";
-    case "roleFiltered":
-      return "roleFiltered";
-    case "byRole":
-      return "byRole";
-    case "byProgDir":
-      return "byProgDir";
+    case "PerRole":
+      return "PerRole";
+    case "PerProgDir":
+      return "PerProgDir";
   }
 }
 
@@ -52,11 +41,9 @@ function getBaseValue(cid: CalledIdentifier): BaseCalledIdentifier {
     case "label":
     case "PersonInDirection":
       return cid;
-    case "roleFiltered":
-      return cid.base;
-    case "byRole":
+    case "PerRole":
       return cid.larks;
-    case "byProgDir":
+    case "PerProgDir":
       return cid.ups;
   }
 }
@@ -157,14 +144,11 @@ export function CalledIdentifierEditor({
       case "plain":
         onChange(base);
         break;
-      case "byRole":
-        onChange({ type: "byRole", larks: base, robins: base });
+      case "PerRole":
+        onChange({ type: "PerRole", larks: base, robins: base });
         break;
-      case "byProgDir":
-        onChange({ type: "byProgDir", ups: base, downs: base });
-        break;
-      case "roleFiltered":
-        onChange({ type: "roleFiltered", role: "lark", base });
+      case "PerProgDir":
+        onChange({ type: "PerProgDir", ups: base, downs: base });
         break;
     }
   }
@@ -185,23 +169,7 @@ export function CalledIdentifierEditor({
           onInvalid={onInvalid}
         />
       )}
-      {mode === "roleFiltered" && value.type === "roleFiltered" && (
-        <>
-          <InlineDropdown
-            options={ROLE_OPTIONS}
-            value={value.role}
-            onChange={(role) => onChange({ ...value, role })}
-          />
-          {": "}
-          <BaseIdentifierDropdown
-            options={options}
-            value={value.base}
-            onChange={(base) => onChange({ ...value, base })}
-            onInvalid={onInvalid}
-          />
-        </>
-      )}
-      {mode === "byRole" && value.type === "byRole" && (
+      {mode === "PerRole" && value.type === "PerRole" && (
         <>
           {"larks: "}
           <BaseIdentifierDropdown
@@ -219,7 +187,7 @@ export function CalledIdentifierEditor({
           />
         </>
       )}
-      {mode === "byProgDir" && value.type === "byProgDir" && (
+      {mode === "PerProgDir" && value.type === "PerProgDir" && (
         <>
           {"ups: "}
           <BaseIdentifierDropdown

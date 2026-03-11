@@ -36,8 +36,7 @@ export const giveAndTakeIntoSwingSegments: InstructionAnimator<
   const approachDur = 1;
   const swingDur = instr.beats - approachDur;
   const orig = (d: Dancer) => d.at(init);
-  const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch(instr.cid, { roles: "different" });
+  const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
 
   for (const id of ALL_PROTO_IDS) {
     const me = Dancer.get(id, init);

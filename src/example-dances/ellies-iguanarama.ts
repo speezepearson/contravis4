@@ -79,7 +79,11 @@ export default typedParse(DanceSchema, {
           id: "06a83f18-4e9c-4f20-bac9-a5fd92f8f9a0",
           beats: 4,
           type: "balance",
-          cid: { type: "PersonInDirection", dir: "on_right" },
+          cid: {
+            type: "PersonInDirection",
+            dir: "on_right",
+            onlyRole: "same",
+          },
         },
         {
           id: "4377ab1d-8819-4137-96ab-e169c93527d2",
@@ -121,7 +125,11 @@ export default typedParse(DanceSchema, {
           id: "0d2282d3-97de-4b2a-84f5-6fbb96a55529",
           beats: 6,
           type: "shoulder_round",
-          cid: { type: "PersonInDirection", dir: "in_front" },
+          cid: {
+            type: "PersonInDirection",
+            dir: "in_front",
+            onlyRole: "same",
+          },
           handedness: "left",
           rotations: 1,
         },
@@ -139,7 +147,7 @@ export default typedParse(DanceSchema, {
       id: "a3d8e1f5-6b9c-4207-8a5e-d4c7f2b3e601",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: { type: "PersonInDirection", dir: "across" },
+      cid: { type: "PersonInDirection", dir: "across", onlyRole: "different" },
     },
   ],
 });

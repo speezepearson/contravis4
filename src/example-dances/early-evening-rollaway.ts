@@ -100,7 +100,11 @@ export default typedParse(DanceSchema, {
       id: "01bcbd2e-dc42-44d2-a2f0-cecedf06bf96",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: { type: "PersonInDirection", dir: "in_front" },
+      cid: {
+        type: "PersonInDirection",
+        dir: "in_front",
+        onlyRole: "different",
+      },
     },
     // B2: next neighbors do si do (8)
     {

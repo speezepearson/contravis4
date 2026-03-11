@@ -82,7 +82,7 @@ export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
 ) => {
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch(personInDir("across"), { roles: "different" });
+    orig(d).resolveMatch(personInDir("across", "different"));
 
   const setupSegment = makeImmediateSegment(init, (id, draft) => {
     draft[id].facing = must(resolveCardinalDirection("across", draft[id].pos), [

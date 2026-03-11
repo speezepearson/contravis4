@@ -18,7 +18,11 @@ function makeInstr(
     beats: 2,
     type: "roll_away",
     roller: "lark",
-    rollee: { type: "PersonInDirection", dir: "on_right" },
+    rollee: {
+      type: "PersonInDirection",
+      dir: "on_right",
+      onlyRole: "different",
+    },
     ...overrides,
   };
 }
@@ -31,7 +35,11 @@ describe("rollAway", () => {
       });
       const instr = makeInstr({
         roller: "lark",
-        rollee: { type: "PersonInDirection", dir: "on_right" },
+        rollee: {
+          type: "PersonInDirection",
+          dir: "on_right",
+          onlyRole: "different",
+        },
       });
       expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
         "has no opposite-role",
@@ -50,7 +58,11 @@ describe("rollAway", () => {
       });
       const instr = makeInstr({
         roller: "lark",
-        rollee: { type: "PersonInDirection", dir: "on_right" },
+        rollee: {
+          type: "PersonInDirection",
+          dir: "on_right",
+          onlyRole: "different",
+        },
       });
       expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
         "both grabbed the same rollee",
@@ -62,7 +74,11 @@ describe("rollAway", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({
       roller: "lark",
-      rollee: { type: "PersonInDirection", dir: "on_right" },
+      rollee: {
+        type: "PersonInDirection",
+        dir: "on_right",
+        onlyRole: "different",
+      },
     });
     const animation = animateSegments(
       init,
