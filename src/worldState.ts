@@ -324,6 +324,16 @@ export class Dancer {
           ]);
         return getDir({ from: this.pos, to: them.pos });
       }
+      case "byRole":
+        return this.resolveCalledDirection(
+          this.isLark() ? dir.larks : dir.robins,
+          opts,
+        );
+      case "byProgDir":
+        return this.resolveCalledDirection(
+          this.dir === "up" ? dir.ups : dir.downs,
+          opts,
+        );
       default:
         assertNever(dir);
     }
@@ -343,6 +353,16 @@ export class Dancer {
         const pureDirVec = this.resolvePureDirection(dir.roughDir);
         return this.findDancerInDirection(pureDirVec) ?? undefined;
       }
+      case "byRole":
+        return this.resolveCalledDirectionTarget(
+          this.isLark() ? dir.larks : dir.robins,
+          opts,
+        );
+      case "byProgDir":
+        return this.resolveCalledDirectionTarget(
+          this.dir === "up" ? dir.ups : dir.downs,
+          opts,
+        );
       default:
         assertNever(dir);
     }
@@ -470,6 +490,21 @@ export class Dancer {
           ]);
         return res;
       }
+      case "roleFiltered": {
+        const res = this.resolveCalledIdentifier(cid.base, { roles, ...opts });
+        if (res && res.role !== cid.role) return undefined;
+        return res;
+      }
+      case "byRole":
+        return this.resolveCalledIdentifier(
+          this.isLark() ? cid.larks : cid.robins,
+          { roles, ...opts },
+        );
+      case "byProgDir":
+        return this.resolveCalledIdentifier(
+          this.dir === "up" ? cid.ups : cid.downs,
+          { roles, ...opts },
+        );
       default:
         assertNever(cid);
     }

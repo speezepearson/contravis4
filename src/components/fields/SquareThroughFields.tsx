@@ -2,10 +2,9 @@ import type z from "zod";
 
 import { HandSchema, otherHand } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { ALL_CALLED_IDENTIFIERS } from "../../instructions/_base";
 import { SquareThroughInstructionSchema } from "../../instructions/squareThrough";
 import { typedSafeParse } from "../../utils";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
+import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import type { SubFormProps } from "../fieldUtils";
 import { HAND_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
@@ -56,14 +55,12 @@ export function SquareThroughFields({
         getLabel={(v) => v}
       />
       {": "}
-      <CalledIdentifierDropdown
-        options={ALL_CALLED_IDENTIFIERS}
+      <CalledIdentifierEditor
         value={instruction.cid1}
         onChange={(cid1) => tryCommit({ cid1 })}
       />
       {` pull by ${instruction.firstHand}, `}
-      <CalledIdentifierDropdown
-        options={ALL_CALLED_IDENTIFIERS}
+      <CalledIdentifierEditor
         value={instruction.cid2}
         onChange={(cid2) => tryCommit({ cid2 })}
       />

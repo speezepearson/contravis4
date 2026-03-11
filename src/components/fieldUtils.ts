@@ -433,6 +433,10 @@ export function calledDirectionToText(dir: CalledDirection): string {
       return `towards ${labelToIdentifierText(dir.label)}`;
     case "TowardsPerson":
       return `towards ${personInDirectionToText(dir.roughDir)}`;
+    case "byRole":
+      return `(larks: ${calledDirectionToText(dir.larks)}, robins: ${calledDirectionToText(dir.robins)})`;
+    case "byProgDir":
+      return `(ups: ${calledDirectionToText(dir.ups)}, downs: ${calledDirectionToText(dir.downs)})`;
     default:
       assertNever(dir);
   }
@@ -444,6 +448,12 @@ export function calledIdentifierToText(cid: CalledIdentifier): string {
       return labelToIdentifierText(cid.label);
     case "PersonInDirection":
       return personInDirectionToText(cid.dir);
+    case "roleFiltered":
+      return `${cid.role}: ${calledIdentifierToText(cid.base)}`;
+    case "byRole":
+      return `(larks: ${calledIdentifierToText(cid.larks)}, robins: ${calledIdentifierToText(cid.robins)})`;
+    case "byProgDir":
+      return `(ups: ${calledIdentifierToText(cid.ups)}, downs: ${calledIdentifierToText(cid.downs)})`;
     default:
       assertNever(cid);
   }

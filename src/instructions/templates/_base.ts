@@ -2,20 +2,20 @@ import { z } from "zod";
 
 import { BeatsSchema, ProtoIdSchema, RoleSchema } from "../../contraCore";
 import {
-  ALL_CALLED_DIRECTIONS,
-  type CalledDirection,
-  calledDirectionFromKey,
-  CalledDirectionSchema,
-  calledDirectionToKey,
+  ALL_BASE_CALLED_DIRECTIONS,
+  type BaseCalledDirection,
+  baseCalledDirectionFromKey,
+  BaseCalledDirectionSchema,
+  baseCalledDirectionToKey,
   pureDir,
 } from "../../directions";
 import { VectorSchema } from "../../geometry";
 import {
-  ALL_CALLED_IDENTIFIERS,
-  type CalledIdentifier,
-  calledIdentifierFromKey,
-  CalledIdentifierSchema,
-  calledIdentifierToKey,
+  ALL_BASE_CALLED_IDENTIFIERS,
+  type BaseCalledIdentifier,
+  baseCalledIdentifierFromKey,
+  BaseCalledIdentifierSchema,
+  baseCalledIdentifierToKey,
 } from "../../identifiers";
 
 // ── Shared sub-schemas ──────────────────────────────────────────────────
@@ -37,8 +37,8 @@ const relStateSchema = z.object({
  * vector from the dancer to the identified person, scaling with distance).
  */
 export const BasisVectorSpecSchema = z.discriminatedUnion("type", [
-  ...CalledDirectionSchema.options,
-  ...CalledIdentifierSchema.options,
+  ...BaseCalledDirectionSchema.options,
+  ...BaseCalledIdentifierSchema.options,
 ]);
 export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
 
@@ -47,8 +47,8 @@ export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
  * or a placeholder for the choreographer to fill in.
  */
 export const BasisSpecSchema = z.discriminatedUnion("type", [
-  ...CalledDirectionSchema.options,
-  ...CalledIdentifierSchema.options,
+  ...BaseCalledDirectionSchema.options,
+  ...BaseCalledIdentifierSchema.options,
   z.object({ type: z.literal("choreographer_specified_direction") }),
   z.object({ type: z.literal("choreographer_specified_identifier") }),
 ]);
@@ -115,7 +115,7 @@ export type ChoreographerSpecifiedFields = z.infer<
 
 // ── BasisSpec serialization (for use in dropdowns) ─────────────────────
 
-function isCalledDirection(spec: BasisSpec): spec is CalledDirection {
+function isBaseCalledDirection(spec: BasisSpec): spec is BaseCalledDirection {
   return (
     spec.type === "PureDirection" ||
     spec.type === "TowardsLabel" ||
@@ -123,13 +123,13 @@ function isCalledDirection(spec: BasisSpec): spec is CalledDirection {
   );
 }
 
-function isCalledIdentifier(spec: BasisSpec): spec is CalledIdentifier {
+function isBaseCalledIdentifier(spec: BasisSpec): spec is BaseCalledIdentifier {
   return spec.type === "label" || spec.type === "PersonInDirection";
 }
 
 export function basisSpecToKey(spec: BasisSpec): string {
-  if (isCalledDirection(spec)) return calledDirectionToKey(spec);
-  if (isCalledIdentifier(spec)) return calledIdentifierToKey(spec);
+  if (isBaseCalledDirection(spec)) return baseCalledDirectionToKey(spec);
+  if (isBaseCalledIdentifier(spec)) return baseCalledIdentifierToKey(spec);
   return spec.type;
 }
 
@@ -148,14 +148,14 @@ export function basisSpecFromKey(key: string): BasisSpec {
     prefix === "TowardsLabel" ||
     prefix === "TowardsPerson"
   ) {
-    return calledDirectionFromKey(key);
+    return baseCalledDirectionFromKey(key);
   }
-  return calledIdentifierFromKey(key);
+  return baseCalledIdentifierFromKey(key);
 }
 
 export function basisVectorSpecToKey(spec: BasisVectorSpec): string {
-  if (isCalledDirection(spec)) return calledDirectionToKey(spec);
-  return calledIdentifierToKey(spec);
+  if (isBaseCalledDirection(spec)) return baseCalledDirectionToKey(spec);
+  return baseCalledIdentifierToKey(spec);
 }
 
 export function basisVectorSpecFromKey(key: string): BasisVectorSpec {
@@ -166,19 +166,19 @@ export function basisVectorSpecFromKey(key: string): BasisVectorSpec {
     prefix === "TowardsLabel" ||
     prefix === "TowardsPerson"
   ) {
-    return calledDirectionFromKey(key);
+    return baseCalledDirectionFromKey(key);
   }
-  return calledIdentifierFromKey(key);
+  return baseCalledIdentifierFromKey(key);
 }
 
 export const ALL_BASIS_SPECS: BasisSpec[] = [
-  ...ALL_CALLED_DIRECTIONS,
-  ...ALL_CALLED_IDENTIFIERS,
+  ...ALL_BASE_CALLED_DIRECTIONS,
+  ...ALL_BASE_CALLED_IDENTIFIERS,
   { type: "choreographer_specified_direction" },
   { type: "choreographer_specified_identifier" },
 ];
 
 export const ALL_BASIS_VECTOR_SPECS: BasisVectorSpec[] = [
-  ...ALL_CALLED_DIRECTIONS,
-  ...ALL_CALLED_IDENTIFIERS,
+  ...ALL_BASE_CALLED_DIRECTIONS,
+  ...ALL_BASE_CALLED_IDENTIFIERS,
 ];

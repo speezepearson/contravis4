@@ -1,10 +1,9 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { ALL_CALLED_DIRECTIONS } from "../../instructions/_base";
 import { StepInstructionSchema } from "../../instructions/step";
 import { typedSafeParse } from "../../utils";
-import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
+import { CalledDirectionEditor } from "../CalledDirectionEditor";
 import type { SubFormProps } from "../fieldUtils";
 import { InlineNumber } from "../InlineNumber";
 
@@ -35,8 +34,7 @@ export function StepFields({
 
   return (
     <>
-      <CalledDirectionDropdown
-        options={ALL_CALLED_DIRECTIONS}
+      <CalledDirectionEditor
         value={instruction.direction}
         onChange={(dir) => tryCommit({ direction: dir })}
       />{" "}
@@ -48,8 +46,7 @@ export function StepFields({
         suffix="m"
       />
       {" and face "}
-      <CalledDirectionDropdown
-        options={ALL_CALLED_DIRECTIONS}
+      <CalledDirectionEditor
         value={instruction.facing}
         onChange={(f) => tryCommit({ facing: f })}
       />
