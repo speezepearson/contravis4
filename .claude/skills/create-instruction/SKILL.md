@@ -126,12 +126,15 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   // ...existing...
 ]);
 
-// 3. Add to atomicSegmentAnimators registry (alphabetical order)
-export const atomicSegmentAnimators = {
-  // ...existing...
-  foo: fooSegments,
-  // ...existing...
-};
+// 3. Add case to makeAtomicInstructionSegments switch (alphabetical order)
+export function makeAtomicInstructionSegments(...) {
+  switch (instr.type) {
+    // ...existing...
+    case "foo":
+      return fooSegments(instr, init, who);
+    // ...existing...
+  }
+}
 ```
 
 ## 3. Field component: `src/components/fields/FooFields.tsx`
