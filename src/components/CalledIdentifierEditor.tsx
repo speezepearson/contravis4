@@ -13,6 +13,7 @@ import {
 } from "../instructions/_base";
 import { LabelSchema } from "../labels";
 import { calledIdentifierToText } from "./fieldUtils";
+import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
 import { CalledIdentifierHighlightContext } from "./RelationshipHighlightContext";
 import { SearchableDropdown } from "./SearchableDropdown";
@@ -128,8 +129,6 @@ const PURE_DIRECTION_OPTIONS: PureDirection[] = [
   "behind",
   "left_diagonal",
   "right_diagonal",
-  "larks_left_robins_right",
-  "larks_right_robins_left",
   "setclockwise",
   "setcounterclockwise",
 ];
@@ -148,10 +147,6 @@ function pureDirectionLabel(dir: PureDirection): string {
       return "left diagonal";
     case "right_diagonal":
       return "right diagonal";
-    case "larks_left_robins_right":
-      return "larks left / robins right";
-    case "larks_right_robins_left":
-      return "larks right / robins left";
     case "setclockwise":
       return "set clockwise";
     case "setcounterclockwise":
@@ -322,28 +317,24 @@ export function CalledIdentifierEditor({
               <div className="popover-sub-section">
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">direction:</span>
-                  <SearchableDropdown
+                  <InlineDropdown
                     options={availablePureDirs}
                     value={value.dir}
                     getLabel={pureDirectionLabel}
                     onChange={(dir) =>
                       onChange({ ...value, dir: dir satisfies PureDirection })
                     }
-                    onCommit={() => {}}
-                    selectOnly
                   />
                 </div>
                 <div className="popover-sub-row">
                   <span className="popover-sub-label">role filter:</span>
-                  <SearchableDropdown
+                  <InlineDropdown
                     options={ONLY_ROLE_OPTIONS}
                     value={value.onlyRole}
                     getLabel={onlyRoleLabel}
                     onChange={(role) =>
                       onChange({ ...value, onlyRole: role satisfies OnlyRole })
                     }
-                    onCommit={() => {}}
-                    selectOnly
                   />
                 </div>
               </div>

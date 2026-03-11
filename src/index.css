@@ -271,6 +271,7 @@ input[type="range"] {
   gap: 6px;
   padding-top: 6px;
   border-top: 1px solid #444;
+  font-size: 0.85em;
 }
 
 .popover-sub-row {
