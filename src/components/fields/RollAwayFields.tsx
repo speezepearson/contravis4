@@ -9,7 +9,7 @@ import {
 } from "../../instructions/rollAway";
 import { IrreducibleLabelSchema } from "../../labels";
 import { typedSafeParse } from "../../utils";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
+import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import type { SubFormProps } from "../fieldUtils";
 import { ROLE_OPTIONS } from "../fieldUtils";
 import { InlineDropdown } from "../InlineDropdown";
@@ -48,10 +48,10 @@ export function RollAwayFields({
         getLabel={(v) => v + "s"}
       />
       {" roll away "}
-      <CalledIdentifierDropdown
-        options={[
-          personInDir("on_right"),
-          personInDir("on_left"),
+      <CalledIdentifierEditor
+        baseOptions={[
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
           ...IrreducibleLabelSchema.options.map((l) => labelId(l)),
         ]}
         value={instruction.rollee}

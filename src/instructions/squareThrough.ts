@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { HandSchema, otherHand } from "../contraCore";
 import {
+  type BaseCalledDirection,
+  type BaseCalledIdentifier,
   type CalledDirection,
   type CalledIdentifier,
   CalledIdentifierSchema,
@@ -33,12 +35,32 @@ export type SquareThroughInstruction = z.infer<
   typeof SquareThroughInstructionSchema
 >;
 
-function cidToDirection(cid: CalledIdentifier): CalledDirection {
+function baseCidToDirection(cid: BaseCalledIdentifier): BaseCalledDirection {
   switch (cid.type) {
     case "label":
       return towardsLabel(cid.label);
     case "PersonInDirection":
       return towardsPerson(cid.dir);
+  }
+}
+
+function cidToDirection(cid: CalledIdentifier): CalledDirection {
+  switch (cid.type) {
+    case "label":
+    case "PersonInDirection":
+      return baseCidToDirection(cid);
+    case "PerRole":
+      return {
+        type: "PerRole",
+        larks: baseCidToDirection(cid.larks),
+        robins: baseCidToDirection(cid.robins),
+      };
+    case "PerProgDir":
+      return {
+        type: "PerProgDir",
+        ups: baseCidToDirection(cid.ups),
+        downs: baseCidToDirection(cid.downs),
+      };
   }
 }
 

@@ -257,6 +257,35 @@ input[type="range"] {
   border-color: #a0c4ff;
 }
 
+/* Popover section group — vertical layout for multi-part popovers */
+
+.popover-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popover-sub-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #444;
+}
+
+.popover-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popover-sub-label {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+  min-width: 4.5em;
+}
+
 .popover-number-input,
 .popover-text-input {
   background: #1e1e3a;

@@ -11,12 +11,12 @@
  *     ("on_left", "in_front", "right_diagonal", "larks_left_robins_right", …)
  *     Resolves to a vector using only the dancer's own position and facing.
  *
- *   CalledDirection = { type: 'PureDirection', dir } | { type: 'TowardsLabel', label } | { type: 'TowardsPerson', roughDir }
- *     The full set of directions that can appear in instruction schemas.
- *     The "towards" variants resolve by finding a target dancer first, then
- *     returning the direction from the source dancer to that target:
- *       - TowardsLabel: looks up the target by Label (see labels.ts).
- *       - TowardsPerson: finds the nearest dancer in the given PureDirection.
+ *   BaseCalledDirection = { type: 'PureDirection', dir } | { type: 'TowardsLabel', label } | { type: 'TowardsPerson', roughDir }
+ *     The atomic direction types.
+ *
+ *   CalledDirection = BaseCalledDirection
+ *     | { type: 'byRole', larks, robins }     — different direction for larks vs robins
+ *     | { type: 'byProgDir', ups, downs }     — different direction for ups vs downs
  *
  * Resolution is done via Dancer methods (see worldState.ts):
  *   dancer.resolvePureDirection(dir)
@@ -98,10 +98,34 @@ export const TowardsPersonVariantSchema = z.object({
   roughDir: PureDirectionSchema,
 });
 
+// Base: the atomic direction types (no wrappers).
+export const BaseCalledDirectionSchema = z.discriminatedUnion("type", [
+  PureDirectionVariantSchema,
+  TowardsLabelVariantSchema,
+  TowardsPersonVariantSchema,
+]);
+export type BaseCalledDirection = z.infer<typeof BaseCalledDirectionSchema>;
+
+// Wrapper variants.
+const PerRoleDirectionVariantSchema = z.object({
+  type: z.literal("PerRole"),
+  larks: BaseCalledDirectionSchema,
+  robins: BaseCalledDirectionSchema,
+});
+
+const PerProgDirDirectionVariantSchema = z.object({
+  type: z.literal("PerProgDir"),
+  ups: BaseCalledDirectionSchema,
+  downs: BaseCalledDirectionSchema,
+});
+
+// Full CalledDirection: base types + wrapper types.
 export const CalledDirectionSchema = z.discriminatedUnion("type", [
   PureDirectionVariantSchema,
   TowardsLabelVariantSchema,
   TowardsPersonVariantSchema,
+  PerRoleDirectionVariantSchema,
+  PerProgDirDirectionVariantSchema,
 ]);
 export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 
@@ -109,31 +133,47 @@ export type CalledDirection = z.infer<typeof CalledDirectionSchema>;
 
 export function pureDir(
   dir: PureDirection,
-): CalledDirection & { type: "PureDirection" } {
+): BaseCalledDirection & { type: "PureDirection" } {
   return { type: "PureDirection", dir };
 }
 export function towardsLabel(
   label: Label,
-): CalledDirection & { type: "TowardsLabel" } {
+): BaseCalledDirection & { type: "TowardsLabel" } {
   return { type: "TowardsLabel", label };
 }
 export function towardsPerson(
   roughDir: PureDirection,
-): CalledDirection & { type: "TowardsPerson" } {
+): BaseCalledDirection & { type: "TowardsPerson" } {
   return { type: "TowardsPerson", roughDir };
 }
+export function perRoleDir(
+  larks: BaseCalledDirection,
+  robins: BaseCalledDirection,
+): CalledDirection & { type: "PerRole" } {
+  return { type: "PerRole", larks, robins };
+}
+export function perProgDirDir(
+  ups: BaseCalledDirection,
+  downs: BaseCalledDirection,
+): CalledDirection & { type: "PerProgDir" } {
+  return { type: "PerProgDir", ups, downs };
+}
 
-// ── All possible CalledDirection values (for UI enumeration) ────────────
+// ── All possible base CalledDirection values (for UI enumeration) ────────
 
-export const ALL_CALLED_DIRECTIONS: CalledDirection[] = [
+export const ALL_BASE_CALLED_DIRECTIONS: BaseCalledDirection[] = [
   ...PureDirectionSchema.options.map((dir) => pureDir(dir)),
   ...LabelSchema.options.map((label) => towardsLabel(label)),
   ...PureDirectionSchema.options.map((roughDir) => towardsPerson(roughDir)),
 ];
 
+/** @deprecated Use ALL_BASE_CALLED_DIRECTIONS instead */
+export const ALL_CALLED_DIRECTIONS: BaseCalledDirection[] =
+  ALL_BASE_CALLED_DIRECTIONS;
+
 // ── Serialization (for use as dropdown keys, etc.) ──────────────────────
 
-export function calledDirectionToKey(cd: CalledDirection): string {
+export function baseCalledDirectionToKey(cd: BaseCalledDirection): string {
   switch (cd.type) {
     case "PureDirection":
       return `PureDirection:${cd.dir}`;
@@ -146,7 +186,7 @@ export function calledDirectionToKey(cd: CalledDirection): string {
   }
 }
 
-export function calledDirectionFromKey(key: string): CalledDirection {
+export function baseCalledDirectionFromKey(key: string): BaseCalledDirection {
   const [type, ...rest] = key.split(":");
   const val = rest.join(":");
   switch (type) {
@@ -156,6 +196,48 @@ export function calledDirectionFromKey(key: string): CalledDirection {
       return towardsLabel(LabelSchema.parse(val));
     case "TowardsPerson":
       return towardsPerson(PureDirectionSchema.parse(val));
+    default:
+      throw new Error(`Invalid BaseCalledDirection key: ${key}`);
+  }
+}
+
+export function calledDirectionToKey(cd: CalledDirection): string {
+  switch (cd.type) {
+    case "PureDirection":
+    case "TowardsLabel":
+    case "TowardsPerson":
+      return baseCalledDirectionToKey(cd);
+    case "PerRole":
+      return `PerRole:${baseCalledDirectionToKey(cd.larks)}|${baseCalledDirectionToKey(cd.robins)}`;
+    case "PerProgDir":
+      return `PerProgDir:${baseCalledDirectionToKey(cd.ups)}|${baseCalledDirectionToKey(cd.downs)}`;
+    default:
+      assertNever(cd);
+  }
+}
+
+export function calledDirectionFromKey(key: string): CalledDirection {
+  const [type, ...rest] = key.split(":");
+  const val = rest.join(":");
+  switch (type) {
+    case "PureDirection":
+    case "TowardsLabel":
+    case "TowardsPerson":
+      return baseCalledDirectionFromKey(key);
+    case "PerRole": {
+      const [larksKey, robinsKey] = val.split("|");
+      return perRoleDir(
+        baseCalledDirectionFromKey(larksKey),
+        baseCalledDirectionFromKey(robinsKey),
+      );
+    }
+    case "PerProgDir": {
+      const [upsKey, downsKey] = val.split("|");
+      return perProgDirDir(
+        baseCalledDirectionFromKey(upsKey),
+        baseCalledDirectionFromKey(downsKey),
+      );
+    }
     default:
       throw new Error(`Invalid CalledDirection key: ${key}`);
   }

@@ -42,7 +42,7 @@ export default typedParse(DanceSchema, {
       id: "c6217cc4-0a95-4855-b7f0-c971eda3ec9c",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: { type: "PersonInDirection", dir: "across" },
+      cid: { type: "PersonInDirection", dir: "across", onlyRole: "different" },
     },
     {
       id: "e1b1f774-6951-485d-8eb6-c1c41afdab94",
@@ -60,7 +60,7 @@ export default typedParse(DanceSchema, {
       id: "1737f73c-3af8-4bff-bd63-3eae7c771b00",
       beats: 4,
       type: "balance",
-      cid: { type: "PersonInDirection", dir: "across" },
+      cid: { type: "PersonInDirection", dir: "across", onlyRole: "different" },
     },
     {
       id: "027759c2-a802-4d55-b316-c35439427f83",
@@ -71,7 +71,7 @@ export default typedParse(DanceSchema, {
       id: "9bb3d48b-11cd-42fc-8ac3-023ebb680ae1",
       beats: 4,
       type: "balance",
-      cid: { type: "PersonInDirection", dir: "across" },
+      cid: { type: "PersonInDirection", dir: "across", onlyRole: "different" },
     },
     {
       id: "a53a536b-ad2c-4611-b906-58b61e31bed8",

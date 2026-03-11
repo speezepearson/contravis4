@@ -1,10 +1,9 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { ALL_CALLED_DIRECTIONS } from "../../instructions/_base";
 import { FaceInstructionSchema } from "../../instructions/face";
 import { typedSafeParse } from "../../utils";
-import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
+import { CalledDirectionEditor } from "../CalledDirectionEditor";
 import type { SubFormProps } from "../fieldUtils";
 
 export function FaceFields({
@@ -32,8 +31,7 @@ export function FaceFields({
 
   return (
     <>
-      <CalledDirectionDropdown
-        options={ALL_CALLED_DIRECTIONS}
+      <CalledDirectionEditor
         value={instruction.direction}
         onChange={(f) => tryCommit({ direction: f })}
       />

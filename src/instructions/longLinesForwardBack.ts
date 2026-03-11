@@ -66,9 +66,7 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         [
           "left",
           must(
-            dancer.resolveCalledIdentifier(personInDir("on_left"), {
-              roles: "different",
-            }),
+            dancer.resolveCalledIdentifier(personInDir("on_left", "different")),
             [{ dancerId: dancer.id }, "has nobody on the left"],
           ).id,
           "right",
@@ -76,9 +74,9 @@ export const longLinesForwardBackSegments: InstructionAnimator<
         [
           "right",
           must(
-            dancer.resolveCalledIdentifier(personInDir("on_right"), {
-              roles: "different",
-            }),
+            dancer.resolveCalledIdentifier(
+              personInDir("on_right", "different"),
+            ),
             [{ dancerId: dancer.id }, "has nobody on the right"],
           ).id,
           "left",

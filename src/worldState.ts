@@ -66,9 +66,7 @@ export const DancerHandPointerSchema = z.object({
 export type DancerHandPointer = z.infer<typeof DancerHandPointerSchema>;
 
 type ResolveLabelOpts = { checkDistance?: boolean };
-type ResolveCalledIdentifierOpts = {
-  roles?: "same" | "different";
-} & ResolveLabelOpts;
+type ResolveCalledIdentifierOpts = ResolveLabelOpts;
 
 export type Lark = Dancer & { role: "lark" };
 export type Robin = Dancer & { role: "robin" };
@@ -324,6 +322,16 @@ export class Dancer {
           ]);
         return getDir({ from: this.pos, to: them.pos });
       }
+      case "PerRole":
+        return this.resolveCalledDirection(
+          this.isLark() ? dir.larks : dir.robins,
+          opts,
+        );
+      case "PerProgDir":
+        return this.resolveCalledDirection(
+          this.dir === "up" ? dir.ups : dir.downs,
+          opts,
+        );
       default:
         assertNever(dir);
     }
@@ -343,6 +351,16 @@ export class Dancer {
         const pureDirVec = this.resolvePureDirection(dir.roughDir);
         return this.findDancerInDirection(pureDirVec) ?? undefined;
       }
+      case "PerRole":
+        return this.resolveCalledDirectionTarget(
+          this.isLark() ? dir.larks : dir.robins,
+          opts,
+        );
+      case "PerProgDir":
+        return this.resolveCalledDirectionTarget(
+          this.dir === "up" ? dir.ups : dir.downs,
+          opts,
+        );
       default:
         assertNever(dir);
     }
@@ -352,9 +370,9 @@ export class Dancer {
   findDancerInCalledDirection(
     side: CalledDirection,
     opts: ResolveCalledIdentifierOpts = {},
-  ): Dancer | null {
+  ): Dancer | undefined {
     const dir = this.resolveCalledDirection(side, opts);
-    return this.findDancerInDirection(dir, opts);
+    return this.findDancerInDirection(dir);
   }
 
   /** True when this dancer faces roughly away from the center line (x = 0). */
@@ -389,12 +407,12 @@ export class Dancer {
   findDancerInDirection(
     dir: Vector,
     { roles }: { roles?: "same" | "different" } = {},
-  ): Dancer | null {
+  ): Dancer | undefined {
     dir = dir.normalize();
     const protos = this.worldState;
 
     let bestScore = Infinity;
-    let bestTarget: Dancer | null = null;
+    let bestTarget: Dancer | undefined = undefined;
 
     for (const otherProtoId of ALL_PROTO_IDS) {
       if (otherProtoId === this.id) continue;
@@ -439,7 +457,7 @@ export class Dancer {
   };
   resolveCalledIdentifier(
     cid: CalledIdentifier,
-    { roles, ...opts }: ResolveCalledIdentifierOpts = {},
+    opts: ResolveCalledIdentifierOpts = {},
   ): Dancer | undefined {
     switch (cid.type) {
       case "label":
@@ -454,22 +472,21 @@ export class Dancer {
           this.facing,
           Dancer.dirFudges[cid.dir] ?? 0,
         );
-        const res = this.findDancerInDirection(dir, { roles });
-        if (!res) return undefined;
-        if (roles === "same" && res.role !== this.role)
-          throw new SnazzyError([
-            "it's crazy to ask for somebody's ",
-            { cid },
-            ` with the ${roles} role`,
-          ]);
-        if (roles === "different" && res.role === this.role)
-          throw new SnazzyError([
-            "it's crazy to ask for somebody's ",
-            { cid },
-            ` with the ${roles} role`,
-          ]);
-        return res;
+        return this.findDancerInDirection(dir, {
+          roles: cid.onlyRole,
+          ...opts,
+        });
       }
+      case "PerRole":
+        return this.resolveCalledIdentifier(
+          this.isLark() ? cid.larks : cid.robins,
+          opts,
+        );
+      case "PerProgDir":
+        return this.resolveCalledIdentifier(
+          this.dir === "up" ? cid.ups : cid.downs,
+          opts,
+        );
       default:
         assertNever(cid);
     }

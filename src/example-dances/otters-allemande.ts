@@ -119,7 +119,11 @@ export default typedParse(DanceSchema, {
       id: "c7f2a4b8-3d6e-4901-a5c8-e9d1b3f7a205",
       beats: 0,
       type: "greet_new_neighbors",
-      cid: { type: "PersonInDirection", dir: "in_front" },
+      cid: {
+        type: "PersonInDirection",
+        dir: "in_front",
+        onlyRole: "different",
+      },
     },
   ],
 });

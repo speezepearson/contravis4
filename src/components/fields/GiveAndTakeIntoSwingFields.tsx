@@ -3,12 +3,12 @@ import type z from "zod";
 import { RoleSchema } from "../../contraCore";
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
-  ALL_CALLED_IDENTIFIERS,
+  ALL_BASE_CALLED_IDENTIFIERS,
   inferRoleOfCalledIdentifier,
 } from "../../instructions/_base";
 import { GiveAndTakeIntoSwingInstructionSchema } from "../../instructions/giveAndTakeIntoSwing";
 import { typedSafeParse } from "../../utils";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
+import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
 import type { SubFormProps } from "../fieldUtils";
 import { ROLE_OPTIONS } from "../fieldUtils";
@@ -49,8 +49,8 @@ export function GiveAndTakeIntoSwingFields({
         getLabel={(v) => v + "s"}
       />
       {" draw "}
-      <CalledIdentifierDropdown
-        options={ALL_CALLED_IDENTIFIERS.filter(
+      <CalledIdentifierEditor
+        baseOptions={ALL_BASE_CALLED_IDENTIFIERS.filter(
           (cid) => inferRoleOfCalledIdentifier(cid) !== "same",
         )}
         value={instruction.cid}

@@ -1,7 +1,7 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { labelId } from "../../instructions/_base";
+import { calledIdentifierToKey, labelId } from "../../instructions/_base";
 import {
   type DropHandsInstruction,
   DropHandsInstructionSchema,
@@ -14,8 +14,7 @@ import { InlineDropdown } from "../InlineDropdown";
 
 function whichToKey(which: DropHandsInstruction["which"]): string {
   if (typeof which === "string") return which;
-  if (which.type === "label") return which.label;
-  return `PersonInDirection:${which.dir}`;
+  return calledIdentifierToKey(which);
 }
 
 function whichFromKey(key: string): DropHandsInstruction["which"] {

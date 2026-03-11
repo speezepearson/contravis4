@@ -2,8 +2,8 @@ import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
-  ALL_CALLED_DIRECTIONS,
-  ALL_CALLED_IDENTIFIERS,
+  ALL_BASE_CALLED_DIRECTIONS,
+  ALL_BASE_CALLED_IDENTIFIERS,
   CalledDirectionSchema,
   CalledIdentifierSchema,
 } from "../../instructions/_base";
@@ -11,8 +11,8 @@ import { TemplatedLRInstructionSchema } from "../../instructions/templatedLRInst
 import { BasisVectorSpecSchema } from "../../instructions/templates/_base";
 import { allLRTemplates } from "../../instructions/templates/index";
 import { typedSafeParse } from "../../utils";
-import { CalledDirectionDropdown } from "../CalledDirectionDropdown";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
+import { CalledDirectionEditor } from "../CalledDirectionEditor";
+import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import type { SubFormProps } from "../fieldUtils";
 
 export function TemplatedLRFields({
@@ -48,12 +48,11 @@ export function TemplatedLRFields({
       {basisX.type === "choreographer_specified_direction" && (
         <>
           {" basis X: "}
-          <CalledDirectionDropdown
-            options={ALL_CALLED_DIRECTIONS}
+          <CalledDirectionEditor
             value={CalledDirectionSchema.parse(
               instruction.fields.basisX ??
                 template.basis.assumedX ??
-                ALL_CALLED_DIRECTIONS[0],
+                ALL_BASE_CALLED_DIRECTIONS[0],
             )}
             onChange={(val) =>
               tryCommit({
@@ -69,12 +68,11 @@ export function TemplatedLRFields({
       {basisX.type === "choreographer_specified_identifier" && (
         <>
           {" basis X: "}
-          <CalledIdentifierDropdown
-            options={ALL_CALLED_IDENTIFIERS}
+          <CalledIdentifierEditor
             value={CalledIdentifierSchema.parse(
               instruction.fields.basisX ??
                 template.basis.assumedX ??
-                ALL_CALLED_IDENTIFIERS[0],
+                ALL_BASE_CALLED_IDENTIFIERS[0],
             )}
             onChange={(val) =>
               tryCommit({
@@ -90,12 +88,11 @@ export function TemplatedLRFields({
       {basisY.type === "choreographer_specified_direction" && (
         <>
           {" basis Y: "}
-          <CalledDirectionDropdown
-            options={ALL_CALLED_DIRECTIONS}
+          <CalledDirectionEditor
             value={CalledDirectionSchema.parse(
               instruction.fields.basisY ??
                 template.basis.assumedY ??
-                ALL_CALLED_DIRECTIONS[0],
+                ALL_BASE_CALLED_DIRECTIONS[0],
             )}
             onChange={(val) =>
               tryCommit({
@@ -111,12 +108,11 @@ export function TemplatedLRFields({
       {basisY.type === "choreographer_specified_identifier" && (
         <>
           {" basis Y: "}
-          <CalledIdentifierDropdown
-            options={ALL_CALLED_IDENTIFIERS}
+          <CalledIdentifierEditor
             value={CalledIdentifierSchema.parse(
               instruction.fields.basisY ??
                 template.basis.assumedY ??
-                ALL_CALLED_IDENTIFIERS[0],
+                ALL_BASE_CALLED_IDENTIFIERS[0],
             )}
             onChange={(val) =>
               tryCommit({

@@ -27,6 +27,7 @@ export const RolleeSpecSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("PersonInDirection"),
     dir: z.enum(["on_right", "on_left"]),
+    onlyRole: z.enum(["same", "different"]),
   }),
   z.object({ type: z.literal("label"), label: IrreducibleLabelSchema }),
 ]);
@@ -52,9 +53,7 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
   const rolleeToRoller = new Map<DancerId, ProtoId>();
   for (const id of who) {
     if (getRole(id) !== instr.roller) continue;
-    const rollee = Dancer.get(id, init).resolveCalledIdentifier(instr.rollee, {
-      roles: "different",
-    });
+    const rollee = Dancer.get(id, init).resolveCalledIdentifier(instr.rollee);
     if (!rollee) {
       throw new SnazzyError([
         { dancerId: id },

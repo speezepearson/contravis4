@@ -44,7 +44,9 @@ export const boxCirculateSegments: InstructionAnimator<
       dur: instr.beats,
       position: (dancer, frac) => {
         if (outFacers.includes(dancer.protoId)) {
-          const match = dancer.resolveCalledIdentifier(personInDir("on_right"));
+          const match = dancer.resolveCalledIdentifier(
+            personInDir("on_right", "different"),
+          );
           if (!match)
             throw new SnazzyError([
               { dancerId: dancer.protoId },
@@ -55,7 +57,9 @@ export const boxCirculateSegments: InstructionAnimator<
             radians: -PI * frac,
           });
         } else {
-          const match = dancer.resolveCalledIdentifier(personInDir("in_front"));
+          const match = dancer.resolveCalledIdentifier(
+            personInDir("in_front", "different"),
+          );
           if (!match)
             throw new SnazzyError([
               { dancerId: dancer.protoId },

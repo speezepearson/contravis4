@@ -1,10 +1,13 @@
 import type z from "zod";
 
 import type { AtomicInstruction } from "../../instructions/_atomic";
-import { ALL_CALLED_IDENTIFIERS } from "../../instructions/_base";
+import {
+  ALL_BASE_CALLED_IDENTIFIERS,
+  PersonInDirectionVariantSchema,
+} from "../../instructions/_base";
 import { GreetNewNeighborsInstructionSchema } from "../../instructions/greetNewNeighbors";
 import { typedSafeParse } from "../../utils";
-import { CalledIdentifierDropdown } from "../CalledIdentifierDropdown";
+import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import type { SubFormProps } from "../fieldUtils";
 
 export function GreetNewNeighborsFields({
@@ -33,12 +36,16 @@ export function GreetNewNeighborsFields({
   return (
     <>
       {": "}
-      <CalledIdentifierDropdown
-        options={ALL_CALLED_IDENTIFIERS.filter(
+      <CalledIdentifierEditor
+        baseOptions={ALL_BASE_CALLED_IDENTIFIERS.filter(
           (cid) => cid.type === "PersonInDirection",
         )}
         value={instruction.cid}
-        onChange={(cid) => tryCommit({ cid })}
+        onChange={(cid) => {
+          const parsed = PersonInDirectionVariantSchema.safeParse(cid);
+          if (parsed.success) tryCommit({ cid: parsed.data });
+          else onInvalid?.();
+        }}
       />
       {" is your new neighbor"}
     </>
