@@ -133,24 +133,7 @@ export type AssertExtends<T, U> = T extends U ? unknown : never;
 // Usage:
 null satisfies AssertExtends<1, number>;
 
-export function buildEnumRecord<Schema extends z.ZodEnum, V>(
-  schema: Schema,
-  f: (x: Schema["options"][number]) => V,
-): Record<z.infer<Schema>, V> {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Object.fromEntries can't return a precise Record type
-  return Object.fromEntries(schema.options.map((x) => [x, f(x)])) as Record<
-    z.infer<Schema>,
-    V
-  >;
-}
-
-export function stripPrefix<P extends string, S extends `${P}${string}`>(
-  prefix: P,
-  s: S,
-): S extends `${P}${infer Rest}` ? Rest : never {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return s.slice(prefix.length) as never;
-}
+export { buildEnumRecord, stripPrefix } from "./typecasts";
 
 export function getSingleton<T>(arr: T[]): T | undefined {
   if (arr.length !== 1) return undefined;

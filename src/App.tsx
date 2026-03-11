@@ -34,6 +34,7 @@ import {
   InstructionSchema,
 } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
+import { assignToGlobalThis } from "./typecasts";
 import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
 import { isLocalStorageAvailable, try_ } from "./utils";
@@ -435,8 +436,7 @@ export default function App() {
 
   // Debug hook for browser automation testing
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/consistent-type-assertions -- debug hook
-    (window as any).__debug = {
+    assignToGlobalThis("__debug", {
       scrub: (beat: number) => {
         beatRef.current = beat;
         nProgressionsRef.current = 0;
@@ -452,7 +452,7 @@ export default function App() {
         nProgressionsRef.current += n;
         drawRef.current();
       },
-    };
+    });
   });
 
   useEffect(() => {
