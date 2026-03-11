@@ -1,22 +1,21 @@
 import { z } from "zod";
 
 import { type DancerId } from "../contraCore";
-import { lerpFacing, PI, revolve } from "../geometry";
+import { lerpFacing } from "../geometry";
 import { must } from "../utils";
 import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
-  perRoleId,
   personInDir,
 } from "./_base";
 import {
-  hold,
+  advanceState,
   type InstructionAnimator,
   linearTo,
-  rotateFacingBy,
   type Segment,
 } from "./_segment";
+import { courtesyTurnSegs, resolveCourtesyTurnPartners } from "./courtesyTurn";
 
 export const RobinsChainInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -108,39 +107,21 @@ export const robinsChainSegments: InstructionAnimator<
     },
   };
 
-  // Phase 2: Courtesy turn (robin + receiving lark revolve 180°).
-  const courtesyTurn: Segment = {
-    dur: halfBeats,
-    position: (dancer, frac) => {
-      const them = dancer.resolveMatch(
-        perRoleId(
-          personInDir("on_right", "different"),
-          personInDir("on_left", "different"),
-        ),
-      );
-      const center = dancer.pos.add(them.pos).divide(2);
-      return revolve(dancer.pos, { around: center, radians: PI * frac });
-    },
-    facing: rotateFacingBy(() => PI),
-    hands: (dancer) => {
-      const them = dancer.resolveMatch(
-        perRoleId(
-          personInDir("on_right", "different"),
-          personInDir("on_left", "different"),
-        ),
-      );
-      return hold(["left", them.id, "left"], ["right", them.id, "right"]);
-    },
-    interactedWith: (dancer): DancerId[] => {
-      const them = dancer.resolveMatch(
-        perRoleId(
-          personInDir("on_right", "different"),
-          personInDir("on_left", "different"),
-        ),
-      );
-      return [them.id];
-    },
-  };
+  // Phase 2: Courtesy turn, reusing shared logic.
+  // Pre-resolve partners from post-cross state.
+  const postCrossState = advanceState([cross], init, who);
+  const partnerOf = resolveCourtesyTurnPartners(postCrossState, who);
+  const ctSegs = courtesyTurnSegs(halfBeats, partnerOf);
 
-  return [cross, courtesyTurn];
+  // Add interactedWith to each courtesy turn segment.
+  const ctSegsWithInteraction = ctSegs.map((seg) => ({
+    ...seg,
+    interactedWith: (dancer: Dancer): DancerId[] => {
+      const themId = partnerOf.get(dancer.id);
+      if (!themId) throw new Error("programming error");
+      return [themId];
+    },
+  }));
+
+  return [cross, ...ctSegsWithInteraction];
 };
