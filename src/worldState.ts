@@ -405,27 +405,22 @@ export class Dancer {
     { roles }: { roles?: "same" | "different" } = {},
   ): Dancer | undefined {
     dir = dir.normalize();
-    const protos = this.worldState;
-
     let bestScore = Infinity;
     let bestTarget: Dancer | undefined = undefined;
 
     for (const otherProtoId of ALL_PROTO_IDS) {
-      if (otherProtoId === this.id) continue;
-      if (roles === "same" && getRole(otherProtoId) !== getRole(this.id))
+      if (otherProtoId === this.protoId) continue;
+      if (roles === "same" && getRole(otherProtoId) !== this.role)
         continue;
-      if (roles === "different" && getRole(otherProtoId) === getRole(this.id))
+      if (roles === "different" && getRole(otherProtoId) === this.role)
         continue;
 
-      const otherProto = protos[otherProtoId];
-      const dyBase = otherProto.pos.y - this.pos.y;
-      const oBest = Math.round(-dyBase / 2);
-      for (let o = oBest - 2; o <= oBest + 2; o++) {
-        const targetId = protoIdToDancerId(otherProtoId, o);
-        const target = Dancer.get(targetId, protos);
+      const [targetRepresentative] = findNearbyDancers(this.pos, otherProtoId, this.worldState);
+      for (let o = -5; o <= 5; o++) {
+        const target = targetRepresentative.addOffset(o);
         const disp = target.pos.subtract(this.pos);
         const r = disp.length();
-        if (r > 1.8 || r < 1e-9) continue;
+        if (r > 2.8 || r < 1e-9) continue;
 
         const cosTheta = dir.dot(disp) / r;
         if (cosTheta < 0) continue;
