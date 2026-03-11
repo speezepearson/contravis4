@@ -320,10 +320,6 @@ function pureDirectionToText(dir: PureDirection): string {
       return "left diagonal";
     case "right_diagonal":
       return "right diagonal";
-    case "larks_left_robins_right":
-      return "your (larks left, robins right)";
-    case "larks_right_robins_left":
-      return "your (larks right, robins left)";
     case "across":
       return "across";
     case "out":
@@ -408,10 +404,6 @@ function personInDirectionToText(dir: PureDirection): string {
       return "the person on your left diagonal";
     case "right_diagonal":
       return "the person on your right diagonal";
-    case "larks_left_robins_right":
-      return "the person on your (larks left, robins right)";
-    case "larks_right_robins_left":
-      return "the person on your (larks right, robins left)";
     case "across":
       return "the person across from you";
     case "out":

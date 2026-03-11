@@ -43,6 +43,11 @@ export function resolveBasisVector(
       }
       return disp;
     }
+    case "PerRole":
+      return resolveBasisVector(
+        dancer.isLark() ? spec.larks : spec.robins,
+        dancer,
+      );
   }
 }
 

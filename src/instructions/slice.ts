@@ -8,6 +8,7 @@ import { lerpVectors, must } from "../utils";
 import { connectHands, Dancer, getDancerSide } from "../worldState";
 import {
   instructionBaseSchemaFields,
+  perRoleId,
   personInDir,
   resolveCardinalDirection,
 } from "./_base";
@@ -32,8 +33,11 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
   init,
   who,
 ) => {
-  // Pair up with cid = larks_right_robins_left
-  const cid = personInDir("larks_right_robins_left", "different");
+  // Pair up: larks look right, robins look left
+  const cid = perRoleId(
+    personInDir("on_right", "different"),
+    personInDir("on_left", "different"),
+  );
 
   // Assert all dancers face roughly across
   for (const id of who) {
@@ -56,7 +60,7 @@ export const sliceSegments: InstructionAnimator<SliceInstruction> = (
       ]),
   };
 
-  // Immediate: take hands with person_larks_right_robins_left
+  // Immediate: take hands with partner (lark's right, robin's left)
   const takeHands: Segment = makeImmediateSegment(init, (id, draft) => {
     const them = Dancer.get(id, init).resolveMatch(cid);
     // Lark's match is to their right, robin's match is to their left

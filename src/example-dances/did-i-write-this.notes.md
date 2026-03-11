@@ -25,14 +25,14 @@ determine which side is east/west at x=0). Instead, the swing uses `endFacing: "
 followed by a 2-beat step "out" with facing "across" to move the dancers to x=+/-0.50 for
 correct progression inference.
 
-### `greet_new_neighbors` with `person_larks_left_robins_right`
+### `greet_new_neighbors` with per-role direction
 
 Progression is inferred purely from positional movement. After the ones swing + step out,
 all dancers have moved 1 unit in their progression direction. Earlier attempts to add
 `greet_new_neighbors` with `person_down` failed due to offset asymmetry (resolves differently
 for up vs down proto dancers when they've swapped positions). The correct direction is
-`person_larks_left_robins_right`: at the end of the dance, larks face east and robins face
-west, so the new neighbor is to the lark's left / robin's right.
+per-role (larks look left, robins look right): at the end of the dance, larks face east
+and robins face west, so the new neighbor is to the lark's left / robin's right.
 
 ## Beat Allocation (64 total)
 

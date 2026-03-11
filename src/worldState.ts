@@ -285,10 +285,6 @@ export class Dancer {
         return this.facing.rotateByDegrees(45);
       case "right_diagonal":
         return this.facing.rotateByDegrees(-45);
-      case "larks_left_robins_right":
-        return this.facing.rotateByDegrees(90 * (this.isLark() ? 1 : -1));
-      case "larks_right_robins_left":
-        return this.facing.rotateByDegrees(-90 * (this.isLark() ? 1 : -1));
       default:
         assertNever(dir);
     }
@@ -452,8 +448,6 @@ export class Dancer {
   static readonly dirFudges: Partial<Record<PureDirection, number>> = {
     on_right: 0.2,
     on_left: 0.2,
-    larks_left_robins_right: 0.2,
-    larks_right_robins_left: 0.2,
   };
   resolveCalledIdentifier(
     cid: CalledIdentifier,

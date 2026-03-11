@@ -16,6 +16,9 @@ import {
   baseCalledIdentifierFromKey,
   BaseCalledIdentifierSchema,
   baseCalledIdentifierToKey,
+  calledIdentifierFromKey,
+  calledIdentifierToKey,
+  PerRoleIdentifierVariantSchema,
 } from "../../identifiers";
 
 // ── Shared sub-schemas ──────────────────────────────────────────────────
@@ -39,6 +42,7 @@ const relStateSchema = z.object({
 export const BasisVectorSpecSchema = z.discriminatedUnion("type", [
   ...BaseCalledDirectionSchema.options,
   ...BaseCalledIdentifierSchema.options,
+  PerRoleIdentifierVariantSchema,
 ]);
 export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
 
@@ -49,6 +53,7 @@ export type BasisVectorSpec = z.infer<typeof BasisVectorSpecSchema>;
 export const BasisSpecSchema = z.discriminatedUnion("type", [
   ...BaseCalledDirectionSchema.options,
   ...BaseCalledIdentifierSchema.options,
+  PerRoleIdentifierVariantSchema,
   z.object({ type: z.literal("choreographer_specified_direction") }),
   z.object({ type: z.literal("choreographer_specified_identifier") }),
 ]);
@@ -130,6 +135,7 @@ function isBaseCalledIdentifier(spec: BasisSpec): spec is BaseCalledIdentifier {
 export function basisSpecToKey(spec: BasisSpec): string {
   if (isBaseCalledDirection(spec)) return baseCalledDirectionToKey(spec);
   if (isBaseCalledIdentifier(spec)) return baseCalledIdentifierToKey(spec);
+  if (spec.type === "PerRole") return calledIdentifierToKey(spec);
   return spec.type;
 }
 
@@ -140,7 +146,6 @@ export function basisSpecFromKey(key: string): BasisSpec {
   ) {
     return { type: key };
   }
-  // Try as CalledDirection first, then CalledIdentifier
   const [prefix, ...rest] = key.split(":");
   if (rest.length === 0) throw new Error(`Invalid BasisSpec key: ${key}`);
   if (
@@ -150,11 +155,15 @@ export function basisSpecFromKey(key: string): BasisSpec {
   ) {
     return baseCalledDirectionFromKey(key);
   }
+  if (prefix === "PerRole") {
+    return BasisVectorSpecSchema.parse(calledIdentifierFromKey(key));
+  }
   return baseCalledIdentifierFromKey(key);
 }
 
 export function basisVectorSpecToKey(spec: BasisVectorSpec): string {
   if (isBaseCalledDirection(spec)) return baseCalledDirectionToKey(spec);
+  if (spec.type === "PerRole") return calledIdentifierToKey(spec);
   return baseCalledIdentifierToKey(spec);
 }
 
@@ -167,6 +176,9 @@ export function basisVectorSpecFromKey(key: string): BasisVectorSpec {
     prefix === "TowardsPerson"
   ) {
     return baseCalledDirectionFromKey(key);
+  }
+  if (prefix === "PerRole") {
+    return BasisVectorSpecSchema.parse(calledIdentifierFromKey(key));
   }
   return baseCalledIdentifierFromKey(key);
 }
