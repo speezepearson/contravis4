@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { type DancerId } from "../contraCore";
-import { PI, revolve } from "../geometry";
+import { PI } from "../geometry";
 import { Dancer } from "../worldState";
 import { instructionBaseSchemaFields, perRoleId, personInDir } from "./_base";
 import {
@@ -18,9 +18,6 @@ export const CourtesyTurnInstructionSchema = z.object({
 export type CourtesyTurnInstruction = z.infer<
   typeof CourtesyTurnInstructionSchema
 >;
-
-/** Distance from center of mass each dancer ends up at after the normalizing first segment. */
-export const COURTESY_TURN_RADIUS = 0.25;
 
 const matchCid = perRoleId(
   personInDir("on_right", "different"),
@@ -59,7 +56,6 @@ export function courtesyTurnSegs(
 
   return [
     // Segment 1: Quarter-ellipse that normalizes distance to COURTESY_TURN_RADIUS from CoM.
-    // Facing stays constant.
     {
       dur: halfBeats,
       position: (dancer, frac) => {
@@ -72,8 +68,9 @@ export function courtesyTurnSegs(
         const phi = (PI / 2) * frac;
         return center
           .add(majorDir.multiply(r * Math.cos(phi)))
-          .add(minorDir.multiply(COURTESY_TURN_RADIUS * Math.sin(phi)));
+          .add(minorDir.multiply(0.25 * Math.sin(phi)));
       },
+      facing: rotateFacingBy(() => PI / 2),
       hands: (dancer) => {
         const them = getPartner(dancer, partnerOf);
         return hold(["left", them.id, "left"], ["right", them.id, "right"]);
@@ -86,12 +83,16 @@ export function courtesyTurnSegs(
       position: (dancer, frac) => {
         const them = getPartner(dancer, partnerOf);
         const center = dancer.pos.add(them.pos).divide(2);
-        return revolve(dancer.pos, {
-          around: center,
-          radians: (PI / 2) * frac,
-        });
+        const offset = dancer.pos.subtract(center);
+        const r = offset.length();
+        const majorDir = offset.normalize();
+        const minorDir = majorDir.rotateByRadians(PI / 2);
+        const phi = (PI / 2) * frac;
+        return center
+          .add(majorDir.multiply(r * Math.cos(phi)))
+          .add(minorDir.multiply(0.35 * Math.sin(phi)));
       },
-      facing: rotateFacingBy(() => PI),
+      facing: rotateFacingBy(() => PI / 2),
       hands: (dancer) => {
         const them = getPartner(dancer, partnerOf);
         return hold(["left", them.id, "left"], ["right", them.id, "right"]);
