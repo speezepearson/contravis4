@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import * as Popover from "@radix-ui/react-popover";
+import { useMemo, useState } from "react";
 
 import {
   ALL_BASE_CALLED_DIRECTIONS,
@@ -6,48 +7,171 @@ import {
   baseCalledDirectionFromKey,
   baseCalledDirectionToKey,
   type CalledDirection,
+  pureDir,
+  type PureDirection,
+  towardsLabel,
+  towardsPerson,
 } from "../instructions/_base";
+import { type Label, LabelSchema } from "../labels";
 import { try_ } from "../utils";
 import { Dancer } from "../worldState";
 import { calledDirectionToText } from "./fieldUtils";
-import { InlineDropdown } from "./InlineDropdown";
 import { useInstructionEdit } from "./InstructionEditContext";
+import { SearchableDropdown } from "./SearchableDropdown";
 
-type DirectionMode = "plain" | "PerRole" | "PerProgDir";
+// ── Top-level "category" for the main dropdown ──────────────────────────
 
-const MODE_LABELS: Record<DirectionMode, string> = {
-  plain: "plain",
-  PerRole: "by role",
-  PerProgDir: "by dir",
-};
+type DirectionCategory =
+  | { kind: "pure"; dir: PureDirection }
+  | { kind: "towards_label" }
+  | { kind: "towards_person" }
+  | { kind: "per_role" }
+  | { kind: "per_prog_dir" };
 
-const MODE_OPTIONS: DirectionMode[] = ["plain", "PerRole", "PerProgDir"];
-
-function getMode(dir: CalledDirection): DirectionMode {
-  switch (dir.type) {
-    case "PureDirection":
-    case "TowardsLabel":
-    case "TowardsPerson":
-      return "plain";
-    case "PerRole":
-      return "PerRole";
-    case "PerProgDir":
-      return "PerProgDir";
+function categoryKey(cat: DirectionCategory): string {
+  switch (cat.kind) {
+    case "pure":
+      return `pure:${cat.dir}`;
+    case "towards_label":
+      return "special:towards_label";
+    case "towards_person":
+      return "special:towards_person";
+    case "per_role":
+      return "special:per_role";
+    case "per_prog_dir":
+      return "special:per_prog_dir";
   }
 }
 
-function getBaseValue(dir: CalledDirection): BaseCalledDirection {
-  switch (dir.type) {
-    case "PureDirection":
-    case "TowardsLabel":
-    case "TowardsPerson":
+function categoryLabel(cat: DirectionCategory): string {
+  switch (cat.kind) {
+    case "pure":
+      return pureDirectionLabel(cat.dir);
+    case "towards_label":
+      return "towards your…";
+    case "towards_person":
+      return "towards the person to your…";
+    case "per_role":
+      return "(split larks/robins)";
+    case "per_prog_dir":
+      return "(split ups/downs)";
+  }
+}
+
+function pureDirectionLabel(dir: PureDirection): string {
+  switch (dir) {
+    case "on_right":
+      return "right";
+    case "on_left":
+      return "left";
+    case "in_front":
+      return "forward";
+    case "behind":
+      return "backward";
+    case "left_diagonal":
+      return "left diagonal";
+    case "right_diagonal":
+      return "right diagonal";
+    case "larks_left_robins_right":
+      return "larks left / robins right";
+    case "larks_right_robins_left":
+      return "larks right / robins left";
+    case "setclockwise":
+      return "set clockwise";
+    case "setcounterclockwise":
+      return "set counterclockwise";
+    default:
       return dir;
-    case "PerRole":
-      return dir.larks;
-    case "PerProgDir":
-      return dir.ups;
   }
 }
+
+function labelToShort(label: string): string {
+  switch (label) {
+    case "partner":
+      return "your partner";
+    case "neighbor":
+      return "your neighbor";
+    case "shadow":
+      return "your shadow";
+    case "opposite":
+      return "your opposite";
+    case "next_neighbor":
+      return "your next neighbor";
+    case "prev_neighbor":
+      return "your prev neighbor";
+    case "person_in_right_hand":
+      return "person in right hand";
+    case "person_in_left_hand":
+      return "person in left hand";
+    default:
+      return label.replace(/_/g, " ");
+  }
+}
+
+// ── Build categories from available options ─────────────────────────────
+
+function buildCategories(
+  options: readonly BaseCalledDirection[],
+): DirectionCategory[] {
+  const cats: DirectionCategory[] = [];
+  const seenPure = new Set<PureDirection>();
+
+  for (const opt of options) {
+    if (opt.type === "PureDirection" && !seenPure.has(opt.dir)) {
+      seenPure.add(opt.dir);
+      cats.push({ kind: "pure", dir: opt.dir });
+    }
+  }
+
+  if (options.some((o) => o.type === "TowardsLabel")) {
+    cats.push({ kind: "towards_label" });
+  }
+  if (options.some((o) => o.type === "TowardsPerson")) {
+    cats.push({ kind: "towards_person" });
+  }
+
+  cats.push({ kind: "per_role" });
+  cats.push({ kind: "per_prog_dir" });
+
+  return cats;
+}
+
+function categoryFromValue(value: CalledDirection): DirectionCategory {
+  switch (value.type) {
+    case "PureDirection":
+      return { kind: "pure", dir: value.dir };
+    case "TowardsLabel":
+      return { kind: "towards_label" };
+    case "TowardsPerson":
+      return { kind: "towards_person" };
+    case "PerRole":
+      return { kind: "per_role" };
+    case "PerProgDir":
+      return { kind: "per_prog_dir" };
+  }
+}
+
+// ── Label and PureDirection option lists ─────────────────────────────────
+
+const LABEL_OPTIONS: Label[] = [...LabelSchema.options];
+const PURE_DIR_OPTIONS: PureDirection[] = [
+  "across",
+  "out",
+  "up",
+  "down",
+  "on_right",
+  "on_left",
+  "in_front",
+  "behind",
+  "left_diagonal",
+  "right_diagonal",
+  "larks_left_robins_right",
+  "larks_right_robins_left",
+  "setclockwise",
+  "setcounterclockwise",
+];
+
+// ── Flat base direction dropdown (used in PerRole/PerProgDir sub-sections) ─
 
 function BaseDirectionDropdown({
   options,
@@ -103,7 +227,7 @@ function BaseDirectionDropdown({
   }, [options, dancerStates, keyMap]);
 
   return (
-    <InlineDropdown
+    <SearchableDropdown
       options={sortedKeys}
       value={baseCalledDirectionToKey(value)}
       getLabel={(k) => {
@@ -121,9 +245,12 @@ function BaseDirectionDropdown({
           }
         }
       }}
+      selectOnly
     />
   );
 }
+
+// ── Main CalledDirectionEditor ──────────────────────────────────────────
 
 export function CalledDirectionEditor({
   value,
@@ -135,71 +262,192 @@ export function CalledDirectionEditor({
   baseOptions?: readonly BaseCalledDirection[];
 }) {
   const options = baseOptions ?? ALL_BASE_CALLED_DIRECTIONS;
-  const mode = getMode(value);
+  const [open, setOpen] = useState(false);
+  const { onPopoverOpen } = useInstructionEdit();
 
-  function handleModeChange(newMode: DirectionMode) {
-    if (newMode === mode) return;
-    const base = getBaseValue(value);
-    switch (newMode) {
-      case "plain":
-        onChange(base);
-        break;
+  const categories = useMemo(() => buildCategories(options), [options]);
+  const categoryKeys = useMemo(() => categories.map(categoryKey), [categories]);
+  const categoryKeyMap = useMemo(() => {
+    const map = new Map<string, DirectionCategory>();
+    for (const cat of categories) {
+      map.set(categoryKey(cat), cat);
+    }
+    return map;
+  }, [categories]);
+
+  const currentCategory = categoryFromValue(value);
+  const currentCategoryKey = categoryKey(currentCategory);
+
+  function getBaseValue(): BaseCalledDirection {
+    switch (value.type) {
+      case "PureDirection":
+      case "TowardsLabel":
+      case "TowardsPerson":
+        return value;
       case "PerRole":
-        onChange({ type: "PerRole", larks: base, robins: base });
-        break;
+        return value.larks;
       case "PerProgDir":
-        onChange({ type: "PerProgDir", ups: base, downs: base });
-        break;
+        return value.ups;
     }
   }
 
+  function handleCategoryChange(key: string) {
+    const cat = categoryKeyMap.get(key);
+    if (!cat) return;
+
+    switch (cat.kind) {
+      case "pure":
+        onChange(pureDir(cat.dir));
+        break;
+      case "towards_label":
+        if (value.type === "TowardsLabel") break;
+        onChange(towardsLabel("partner"));
+        break;
+      case "towards_person":
+        if (value.type === "TowardsPerson") break;
+        onChange(towardsPerson("across"));
+        break;
+      case "per_role": {
+        if (value.type === "PerRole") break;
+        const base = getBaseValue();
+        onChange({ type: "PerRole", larks: base, robins: base });
+        break;
+      }
+      case "per_prog_dir": {
+        if (value.type === "PerProgDir") break;
+        const base = getBaseValue();
+        onChange({ type: "PerProgDir", ups: base, downs: base });
+        break;
+      }
+    }
+  }
+
+  function handleOpenChange(v: boolean) {
+    setOpen(v);
+    if (v) onPopoverOpen?.();
+  }
+
+  const displayText = calledDirectionToText(value);
+
   return (
-    <>
-      <InlineDropdown
-        options={MODE_OPTIONS}
-        value={mode}
-        getLabel={(m) => MODE_LABELS[m]}
-        onChange={handleModeChange}
-      />{" "}
-      {mode === "plain" && (
-        <BaseDirectionDropdown
-          options={options}
-          value={getBaseValue(value)}
-          onChange={onChange}
-        />
-      )}
-      {mode === "PerRole" && value.type === "PerRole" && (
-        <>
-          {"larks: "}
-          <BaseDirectionDropdown
-            options={options}
-            value={value.larks}
-            onChange={(larks) => onChange({ ...value, larks })}
-          />
-          {" robins: "}
-          <BaseDirectionDropdown
-            options={options}
-            value={value.robins}
-            onChange={(robins) => onChange({ ...value, robins })}
-          />
-        </>
-      )}
-      {mode === "PerProgDir" && value.type === "PerProgDir" && (
-        <>
-          {"ups: "}
-          <BaseDirectionDropdown
-            options={options}
-            value={value.ups}
-            onChange={(ups) => onChange({ ...value, ups })}
-          />
-          {" downs: "}
-          <BaseDirectionDropdown
-            options={options}
-            value={value.downs}
-            onChange={(downs) => onChange({ ...value, downs })}
-          />
-        </>
-      )}
-    </>
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>
+        <span
+          className="inline-value"
+          tabIndex={0}
+          role="button"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleOpenChange(!open);
+            }
+          }}
+        >
+          {displayText}
+        </span>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          className="popover-content"
+          sideOffset={4}
+          align="start"
+        >
+          <div className="popover-section-group">
+            <SearchableDropdown
+              options={categoryKeys}
+              value={currentCategoryKey}
+              getLabel={(k) => {
+                const cat = categoryKeyMap.get(k);
+                return cat ? categoryLabel(cat) : k;
+              }}
+              onChange={handleCategoryChange}
+              onCommit={() => {
+                // Close if user selected a pure direction (no sub-options needed)
+                if (value.type === "PureDirection") setOpen(false);
+              }}
+              selectOnly
+            />
+
+            {value.type === "TowardsLabel" && (
+              <div className="popover-sub-section">
+                <div className="popover-sub-row">
+                  <span className="popover-sub-label">label:</span>
+                  <SearchableDropdown
+                    options={LABEL_OPTIONS}
+                    value={value.label}
+                    getLabel={labelToShort}
+                    onChange={(label) =>
+                      onChange(towardsLabel(LabelSchema.parse(label)))
+                    }
+                    onCommit={() => {}}
+                    selectOnly
+                  />
+                </div>
+              </div>
+            )}
+
+            {value.type === "TowardsPerson" && (
+              <div className="popover-sub-section">
+                <div className="popover-sub-row">
+                  <span className="popover-sub-label">roughly:</span>
+                  <SearchableDropdown
+                    options={PURE_DIR_OPTIONS}
+                    value={value.roughDir}
+                    getLabel={pureDirectionLabel}
+                    onChange={(dir) =>
+                      onChange(towardsPerson(dir satisfies PureDirection))
+                    }
+                    onCommit={() => {}}
+                    selectOnly
+                  />
+                </div>
+              </div>
+            )}
+
+            {value.type === "PerRole" && (
+              <div className="popover-sub-section">
+                <div className="popover-sub-row">
+                  <span className="popover-sub-label">larks:</span>
+                  <BaseDirectionDropdown
+                    options={options}
+                    value={value.larks}
+                    onChange={(larks) => onChange({ ...value, larks })}
+                  />
+                </div>
+                <div className="popover-sub-row">
+                  <span className="popover-sub-label">robins:</span>
+                  <BaseDirectionDropdown
+                    options={options}
+                    value={value.robins}
+                    onChange={(robins) => onChange({ ...value, robins })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {value.type === "PerProgDir" && (
+              <div className="popover-sub-section">
+                <div className="popover-sub-row">
+                  <span className="popover-sub-label">ups:</span>
+                  <BaseDirectionDropdown
+                    options={options}
+                    value={value.ups}
+                    onChange={(ups) => onChange({ ...value, ups })}
+                  />
+                </div>
+                <div className="popover-sub-row">
+                  <span className="popover-sub-label">downs:</span>
+                  <BaseDirectionDropdown
+                    options={options}
+                    value={value.downs}
+                    onChange={(downs) => onChange({ ...value, downs })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
