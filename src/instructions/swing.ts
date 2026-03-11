@@ -87,7 +87,9 @@ export function makeSwingSegments(
 
     const postApproach = {
       pos: center.add(
-        getDir({ from: center, to: me.pos }).multiply(ORBIT_RADIUS),
+        getDir({ from: center, to: me.pos })
+          .multiply(ORBIT_RADIUS)
+          .rotateByDegrees(-30),
       ),
       facing: getDir({ from: me.pos, to: center }),
     };
