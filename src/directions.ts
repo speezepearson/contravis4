@@ -8,7 +8,7 @@
  *     Absolute directions determined solely by position on the floor.
  *
  *   PureDirection — CardinalDirection + facing-relative directions
- *     ("on_left", "in_front", "right_diagonal", "larks_left_robins_right", …)
+ *     ("on_left", "in_front", "right_diagonal", …)
  *     Resolves to a vector using only the dancer's own position and facing.
  *
  *   BaseCalledDirection = { type: 'PureDirection', dir } | { type: 'TowardsLabel', label } | { type: 'TowardsPerson', roughDir }
@@ -76,8 +76,6 @@ export const PureDirectionSchema = z.enum([
   "behind",
   "left_diagonal",
   "right_diagonal",
-  "larks_left_robins_right",
-  "larks_right_robins_left",
 ]);
 export type PureDirection = z.infer<typeof PureDirectionSchema>;
 

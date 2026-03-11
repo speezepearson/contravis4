@@ -47,7 +47,7 @@ describe("turnAsACouple", () => {
       draft.up_robin_0.facing = SOUTH;
     });
     const instr = makeTurnAsACouple();
-    // Direction-based matching (larks_right_robins_left) fails before
+    // Direction-based matching (lark's right / robin's left) fails before
     // the facing validation can fire, since the robin's "left" no
     // longer points at the lark.
     expect(() => turnAsACoupleSegments(instr, badInit, allProtos)).toThrow();

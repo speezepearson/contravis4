@@ -48,7 +48,7 @@ export const BaseCalledIdentifierSchema = z.discriminatedUnion("type", [
 ]);
 export type BaseCalledIdentifier = z.infer<typeof BaseCalledIdentifierSchema>;
 
-const PerRoleIdentifierVariantSchema = z.object({
+export const PerRoleIdentifierVariantSchema = z.object({
   type: z.literal("PerRole"),
   larks: BaseCalledIdentifierSchema,
   robins: BaseCalledIdentifierSchema,

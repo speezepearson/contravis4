@@ -15,12 +15,22 @@ export default typedParse(LLRRInstructionTemplateSchema, {
       type: "choreographer_specified_identifier",
     },
     y: {
-      type: "PersonInDirection",
-      dir: "larks_right_robins_left",
+      type: "PerRole",
+      larks: {
+        type: "PersonInDirection",
+        dir: "on_right",
+        onlyRole: "different",
+      },
+      robins: {
+        type: "PersonInDirection",
+        dir: "on_left",
+        onlyRole: "different",
+      },
     },
     assumedX: {
       type: "PersonInDirection",
       dir: "across",
+      onlyRole: "different",
     },
   },
   keyframes: [

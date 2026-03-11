@@ -7,6 +7,7 @@ import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
 import {
   CalledIdentifierSchema,
   instructionBaseSchemaFields,
+  perRoleId,
   personInDir,
 } from "./_base";
 import {
@@ -112,7 +113,10 @@ export const robinsChainSegments: InstructionAnimator<
     dur: halfBeats,
     position: (dancer, frac) => {
       const them = dancer.resolveMatch(
-        personInDir("larks_right_robins_left", "different"),
+        perRoleId(
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
+        ),
       );
       const center = dancer.pos.add(them.pos).divide(2);
       return revolve(dancer.pos, { around: center, radians: PI * frac });
@@ -120,13 +124,19 @@ export const robinsChainSegments: InstructionAnimator<
     facing: rotateFacingBy(() => PI),
     hands: (dancer) => {
       const them = dancer.resolveMatch(
-        personInDir("larks_right_robins_left", "different"),
+        perRoleId(
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
+        ),
       );
       return hold(["left", them.id, "left"], ["right", them.id, "right"]);
     },
     interactedWith: (dancer): DancerId[] => {
       const them = dancer.resolveMatch(
-        personInDir("larks_right_robins_left", "different"),
+        perRoleId(
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
+        ),
       );
       return [them.id];
     },

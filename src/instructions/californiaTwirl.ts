@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { isLark, parseProtoId } from "../contraCore";
 import { getDir, PI } from "../geometry";
-import { instructionBaseSchemaFields, personInDir } from "./_base";
+import { instructionBaseSchemaFields, perRoleId, personInDir } from "./_base";
 import {
   arc,
   hold,
@@ -24,15 +24,24 @@ export const californiaTwirlSegments: InstructionAnimator<
 > = (instr): Segment[] => [
   {
     dur: instr.beats,
-    position: arc(personInDir("larks_right_robins_left", "different"), {
-      semiMinor: 0.25,
-      phi: PI,
-    }),
+    position: arc(
+      perRoleId(
+        personInDir("on_right", "different"),
+        personInDir("on_left", "different"),
+      ),
+      {
+        semiMinor: 0.25,
+        phi: PI,
+      },
+    ),
     facing: lerpFacingTo(
       (dancer) => {
         // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
         const them = dancer.resolveMatch(
-          personInDir("larks_right_robins_left", "different"),
+          perRoleId(
+            personInDir("on_right", "different"),
+            personInDir("on_left", "different"),
+          ),
         );
         const myRole = parseProtoId(dancer.protoId).role;
         return getDir({
@@ -46,15 +55,22 @@ export const californiaTwirlSegments: InstructionAnimator<
     ),
     hands: (dancer) => {
       const them = dancer.resolveMatch(
-        personInDir("larks_right_robins_left", "different"),
+        perRoleId(
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
+        ),
       );
       return isLark(dancer.protoId)
         ? hold(["right", them.id, "left"])
         : hold(["left", them.id, "right"]);
     },
     interactedWith: (dancer) => [
-      dancer.resolveMatch(personInDir("larks_right_robins_left", "different"))
-        .id,
+      dancer.resolveMatch(
+        perRoleId(
+          personInDir("on_right", "different"),
+          personInDir("on_left", "different"),
+        ),
+      ).id,
     ],
   },
 ];
