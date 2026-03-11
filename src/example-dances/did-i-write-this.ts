@@ -12,13 +12,19 @@ export default typedParse(DanceSchema, {
       id: "a6b45cd2-78a4-427c-ad8b-c113de8dd1fb",
       beats: 4,
       type: "balance",
-      cid: { type: "label", label: "neighbor" },
+      cid: {
+        type: "label",
+        label: "neighbor",
+      },
     },
     {
       id: "5d0b1d38-cdea-4b28-b0b5-268d7dd3b3e6",
       beats: 12,
       type: "swing",
-      cid: { type: "label", label: "neighbor" },
+      cid: {
+        type: "label",
+        label: "neighbor",
+      },
       endFacing: "across",
     },
     {
@@ -44,7 +50,10 @@ export default typedParse(DanceSchema, {
       id: "0caf44c2-d342-409f-ad62-a875f04a0d8e",
       beats: 8,
       type: "swing",
-      cid: { type: "label", label: "partner" },
+      cid: {
+        type: "label",
+        label: "partner",
+      },
       endFacing: "across",
     },
     {
@@ -68,7 +77,10 @@ export default typedParse(DanceSchema, {
       id: "cfcf01e3-14f4-42ac-9f93-d181fbbd96c8",
       beats: 8,
       type: "robins_chain",
-      cid: { type: "label", label: "neighbor" },
+      cid: {
+        type: "label",
+        label: "neighbor",
+      },
     },
     {
       id: "13870d2d-4db6-46a7-b915-93db0de0d1c5",
@@ -91,13 +103,26 @@ export default typedParse(DanceSchema, {
       id: "7d28942d-e43d-4151-97ea-2991a1b21bdc",
       type: "split",
       by: "direction",
-      ups: [],
+      ups: [
+        {
+          id: "b73b0a99-172d-4aad-bd2f-f66a3f66f087",
+          beats: 0,
+          type: "face",
+          direction: {
+            type: "PureDirection",
+            dir: "up",
+          },
+        },
+      ],
       downs: [
         {
           id: "1b392eb5-64df-4276-a79e-f59d9c564d73",
           beats: 6,
           type: "swing",
-          cid: { type: "label", label: "partner" },
+          cid: {
+            type: "label",
+            label: "partner",
+          },
           endFacing: "down",
         },
         {
@@ -110,9 +135,15 @@ export default typedParse(DanceSchema, {
           id: "61e08a24-bbb4-49c5-a7f9-6ed320cbe191",
           beats: 2,
           type: "step",
-          direction: { type: "PureDirection", dir: "out" },
+          direction: {
+            type: "PureDirection",
+            dir: "out",
+          },
           distance: 0.25,
-          facing: { type: "PureDirection", dir: "across" },
+          facing: {
+            type: "PureDirection",
+            dir: "down",
+          },
         },
       ],
     },
@@ -122,7 +153,7 @@ export default typedParse(DanceSchema, {
       type: "greet_new_neighbors",
       cid: {
         type: "PersonInDirection",
-        dir: "larks_left_robins_right",
+        dir: "in_front",
         onlyRole: "different",
       },
     },
