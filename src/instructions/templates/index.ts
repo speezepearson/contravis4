@@ -7,10 +7,7 @@ import specialCourtesyTurnTemplate from "./specialCourtesyTurn";
 import specialHeyTemplate from "./specialHey";
 import specialStarTemplate from "./specialStar";
 
-export const LRTemplateIdSchema = z.enum([
-  "specialChain",
-  "specialCourtesyTurn",
-]);
+export const LRTemplateIdSchema = z.enum(["specialCourtesyTurn"]);
 export type LRTemplateId = z.infer<typeof LRTemplateIdSchema>;
 
 export const templateIds = LRTemplateIdSchema.options;
@@ -18,8 +15,6 @@ export const templateIds = LRTemplateIdSchema.options;
 export const allLRTemplates: Record<LRTemplateId, LRInstructionTemplate> =
   buildEnumRecord(LRTemplateIdSchema, (id): LRInstructionTemplate => {
     switch (id) {
-      case "specialChain":
-        return specialChainTemplate;
       case "specialCourtesyTurn":
         return specialCourtesyTurnTemplate;
       default:
@@ -27,12 +22,18 @@ export const allLRTemplates: Record<LRTemplateId, LRInstructionTemplate> =
     }
   });
 
-export const LLRRTemplateIdSchema = z.enum(["specialStar", "specialHey"]);
+export const LLRRTemplateIdSchema = z.enum([
+  "specialChain",
+  "specialStar",
+  "specialHey",
+]);
 export type LLRRTemplateId = z.infer<typeof LLRRTemplateIdSchema>;
 
 export const allLLRRTemplates: Record<LLRRTemplateId, LLRRInstructionTemplate> =
   buildEnumRecord(LLRRTemplateIdSchema, (id): LLRRInstructionTemplate => {
     switch (id) {
+      case "specialChain":
+        return specialChainTemplate;
       case "specialStar":
         return specialStarTemplate;
       case "specialHey":
