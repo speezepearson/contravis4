@@ -1,16 +1,18 @@
 import { ALL_PROTO_IDS_SET } from "./contraCore";
-import {
-  type AtomicInstruction,
-  makeAtomicInstructionSegments,
-} from "./instructions/_atomic";
+import { animateAtomicInstruction } from "./instructions/_atomic";
 import {
   chainAnimations,
   type ContraAnimation,
   type InstructionId,
 } from "./instructions/_base";
-import { animateSegments } from "./instructions/_segment";
 import { type Instruction, instructionDuration } from "./instructions/index";
-import { type Split, splitAnimator } from "./instructions/split";
+import { robinsChainAnimator } from "./instructions/robinsChain";
+import {
+  type Split,
+  splitAnimator,
+  type SplitSubInstruction,
+} from "./instructions/split";
+import { swingAnimator } from "./instructions/swing";
 import { SnazzyError, type SnazzySegment } from "./snazzyError";
 import { assertNever } from "./utils";
 import type { WorldState } from "./worldState";
@@ -41,19 +43,21 @@ export interface GenerateResult {
   errors: GenerateError[];
 }
 
-/** Animate a single instruction (atomic or split) from `init`. */
+/** Animate a single instruction (atomic, split, or plan-based) from `init`. */
 function animateInstruction(
   init: WorldState,
   instr: Instruction,
 ): ContraAnimation {
-  if (instr.type === "split") {
-    return splitAnimator(instr, init, ALL_PROTO_IDS_SET);
+  switch (instr.type) {
+    case "split":
+      return splitAnimator(instr, init, ALL_PROTO_IDS_SET);
+    case "swing":
+      return swingAnimator(instr, init, ALL_PROTO_IDS_SET);
+    case "robins_chain":
+      return robinsChainAnimator(instr, init, ALL_PROTO_IDS_SET);
+    default:
+      return animateAtomicInstruction(instr, init, ALL_PROTO_IDS_SET);
   }
-  return animateSegments(
-    init,
-    ALL_PROTO_IDS_SET,
-    makeAtomicInstructionSegments(instr, init, ALL_PROTO_IDS_SET),
-  );
 }
 
 /**
@@ -129,7 +133,7 @@ export function findInstructionStartBeat(
 /** Get the two sub-lists of a split instruction. */
 export function splitLists(
   split: Split,
-): [AtomicInstruction[], AtomicInstruction[]] {
+): [SplitSubInstruction[], SplitSubInstruction[]] {
   switch (split.by) {
     case "role":
       return [split.larks, split.robins];
@@ -143,11 +147,19 @@ export function splitLists(
 /** Reconstruct a split instruction's sub-list fields from (by, listA, listB). */
 export function splitWithLists(
   by: Split["by"],
-  listA: AtomicInstruction[],
-  listB: AtomicInstruction[],
+  listA: SplitSubInstruction[],
+  listB: SplitSubInstruction[],
 ):
-  | { by: "role"; larks: AtomicInstruction[]; robins: AtomicInstruction[] }
-  | { by: "direction"; ups: AtomicInstruction[]; downs: AtomicInstruction[] } {
+  | {
+      by: "role";
+      larks: SplitSubInstruction[];
+      robins: SplitSubInstruction[];
+    }
+  | {
+      by: "direction";
+      ups: SplitSubInstruction[];
+      downs: SplitSubInstruction[];
+    } {
   switch (by) {
     case "role":
       return { by: "role", larks: listA, robins: listB };

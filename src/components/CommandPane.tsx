@@ -34,10 +34,6 @@ import {
 import type { GenerateError } from "../generate";
 import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
 import { inferProgression } from "../inferProgression";
-import {
-  type AtomicInstruction,
-  AtomicInstructionSchema,
-} from "../instructions/_atomic";
 import type { ContraAnimation } from "../instructions/_base";
 import { InstructionIdSchema } from "../instructions/_base";
 import type {
@@ -53,6 +49,7 @@ import {
   resolveInitFormation,
 } from "../instructions/index";
 import type { Split } from "../instructions/split";
+import { SplitSubInstructionSchema } from "../instructions/split";
 import {
   allLLRRTemplates,
   allLRTemplates,
@@ -435,7 +432,7 @@ function insertIntoContainer(
       const [listA, listB] = splitLists(i);
       const list = parsed.list === "A" ? listA : listB;
       const copy = [...list];
-      copy.splice(index, 0, AtomicInstructionSchema.parse(item));
+      copy.splice(index, 0, SplitSubInstructionSchema.parse(item));
       const newLists =
         parsed.list === "A"
           ? splitWithLists(i.by, copy, listB)
@@ -500,10 +497,10 @@ function replaceInTree(
         ...splitWithLists(
           i.by,
           listA.map((sub) =>
-            sub.id === id ? AtomicInstructionSchema.parse(replacement) : sub,
+            sub.id === id ? SplitSubInstructionSchema.parse(replacement) : sub,
           ),
           listB.map((sub) =>
-            sub.id === id ? AtomicInstructionSchema.parse(replacement) : sub,
+            sub.id === id ? SplitSubInstructionSchema.parse(replacement) : sub,
           ),
         ),
       });
@@ -601,7 +598,9 @@ function DropZone({ containerId }: { containerId: string }) {
   );
 }
 
-function doesRequireBeatsInput(type: AtomicInstruction["type"]): boolean {
+function doesRequireBeatsInput(
+  type: Exclude<Instruction["type"], "split">,
+): boolean {
   switch (type) {
     case "allemande":
     case "balance":

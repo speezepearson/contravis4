@@ -1,9 +1,15 @@
 import { z } from "zod";
 
-import { ALL_PROTO_IDS } from "../contraCore";
-import { avgPos } from "../worldState";
-import { instructionBaseSchemaFields, resolveRing } from "./_base";
-import { type InstructionAnimator, linearTo } from "./_segment";
+import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { lerpVectors } from "../utils";
+import { avgPos, Dancer, type WorldState } from "../worldState";
+import {
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  resolveRing,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const BalanceTheRingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -13,30 +19,57 @@ export type BalanceTheRingInstruction = z.infer<
   typeof BalanceTheRingInstructionSchema
 >;
 
+export function planBalanceTheRing(
+  instr: BalanceTheRingInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const halfBeats = instr.beats / 2;
+  const start = dancer.pos;
+
+  const ring = resolveRing(dancer);
+  const center = avgPos(...ring);
+  const approachTarget = start.add(center).divide(2);
+
+  const others = ring.slice(1).map((d) => d.id);
+
+  return [
+    {
+      dur: halfBeats,
+      position: (frac) => lerpVectors(start, approachTarget, frac),
+      interactedWith: () => others,
+    },
+    {
+      dur: halfBeats,
+      position: (frac) => lerpVectors(approachTarget, start, frac),
+    },
+  ];
+}
+
 export const balanceTheRingSegments: InstructionAnimator<
   BalanceTheRingInstruction
 > = (instr, init, who) => {
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`balanceTheRing instruction must target all dancers`);
 
-  const halfBeats = instr.beats / 2;
-
+  const anim = animatePlans(init, who, (d) => planBalanceTheRing(instr, d));
   return [
     {
-      dur: halfBeats,
-      position: linearTo((dancer) => {
-        const ring = resolveRing(dancer);
-        const center = avgPos(...ring);
-        return dancer.pos.add(center).divide(2);
-      }),
-      interactedWith: (dancer) =>
-        resolveRing(dancer)
-          .slice(1)
-          .map((d) => d.id),
-    },
-    {
-      dur: halfBeats,
-      position: linearTo((dancer) => init[dancer.protoId].pos),
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
     },
   ];
 };
+
+export function balanceTheRingAnimator(
+  instr: BalanceTheRingInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) => planBalanceTheRing(instr, dancer));
+}

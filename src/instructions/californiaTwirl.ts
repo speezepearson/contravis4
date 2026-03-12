@@ -1,15 +1,16 @@
 import { z } from "zod";
 
-import { isLark, parseProtoId } from "../contraCore";
-import { getDir, PI } from "../geometry";
-import { instructionBaseSchemaFields, perRoleId, personInDir } from "./_base";
+import { type ProtoId } from "../contraCore";
+import { ccwRadsBetween, ellipsePosition, getDir, PI } from "../geometry";
+import { Dancer, type WorldState } from "../worldState";
 import {
-  arc,
-  hold,
-  type InstructionAnimator,
-  lerpFacingTo,
-  type Segment,
-} from "./_segment";
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  perRoleId,
+  personInDir,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const CaliforniaTwirlInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -19,58 +20,84 @@ export type CaliforniaTwirlInstruction = z.infer<
   typeof CaliforniaTwirlInstructionSchema
 >;
 
+const matchCid = perRoleId(
+  personInDir("on_right", "different"),
+  personInDir("on_left", "different"),
+);
+
+export function planCaliforniaTwirl(
+  instr: CaliforniaTwirlInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const them = dancer.resolveMatch(matchCid);
+  const startPos = dancer.pos;
+  const themPos = them.pos;
+  const startFacing = dancer.facing;
+  const isLark = dancer.isLark();
+
+  // Target facing: from me toward them, rotated 90 degrees
+  const targetFacing = getDir({
+    from: startPos,
+    to: themPos,
+  }).rotateByDegrees(90 * (isLark ? -1 : 1));
+
+  // Replicate lerpFacing with forceDir
+  // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
+  const ccw = ccwRadsBetween(startFacing, targetFacing);
+  const dir = isLark ? "cw" : "ccw";
+  const totalRadians =
+    dir === "ccw"
+      ? ccw > 0
+        ? ccw
+        : ccw + 2 * PI
+      : ccw < 0
+        ? ccw
+        : ccw - 2 * PI;
+
+  return [
+    {
+      dur: instr.beats,
+      position: (frac) => ellipsePosition(startPos, themPos, 0.25, PI * frac),
+      facing: (frac) => startFacing.rotateByRadians(totalRadians * frac),
+      hands: () =>
+        isLark
+          ? {
+              left: undefined,
+              right: { theirId: them.id, theirHand: "left" },
+            }
+          : {
+              left: { theirId: them.id, theirHand: "right" },
+              right: undefined,
+            },
+      interactedWith: () => [them.id],
+    },
+  ];
+}
+
 export const californiaTwirlSegments: InstructionAnimator<
   CaliforniaTwirlInstruction
-> = (instr): Segment[] => [
-  {
-    dur: instr.beats,
-    position: arc(
-      perRoleId(
-        personInDir("on_right", "different"),
-        personInDir("on_left", "different"),
-      ),
-      {
-        semiMinor: 0.25,
-        phi: PI,
-      },
-    ),
-    facing: lerpFacingTo(
-      (dancer) => {
-        // TODO: this loses the robin's rotation. We shouldn't be lerping facing, we should .rotateByRadians() a lerped value. Or add some kind of helper for it.
-        const them = dancer.resolveMatch(
-          perRoleId(
-            personInDir("on_right", "different"),
-            personInDir("on_left", "different"),
-          ),
-        );
-        const myRole = parseProtoId(dancer.protoId).role;
-        return getDir({
-          from: dancer.pos,
-          to: them.pos,
-        }).rotateByDegrees(90 * (myRole === "lark" ? -1 : 1));
-      },
-      {
-        forceDir: (id) => (isLark(id) ? "cw" : "ccw"),
-      },
-    ),
-    hands: (dancer) => {
-      const them = dancer.resolveMatch(
-        perRoleId(
-          personInDir("on_right", "different"),
-          personInDir("on_left", "different"),
-        ),
-      );
-      return isLark(dancer.protoId)
-        ? hold(["right", them.id, "left"])
-        : hold(["left", them.id, "right"]);
+> = (instr, init, who) => {
+  const anim = animatePlans(init, who, (d) => planCaliforniaTwirl(instr, d));
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
     },
-    interactedWith: (dancer) => [
-      dancer.resolveMatch(
-        perRoleId(
-          personInDir("on_right", "different"),
-          personInDir("on_left", "different"),
-        ),
-      ).id,
-    ],
-  },
-];
+  ];
+};
+
+export function californiaTwirlAnimator(
+  instr: CaliforniaTwirlInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) =>
+    planCaliforniaTwirl(instr, dancer),
+  );
+}

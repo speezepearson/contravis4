@@ -1,22 +1,20 @@
-import { Vector } from "vecti";
+import { produce } from "immer";
 import { z } from "zod";
 
-import { type DancerId, type ProtoId } from "../contraCore";
-import { getDir, lerpFacing } from "../geometry";
-import { lerpVectors, must } from "../utils";
-import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
+import { type ProtoId } from "../contraCore";
+import { getDir, lerpFacing, PI, revolve } from "../geometry";
+import { SnazzyError } from "../snazzyError";
+import { assertNever, lerpVectors, must } from "../utils";
+import { avgPos, Dancer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
+  type ContraAnimation,
   instructionBaseSchemaFields,
   personInDir,
 } from "./_base";
-import {
-  advanceState,
-  type InstructionAnimator,
-  linearTo,
-  type Segment,
-} from "./_segment";
-import { courtesyTurnSegs, resolveCourtesyTurnPartners } from "./courtesyTurn";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
+import { planCourtesyTurnWithResolvedMatch } from "./courtesyTurn";
 
 export const RobinsChainInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -27,163 +25,233 @@ export type RobinsChainInstruction = z.infer<
   typeof RobinsChainInstructionSchema
 >;
 
-type CrossTargets = {
-  cross1Target: Vector;
-  cross2Target: Vector;
-  targetFacing: Vector;
-  interactedWith: DancerId[];
-};
+// ── Shared resolution logic ─────────────────────────────────────────────
+
+function getReceiver(instr: RobinsChainInstruction, dancer: Dancer): Dancer {
+  if (dancer.role !== "robin")
+    throw new SnazzyError([
+      { dancerId: dancer.id },
+      "is a lark, so has no receiver",
+    ]);
+  const res = must(dancer.resolveCalledIdentifier(instr.cid), [
+    { dancerId: dancer.id },
+    "has no receiver lark for chain",
+  ]);
+  if (!res.isLark())
+    throw new SnazzyError([
+      { dancerId: dancer.id },
+      "has no receiver lark for chain; their",
+      { cid: instr.cid },
+      "is",
+      { dancerId: res.id },
+      ", a robin",
+    ]);
+  return res;
+}
+function getSendee(dancer: Dancer): Dancer {
+  if (dancer.role !== "lark")
+    throw new SnazzyError([
+      { dancerId: dancer.id },
+      "is a robin, so has no sendee",
+    ]);
+  const res = must(
+    dancer.resolveCalledIdentifier(
+      personInDir("setcounterclockwise", "different"),
+    ),
+    [
+      { dancerId: dancer.id },
+      "has no robin in setcounterclockwise direction to send on a chain",
+    ],
+  );
+  if (!res.isRobin())
+    throw new SnazzyError([
+      "programming error: resolveCalledIdentifier asked for dir=setcounterclockwise, onlyRole=different, but got",
+      { dancerId: res.id },
+      "for",
+      { dancerId: dancer.id },
+    ]);
+  return res;
+}
+
+// ── Legacy Segment[] API ────────────────────────────────────────────────
 
 export const robinsChainSegments: InstructionAnimator<
   RobinsChainInstruction
 > = (instr, init, who) => {
-  if (who.size !== 4) throw new Error("chain requires all 4 dancers");
+  const anim = animatePlans(init, who, (d) => planRobinsChain(instr, d));
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
+    },
+  ];
+};
 
-  /** Robin → receiving lark (given by cid). */
-  const getReceiver = (dancer: Robin): Lark => {
-    const res = must(dancer.resolveCalledIdentifier(instr.cid), [
-      { dancerId: dancer.id },
-      "has no receiver lark for chain",
-    ]);
-    if (!res.isLark()) throw new Error("programming error");
-    return res;
+function getCatchInfo(instr: RobinsChainInstruction, dancer: Dancer) {
+  if (dancer.role === "robin")
+    return getCatchInfo(instr, getReceiver(instr, dancer));
+
+  const sent = getSendee(dancer);
+  const midpointWithSent = avgPos(dancer, sent);
+  const towardSent = getDir({ from: dancer.pos, to: sent.pos });
+
+  return {
+    midpoint: midpointWithSent,
+    facing: towardSent.rotateByDegrees(-90),
+    larkAt: midpointWithSent.add(towardSent.multiply(0.35)),
+    robinAt: midpointWithSent.add(towardSent.multiply(-0.35)),
   };
+}
 
-  /** Lark → robin being sent away (setcounterclockwise from lark). */
-  const getSendee = (dancer: Lark): Robin => {
-    const res = must(
-      dancer.resolveCalledIdentifier(
-        personInDir("setcounterclockwise", "different"),
-      ),
-      [
-        { dancerId: dancer.id },
-        "has no robin in setcounterclockwise direction to send on a chain",
-      ],
-    );
-    if (!res.isRobin()) throw new Error("programming error");
-    return res;
-  };
+function planRobinsChainForLark(
+  instr: RobinsChainInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const halfBeats = instr.beats / 2;
 
-  {
-    for (const dancer of who) {
-      getCycle(Dancer.get(dancer, init), (d) => {
-        if (d.isLark()) return getSendee(d);
-        if (d.isRobin()) return getReceiver(d);
-        throw new Error("programming error");
-      });
-    }
-  }
+  const catchInfo = getCatchInfo(instr, dancer);
 
-  // Pre-resolve all targets from the init state, before positions change.
-  const crossTargets = new Map<ProtoId, CrossTargets>();
-  for (const protoId of who) {
-    const d = Dancer.get(protoId, init);
-    if (d.isRobin()) {
-      const receiver = getReceiver(d);
-      const receiversSendee = getSendee(receiver);
+  const sent = getSendee(dancer);
+  const receiving: Dancer = getSendee(getReceiver(instr, getSendee(dancer)));
 
-      // Cross1 waypoint: perpendicular offset from midpoint(robin, receiversSendee).
-      const R = d.pos.add(receiversSendee.pos).divide(2);
-      const D = getDir({ from: d.pos, to: R });
-      const cross1Target = R.add(
-        D.rotateByDegrees(90).normalize().multiply(0.25),
-      );
+  const sidestepSegment = {
+    dur: halfBeats,
+    position: (frac) => lerpVectors(dancer.pos, catchInfo.larkAt, frac),
+    facing: (frac) =>
+      lerpFacing(dancer.facing, catchInfo.facing, frac, { forceDir: "ccw" }),
+    hands: () => ({ left: undefined, right: undefined }),
+    interactedWith: () => [sent.id],
+  } satisfies DancerSegment;
 
-      // Cross2 target: 0.25m toward receiver from midpoint(receiver, receiversSendee).
-      const larkSendeeMid = receiver.pos.add(receiversSendee.pos).divide(2);
-      const towardReceiver = getDir({
-        from: receiversSendee.pos,
-        to: receiver.pos,
-      });
-      const cross2Target = larkSendeeMid.add(towardReceiver.multiply(0.25));
+  const courtesyTurnSegments = planCourtesyTurnWithResolvedMatch(
+    { beats: halfBeats },
+    produce(dancer, (draft) => {
+      draft.pos = catchInfo.larkAt;
+      draft.facing = catchInfo.facing;
+    }),
+    produce(receiving, (draft) => {
+      draft.pos = catchInfo.robinAt;
+      draft.facing = catchInfo.facing;
+    }),
+  );
 
-      crossTargets.set(protoId, {
-        cross1Target,
-        cross2Target,
-        targetFacing: receiver.resolvePureDirection("out"),
-        interactedWith: [receiver.id, getSendee(receiver).id],
-      });
-    } else if (d.isLark()) {
-      const sendee = getSendee(d);
+  return [sidestepSegment, ...courtesyTurnSegments];
+}
 
-      // Lark target: 0.25m toward sendee from midpoint(lark, sendee).
-      const mid = d.pos.add(sendee.pos).divide(2);
-      const towardSendee = getDir({ from: d.pos, to: sendee.pos });
-      const finalTarget = mid.add(towardSendee.multiply(0.25));
-
-      crossTargets.set(protoId, {
-        cross1Target: d.pos.add(finalTarget).divide(2),
-        cross2Target: finalTarget,
-        targetFacing: d.resolvePureDirection("out"),
-        interactedWith: [sendee.id],
-      });
-    }
-  }
-
-  function getTargets(dancer: Dancer): CrossTargets {
-    const t = crossTargets.get(dancer.protoId);
-    if (!t) throw new Error("programming error");
-    return t;
-  }
-
+function planRobinsChainForRobin(
+  instr: RobinsChainInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
   const halfBeats = instr.beats / 2;
   const quarterBeats = instr.beats / 4;
 
-  // Phase 1: Robins cross the set in two sub-segments (curved path);
-  // larks shift linearly to the sent robin's position.
+  const catchInfo = getCatchInfo(instr, dancer);
 
-  // Sub-segment 1: Robin curves to waypoint; lark moves toward its midpoint target.
-  const cross1: Segment = {
+  const receiver = getReceiver(instr, dancer);
+  const receiverSendee = getSendee(receiver);
+
+  const passMidpoint = avgPos(dancer, receiverSendee);
+  const passFacing = getDir({ from: dancer.pos, to: passMidpoint });
+  const approachSegment = {
     dur: quarterBeats,
-    position: (dancer, frac) => {
-      const t = getTargets(dancer);
-      return lerpVectors(dancer.pos, t.cross1Target, frac);
-    },
-    facing: (dancer, frac) => {
-      const t = getTargets(dancer);
-      if (dancer.isLark()) {
-        return lerpFacing(dancer.facing, t.targetFacing, frac * 0.5, {
-          forceDir: "ccw",
-        });
-      }
-      return lerpFacing(dancer.facing, t.targetFacing, frac * 0.5);
-    },
-    hands: () => ({}),
-    interactedWith: (dancer) => getTargets(dancer).interactedWith,
+    position: (frac) =>
+      lerpVectors(
+        dancer.pos,
+        passMidpoint.add(
+          getDir({ from: dancer.pos, to: passMidpoint })
+            .multiply(0.25)
+            .rotateByDegrees(90),
+        ),
+        frac,
+      ),
+    facing: () => passFacing,
+  } satisfies DancerSegment;
+  const postApproach = {
+    pos: approachSegment.position(1),
+    facing: approachSegment.facing(),
   };
 
-  // Sub-segment 2: Robin continues to near receiver; lark finishes to near sendee.
-  const cross2: Segment = {
-    dur: quarterBeats,
-    position: linearTo((dancer) => getTargets(dancer).cross2Target),
-    facing: (dancer, frac) => {
-      const t = getTargets(dancer);
-      if (dancer.isLark()) {
-        return lerpFacing(dancer.facing, t.targetFacing, frac, {
-          forceDir: "ccw",
-        });
-      }
-      return lerpFacing(dancer.facing, t.targetFacing, frac);
-    },
-    hands: () => ({}),
-    interactedWith: (dancer) => getTargets(dancer).interactedWith,
+  const passRevolveRadians = -PI / 2; // TODO: revolve until dancer or receiverSendee is facing their caughtAt
+  const passSegment = {
+    dur: quarterBeats / 2,
+    position: (frac) =>
+      revolve(postApproach.pos, {
+        around: passMidpoint,
+        radians: passRevolveRadians * frac,
+      }),
+    facing: (frac) => passFacing.rotateByRadians(passRevolveRadians * frac),
+    hands: () => ({
+      left: undefined,
+      right: { theirId: receiverSendee.id, theirHand: "right" },
+    }),
+  } satisfies DancerSegment;
+  const postPass = {
+    pos: passSegment.position(1),
+    facing: passSegment.facing(1),
   };
 
-  // Phase 2: Courtesy turn, reusing shared logic.
-  // Pre-resolve partners from post-cross state.
-  const postCrossState = advanceState([cross1, cross2], init, who);
-  const partnerOf = resolveCourtesyTurnPartners(postCrossState, who);
-  const ctSegs = courtesyTurnSegs(halfBeats, partnerOf);
+  const catchSegment = {
+    dur: quarterBeats / 2,
+    position: (frac) => lerpVectors(postPass.pos, catchInfo.robinAt, frac),
+    facing: (frac) =>
+      lerpFacing(catchInfo.facing, catchInfo.facing, frac, { forceDir: "ccw" }),
+    hands: () => ({}),
+  } satisfies DancerSegment;
 
-  // Add interactedWith to each courtesy turn segment.
-  const ctSegsWithInteraction = ctSegs.map((seg) => ({
-    ...seg,
-    interactedWith: (dancer: Dancer): DancerId[] => {
-      const themId = partnerOf.get(dancer.id);
-      if (!themId) throw new Error("programming error");
-      return [themId];
-    },
-  }));
+  const courtesyTurnSegments = planCourtesyTurnWithResolvedMatch(
+    { beats: halfBeats },
+    produce(dancer, (draft) => {
+      draft.pos = catchInfo.robinAt;
+      draft.facing = catchInfo.facing;
+    }),
+    produce(receiver, (draft) => {
+      draft.pos = catchInfo.larkAt;
+      draft.facing = catchInfo.facing;
+    }),
+  );
 
-  return [cross1, cross2, ...ctSegsWithInteraction];
-};
+  // const courtesyTurnSegment = {
+  //   dur: halfBeats,
+  //   position: (frac) => revolve(postCatch.pos, { around: catchInfo.midpoint, radians: PI * frac }),
+  //   facing: (frac) => postCatch.facing.rotateByRadians(PI*frac),
+  //   hands: () => ({left: {theirId: receiver.id, theirHand: "left"}, right: {theirId: receiver.id, theirHand: "right"}}),
+  // } satisfies DancerSegment;
+
+  return [approachSegment, passSegment, catchSegment, ...courtesyTurnSegments];
+}
+
+// ── Plan-based API (top-level instruction) ──────────────────────────────
+
+export function planRobinsChain(
+  instr: RobinsChainInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  switch (dancer.role) {
+    case "robin":
+      return planRobinsChainForRobin(instr, dancer);
+    case "lark":
+      return planRobinsChainForLark(instr, dancer);
+    default:
+      assertNever(dancer.role);
+  }
+}
+
+/**
+ * Animate a robins chain using per-dancer plans.
+ *
+ * Each dancer gets their own DancerSegment[] with closures that know the
+ * dancer's identity, targets, and partners. No `dancer` parameter needed.
+ */
+export function robinsChainAnimator(
+  instr: RobinsChainInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) => planRobinsChain(instr, dancer));
+}

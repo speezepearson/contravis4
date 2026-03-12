@@ -7,13 +7,17 @@ import { EAST, NORTH, SOUTH, WEST } from "../geometry";
 import { typedParse } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
 import { AtomicInstructionSchema } from "./_atomic";
+import { RobinsChainInstructionSchema } from "./robinsChain";
 import { getSplitDuration, SplitSchema } from "./split";
+import { SwingInstructionSchema } from "./swing";
 import type { LLRRTemplateId, LRTemplateId } from "./templates/index";
 
 export { type InstructionId, InstructionIdSchema } from "./_base";
 
 export const InstructionSchema = z.discriminatedUnion("type", [
   AtomicInstructionSchema,
+  RobinsChainInstructionSchema,
+  SwingInstructionSchema,
   SplitSchema,
 ]);
 export type Instruction = z.infer<typeof InstructionSchema>;

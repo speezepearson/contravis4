@@ -1,4 +1,4 @@
-import type { AtomicInstruction } from "../../instructions/_atomic";
+import type { RobinsChainInstruction } from "../../instructions/robinsChain";
 import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import type { SubFormProps } from "../fieldUtils";
 
@@ -7,7 +7,7 @@ export function RobinsChainFields({
   onChange,
   onInvalid: _onInvalid,
 }: SubFormProps & {
-  instruction: Extract<AtomicInstruction, { type: "robins_chain" }>;
+  instruction: RobinsChainInstruction;
 }) {
   return (
     <>

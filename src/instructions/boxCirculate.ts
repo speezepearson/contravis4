@@ -1,12 +1,17 @@
 import { z } from "zod";
 
 import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
-import { PI, revolve } from "../geometry";
+import { lerpFacing, PI, revolve } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors } from "../utils";
-import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, personInDir } from "./_base";
-import { type InstructionAnimator, lerpFacingTo } from "./_segment";
+import { Dancer, type WorldState } from "../worldState";
+import {
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  personInDir,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const BoxCirculateInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -16,68 +21,127 @@ export type BoxCirculateInstruction = z.infer<
   typeof BoxCirculateInstructionSchema
 >;
 
+export function planBoxCirculate(
+  instr: BoxCirculateInstruction,
+  dancer: Dancer,
+  outFacers: ReadonlySet<ProtoId>,
+): DancerSegment[] {
+  const startPos = dancer.pos;
+  const startFacing = dancer.facing;
+  const isOutFacer = outFacers.has(dancer.protoId);
+
+  if (isOutFacer) {
+    const match = dancer.resolveCalledIdentifier(
+      personInDir("on_right", "different"),
+    );
+    if (!match)
+      throw new SnazzyError([
+        { dancerId: dancer.protoId },
+        " has nobody on their right to box circulate to",
+      ]);
+    const matchPos = match.pos;
+    const targetFacing = startFacing.rotateByRadians(PI);
+
+    return [
+      {
+        dur: instr.beats,
+        position: (frac) =>
+          revolve(startPos, {
+            aroundMidpointWith: matchPos,
+            radians: -PI * frac,
+          }),
+        facing: (frac) =>
+          lerpFacing(startFacing, targetFacing, frac, { forceDir: "cw" }),
+        hands: () => ({}),
+      },
+    ];
+  } else {
+    const match = dancer.resolveCalledIdentifier(
+      personInDir("in_front", "different"),
+    );
+    if (!match)
+      throw new SnazzyError([
+        { dancerId: dancer.protoId },
+        " has nobody in front to box circulate to",
+      ]);
+    const matchPos = match.pos;
+
+    return [
+      {
+        dur: instr.beats,
+        position: (frac) => lerpVectors(startPos, matchPos, frac),
+        facing: (frac) =>
+          lerpFacing(startFacing, startFacing, frac, { forceDir: "cw" }),
+        hands: () => ({}),
+      },
+    ];
+  }
+}
+
 export const boxCirculateSegments: InstructionAnimator<
   BoxCirculateInstruction
 > = (instr, init, who) => {
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`boxCirculate instruction must target all dancers`);
 
-  const outFacers: ProtoId[] = [];
-  const acrossFacers: ProtoId[] = [];
+  const outFacerSet = new Set<ProtoId>();
   for (const id of who) {
     if (Dancer.get(id, init).facesOut()) {
-      outFacers.push(id);
+      outFacerSet.add(id);
     } else if (Dancer.get(id, init).facesAcross()) {
-      acrossFacers.push(id);
+      // acrossFacer — ok
     } else {
       throw new SnazzyError([{ dancerId: id }, " is not facing out or across"]);
     }
   }
-  if (!(outFacers.length === 2 && acrossFacers.length === 2)) {
+  if (!(outFacerSet.size === 2 && who.size - outFacerSet.size === 2)) {
     throw new Error(
       `boxCirculate requires two dancers to face out and two to face across`,
     );
   }
 
+  const anim = animatePlans(init, who, (d) =>
+    planBoxCirculate(instr, d, outFacerSet),
+  );
   return [
     {
       dur: instr.beats,
-      position: (dancer, frac) => {
-        if (outFacers.includes(dancer.protoId)) {
-          const match = dancer.resolveCalledIdentifier(
-            personInDir("on_right", "different"),
-          );
-          if (!match)
-            throw new SnazzyError([
-              { dancerId: dancer.protoId },
-              " has nobody on their right to box circulate to",
-            ]);
-          return revolve(dancer.pos, {
-            aroundMidpointWith: match.pos,
-            radians: -PI * frac,
-          });
-        } else {
-          const match = dancer.resolveCalledIdentifier(
-            personInDir("in_front", "different"),
-          );
-          if (!match)
-            throw new SnazzyError([
-              { dancerId: dancer.protoId },
-              " has nobody in front to box circulate to",
-            ]);
-          return lerpVectors(dancer.pos, match.pos, frac);
-        }
-      },
-      facing: lerpFacingTo(
-        (dancer) => {
-          if (outFacers.includes(dancer.protoId)) {
-            return dancer.facing.rotateByRadians(PI);
-          }
-          return dancer.facing;
-        },
-        { forceDir: () => "cw" },
-      ),
-      hands: () => ({}),
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
     },
   ];
 };
+
+export function boxCirculateAnimator(
+  instr: BoxCirculateInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  if (who.size !== ALL_PROTO_IDS.length)
+    throw new Error(`boxCirculate instruction must target all dancers`);
+
+  const outFacerSet = new Set<ProtoId>();
+  for (const id of who) {
+    if (Dancer.get(id, init).facesOut()) {
+      outFacerSet.add(id);
+    } else if (Dancer.get(id, init).facesAcross()) {
+      // acrossFacer — ok
+    } else {
+      throw new SnazzyError([{ dancerId: id }, " is not facing out or across"]);
+    }
+  }
+  if (!(outFacerSet.size === 2 && who.size - outFacerSet.size === 2)) {
+    throw new Error(
+      `boxCirculate requires two dancers to face out and two to face across`,
+    );
+  }
+
+  return animatePlans(init, who, (dancer) =>
+    planBoxCirculate(instr, dancer, outFacerSet),
+  );
+}
