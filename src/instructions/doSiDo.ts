@@ -1,8 +1,14 @@
 import { z } from "zod";
 
-import { getDir, TWO_PI } from "../geometry";
-import { must } from "../utils";
-import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
+import { type ProtoId } from "../contraCore";
+import { ellipsePosition, getDir, TWO_PI } from "../geometry";
+import { Dancer, type WorldState } from "../worldState";
+import {
+  CalledIdentifierSchema,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
 import { arc, type InstructionAnimator } from "./_segment";
 
 export const DoSiDoInstructionSchema = z.object({
@@ -12,6 +18,29 @@ export const DoSiDoInstructionSchema = z.object({
   rotations: z.number(),
 });
 export type DoSiDoInstruction = z.infer<typeof DoSiDoInstructionSchema>;
+
+export function planDoSiDo(
+  instr: DoSiDoInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const match = dancer.resolveMatch(instr.cid);
+  const start = dancer.pos;
+  const end = match.pos;
+  const phi = TWO_PI * instr.rotations;
+
+  return [
+    {
+      dur: instr.beats,
+      position: (frac) => ellipsePosition(start, end, 0.25, phi * frac),
+      facing: (frac) => {
+        const myPos = ellipsePosition(start, end, 0.25, phi * frac);
+        const theirPos = ellipsePosition(end, start, 0.25, phi * frac);
+        return getDir({ from: myPos, to: theirPos });
+      },
+      interactedWith: () => [match.id],
+    },
+  ];
+}
 
 export const doSiDoSegments: InstructionAnimator<DoSiDoInstruction> = (
   instr,
@@ -23,12 +52,17 @@ export const doSiDoSegments: InstructionAnimator<DoSiDoInstruction> = (
       phi: TWO_PI * instr.rotations,
     }),
     facing: (dancer) => {
-      const match = must(dancer.resolveCalledIdentifier(instr.cid), [
-        { dancerId: dancer.id },
-        "has no match to do si do with",
-      ]);
+      const match = dancer.resolveMatch(instr.cid);
       return getDir({ from: dancer.pos, to: match.pos });
     },
     interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
   },
 ];
+
+export function doSiDoAnimator(
+  instr: DoSiDoInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) => planDoSiDo(instr, dancer));
+}
