@@ -136,6 +136,7 @@ import {
   roryOMoreSegments,
 } from "./roryOMore";
 import {
+  shoulderRoundAnimator,
   ShoulderRoundInstructionSchema,
   shoulderRoundSegments,
 } from "./shoulderRound";
@@ -383,6 +384,8 @@ export function animateAtomicInstruction(
       return rollAwayAnimator(instr, init, who);
     case "rory_o_more":
       return roryOMoreAnimator(instr, init, who);
+    case "shoulder_round":
+      return shoulderRoundAnimator(instr, init, who);
     case "square_through":
       return squareThroughAnimator(instr, init, who);
     case "star":
