@@ -61,6 +61,7 @@ import {
 } from "./dropHands";
 import { faceAnimator, FaceInstructionSchema, faceSegments } from "./face";
 import {
+  formLongWavesAnimator,
   FormLongWavesInstructionSchema,
   formLongWavesSegments,
 } from "./formLongWaves";
@@ -365,6 +366,8 @@ export function animateAtomicInstruction(
       return dropHandsAnimator(instr, init, who);
     case "face":
       return faceAnimator(instr, init, who);
+    case "form_long_waves":
+      return formLongWavesAnimator(instr, init, who);
     case "greet_new_neighbors":
       return greetNewNeighborsAnimator(instr, init, who);
     case "greet_shadow":

@@ -1,11 +1,21 @@
 import { produce } from "immer";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, parseProtoId } from "../contraCore";
+import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { must, safeThreshold } from "../utils";
-import { connectHands, Dancer, getDancerSide } from "../worldState";
-import { instructionBaseSchemaFields, personInDir } from "./_base";
+import {
+  connectHands,
+  Dancer,
+  getDancerSide,
+  type WorldState,
+} from "../worldState";
+import {
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  personInDir,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
 import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormLongWavesInstructionSchema = z.object({
@@ -17,9 +27,10 @@ export type FormLongWavesInstruction = z.infer<
   typeof FormLongWavesInstructionSchema
 >;
 
-export const formLongWavesSegments: InstructionAnimator<
-  FormLongWavesInstruction
-> = (_instr, init, who) => {
+function validateAndComputeFinalState(
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): WorldState {
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`formLongWaves instruction must target all dancers`);
 
@@ -70,11 +81,10 @@ export const formLongWavesSegments: InstructionAnimator<
     );
   }
 
-  return [
-    makeImmediateSegment(init, (id, draft) => {
+  // Compute full final state with hands connected
+  return produce(init, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
       draft[id].facing = snappedState[id].facing;
-      // Every dancer must have somebody on their left and right; resolveMatch
-      // throws if any dancer lacks a match on either side.
       const snapped = Dancer.get(id, snappedState);
       connectHands(
         draft,
@@ -90,6 +100,47 @@ export const formLongWavesSegments: InstructionAnimator<
         snapped.resolveMatch(personInDir("on_right", "different")).id,
         "right",
       );
+    }
+  });
+}
+
+// ── Plan-based API ──────────────────────────────────────────────────────
+
+export function planFormLongWaves(
+  dancer: Dancer,
+  finalState: WorldState,
+): DancerSegment[] {
+  const final = finalState[dancer.protoId];
+  return [
+    {
+      dur: 0,
+      facing: () => final.facing,
+      hands: () => final.hands,
+    },
+  ];
+}
+
+export function formLongWavesAnimator(
+  _instr: FormLongWavesInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const finalState = validateAndComputeFinalState(init, who);
+  return animatePlans(init, who, (dancer) =>
+    planFormLongWaves(dancer, finalState),
+  );
+}
+
+// ── Legacy Segment[] API ────────────────────────────────────────────────
+
+export const formLongWavesSegments: InstructionAnimator<
+  FormLongWavesInstruction
+> = (_instr, init, who) => {
+  const finalState = validateAndComputeFinalState(init, who);
+  return [
+    makeImmediateSegment(init, (id, draft) => {
+      draft[id].facing = finalState[id].facing;
+      draft[id].hands = finalState[id].hands;
     }),
   ];
 };
