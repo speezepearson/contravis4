@@ -141,6 +141,7 @@ import {
   shoulderRoundSegments,
 } from "./shoulderRound";
 import {
+  singleFilePromenadeAnimator,
   SingleFilePromenadeInstructionSchema,
   singleFilePromenadeSegments,
 } from "./singleFilePromenade";
@@ -386,6 +387,8 @@ export function animateAtomicInstruction(
       return roryOMoreAnimator(instr, init, who);
     case "shoulder_round":
       return shoulderRoundAnimator(instr, init, who);
+    case "single_file_promenade":
+      return singleFilePromenadeAnimator(instr, init, who);
     case "square_through":
       return squareThroughAnimator(instr, init, who);
     case "star":
