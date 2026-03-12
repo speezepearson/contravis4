@@ -97,7 +97,11 @@ import {
   MeltdownSwingInstructionSchema,
   meltdownSwingSegments,
 } from "./meltdownSwing";
-import { PassByInstructionSchema, passBySegments } from "./passBy";
+import {
+  passByAnimator,
+  PassByInstructionSchema,
+  passBySegments,
+} from "./passBy";
 import {
   petronellaAnimator,
   PetronellaInstructionSchema,
@@ -364,6 +368,8 @@ export function animateAtomicInstruction(
       return petronellaAnimator(instr, init, who);
     case "poussette":
       return poussetteAnimator(instr, init, who);
+    case "pass_by":
+      return passByAnimator(instr, init, who);
     case "pull_by":
       return pullByAnimator(instr, init, who);
     case "roll_away":
