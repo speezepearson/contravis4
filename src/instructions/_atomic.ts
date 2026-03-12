@@ -4,7 +4,11 @@ import type { ProtoId } from "../contraCore";
 import type { WorldState } from "../worldState";
 import { type ContraAnimation } from "./_base";
 import { animateSegments, type Segment } from "./_segment";
-import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
+import {
+  allemandeAnimator,
+  AllemandeInstructionSchema,
+  allemandeSegments,
+} from "./allemande";
 import {
   balanceAnimator,
   BalanceInstructionSchema,
@@ -337,6 +341,8 @@ export function animateAtomicInstruction(
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
   switch (instr.type) {
+    case "allemande":
+      return allemandeAnimator(instr, init, who);
     case "balance":
       return balanceAnimator(instr, init, who);
     case "balance_the_ring":
