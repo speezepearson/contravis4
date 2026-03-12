@@ -22,6 +22,8 @@ import { type Label } from "./labels";
 /** Ordered list of patterns to match instruction types. Earlier entries win. */
 const TYPE_PATTERNS: { pattern: RegExp; type: ActionOptionType }[] = [
   // Multi-word phrases first (order matters!)
+  // "larks start a half hey" — role is part of the figure, not a split indicator
+  { pattern: /start\s+a\s+.*hey\b/i, type: "hey" },
   { pattern: /balance\s+and\s+swing/i, type: "balance_and_swing" },
   { pattern: /balance\s+the\s+ring/i, type: "balance_the_ring" },
   { pattern: /box\s+circulate/i, type: "box_circulate" },
@@ -168,8 +170,13 @@ function parseLeadingRole(text: string): Role | null {
   return null;
 }
 
-/** Types where a leading role name is part of the figure name, not a split indicator. */
-const ROLE_IS_PART_OF_NAME: Set<ActionOptionType> = new Set(["robins_chain"]);
+/** Check if a leading role name is part of the figure name, not a split indicator. */
+function roleIsPartOfName(type: ActionOptionType, text: string): boolean {
+  if (type === "robins_chain") return true;
+  // "larks start a half hey" — the role describes who starts, not a split
+  if (type === "hey" && /start\s+a\s+/i.test(text)) return true;
+  return false;
+}
 
 // ── Split detection ─────────────────────────────────────────────────────
 
@@ -204,7 +211,7 @@ export function parseDanceInstruction(text: string): Instruction[] {
   const leadingRole = parseLeadingRole(trimmed);
   const detectedType = detectType(trimmed);
 
-  if (leadingRole && detectedType && !ROLE_IS_PART_OF_NAME.has(detectedType)) {
+  if (leadingRole && detectedType && !roleIsPartOfName(detectedType, trimmed)) {
     // This is a role-specific instruction → wrap in a split
     const innerInstrs = parseSingleInstruction(trimmed);
     if (innerInstrs.length > 0) {
@@ -333,10 +340,18 @@ function applyOverrides(instr: Instruction, text: string): Instruction {
       if (direction) overrides.direction = direction;
       break;
 
-    case "hey":
+    case "hey": {
       if (/\bhalf\b/i.test(text)) overrides.full = false;
       if (/\bfull\b/i.test(text)) overrides.full = true;
+      // "larks start a half hey - lefts in center" → centerRole=lark, centerHand=left
+      const heyRole = parseLeadingRole(text);
+      if (heyRole) overrides.centerRole = heyRole;
+      if (/\blefts?\s+in\s+(?:the\s+)?(?:center|centre|middle)/i.test(text))
+        overrides.centerHand = "left";
+      if (/\brights?\s+in\s+(?:the\s+)?(?:center|centre|middle)/i.test(text))
+        overrides.centerHand = "right";
       break;
+    }
 
     case "step":
       // "dance forward" / "dance backward" / "step back"

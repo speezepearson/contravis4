@@ -217,6 +217,32 @@ describe("parseDanceInstruction", () => {
       if (instr.type !== "hey") throw new Error("wrong type");
       expect(instr.full).toBe(false);
     });
+
+    it("parses 'gentlespoons start a half hey - lefts in center'", () => {
+      const result = parseDanceInstruction(
+        "gentlespoons start a half hey - lefts in center, rights on ends",
+      );
+      expect(result).toHaveLength(1);
+      const instr = result[0];
+      expect(instr.type).toBe("hey");
+      if (instr.type !== "hey") throw new Error("wrong type");
+      expect(instr.full).toBe(false);
+      expect(instr.centerRole).toBe("lark");
+      expect(instr.centerHand).toBe("left");
+    });
+
+    it("parses 'ladles start a full hey - rights in center'", () => {
+      const result = parseDanceInstruction(
+        "ladles start a full hey - rights in center",
+      );
+      expect(result).toHaveLength(1);
+      const instr = result[0];
+      expect(instr.type).toBe("hey");
+      if (instr.type !== "hey") throw new Error("wrong type");
+      expect(instr.full).toBe(true);
+      expect(instr.centerRole).toBe("robin");
+      expect(instr.centerHand).toBe("right");
+    });
   });
 
   describe("default beats", () => {
