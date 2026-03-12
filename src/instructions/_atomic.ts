@@ -171,6 +171,7 @@ import {
   turnAloneSegments,
 } from "./turnAlone";
 import {
+  turnAsACoupleAnimator,
   TurnAsACoupleInstructionSchema,
   turnAsACoupleSegments,
 } from "./turnAsACouple";
@@ -386,6 +387,8 @@ export function animateAtomicInstruction(
       return takeHandsInRingsAnimator(instr, init, who);
     case "turn_alone":
       return turnAloneAnimator(instr, init, who);
+    case "turn_as_a_couple":
+      return turnAsACoupleAnimator(instr, init, who);
     case "up_the_hall":
       return upTheHallAnimator(instr, init, who);
     case "zig_zag":
