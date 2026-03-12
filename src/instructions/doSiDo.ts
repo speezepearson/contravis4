@@ -32,11 +32,7 @@ export function planDoSiDo(
     {
       dur: instr.beats,
       position: (frac) => ellipsePosition(start, end, 0.25, phi * frac),
-      facing: (frac) => {
-        const myPos = ellipsePosition(start, end, 0.25, phi * frac);
-        const theirPos = ellipsePosition(end, start, 0.25, phi * frac);
-        return getDir({ from: myPos, to: theirPos });
-      },
+      facing: () => getDir({ from: start, to: end }),
       interactedWith: () => [match.id],
     },
   ];

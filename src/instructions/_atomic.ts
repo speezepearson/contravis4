@@ -40,8 +40,13 @@ import {
   californiaTwirlSegments,
 } from "./californiaTwirl";
 import { CircleInstructionSchema, circleSegments } from "./circle";
-import { DoSiDoInstructionSchema, doSiDoSegments } from "./doSiDo";
 import {
+  doSiDoAnimator,
+  DoSiDoInstructionSchema,
+  doSiDoSegments,
+} from "./doSiDo";
+import {
+  downTheHallAnimator,
   DownTheHallInstructionSchema,
   downTheHallSegments,
 } from "./downTheHall";
@@ -103,7 +108,11 @@ import {
   PoussetteInstructionSchema,
   poussetteSegments,
 } from "./poussette";
-import { PullByInstructionSchema, pullBySegments } from "./pullBy";
+import {
+  pullByAnimator,
+  PullByInstructionSchema,
+  pullBySegments,
+} from "./pullBy";
 import {
   RightLeftThroughInstructionSchema,
   rightLeftThroughSegments,
@@ -128,6 +137,7 @@ import {
 } from "./singleFilePromenade";
 import { SliceInstructionSchema, sliceSegments } from "./slice";
 import {
+  squareThroughAnimator,
   SquareThroughInstructionSchema,
   squareThroughSegments,
 } from "./squareThrough";
@@ -160,7 +170,11 @@ import {
   TurnAsACoupleInstructionSchema,
   turnAsACoupleSegments,
 } from "./turnAsACouple";
-import { UpTheHallInstructionSchema, upTheHallSegments } from "./upTheHall";
+import {
+  upTheHallAnimator,
+  UpTheHallInstructionSchema,
+  upTheHallSegments,
+} from "./upTheHall";
 import {
   zigZagAnimator,
   ZigZagInstructionSchema,
@@ -330,6 +344,10 @@ export function animateAtomicInstruction(
       return boxTheGnatAnimator(instr, init, who);
     case "california_twirl":
       return californiaTwirlAnimator(instr, init, who);
+    case "do_si_do":
+      return doSiDoAnimator(instr, init, who);
+    case "down_the_hall":
+      return downTheHallAnimator(instr, init, who);
     case "drop_hands":
       return dropHandsAnimator(instr, init, who);
     case "face":
@@ -346,10 +364,14 @@ export function animateAtomicInstruction(
       return petronellaAnimator(instr, init, who);
     case "poussette":
       return poussetteAnimator(instr, init, who);
+    case "pull_by":
+      return pullByAnimator(instr, init, who);
     case "roll_away":
       return rollAwayAnimator(instr, init, who);
     case "rory_o_more":
       return roryOMoreAnimator(instr, init, who);
+    case "square_through":
+      return squareThroughAnimator(instr, init, who);
     case "step":
       return stepAnimator(instr, init, who);
     case "take_hands":
@@ -358,6 +380,8 @@ export function animateAtomicInstruction(
       return takeHandsInRingsAnimator(instr, init, who);
     case "turn_alone":
       return turnAloneAnimator(instr, init, who);
+    case "up_the_hall":
+      return upTheHallAnimator(instr, init, who);
     case "zig_zag":
       return zigZagAnimator(instr, init, who);
     default:

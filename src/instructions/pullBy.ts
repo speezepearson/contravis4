@@ -32,11 +32,7 @@ export function planPullBy(
     {
       dur: instr.beats,
       position: (frac) => ellipsePosition(start, end, semiMinor, PI * frac),
-      facing: (frac) => {
-        const myPos = ellipsePosition(start, end, semiMinor, PI * frac);
-        const theirPos = ellipsePosition(end, start, semiMinor, PI * frac);
-        return getDir({ from: myPos, to: theirPos });
-      },
+      facing: () => getDir({ from: start, to: end }),
       hands: (frac) => {
         if (frac >= 0.5) return {};
         return hold([instr.hand, match.id, instr.hand]);

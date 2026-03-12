@@ -201,6 +201,7 @@ function planRobinsChainForRobin(
     position: (frac) => lerpVectors(postPass.pos, catchInfo.robinAt, frac),
     facing: (frac) =>
       lerpFacing(catchInfo.facing, catchInfo.facing, frac, { forceDir: "ccw" }),
+    hands: () => ({}),
   } satisfies DancerSegment;
 
   const courtesyTurnSegments = planCourtesyTurnWithResolvedMatch(

@@ -171,10 +171,8 @@ export function animatePlans(
             draft[id].pos = seg.position ? seg.position(frac) : segInit.pos;
             draft[id].facing = seg.facing ? seg.facing(frac) : segInit.facing;
 
-            if (seg.hands) {
-              draft[id].hands = {};
-              draft[id].hands = seg.hands(frac);
-            }
+            draft[id].hands = {};
+            draft[id].hands = seg.hands ? seg.hands(frac) : segInit.hands;
 
             // Accumulate interactedWith from ALL segments up to the active one,
             // matching the legacy behavior where segInit carries forward recents.
