@@ -16,6 +16,19 @@ if (!file) {
 
 const content = fs.readFileSync(file, "utf-8");
 
+function withoutId(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(withoutId);
+  if (obj !== null && typeof obj === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === "id") continue;
+      out[k] = withoutId(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
 for (const line of content.split("\n")) {
   const match = line.match(/^\s*(\d+)\s+beats?\s+(.+)/);
   if (!match) continue;
@@ -28,42 +41,7 @@ for (const line of content.split("\n")) {
     console.log("  (no parse)");
   } else {
     for (const r of result) {
-      if (r.type === "split") {
-        if (r.by === "role") {
-          const fmtSide = (instrs: typeof r.larks) =>
-            instrs.length === 0
-              ? "(empty)"
-              : instrs.map((i) => i.type).join(", ");
-          console.log(
-            `  → split(role): larks=[${fmtSide(r.larks)}], robins=[${fmtSide(r.robins)}]`,
-          );
-        } else {
-          const fmtSide = (instrs: typeof r.ups) =>
-            instrs.length === 0
-              ? "(empty)"
-              : instrs.map((i) => i.type).join(", ");
-          console.log(
-            `  → split(dir): ups=[${fmtSide(r.ups)}], downs=[${fmtSide(r.downs)}]`,
-          );
-        }
-      } else {
-        const fields: string[] = [`type=${r.type}`, `beats=${r.beats}`];
-        if ("cid" in r) {
-          const cid = r.cid;
-          if (cid.type === "label") fields.push(`cid=${cid.label}`);
-          else if (cid.type === "PersonInDirection")
-            fields.push(`cid=person_${cid.dir}`);
-        }
-        if ("handedness" in r) fields.push(`hand=${r.handedness}`);
-        if ("rotations" in r) fields.push(`rot=${r.rotations}`);
-        if ("direction" in r) {
-          const d = r.direction;
-          fields.push(`dir=${typeof d === "string" ? d : JSON.stringify(d)}`);
-        }
-        if ("nPlaces" in r) fields.push(`nPlaces=${r.nPlaces}`);
-        if ("full" in r) fields.push(`full=${r.full}`);
-        console.log(`  → ${fields.join(", ")}`);
-      }
+      console.log("  " + JSON.stringify(withoutId(r)));
     }
   }
   console.log();
