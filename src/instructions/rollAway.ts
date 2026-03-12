@@ -19,9 +19,14 @@ import {
 import { IrreducibleLabelSchema } from "../labels";
 import { SnazzyError } from "../snazzyError";
 import type { AssertExtends } from "../utils";
-import { Dancer } from "../worldState";
-import { type CalledIdentifier, instructionBaseSchemaFields } from "./_base";
-import { hold, type InstructionAnimator } from "./_segment";
+import { Dancer, type WorldState } from "../worldState";
+import {
+  type CalledIdentifier,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const RolleeSpecSchema = z.discriminatedUnion("type", [
   z.object({
@@ -42,13 +47,15 @@ export const RollAwayInstructionSchema = z.object({
 });
 export type RollAwayInstruction = z.infer<typeof RollAwayInstructionSchema>;
 
-export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  // Assert & pre-compute match map: each dancer must have an opposite-role
-  // match in the expected direction, and no two rollers may share a rollee.
+function validateAndBuildMatchMap(
+  instr: RollAwayInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): {
+  rollerToRollee: Map<ProtoId, DancerId>;
+  rolleeToRoller: Map<DancerId, ProtoId>;
+  isRtl: boolean;
+} {
   const rollerToRollee = new Map<ProtoId, DancerId>();
   const rolleeToRoller = new Map<DancerId, ProtoId>();
   for (const id of who) {
@@ -76,16 +83,6 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
     rolleeToRoller.set(rollee.id, id);
   }
 
-  const getMatch = (d: Dancer): DancerId => {
-    const res =
-      getRole(d.protoId) === instr.roller
-        ? rollerToRollee.get(d.protoId)
-        : rolleeToRoller.get(d.protoId);
-    if (!res)
-      throw new SnazzyError(["dancer ", { dancerId: d.id }, " has no match"]);
-    return res;
-  };
-
   const rollerSides = new Set(
     [...rollerToRollee].map(([rollerId, rolleeId]) => {
       const roller = Dancer.get(rollerId, init);
@@ -102,39 +99,70 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
 
   const isRtl = rollerSides.has(-1);
 
+  return { rollerToRollee, rolleeToRoller, isRtl };
+}
+
+function planRollAwayWithMatchMap(
+  instr: RollAwayInstruction,
+  dancer: Dancer,
+  matchMap: {
+    rollerToRollee: Map<ProtoId, DancerId>;
+    rolleeToRoller: Map<DancerId, ProtoId>;
+    isRtl: boolean;
+  },
+): DancerSegment[] {
+  const { rollerToRollee, rolleeToRoller, isRtl } = matchMap;
+
+  const getMatchId = (): DancerId => {
+    const res =
+      getRole(dancer.protoId) === instr.roller
+        ? rollerToRollee.get(dancer.protoId)
+        : rolleeToRoller.get(dancer.protoId);
+    if (!res)
+      throw new SnazzyError([
+        "dancer ",
+        { dancerId: dancer.id },
+        " has no match",
+      ]);
+    return res;
+  };
+
+  const themId = getMatchId();
+  const them = Dancer.get(themId, dancer.worldState);
+  const startPos = dancer.pos;
+  const themPos = them.pos;
+  const startFacing = dancer.facing;
+  const isRoller = getRole(dancer.protoId) === instr.roller;
+
   const semiMinor = isRtl ? -0.25 : 0.25;
 
   // Hands: first half roller holds [rtl: right, ltr: left]
   const firstRollerHand: Hand = isRtl ? "right" : "left";
   const firstRolleeHand: Hand = otherHand(firstRollerHand);
 
-  // Rollee's facing rotates a full 360° [ccw if rtl, cw if ltr]
+  // Rollee's facing rotates a full 360 [ccw if rtl, cw if ltr]
   const rolleeRotation = isRtl ? TWO_PI : -TWO_PI;
+
+  // Pre-compute facing for roller (lerp) and rollee (rotate)
+  const facingFn: (frac: number) => import("vecti").Vector = (() => {
+    const normal = getDir({
+      from: startPos,
+      to: themPos,
+    }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
+    if (isRoller) {
+      return (frac: number) => lerpFacing(startFacing, normal, frac);
+    }
+    const totalRads = ccwRadsBetween(startFacing, normal) + rolleeRotation;
+    return (frac: number) => startFacing.rotateByRadians(totalRads * frac);
+  })();
 
   return [
     {
       dur: instr.beats,
-      position: (dancer, frac) => {
-        const themId = getMatch(dancer);
-        const start = dancer.pos;
-        const end = Dancer.get(themId, dancer.worldState).pos;
-        return ellipsePosition(start, end, semiMinor, PI * frac);
-      },
-      facing: (dancer, frac) => {
-        const isRoller = getRole(dancer.protoId) === instr.roller;
-        const normal = getDir({
-          from: dancer.pos,
-          to: Dancer.get(getMatch(dancer), dancer.worldState).pos,
-        }).rotateByDegrees(90 * (isRoller === isRtl ? 1 : -1));
-        if (isRoller) return lerpFacing(dancer.facing, normal, frac);
-        const totalRads =
-          ccwRadsBetween(dancer.facing, normal) + rolleeRotation;
-        return dancer.facing.rotateByRadians(totalRads * frac);
-      },
-      hands: (dancer, frac) => {
-        const isRoller = getRole(dancer.protoId) === instr.roller;
-        const themId = getMatch(dancer);
-
+      position: (frac) =>
+        ellipsePosition(startPos, themPos, semiMinor, PI * frac),
+      facing: facingFn,
+      hands: (frac) => {
         const firstHalf = frac < 0.5;
         const myHand: Hand = isRoller
           ? firstHalf
@@ -151,9 +179,45 @@ export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
             ? firstRollerHand
             : otherHand(firstRollerHand);
 
-        return hold([myHand, themId, theirHand]);
+        return {
+          [myHand]: { theirId: themId, theirHand: theirHand },
+        };
       },
-      interactedWith: (dancer) => [getMatch(dancer)],
+      interactedWith: () => [themId],
+    },
+  ];
+}
+
+export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
+  instr,
+  init,
+  who,
+) => {
+  const matchMap = validateAndBuildMatchMap(instr, init, who);
+  const anim = animatePlans(init, who, (d) =>
+    planRollAwayWithMatchMap(instr, d, matchMap),
+  );
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
     },
   ];
 };
+
+export function rollAwayAnimator(
+  instr: RollAwayInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const matchMap = validateAndBuildMatchMap(instr, init, who);
+  return animatePlans(init, who, (dancer) =>
+    planRollAwayWithMatchMap(instr, dancer, matchMap),
+  );
+}

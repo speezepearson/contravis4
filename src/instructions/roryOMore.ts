@@ -1,15 +1,16 @@
 import { z } from "zod";
 
-import { HandSchema, otherHand } from "../contraCore";
+import { HandSchema, otherHand, type ProtoId } from "../contraCore";
 import { TWO_PI } from "../geometry";
-import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, labelId } from "./_base";
+import { lerpVectors } from "../utils";
+import { Dancer, type WorldState } from "../worldState";
 import {
-  hold,
-  type InstructionAnimator,
-  linearTo,
-  rotateFacingBy,
-} from "./_segment";
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  labelId,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const RoryOMoreInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -18,41 +19,67 @@ export const RoryOMoreInstructionSchema = z.object({
 });
 export type RoryOMoreInstruction = z.infer<typeof RoryOMoreInstructionSchema>;
 
-export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
-  instr,
-  init,
-) => {
-  const cid = (
-    {
-      left: labelId("person_in_left_hand"),
-      right: labelId("person_in_right_hand"),
-    } as const
-  )[instr.direction];
+export function planRoryOMore(
+  instr: RoryOMoreInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const cid =
+    instr.direction === "left"
+      ? labelId("person_in_left_hand")
+      : labelId("person_in_right_hand");
 
   // CW for right, CCW for left
   const rotationRadians = instr.direction === "right" ? -TWO_PI : TWO_PI;
 
+  const them = dancer.resolveMatch(cid);
+  const startPos = dancer.pos;
+  const targetPos = them.pos;
+  const startFacing = dancer.facing;
+  const reconnectHand = otherHand(instr.direction);
+
   return [
     {
       dur: instr.beats,
-      position: linearTo((dancer) => {
-        const them = dancer.resolveMatch(cid);
-        return them.pos;
-      }),
-      facing: rotateFacingBy(() => rotationRadians),
+      position: (frac) => lerpVectors(startPos, targetPos, frac),
+      facing: (frac) => startFacing.rotateByRadians(rotationRadians * frac),
       hands: () => ({}),
     },
     {
       dur: 0,
-      // Resolve against init (not segInit) because the first segment drops hands
-      hands: (dancer) => {
-        const them = Dancer.get(dancer.protoId, init).resolveMatch(cid);
-        return hold([
-          otherHand(instr.direction),
-          them.id,
-          otherHand(instr.direction),
-        ]);
-      },
+      hands: () => ({
+        [reconnectHand]: {
+          theirId: them.id,
+          theirHand: reconnectHand,
+        },
+      }),
+    },
+  ];
+}
+
+export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
+  instr,
+  init,
+  who,
+) => {
+  const anim = animatePlans(init, who, (d) => planRoryOMore(instr, d));
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
     },
   ];
 };
+
+export function roryOMoreAnimator(
+  instr: RoryOMoreInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) => planRoryOMore(instr, dancer));
+}

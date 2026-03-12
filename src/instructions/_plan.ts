@@ -31,7 +31,9 @@ export type DancerSegment = {
   dur: Beats;
   position?: (frac: number) => Vector; // omit = hold position from previous segment
   facing?: (frac: number) => Vector; // omit = hold facing from previous segment
-  hands?: (frac: number) => Record<Hand, DancerHandPointer | undefined>; // omit = carry forward
+  hands?: (
+    frac: number,
+  ) => Partial<Record<Hand, DancerHandPointer | undefined>>; // omit = carry forward
   labels?: (frac: number) => Array<[SettableLabel, DancerId]>; // omit = no label changes
   interactedWith?: () => DancerId[]; // omit = no interaction tracking
 };
