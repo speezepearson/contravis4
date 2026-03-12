@@ -198,9 +198,35 @@ function splitOnWhile(text: string): [string, string] | null {
  */
 export function parseDanceInstruction(text: string): Instruction[] {
   // Normalize "&" → "and" so ContraDB-style text like "balance & swing" works.
-  const trimmed = text.trim().replace(/&/g, "and");
-  if (!trimmed) return [];
+  let normalized = text.trim().replace(/&/g, "and");
+  if (!normalized) return [];
 
+  // Trailing ⁋ means "the person in front of you is your new neighbor"
+  const hasProgression = normalized.endsWith("⁋");
+  if (hasProgression) normalized = normalized.slice(0, -1).trim();
+
+  // Split on commas to handle compound figures like "give and take, neighbors swing"
+  const clauses = normalized
+    .split(/,/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const results: Instruction[] = [];
+  for (const clause of clauses) {
+    results.push(...parseClause(clause));
+  }
+
+  if (hasProgression) {
+    results.push(
+      makeDefaultInstruction("greet_new_neighbors", makeInstructionId()),
+    );
+  }
+
+  return results;
+}
+
+/** Parse a single comma-separated clause (which may itself be a split). */
+function parseClause(trimmed: string): Instruction[] {
   // Check for "while" splits first
   const whileParts = splitOnWhile(trimmed);
   if (whileParts) {

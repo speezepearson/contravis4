@@ -245,6 +245,41 @@ describe("parseDanceInstruction", () => {
     });
   });
 
+  describe("comma-separated compound figures", () => {
+    it("parses 'give and take, neighbors swing' — unparseable clause skipped", () => {
+      const result = parseDanceInstruction("give and take, neighbors swing");
+      // "give and take" doesn't match any pattern, so only "neighbors swing" survives
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe("swing");
+    });
+
+    it("parses 'petronella, california twirl' as two instructions", () => {
+      const result = parseDanceInstruction("petronella, california twirl");
+      expect(result).toHaveLength(2);
+      expect(result[0].type).toBe("petronella");
+      expect(result[1].type).toBe("california_twirl");
+    });
+  });
+
+  describe("trailing ⁋ (progression marker)", () => {
+    it("appends greet_new_neighbors for trailing ⁋", () => {
+      const result = parseDanceInstruction("swing your partner ⁋");
+      expect(result).toHaveLength(2);
+      expect(result[0].type).toBe("swing");
+      expect(result[1].type).toBe("greet_new_neighbors");
+    });
+
+    it("handles ⁋ with comma-separated figures", () => {
+      const result = parseDanceInstruction(
+        "circle left 3 places, swing your neighbor ⁋",
+      );
+      expect(result).toHaveLength(3);
+      expect(result[0].type).toBe("circle");
+      expect(result[1].type).toBe("swing");
+      expect(result[2].type).toBe("greet_new_neighbors");
+    });
+  });
+
   describe("default beats", () => {
     it("uses default beats when not specified", () => {
       const result = parseDanceInstruction("swing your partner");
