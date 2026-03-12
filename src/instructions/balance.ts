@@ -1,9 +1,17 @@
 import { z } from "zod";
 
+import { type ProtoId } from "../contraCore";
 import { getDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
-import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
-import { type InstructionAnimator, linearTo } from "./_segment";
+import { lerpVectors } from "../utils";
+import { Dancer, type WorldState } from "../worldState";
+import {
+  CalledIdentifierSchema,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const BalanceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -12,35 +20,60 @@ export const BalanceInstructionSchema = z.object({
 });
 export type BalanceInstruction = z.infer<typeof BalanceInstructionSchema>;
 
-export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
-  instr,
-  init,
-) => {
+export function planBalance(
+  instr: BalanceInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
   const halfBeats = instr.beats / 2;
-  // TODO: would be nice to be able to choose the distance based on how far it is to the person we're balancing with, *if* it's a person
+  const start = dancer.pos;
+  const other = dancer.resolveCalledIdentifier(instr.cid);
+  if (!other)
+    throw new SnazzyError([
+      { dancerId: dancer.protoId },
+      " has no ",
+      { cid: instr.cid },
+      " to balance with",
+    ]);
+  const dir = getDir({ from: start, to: other.pos });
+  const approachTarget = start.add(dir.multiply(0.2));
+
   return [
     {
       dur: halfBeats,
-      position: linearTo((dancer) => {
-        const other = dancer.resolveCalledIdentifier(instr.cid);
-        if (!other)
-          throw new SnazzyError([
-            { dancerId: dancer.protoId },
-            " has no ",
-            { cid: instr.cid },
-            " to balance with",
-          ]);
-        const dir = getDir({
-          from: dancer.pos,
-          to: other.pos,
-        });
-        return dancer.pos.add(dir.multiply(0.2));
-      }),
-      interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
+      position: (frac) => lerpVectors(start, approachTarget, frac),
+      interactedWith: () => [other.id],
     },
     {
       dur: halfBeats,
-      position: linearTo((dancer) => init[dancer.protoId].pos),
+      position: (frac) => lerpVectors(approachTarget, start, frac),
+    },
+  ];
+}
+
+export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
+  instr,
+  init,
+  who,
+) => {
+  const anim = animatePlans(init, who, (d) => planBalance(instr, d));
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
     },
   ];
 };
+
+export function balanceAnimator(
+  instr: BalanceInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) => planBalance(instr, dancer));
+}
