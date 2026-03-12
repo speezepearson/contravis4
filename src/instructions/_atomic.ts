@@ -124,6 +124,7 @@ import {
   pullBySegments,
 } from "./pullBy";
 import {
+  rightLeftThroughAnimator,
   RightLeftThroughInstructionSchema,
   rightLeftThroughSegments,
 } from "./rightLeftThrough";
@@ -387,6 +388,8 @@ export function animateAtomicInstruction(
       return passByAnimator(instr, init, who);
     case "pull_by":
       return pullByAnimator(instr, init, who);
+    case "right_left_through":
+      return rightLeftThroughAnimator(instr, init, who);
     case "roll_away":
       return rollAwayAnimator(instr, init, who);
     case "rory_o_more":
