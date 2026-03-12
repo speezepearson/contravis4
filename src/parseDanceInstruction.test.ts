@@ -68,6 +68,21 @@ describe("parseDanceInstruction", () => {
       expect(result[0].type).toBe("right_left_through");
     });
 
+    it("parses 'right & left through' (ampersand)", () => {
+      const result = parseDanceInstruction("right & left through");
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe("right_left_through");
+    });
+
+    it("parses 'balance & swing' (ampersand)", () => {
+      const result = parseDanceInstruction("neighbors balance & swing");
+      expect(result).toHaveLength(1);
+      const instr = result[0];
+      expect(instr.type).toBe("balance_and_swing");
+      if (instr.type !== "balance_and_swing") throw new Error("wrong type");
+      expect(instr.cid).toEqual({ type: "label", label: "neighbor" });
+    });
+
     it("parses 'long lines forward and back'", () => {
       const result = parseDanceInstruction("long lines forward and back");
       expect(result).toHaveLength(1);

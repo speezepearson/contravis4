@@ -190,7 +190,8 @@ function splitOnWhile(text: string): [string, string] | null {
  * Returns an empty array if the text can't be parsed at all.
  */
 export function parseDanceInstruction(text: string): Instruction[] {
-  const trimmed = text.trim();
+  // Normalize "&" → "and" so ContraDB-style text like "balance & swing" works.
+  const trimmed = text.trim().replace(/&/g, "and");
   if (!trimmed) return [];
 
   // Check for "while" splits first
