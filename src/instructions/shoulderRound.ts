@@ -28,7 +28,6 @@ export type ShoulderRoundInstruction = z.infer<
 >;
 
 const APPROACH_ELLIPSE_RADIANS = PI / 2;
-const ALLEMANDE_RADIUS = 0.25;
 
 // ── Plan-based API ──────────────────────────────────────────────────────
 
