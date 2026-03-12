@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { CalledDirectionSchema, instructionBaseSchemaFields } from "./_base";
+import { type ProtoId } from "../contraCore";
+import { Dancer, type WorldState } from "../worldState";
+import {
+  CalledDirectionSchema,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
 import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const FaceInstructionSchema = z.object({
@@ -10,6 +17,14 @@ export const FaceInstructionSchema = z.object({
   direction: CalledDirectionSchema,
 });
 export type FaceInstruction = z.infer<typeof FaceInstructionSchema>;
+
+export function planFace(
+  instr: FaceInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const targetFacing = dancer.resolveCalledDirection(instr.direction);
+  return [{ dur: 0, facing: () => targetFacing }];
+}
 
 export const faceSegments: InstructionAnimator<FaceInstruction> = (
   instr,
@@ -21,3 +36,11 @@ export const faceSegments: InstructionAnimator<FaceInstruction> = (
     },
   },
 ];
+
+export function faceAnimator(
+  instr: FaceInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (dancer) => planFace(instr, dancer));
+}
