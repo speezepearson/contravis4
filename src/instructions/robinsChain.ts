@@ -1,21 +1,36 @@
+import { produce } from "immer";
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { type DancerId, type ProtoId } from "../contraCore";
-import { getDir, lerpFacing } from "../geometry";
+import {
+  type DancerId,
+  getOffset,
+  projectDancerIdToProtoId,
+  type ProtoId,
+} from "../contraCore";
+import { getDir, lerpFacing, NORTH, PI } from "../geometry";
 import { lerpVectors, must } from "../utils";
-import { Dancer, getCycle, type Lark, type Robin } from "../worldState";
+import {
+  Dancer,
+  getCycle,
+  type Lark,
+  type Robin,
+  type WorldState,
+} from "../worldState";
 import {
   CalledIdentifierSchema,
+  type ContraAnimation,
   instructionBaseSchemaFields,
   personInDir,
 } from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
 import {
   advanceState,
   type InstructionAnimator,
   linearTo,
   type Segment,
 } from "./_segment";
+import { hold } from "./_segment";
 import { courtesyTurnSegs, resolveCourtesyTurnPartners } from "./courtesyTurn";
 
 export const RobinsChainInstructionSchema = z.object({
@@ -34,12 +49,19 @@ type CrossTargets = {
   interactedWith: DancerId[];
 };
 
-export const robinsChainSegments: InstructionAnimator<
-  RobinsChainInstruction
-> = (instr, init, who) => {
+// ── Shared resolution logic ─────────────────────────────────────────────
+
+function resolveChainTargets(
+  instr: RobinsChainInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): {
+  crossTargets: Map<ProtoId, CrossTargets>;
+  getReceiver: (dancer: Robin) => Lark;
+  getSendee: (dancer: Lark) => Robin;
+} {
   if (who.size !== 4) throw new Error("chain requires all 4 dancers");
 
-  /** Robin → receiving lark (given by cid). */
   const getReceiver = (dancer: Robin): Lark => {
     const res = must(dancer.resolveCalledIdentifier(instr.cid), [
       { dancerId: dancer.id },
@@ -49,7 +71,6 @@ export const robinsChainSegments: InstructionAnimator<
     return res;
   };
 
-  /** Lark → robin being sent away (setcounterclockwise from lark). */
   const getSendee = (dancer: Lark): Robin => {
     const res = must(
       dancer.resolveCalledIdentifier(
@@ -64,17 +85,15 @@ export const robinsChainSegments: InstructionAnimator<
     return res;
   };
 
-  {
-    for (const dancer of who) {
-      getCycle(Dancer.get(dancer, init), (d) => {
-        if (d.isLark()) return getSendee(d);
-        if (d.isRobin()) return getReceiver(d);
-        throw new Error("programming error");
-      });
-    }
+  // Validate cycles.
+  for (const dancer of who) {
+    getCycle(Dancer.get(dancer, init), (d) => {
+      if (d.isLark()) return getSendee(d);
+      if (d.isRobin()) return getReceiver(d);
+      throw new Error("programming error");
+    });
   }
 
-  // Pre-resolve all targets from the init state, before positions change.
   const crossTargets = new Map<ProtoId, CrossTargets>();
   for (const protoId of who) {
     const d = Dancer.get(protoId, init);
@@ -82,14 +101,12 @@ export const robinsChainSegments: InstructionAnimator<
       const receiver = getReceiver(d);
       const receiversSendee = getSendee(receiver);
 
-      // Cross1 waypoint: perpendicular offset from midpoint(robin, receiversSendee).
       const R = d.pos.add(receiversSendee.pos).divide(2);
       const D = getDir({ from: d.pos, to: R });
       const cross1Target = R.add(
         D.rotateByDegrees(90).normalize().multiply(0.25),
       );
 
-      // Cross2 target: 0.25m toward receiver from midpoint(receiver, receiversSendee).
       const larkSendeeMid = receiver.pos.add(receiversSendee.pos).divide(2);
       const towardReceiver = getDir({
         from: receiversSendee.pos,
@@ -106,7 +123,6 @@ export const robinsChainSegments: InstructionAnimator<
     } else if (d.isLark()) {
       const sendee = getSendee(d);
 
-      // Lark target: 0.25m toward sendee from midpoint(lark, sendee).
       const mid = d.pos.add(sendee.pos).divide(2);
       const towardSendee = getDir({ from: d.pos, to: sendee.pos });
       const finalTarget = mid.add(towardSendee.multiply(0.25));
@@ -120,6 +136,16 @@ export const robinsChainSegments: InstructionAnimator<
     }
   }
 
+  return { crossTargets, getReceiver, getSendee };
+}
+
+// ── Legacy Segment[] API ────────────────────────────────────────────────
+
+export const robinsChainSegments: InstructionAnimator<
+  RobinsChainInstruction
+> = (instr, init, who) => {
+  const { crossTargets } = resolveChainTargets(instr, init, who);
+
   function getTargets(dancer: Dancer): CrossTargets {
     const t = crossTargets.get(dancer.protoId);
     if (!t) throw new Error("programming error");
@@ -129,10 +155,6 @@ export const robinsChainSegments: InstructionAnimator<
   const halfBeats = instr.beats / 2;
   const quarterBeats = instr.beats / 4;
 
-  // Phase 1: Robins cross the set in two sub-segments (curved path);
-  // larks shift linearly to the sent robin's position.
-
-  // Sub-segment 1: Robin curves to waypoint; lark moves toward its midpoint target.
   const cross1: Segment = {
     dur: quarterBeats,
     position: (dancer, frac) => {
@@ -152,7 +174,6 @@ export const robinsChainSegments: InstructionAnimator<
     interactedWith: (dancer) => getTargets(dancer).interactedWith,
   };
 
-  // Sub-segment 2: Robin continues to near receiver; lark finishes to near sendee.
   const cross2: Segment = {
     dur: quarterBeats,
     position: linearTo((dancer) => getTargets(dancer).cross2Target),
@@ -169,13 +190,10 @@ export const robinsChainSegments: InstructionAnimator<
     interactedWith: (dancer) => getTargets(dancer).interactedWith,
   };
 
-  // Phase 2: Courtesy turn, reusing shared logic.
-  // Pre-resolve partners from post-cross state.
   const postCrossState = advanceState([cross1, cross2], init, who);
   const partnerOf = resolveCourtesyTurnPartners(postCrossState, who);
   const ctSegs = courtesyTurnSegs(halfBeats, partnerOf);
 
-  // Add interactedWith to each courtesy turn segment.
   const ctSegsWithInteraction = ctSegs.map((seg) => ({
     ...seg,
     interactedWith: (dancer: Dancer): DancerId[] => {
@@ -187,3 +205,185 @@ export const robinsChainSegments: InstructionAnimator<
 
   return [cross1, cross2, ...ctSegsWithInteraction];
 };
+
+// ── Plan-based API (top-level instruction) ──────────────────────────────
+
+/**
+ * Animate a robins chain using per-dancer plans.
+ *
+ * Each dancer gets their own DancerSegment[] with closures that know the
+ * dancer's identity, targets, and partners. No `dancer` parameter needed.
+ */
+export function robinsChainAnimator(
+  instr: RobinsChainInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const { crossTargets } = resolveChainTargets(instr, init, who);
+
+  const halfBeats = instr.beats / 2;
+  const quarterBeats = instr.beats / 4;
+
+  // Pre-compute the post-cross state so we can resolve courtesy turn partners.
+  // Each dancer's post-cross position is their cross2Target, facing is targetFacing.
+  // We need a full WorldState for resolveCourtesyTurnPartners.
+  const postCrossPositions = new Map<
+    ProtoId,
+    { pos: Vector; facing: Vector }
+  >();
+  for (const id of who) {
+    const targets = crossTargets.get(id);
+    if (!targets) throw new Error("programming error");
+    postCrossPositions.set(id, {
+      pos: targets.cross2Target,
+      facing: targets.targetFacing,
+    });
+  }
+
+  // Build a synthetic post-cross WorldState for resolving courtesy turn partners.
+  // We need this because resolveCourtesyTurnPartners uses Dancer lookups.
+  const postCrossState: WorldState = produce(init, (draft) => {
+    for (const id of who) {
+      const pcp = postCrossPositions.get(id);
+      if (!pcp) continue;
+      draft[id].pos = pcp.pos;
+      draft[id].facing = pcp.facing;
+      draft[id].hands = {};
+    }
+  });
+
+  const partnerOf = resolveCourtesyTurnPartners(postCrossState, who);
+
+  const getPlans = (dancer: Dancer): DancerSegment[] => {
+    const targets = crossTargets.get(dancer.protoId);
+    if (!targets) throw new Error("programming error");
+
+    const amLark = dancer.isLark();
+
+    // Crossing phase 1: move to waypoint
+    const cross1: DancerSegment = {
+      dur: quarterBeats,
+      position: (frac) => lerpVectors(dancer.pos, targets.cross1Target, frac),
+      facing: (frac) =>
+        lerpFacing(
+          dancer.facing,
+          targets.targetFacing,
+          frac * 0.5,
+          amLark
+            ? {
+                forceDir: "ccw",
+              }
+            : {},
+        ),
+      hands: () => ({}),
+      interactedWith: () => targets.interactedWith,
+    };
+
+    // Crossing phase 2: move to final cross position
+    // Need the facing at end of cross1 for lerp starting point.
+    const cross1EndFacing = lerpFacing(
+      dancer.facing,
+      targets.targetFacing,
+      0.5,
+      amLark ? { forceDir: "ccw" } : {},
+    );
+    const cross2: DancerSegment = {
+      dur: quarterBeats,
+      position: (frac) =>
+        lerpVectors(targets.cross1Target, targets.cross2Target, frac),
+      facing: (frac) =>
+        lerpFacing(
+          cross1EndFacing,
+          targets.targetFacing,
+          frac,
+          amLark
+            ? {
+                forceDir: "ccw",
+              }
+            : {},
+        ),
+      hands: () => ({}),
+      interactedWith: () => targets.interactedWith,
+    };
+
+    // Courtesy turn phase (2 segments).
+    // Pre-compute all the values needed for the courtesy turn closures.
+    const ctPartnerId = partnerOf.get(dancer.id);
+    if (!ctPartnerId) throw new Error("programming error");
+
+    const myPostCrossPos = targets.cross2Target;
+    const partnerProtoId = projectDancerIdToProtoId(ctPartnerId);
+    // Use offset-adjusted position so the CT center is correct when the
+    // partner has a non-zero progression offset (e.g. "down_robin_1").
+    const partnerPostCrossPos = (() => {
+      const pt = crossTargets.get(partnerProtoId);
+      if (!pt) throw new Error("programming error");
+      const partnerOffset = getOffset(ctPartnerId);
+      return pt.cross2Target.add(NORTH.multiply(partnerOffset * 2));
+    })();
+
+    const ctHands = () =>
+      hold(["left", ctPartnerId, "left"], ["right", ctPartnerId, "right"]);
+
+    // CT segment 1: quarter-ellipse normalizing distance.
+    const ct1: DancerSegment = {
+      dur: halfBeats / 2,
+      position: (frac) => {
+        const center = myPostCrossPos.add(partnerPostCrossPos).divide(2);
+        const offset = myPostCrossPos.subtract(center);
+        const r = offset.length();
+        const majorDir = offset.normalize();
+        const minorDir = majorDir.rotateByRadians(PI / 2);
+        const phi = (PI / 2) * frac;
+        return center
+          .add(majorDir.multiply(r * Math.cos(phi)))
+          .add(minorDir.multiply(0.25 * Math.sin(phi)));
+      },
+      facing: (frac) => targets.targetFacing.rotateByRadians((PI / 2) * frac),
+      hands: ctHands,
+      interactedWith: () => [ctPartnerId],
+    };
+
+    // CT segment 2: quarter-circle at fixed radius.
+    // Need starting position/facing from end of CT1.
+    const ct1EndPos = (() => {
+      const center = myPostCrossPos.add(partnerPostCrossPos).divide(2);
+      const offset = myPostCrossPos.subtract(center);
+      const majorDir = offset.normalize();
+      const minorDir = majorDir.rotateByRadians(PI / 2);
+      return center.add(minorDir.multiply(0.25));
+    })();
+    const ct1EndFacing = targets.targetFacing.rotateByRadians(PI / 2);
+
+    // For CT2, the partner has also moved. Compute the partner's CT1 end position.
+    const partnerCt1EndPos = (() => {
+      const center = myPostCrossPos.add(partnerPostCrossPos).divide(2);
+      const offset = partnerPostCrossPos.subtract(center);
+      const majorDir = offset.normalize();
+      const minorDir = majorDir.rotateByRadians(PI / 2);
+      return center.add(minorDir.multiply(0.25));
+    })();
+
+    const ct2: DancerSegment = {
+      dur: halfBeats / 2,
+      position: (frac) => {
+        const center = ct1EndPos.add(partnerCt1EndPos).divide(2);
+        const offset = ct1EndPos.subtract(center);
+        const r = offset.length();
+        const majorDir = offset.normalize();
+        const minorDir = majorDir.rotateByRadians(PI / 2);
+        const phi = (PI / 2) * frac;
+        return center
+          .add(majorDir.multiply(r * Math.cos(phi)))
+          .add(minorDir.multiply(0.35 * Math.sin(phi)));
+      },
+      facing: (frac) => ct1EndFacing.rotateByRadians((PI / 2) * frac),
+      hands: ctHands,
+      interactedWith: () => [ctPartnerId],
+    };
+
+    return [cross1, cross2, ct1, ct2];
+  };
+
+  return animatePlans(init, who, getPlans);
+}

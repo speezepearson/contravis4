@@ -43,6 +43,16 @@ Every atomic instruction has these base fields:
 
 ---
 
+## Top-level vs Atomic Instructions
+
+Most instructions are **atomic** — simple self-contained moves. Three instruction types are **top-level** (non-atomic):
+
+- **`split`** — runs different instructions for different groups simultaneously
+- **`swing`** — uses a plan-based animator rather than the segment-based atomic pipeline
+- **`robins_chain`** — uses a plan-based animator rather than the segment-based atomic pipeline
+
+`swing` and `robins_chain` can also appear as sub-instructions inside a `split`.
+
 ## Instruction Catalogue
 
 ### `allemande`
@@ -668,6 +678,8 @@ Like `templated_lr`, but keyframes are keyed by ProtoId (all four dancers indepe
 ## `split`
 
 The `split` instruction runs different instructions for different groups of dancers simultaneously. Use this when a dance calls for role-specific moves (e.g. "larks allemande left 1½"). Often one branch is empty — that's fine, the dancers in the empty branch simply hold position.
+
+Sub-instructions inside a split can be any atomic instruction, plus `swing` and `robins_chain`.
 
 ### Split by role
 

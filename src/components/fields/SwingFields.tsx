@@ -1,11 +1,13 @@
 import type z from "zod";
 
-import type { AtomicInstruction } from "../../instructions/_atomic";
 import {
   ALL_BASE_CALLED_IDENTIFIERS,
   inferRoleOfCalledIdentifier,
 } from "../../instructions/_base";
-import { SwingInstructionSchema } from "../../instructions/swing";
+import {
+  type SwingInstruction,
+  SwingInstructionSchema,
+} from "../../instructions/swing";
 import { typedSafeParse } from "../../utils";
 import { CalledIdentifierEditor } from "../CalledIdentifierEditor";
 import { CardinalDirectionDropdown } from "../CardinalDirectionDropdown";
@@ -16,7 +18,7 @@ export function SwingFields({
   onChange,
   onInvalid,
 }: SubFormProps & {
-  instruction: Extract<AtomicInstruction, { type: "swing" }>;
+  instruction: SwingInstruction;
 }) {
   const { id } = instruction;
 

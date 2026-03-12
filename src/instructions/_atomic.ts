@@ -76,10 +76,6 @@ import {
   RightLeftThroughInstructionSchema,
   rightLeftThroughSegments,
 } from "./rightLeftThrough";
-import {
-  RobinsChainInstructionSchema,
-  robinsChainSegments,
-} from "./robinsChain";
 import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
 import { RoryOMoreInstructionSchema, roryOMoreSegments } from "./roryOMore";
 import {
@@ -97,7 +93,6 @@ import {
 } from "./squareThrough";
 import { StarInstructionSchema, starSegments } from "./star";
 import { StepInstructionSchema, stepSegments } from "./step";
-import { SwingInstructionSchema, swingSegments } from "./swing";
 import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
 import {
   TakeHandsInRingsInstructionSchema,
@@ -128,7 +123,6 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   BoxCirculateInstructionSchema,
   BoxTheGnatInstructionSchema,
   CaliforniaTwirlInstructionSchema,
-  RobinsChainInstructionSchema,
   CircleInstructionSchema,
   DoSiDoInstructionSchema,
   DownTheHallInstructionSchema,
@@ -157,7 +151,6 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   SquareThroughInstructionSchema,
   StarInstructionSchema,
   StepInstructionSchema,
-  SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
   TakeHandsInstructionSchema,
   TemplatedLLRRInstructionSchema,
@@ -231,8 +224,6 @@ export function makeAtomicInstructionSegments(
       return pullBySegments(instr, init, who);
     case "right_left_through":
       return rightLeftThroughSegments(instr, init, who);
-    case "robins_chain":
-      return robinsChainSegments(instr, init, who);
     case "roll_away":
       return rollAwaySegments(instr, init, who);
     case "rory_o_more":
@@ -249,8 +240,6 @@ export function makeAtomicInstructionSegments(
       return starSegments(instr, init, who);
     case "step":
       return stepSegments(instr, init, who);
-    case "swing":
-      return swingSegments(instr, init, who);
     case "take_hands":
       return takeHandsSegments(instr, init, who);
     case "take_hands_in_rings":

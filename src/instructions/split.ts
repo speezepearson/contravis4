@@ -11,22 +11,44 @@ import {
 import { assertNever } from "../utils";
 import type { WorldState } from "../worldState";
 import {
-  type AtomicInstruction,
   AtomicInstructionSchema,
   makeAtomicInstructionSegments,
 } from "./_atomic";
 import { type ContraAnimation, InstructionIdSchema } from "./_base";
 import { advanceState, animateSegments, type Segment } from "./_segment";
+import {
+  RobinsChainInstructionSchema,
+  robinsChainSegments,
+} from "./robinsChain";
+import { SwingInstructionSchema, swingSegments } from "./swing";
 
-function chainAtomicInstructionSegments(
+/**
+ * A sub-instruction that can appear inside a split.
+ * This includes all atomic instructions plus swing and robins_chain.
+ */
+export const SplitSubInstructionSchema = z.union([
+  AtomicInstructionSchema,
+  SwingInstructionSchema,
+  RobinsChainInstructionSchema,
+]);
+export type SplitSubInstruction = z.infer<typeof SplitSubInstructionSchema>;
+
+function chainSubInstructionSegments(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
-  instructions: AtomicInstruction[],
+  instructions: SplitSubInstruction[],
 ): Segment[] {
   let state = init;
   const result: Segment[] = [];
   for (const instr of instructions) {
-    const segments = makeAtomicInstructionSegments(instr, state, who);
+    let segments: Segment[];
+    if (instr.type === "swing") {
+      segments = swingSegments(instr, state, who);
+    } else if (instr.type === "robins_chain") {
+      segments = robinsChainSegments(instr, state, who);
+    } else {
+      segments = makeAtomicInstructionSegments(instr, state, who);
+    }
     result.push(...segments);
     state = advanceState(segments, state, who);
   }
@@ -38,15 +60,15 @@ export const SplitSchema = z.discriminatedUnion("by", [
     id: InstructionIdSchema,
     type: z.literal("split"),
     by: z.literal("role"),
-    larks: z.array(AtomicInstructionSchema),
-    robins: z.array(AtomicInstructionSchema),
+    larks: z.array(SplitSubInstructionSchema),
+    robins: z.array(SplitSubInstructionSchema),
   }),
   z.object({
     id: InstructionIdSchema,
     type: z.literal("split"),
     by: z.literal("direction"),
-    ups: z.array(AtomicInstructionSchema),
-    downs: z.array(AtomicInstructionSchema),
+    ups: z.array(SplitSubInstructionSchema),
+    downs: z.array(SplitSubInstructionSchema),
   }),
 ]);
 export type Split = z.infer<typeof SplitSchema>;
@@ -68,12 +90,12 @@ export const splitAnimator = (
       const larksAnim = animateSegments(
         init,
         larks,
-        chainAtomicInstructionSegments(init, larks, instr.larks),
+        chainSubInstructionSegments(init, larks, instr.larks),
       );
       const robinsAnim = animateSegments(
         init,
         robins,
-        chainAtomicInstructionSegments(init, robins, instr.robins),
+        chainSubInstructionSegments(init, robins, instr.robins),
       );
       return {
         dur: Math.max(larksAnim.dur, robinsAnim.dur),
@@ -98,12 +120,12 @@ export const splitAnimator = (
       const upsAnim = animateSegments(
         init,
         ups,
-        chainAtomicInstructionSegments(init, ups, instr.ups),
+        chainSubInstructionSegments(init, ups, instr.ups),
       );
       const downsAnim = animateSegments(
         init,
         downs,
-        chainAtomicInstructionSegments(init, downs, instr.downs),
+        chainSubInstructionSegments(init, downs, instr.downs),
       );
       return {
         dur: Math.max(upsAnim.dur, downsAnim.dur),
