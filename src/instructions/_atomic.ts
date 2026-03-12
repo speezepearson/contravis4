@@ -2,27 +2,40 @@ import { z } from "zod";
 
 import type { ProtoId } from "../contraCore";
 import type { WorldState } from "../worldState";
-import { type Segment } from "./_segment";
+import { type ContraAnimation } from "./_base";
+import { animateSegments, type Segment } from "./_segment";
 import { AllemandeInstructionSchema, allemandeSegments } from "./allemande";
-import { BalanceInstructionSchema, balanceSegments } from "./balance";
+import {
+  balanceAnimator,
+  BalanceInstructionSchema,
+  balanceSegments,
+} from "./balance";
 import {
   BalanceAndSwingInstructionSchema,
   balanceAndSwingSegments,
 } from "./balanceAndSwing";
 import {
+  balanceTheRingAnimator,
   BalanceTheRingInstructionSchema,
   balanceTheRingSegments,
 } from "./balanceTheRing";
 import {
+  bendTheLineAnimator,
   BendTheLineInstructionSchema,
   bendTheLineSegments,
 } from "./bendTheLine";
 import {
+  boxCirculateAnimator,
   BoxCirculateInstructionSchema,
   boxCirculateSegments,
 } from "./boxCirculate";
-import { BoxTheGnatInstructionSchema, boxTheGnatSegments } from "./boxTheGnat";
 import {
+  boxTheGnatAnimator,
+  BoxTheGnatInstructionSchema,
+  boxTheGnatSegments,
+} from "./boxTheGnat";
+import {
+  californiaTwirlAnimator,
   CaliforniaTwirlInstructionSchema,
   californiaTwirlSegments,
 } from "./californiaTwirl";
@@ -32,8 +45,12 @@ import {
   DownTheHallInstructionSchema,
   downTheHallSegments,
 } from "./downTheHall";
-import { DropHandsInstructionSchema, dropHandsSegments } from "./dropHands";
-import { FaceInstructionSchema, faceSegments } from "./face";
+import {
+  dropHandsAnimator,
+  DropHandsInstructionSchema,
+  dropHandsSegments,
+} from "./dropHands";
+import { faceAnimator, FaceInstructionSchema, faceSegments } from "./face";
 import {
   FormLongWavesInstructionSchema,
   formLongWavesSegments,
@@ -47,15 +64,18 @@ import {
   giveAndTakeIntoSwingSegments,
 } from "./giveAndTakeIntoSwing";
 import {
+  greetNewNeighborsAnimator,
   GreetNewNeighborsInstructionSchema,
   greetNewNeighborsSegments,
 } from "./greetNewNeighbors";
 import {
+  greetShadowAnimator,
   GreetShadowInstructionSchema,
   greetShadowSegments,
 } from "./greetShadow";
 import { HeyInstructionSchema, heySegments } from "./hey";
 import {
+  longLineInCenterAnimator,
   LongLineInCenterInstructionSchema,
   longLineInCenterSegments,
 } from "./longLineInCenter";
@@ -63,21 +83,41 @@ import {
   LongLinesForwardBackInstructionSchema,
   longLinesForwardBackSegments,
 } from "./longLinesForwardBack";
-import { MadRobinInstructionSchema, madRobinSegments } from "./madRobin";
+import {
+  madRobinAnimator,
+  MadRobinInstructionSchema,
+  madRobinSegments,
+} from "./madRobin";
 import {
   MeltdownSwingInstructionSchema,
   meltdownSwingSegments,
 } from "./meltdownSwing";
 import { PassByInstructionSchema, passBySegments } from "./passBy";
-import { PetronellaInstructionSchema, petronellaSegments } from "./petronella";
-import { PoussetteInstructionSchema, poussetteSegments } from "./poussette";
+import {
+  petronellaAnimator,
+  PetronellaInstructionSchema,
+  petronellaSegments,
+} from "./petronella";
+import {
+  poussetteAnimator,
+  PoussetteInstructionSchema,
+  poussetteSegments,
+} from "./poussette";
 import { PullByInstructionSchema, pullBySegments } from "./pullBy";
 import {
   RightLeftThroughInstructionSchema,
   rightLeftThroughSegments,
 } from "./rightLeftThrough";
-import { RollAwayInstructionSchema, rollAwaySegments } from "./rollAway";
-import { RoryOMoreInstructionSchema, roryOMoreSegments } from "./roryOMore";
+import {
+  rollAwayAnimator,
+  RollAwayInstructionSchema,
+  rollAwaySegments,
+} from "./rollAway";
+import {
+  roryOMoreAnimator,
+  RoryOMoreInstructionSchema,
+  roryOMoreSegments,
+} from "./roryOMore";
 import {
   ShoulderRoundInstructionSchema,
   shoulderRoundSegments,
@@ -92,9 +132,14 @@ import {
   squareThroughSegments,
 } from "./squareThrough";
 import { StarInstructionSchema, starSegments } from "./star";
-import { StepInstructionSchema, stepSegments } from "./step";
-import { TakeHandsInstructionSchema, takeHandsSegments } from "./takeHands";
+import { stepAnimator, StepInstructionSchema, stepSegments } from "./step";
 import {
+  takeHandsAnimator,
+  TakeHandsInstructionSchema,
+  takeHandsSegments,
+} from "./takeHands";
+import {
+  takeHandsInRingsAnimator,
   TakeHandsInRingsInstructionSchema,
   takeHandsInRingsSegments,
 } from "./takeHandsInRings";
@@ -106,13 +151,21 @@ import {
   TemplatedLRInstructionSchema,
   templatedLRSegments,
 } from "./templatedLRInstruction";
-import { TurnAloneInstructionSchema, turnAloneSegments } from "./turnAlone";
+import {
+  turnAloneAnimator,
+  TurnAloneInstructionSchema,
+  turnAloneSegments,
+} from "./turnAlone";
 import {
   TurnAsACoupleInstructionSchema,
   turnAsACoupleSegments,
 } from "./turnAsACouple";
 import { UpTheHallInstructionSchema, upTheHallSegments } from "./upTheHall";
-import { ZigZagInstructionSchema, zigZagSegments } from "./zigZag";
+import {
+  zigZagAnimator,
+  ZigZagInstructionSchema,
+  zigZagSegments,
+} from "./zigZag";
 
 export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   AllemandeInstructionSchema,
@@ -256,5 +309,62 @@ export function makeAtomicInstructionSegments(
       return upTheHallSegments(instr, init, who);
     case "zig_zag":
       return zigZagSegments(instr, init, who);
+  }
+}
+
+export function animateAtomicInstruction(
+  instr: AtomicInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  switch (instr.type) {
+    case "balance":
+      return balanceAnimator(instr, init, who);
+    case "balance_the_ring":
+      return balanceTheRingAnimator(instr, init, who);
+    case "bend_the_line":
+      return bendTheLineAnimator(instr, init, who);
+    case "box_circulate":
+      return boxCirculateAnimator(instr, init, who);
+    case "box_the_gnat":
+      return boxTheGnatAnimator(instr, init, who);
+    case "california_twirl":
+      return californiaTwirlAnimator(instr, init, who);
+    case "drop_hands":
+      return dropHandsAnimator(instr, init, who);
+    case "face":
+      return faceAnimator(instr, init, who);
+    case "greet_new_neighbors":
+      return greetNewNeighborsAnimator(instr, init, who);
+    case "greet_shadow":
+      return greetShadowAnimator(instr, init, who);
+    case "long_line_in_center":
+      return longLineInCenterAnimator(instr, init, who);
+    case "mad_robin":
+      return madRobinAnimator(instr, init, who);
+    case "petronella":
+      return petronellaAnimator(instr, init, who);
+    case "poussette":
+      return poussetteAnimator(instr, init, who);
+    case "roll_away":
+      return rollAwayAnimator(instr, init, who);
+    case "rory_o_more":
+      return roryOMoreAnimator(instr, init, who);
+    case "step":
+      return stepAnimator(instr, init, who);
+    case "take_hands":
+      return takeHandsAnimator(instr, init, who);
+    case "take_hands_in_rings":
+      return takeHandsInRingsAnimator(instr, init, who);
+    case "turn_alone":
+      return turnAloneAnimator(instr, init, who);
+    case "zig_zag":
+      return zigZagAnimator(instr, init, who);
+    default:
+      return animateSegments(
+        init,
+        who,
+        makeAtomicInstructionSegments(instr, init, who),
+      );
   }
 }

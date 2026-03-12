@@ -1,11 +1,10 @@
 import { ALL_PROTO_IDS_SET } from "./contraCore";
-import { makeAtomicInstructionSegments } from "./instructions/_atomic";
+import { animateAtomicInstruction } from "./instructions/_atomic";
 import {
   chainAnimations,
   type ContraAnimation,
   type InstructionId,
 } from "./instructions/_base";
-import { animateSegments } from "./instructions/_segment";
 import { type Instruction, instructionDuration } from "./instructions/index";
 import { robinsChainAnimator } from "./instructions/robinsChain";
 import {
@@ -57,11 +56,7 @@ function animateInstruction(
     case "robins_chain":
       return robinsChainAnimator(instr, init, ALL_PROTO_IDS_SET);
     default:
-      return animateSegments(
-        init,
-        ALL_PROTO_IDS_SET,
-        makeAtomicInstructionSegments(instr, init, ALL_PROTO_IDS_SET),
-      );
+      return animateAtomicInstruction(instr, init, ALL_PROTO_IDS_SET);
   }
 }
 
