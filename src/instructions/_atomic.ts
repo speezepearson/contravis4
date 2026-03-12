@@ -149,7 +149,7 @@ import {
   SquareThroughInstructionSchema,
   squareThroughSegments,
 } from "./squareThrough";
-import { StarInstructionSchema, starSegments } from "./star";
+import { starAnimator, StarInstructionSchema, starSegments } from "./star";
 import { stepAnimator, StepInstructionSchema, stepSegments } from "./step";
 import {
   takeHandsAnimator,
@@ -385,6 +385,8 @@ export function animateAtomicInstruction(
       return roryOMoreAnimator(instr, init, who);
     case "square_through":
       return squareThroughAnimator(instr, init, who);
+    case "star":
+      return starAnimator(instr, init, who);
     case "step":
       return stepAnimator(instr, init, who);
     case "take_hands":
