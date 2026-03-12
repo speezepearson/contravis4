@@ -1,6 +1,8 @@
+import { produce } from "immer";
 import { z } from "zod";
 
 import {
+  type DancerId,
   getRole,
   type Hand,
   HandSchema,
@@ -12,16 +14,15 @@ import {
 import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { getSide, must } from "../utils";
-import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, personInDir } from "./_base";
+import { Dancer, type WorldState } from "../worldState";
 import {
-  advanceState,
-  hold,
-  type InstructionAnimator,
-  makeImmediateSegment,
-  type Segment,
-} from "./_segment";
-import { makeHalfPoussetteArcPositionFn } from "./poussette";
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  personInDir,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
+import { makeHalfPoussetteArcDancerPositionFn } from "./poussette";
 
 export const ZigZagInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -31,11 +32,22 @@ export const ZigZagInstructionSchema = z.object({
 });
 export type ZigZagInstruction = z.infer<typeof ZigZagInstructionSchema>;
 
-export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
-  instr,
-  init,
-  who,
-) => {
+// ── Shared validation & pre-computation ─────────────────────────────────
+
+/**
+ * Validates zig-zag preconditions and computes the leader role and per-dancer
+ * inside hand. These depend on global state (all dancers) so must be done
+ * outside the per-dancer plan function.
+ */
+function validateAndResolve(
+  instr: ZigZagInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): {
+  leaderRole: Role;
+  insideHandMap: Map<ProtoId, Hand>;
+  matchIdMap: Map<ProtoId, DancerId>;
+} {
   if (who.size !== 4) {
     throw new Error(`[zig zag] expected 4 dancers, got ${who.size}`);
   }
@@ -69,10 +81,6 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
 
   const isFacingUp = (id: ProtoId) => init[id].facing.y > 0;
 
-  // Determine leader per dancer based on dir and facing:
-  //   facing up + dir=left  → leader on west
-  //   facing up + dir=right → leader on east
-  //   facing down → flipped
   const isLeader = (id: ProtoId): boolean => {
     const up = isFacingUp(id);
     const leaderOnWest = up ? instr.dir === "left" : instr.dir === "right";
@@ -84,7 +92,9 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   };
 
   // All leaders must be the same role
-  const leaderProto = [...who].find(isLeader)!;
+  const leaderProto = must([...who].find(isLeader), [
+    "[zig zag] no leader found",
+  ]);
   const leaderRole: Role = getRole(leaderProto);
   for (const id of who) {
     if (isLeader(id) !== (getRole(id) === leaderRole)) {
@@ -93,34 +103,56 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
   }
 
   // Inside hands based on position: west dancer's right, east dancer's left
-  const insideHand = (id: ProtoId): Hand => {
-    return must(getSide(init[id].pos), [
+  const insideHandMap = new Map<ProtoId, Hand>();
+  const matchIdMap = new Map<ProtoId, DancerId>();
+  for (const id of who) {
+    const side = must(getSide(init[id].pos), [
       { dancerId: id },
       "too close to center, not sure which side is east or west",
-    ]) === "west"
-      ? "right"
-      : "left";
-  };
+    ]);
+    insideHandMap.set(id, side === "west" ? "right" : "left");
+    matchIdMap.set(id, getMatch(Dancer.get(id, init)).id);
+  }
+
+  return { leaderRole, insideHandMap, matchIdMap };
+}
+
+// ── Plan-based API ──────────────────────────────────────────────────────
+
+function planZigZag(
+  instr: ZigZagInstruction,
+  dancer: Dancer,
+  leaderRole: Role,
+  insideHand: Hand,
+  matchId: DancerId,
+): DancerSegment[] {
+  const isFacingUp = dancer.facing.y > 0;
 
   // Setup: face exactly up or down, take inside hands
-  const setupSegment = makeImmediateSegment(init, (id, draft) => {
-    draft[id].facing = isFacingUp(id) ? NORTH : SOUTH;
-    const match = getMatch(Dancer.get(id, init));
-    const myHand = insideHand(id);
-    const theirHand = otherHand(myHand);
-    draft[id].hands = hold([myHand, match.id, theirHand]);
+  const setupFacing = isFacingUp ? NORTH : SOUTH;
+  const theirHand = otherHand(insideHand);
+
+  const postSetupDancer = produce(dancer, (draft) => {
+    draft.facing = setupFacing;
   });
 
-  const makeHandsFn = () => (dancer: Dancer) => {
-    const matchId = getMatch(dancer).id;
-    const myHand = insideHand(dancer.protoId);
-    const theirHand = otherHand(myHand);
-    return hold([myHand, matchId, theirHand]);
+  const setupSegment: DancerSegment = {
+    dur: 0,
+    position: () => dancer.pos,
+    facing: () => setupFacing,
+    hands: () => {
+      const result: Partial<
+        Record<Hand, { theirId: DancerId; theirHand: Hand }>
+      > = {};
+      result[insideHand] = { theirId: matchId, theirHand: theirHand };
+      return result;
+    },
   };
 
-  const segments: Segment[] = [setupSegment];
-  let currentState = advanceState([setupSegment], init, who);
   const beatsPerZig = instr.beats / instr.nZigs;
+  const segments: DancerSegment[] = [setupSegment];
+
+  let currentDancer = postSetupDancer;
 
   for (let i = 0; i < instr.nZigs; i++) {
     // Backer alternates each zig for lateral zig-zag motion.
@@ -130,22 +162,92 @@ export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
       i % 2 === 0 ? leaderRole : otherRole(leaderRole);
     const currentDir: Hand = i % 2 === 0 ? instr.dir : otherHand(instr.dir);
 
-    const position = makeHalfPoussetteArcPositionFn(
+    const positionFn = makeHalfPoussetteArcDancerPositionFn(
       currentBacker,
       currentDir,
-      currentState,
+      currentDancer,
     );
 
-    const zigSegment: Segment = {
+    const zigSegment: DancerSegment = {
       dur: beatsPerZig,
-      position,
-      hands: makeHandsFn(),
-      interactedWith: (dancer) => [getMatch(dancer).id],
+      position: positionFn,
+      hands: () => {
+        const result: Partial<
+          Record<Hand, { theirId: DancerId; theirHand: Hand }>
+        > = {};
+        result[insideHand] = { theirId: matchId, theirHand: theirHand };
+        return result;
+      },
+      interactedWith: () => [matchId],
     };
 
     segments.push(zigSegment);
-    currentState = advanceState([zigSegment], currentState, who);
+
+    // Advance dancer state for next zig
+    if (i < instr.nZigs - 1) {
+      currentDancer = produce(currentDancer, (draft) => {
+        draft.pos = positionFn(1);
+      });
+    }
   }
 
   return segments;
+}
+
+// ── Legacy Segment[] API ────────────────────────────────────────────────
+
+export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
+  instr,
+  init,
+  who,
+) => {
+  const { leaderRole, insideHandMap, matchIdMap } = validateAndResolve(
+    instr,
+    init,
+    who,
+  );
+  const anim = animatePlans(init, who, (d) =>
+    planZigZag(
+      instr,
+      d,
+      leaderRole,
+      must(insideHandMap.get(d.protoId), ["missing insideHand for dancer"]),
+      must(matchIdMap.get(d.protoId), ["missing matchId for dancer"]),
+    ),
+  );
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
+    },
+  ];
 };
+
+// ── Animator API ────────────────────────────────────────────────────────
+
+export function zigZagAnimator(
+  instr: ZigZagInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const { leaderRole, insideHandMap, matchIdMap } = validateAndResolve(
+    instr,
+    init,
+    who,
+  );
+  return animatePlans(init, who, (d) =>
+    planZigZag(
+      instr,
+      d,
+      leaderRole,
+      must(insideHandMap.get(d.protoId), ["missing insideHand for dancer"]),
+      must(matchIdMap.get(d.protoId), ["missing matchId for dancer"]),
+    ),
+  );
+}

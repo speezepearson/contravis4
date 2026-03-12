@@ -1,11 +1,17 @@
+import { produce } from "immer";
 import { z } from "zod";
 
-import { type Hand } from "../contraCore";
+import { ALL_PROTO_IDS, type Hand, type ProtoId } from "../contraCore";
 import { SnazzyError } from "../snazzyError";
 import { assertNever, safeThreshold } from "../utils";
-import { connectHands, Dancer } from "../worldState";
-import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
-import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
+import { connectHands, Dancer, type WorldState } from "../worldState";
+import {
+  CalledIdentifierSchema,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator } from "./_segment";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
 export type TakeHand = z.infer<typeof TakeHandSchema>;
@@ -30,12 +36,12 @@ export const TakeHandsInstructionSchema = z.object({
 });
 export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
 
-export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
-  instr,
-  init,
-) => {
-  return [
-    makeImmediateSegment(init, (id, draft) => {
+function computeTakeHandsFinalState(
+  instr: TakeHandsInstruction,
+  init: WorldState,
+): WorldState {
+  return produce(init, (draft) => {
+    for (const id of ALL_PROTO_IDS) {
       const other = Dancer.get(id, init).resolveMatch(instr.cid);
       switch (instr.hand) {
         case "left":
@@ -65,6 +71,51 @@ export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
         default:
           assertNever(instr.hand);
       }
-    }),
+    }
+  });
+}
+
+export function planTakeHands(
+  _instr: TakeHandsInstruction,
+  dancer: Dancer,
+  finalState: WorldState,
+): DancerSegment[] {
+  const final = Dancer.get(dancer.protoId, finalState);
+  return [
+    {
+      dur: 0,
+      hands: () => final.hands,
+    },
+  ];
+}
+
+export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
+  instr,
+  init,
+  who,
+) => {
+  const finalState = computeTakeHandsFinalState(instr, init);
+  const anim = animatePlans(init, who, (d) =>
+    planTakeHands(instr, d, finalState),
+  );
+  return [
+    {
+      dur: 0,
+      position: (dancer) => dancer.at(anim.getFrame(0)).pos,
+      facing: (dancer) => dancer.at(anim.getFrame(0)).facing,
+      hands: (dancer) => dancer.at(anim.getFrame(0)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(0)).recents,
+    },
   ];
 };
+
+export function takeHandsAnimator(
+  instr: TakeHandsInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const finalState = computeTakeHandsFinalState(instr, init);
+  return animatePlans(init, who, (dancer) =>
+    planTakeHands(instr, dancer, finalState),
+  );
+}

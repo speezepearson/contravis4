@@ -1,3 +1,4 @@
+import { produce } from "immer";
 import type { Vector } from "vecti";
 import { z } from "zod";
 
@@ -15,19 +16,14 @@ import { ellipsePosition, PI } from "../geometry";
 import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
+  type ContraAnimation,
   instructionBaseSchemaFields,
   personInDir,
   pureDir,
   resolveCardinalDirection,
 } from "./_base";
-import {
-  advanceState,
-  hold,
-  type InstructionAnimator,
-  makeImmediateSegment,
-  type PositionFn,
-  type Segment,
-} from "./_segment";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { type InstructionAnimator, type PositionFn } from "./_segment";
 
 export const PoussetteInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -39,7 +35,7 @@ export const PoussetteInstructionSchema = z.object({
 export type PoussetteInstruction = z.infer<typeof PoussetteInstructionSchema>;
 
 /**
- * Creates a position function for a poussette arc.
+ * Creates a position function for a poussette arc (legacy Segment API).
  * The backer traces an elliptical arc; the non-backer maintains displacement.
  * Arc dests are resolved by temporarily facing dancers across.
  */
@@ -62,10 +58,12 @@ export function makeHalfPoussetteArcPositionFn(
       ),
     });
   }
-  // console.log({arcDests})
 
   return (dancer, frac) => {
-    const { start, end } = arcDests.get(dancer.protoId)!;
+    const { start, end } = must(arcDests.get(dancer.protoId), [
+      { dancerId: dancer.protoId },
+      "missing arc dest",
+    ]);
     const semiMinorCw =
       -0.75 *
       Math.sign(start.x) *
@@ -75,65 +73,136 @@ export function makeHalfPoussetteArcPositionFn(
   };
 }
 
-export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const orig = (d: Dancer) => d.at(init);
-  const getMatch = (d: Dancer) =>
-    orig(d).resolveMatch(personInDir("across", "different"));
+/**
+ * Creates a per-dancer position function for a poussette arc (plan API).
+ * Pre-computes all needed values at plan time so the returned function
+ * takes only frac.
+ */
+export function makeHalfPoussetteArcDancerPositionFn(
+  backerRole: Role,
+  backerDir: Hand,
+  dancer: Dancer,
+): (frac: number) => Vector {
+  const isBacker = dancer.role === backerRole;
+  const start = dancer.pos;
+  const end = start.add(
+    dancer
+      .resolveCalledDirection(pureDir("across"))
+      .rotateByDegrees(
+        (isBacker ? 1 : -1) * { right: -90, left: 90 }[backerDir],
+      ),
+  );
+  const semiMinorCw =
+    -0.75 *
+    Math.sign(start.x) *
+    Math.sign(end.y - start.y) *
+    (isBacker ? 1 : -1.3);
 
-  const setupSegment = makeImmediateSegment(init, (id, draft) => {
-    draft[id].facing = must(resolveCardinalDirection("across", draft[id].pos), [
-      { dancerId: id },
-      "too close to center, not sure which way to face",
-    ]);
-    const match = getMatch(Dancer.get(id, init));
-    draft[id].hands = hold(
-      ["left", match.id, "right"],
-      ["right", match.id, "left"],
-    );
+  return (frac) => ellipsePosition(start, end, semiMinorCw, PI * frac);
+}
+
+// ── Plan-based API ──────────────────────────────────────────────────────
+
+export function planPoussette(
+  instr: PoussetteInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  const matchId = dancer.resolveMatch(personInDir("across", "different")).id;
+
+  // Setup: face across, take two-hand hold with match
+  const setupFacing = must(resolveCardinalDirection("across", dancer.pos), [
+    { dancerId: dancer.protoId },
+    "too close to center, not sure which way to face",
+  ]);
+  const postSetupDancer = produce(dancer, (draft) => {
+    draft.facing = setupFacing;
   });
 
-  const afterSetup = advanceState([setupSegment], init, who);
-
-  const handsFn = (dancer: Dancer) => {
-    const matchId = getMatch(dancer).id;
-    return hold(["left", matchId, "right"], ["right", matchId, "left"]);
+  const setupSegment: DancerSegment = {
+    dur: 0,
+    position: () => dancer.pos,
+    facing: () => setupFacing,
+    hands: () => ({
+      left: { theirId: matchId, theirHand: "right" },
+      right: { theirId: matchId, theirHand: "left" },
+    }),
   };
 
   const halfBeats = instr.full ? instr.beats / 2 : instr.beats;
 
-  const firstHalf: Segment = {
+  // First half: arc with original backer
+  const firstHalfPosition = makeHalfPoussetteArcDancerPositionFn(
+    instr.backer,
+    instr.backerDir,
+    postSetupDancer,
+  );
+
+  const firstHalf: DancerSegment = {
     dur: halfBeats,
-    position: makeHalfPoussetteArcPositionFn(
-      instr.backer,
-      instr.backerDir,
-      afterSetup,
-    ),
-    hands: handsFn,
-    interactedWith: (dancer) => [getMatch(dancer).id],
+    position: firstHalfPosition,
+    hands: () => ({
+      left: { theirId: matchId, theirHand: "right" },
+      right: { theirId: matchId, theirHand: "left" },
+    }),
+    interactedWith: () => [matchId],
   };
 
   if (!instr.full) {
     return [setupSegment, firstHalf];
   }
 
-  const afterFirst = advanceState([firstHalf], afterSetup, who);
-  // The second half uses the other backer but the SAME backerDir.
-  // Since the new backer faces the opposite direction across,
-  // on_${backerDir} naturally resolves to the opposite spatial direction,
-  // bringing the couple back to where it started.
-  const secondHalf = {
+  // Second half: arc with other backer, same backerDir.
+  // Compute post-first-half dancer state.
+  const postFirstHalfDancer = produce(postSetupDancer, (draft) => {
+    draft.pos = firstHalfPosition(1);
+  });
+
+  const secondHalfPosition = makeHalfPoussetteArcDancerPositionFn(
+    otherRole(instr.backer),
+    instr.backerDir,
+    postFirstHalfDancer,
+  );
+
+  const secondHalf: DancerSegment = {
     dur: halfBeats,
-    position: makeHalfPoussetteArcPositionFn(
-      otherRole(instr.backer),
-      instr.backerDir,
-      afterFirst,
-    ),
-    hands: handsFn,
+    position: secondHalfPosition,
+    hands: () => ({
+      left: { theirId: matchId, theirHand: "right" },
+      right: { theirId: matchId, theirHand: "left" },
+    }),
   };
 
   return [setupSegment, firstHalf, secondHalf];
+}
+
+// ── Legacy Segment[] API ────────────────────────────────────────────────
+
+export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
+  instr,
+  init,
+  who,
+) => {
+  const anim = animatePlans(init, who, (d) => planPoussette(instr, d));
+  return [
+    {
+      dur: instr.beats,
+      position: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).pos,
+      facing: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).facing,
+      hands: (dancer, frac) =>
+        dancer.at(anim.getFrame(instr.beats * frac)).hands,
+      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
+    },
+  ];
 };
+
+// ── Animator API ────────────────────────────────────────────────────────
+
+export function poussetteAnimator(
+  instr: PoussetteInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return animatePlans(init, who, (d) => planPoussette(instr, d));
+}
