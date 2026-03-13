@@ -72,6 +72,7 @@ import {
   formShortWavesSegments,
 } from "./formShortWaves";
 import {
+  giveAndTakeIntoSwingAnimator,
   GiveAndTakeIntoSwingInstructionSchema,
   giveAndTakeIntoSwingSegments,
 } from "./giveAndTakeIntoSwing";
@@ -376,6 +377,8 @@ export function animateAtomicInstruction(
       return formLongWavesAnimator(instr, init, who);
     case "form_short_waves":
       return formShortWavesAnimator(instr, init, who);
+    case "give_and_take_into_swing":
+      return giveAndTakeIntoSwingAnimator(instr, init, who);
     case "greet_new_neighbors":
       return greetNewNeighborsAnimator(instr, init, who);
     case "greet_shadow":
