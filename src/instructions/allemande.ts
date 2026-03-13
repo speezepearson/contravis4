@@ -1,4 +1,3 @@
-import memoize from "lodash/memoize";
 import { z } from "zod";
 
 import { type Beats, HandSchema, type ProtoId } from "../contraCore";
@@ -17,15 +16,7 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import {
-  arc,
-  hold,
-  type InstructionAnimator,
-  lerpFacingTo,
-  orbit,
-  rotateFacingBy,
-  type Segment,
-} from "./_segment";
+import { hold } from "./_segment";
 
 export const AllemandeInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -117,72 +108,6 @@ export function planAllemande(
     },
   ];
 }
-
-export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const orig = (d: Dancer) => d.at(init);
-  const rotationSign = instr.handedness === "left" ? 1 : -1;
-  const numAllemandeRadians =
-    (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
-
-  const getMatch = memoize((d: Dancer) => {
-    return orig(d).resolveMatch(instr.cid);
-  });
-
-  const avgDistance = (() => {
-    let totalDistance = 0;
-    let count = 0;
-    for (const id of who) {
-      const dancer = Dancer.get(id, init);
-      totalDistance += dancer.pos.subtract(getMatch(dancer).pos).length();
-      count++;
-    }
-    return totalDistance / count;
-  })();
-  const approachBeats = approachBeatsForSpeedMatch(
-    avgDistance,
-    instr.beats,
-    numAllemandeRadians,
-  );
-  const circlingBeats = instr.beats - approachBeats;
-
-  return [
-    {
-      dur: approachBeats,
-      position: arc(instr.cid, {
-        semiMinor: -ALLEMANDE_RADIUS * rotationSign,
-        phi: APPROACH_ELLIPSE_RADIANS,
-      }),
-      facing: lerpFacingTo((dancer) => {
-        const match = getMatch(dancer);
-        if (!match) return dancer.facing;
-        return getDir({
-          from: orig(dancer).pos,
-          to: orig(match).pos,
-        });
-      }),
-      hands: (dancer) =>
-        orig(dancer).pos.subtract(getMatch(dancer).pos).length() < 1.2
-          ? hold([instr.handedness, getMatch(dancer).id, instr.handedness])
-          : {},
-    },
-    {
-      dur: circlingBeats,
-      position: orbit(
-        (d) => avgPos(orig(d), orig(getMatch(d))),
-        { radians: numAllemandeRadians },
-        who,
-      ),
-      facing: rotateFacingBy(() => numAllemandeRadians),
-      hands: (dancer) =>
-        hold([instr.handedness, getMatch(dancer).id, instr.handedness]),
-      interactedWith: (dancer) => [getMatch(dancer).id],
-    },
-  ] satisfies Segment[];
-};
 
 export function allemandeAnimator(
   instr: AllemandeInstruction,

@@ -9,7 +9,6 @@ import {
   PersonInDirectionVariantSchema,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetNewNeighborsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -39,28 +38,6 @@ export function planGreetNewNeighbors(
     },
   ];
 }
-
-export const greetNewNeighborsSegments: InstructionAnimator<
-  GreetNewNeighborsInstruction
-> = (instr): Segment[] => [
-  {
-    dur: 0,
-    labels: (dancer) => [
-      [
-        "neighbor",
-        must(dancer.resolveCalledIdentifier(instr.cid)?.id, [
-          { dancerId: dancer.id },
-          " has no ",
-          { cid: instr.cid },
-          " to mark as their new neighbor",
-        ]),
-      ],
-    ],
-    interactedWith: (dancer) => [
-      must(dancer.resolveCalledIdentifier(instr.cid)).id,
-    ],
-  },
-];
 
 export function greetNewNeighborsAnimator(
   instr: GreetNewNeighborsInstruction,

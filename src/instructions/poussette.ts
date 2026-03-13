@@ -23,7 +23,7 @@ import {
   resolveCardinalDirection,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, type PositionFn } from "./_segment";
+import { type PositionFn } from "./_segment";
 
 export const PoussetteInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -174,28 +174,6 @@ export function planPoussette(
 
   return [setupSegment, firstHalf, secondHalf];
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const poussetteSegments: InstructionAnimator<PoussetteInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const anim = animatePlans(init, who, (d) => planPoussette(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 // ── Animator API ────────────────────────────────────────────────────────
 

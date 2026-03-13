@@ -10,7 +10,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const StepInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -39,24 +38,6 @@ export function planStep(
     },
   ];
 }
-
-export const stepSegments: InstructionAnimator<StepInstruction> = (
-  instr,
-): Segment[] => [
-  {
-    dur: instr.beats,
-    position: (dancer, frac) => {
-      const dir = dancer.resolveCalledDirection(instr.direction);
-      const startPos = dancer.pos;
-      const finalPos = startPos.add(dir.multiply(instr.distance));
-      return lerpVectors(startPos, finalPos, frac);
-    },
-    facing: (dancer, frac) => {
-      const finalFacing = dancer.resolveCalledDirection(instr.facing);
-      return lerpFacing(dancer.facing, finalFacing, frac);
-    },
-  },
-];
 
 export function stepAnimator(
   instr: StepInstruction,

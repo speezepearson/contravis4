@@ -9,12 +9,7 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import type { InstructionAnimator } from "./_segment";
-import {
-  allemandeSegments,
-  approachBeatsForSpeedMatch,
-  planAllemande,
-} from "./allemande";
+import { approachBeatsForSpeedMatch, planAllemande } from "./allemande";
 
 export const ShoulderRoundInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -73,16 +68,3 @@ export function shoulderRoundAnimator(
     planShoulderRound(instr, dancer, approachBeats),
   );
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const shoulderRoundSegments: InstructionAnimator<
-  ShoulderRoundInstruction
-> = (instr, init, who) => {
-  const segments = allemandeSegments(
-    { ...instr, type: "allemande" },
-    init,
-    who,
-  );
-  return segments.map(({ hands: _hands, ...rest }) => rest);
-};

@@ -10,7 +10,6 @@ import {
   PersonInDirectionVariantSchema,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const GreetShadowInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -30,18 +29,6 @@ export function planGreetShadow(
   const them = must(dancer.resolveCalledIdentifier(instr.cid));
   return [{ dur: 0, labels: () => [[instr.label, them.id]] }];
 }
-
-export const greetShadowSegments: InstructionAnimator<
-  GreetShadowInstruction
-> = (instr): Segment[] => [
-  {
-    dur: 0,
-    labels: (dancer, _frac) => {
-      const them = must(dancer.resolveCalledIdentifier(instr.cid));
-      return [[instr.label, them.id]];
-    },
-  },
-];
 
 export function greetShadowAnimator(
   instr: GreetShadowInstruction,

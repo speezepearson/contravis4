@@ -16,7 +16,6 @@ import {
   personInDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormLongWavesInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -130,17 +129,3 @@ export function formLongWavesAnimator(
     planFormLongWaves(dancer, finalState),
   );
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const formLongWavesSegments: InstructionAnimator<
-  FormLongWavesInstruction
-> = (_instr, init, who) => {
-  const finalState = validateAndComputeFinalState(init, who);
-  return [
-    makeImmediateSegment(init, (id, draft) => {
-      draft[id].facing = finalState[id].facing;
-      draft[id].hands = finalState[id].hands;
-    }),
-  ];
-};

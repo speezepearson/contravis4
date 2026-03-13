@@ -6,7 +6,6 @@ import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import { type ContraAnimation, instructionBaseSchemaFields } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const CourtesyTurnInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -15,24 +14,6 @@ export const CourtesyTurnInstructionSchema = z.object({
 export type CourtesyTurnInstruction = z.infer<
   typeof CourtesyTurnInstructionSchema
 >;
-
-export const courtesyTurnSegments: InstructionAnimator<
-  CourtesyTurnInstruction
-> = (instr, init, who) => {
-  const anim = animatePlans(init, who, (d) => planCourtesyTurn(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 // ── Plan-based API (top-level instruction) ──────────────────────────────
 

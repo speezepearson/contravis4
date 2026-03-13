@@ -25,24 +25,14 @@ import {
   instructionBaseSchemaFields,
   resolveCardinalDirection,
 } from "./_base";
-import {
-  computeEvenSpacingFudge,
-  fudgeToAlignY,
-  fudgeToSpaceEvenlyInY,
-} from "./_fudge";
+import { computeEvenSpacingFudge } from "./_fudge";
 import {
   addDancerDrift,
   animatePlans,
   type DancerSegment,
   evaluatePlansFinalState,
 } from "./_plan";
-import {
-  addPositionDrift,
-  type HandsFn,
-  hold,
-  type InstructionAnimator,
-  type Segment,
-} from "./_segment";
+import { hold } from "./_segment";
 
 export const SwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -168,119 +158,6 @@ function computeSwingTiming(
   };
 }
 
-// ── Legacy Segment[] API (used by balanceAndSwing, meltdownSwing, etc.) ─
-
-export function makeSwingSegments(
-  instr: SwingInstruction,
-  init: WorldState,
-  who: ReadonlySet<ProtoId>,
-): Segment[] {
-  const orig = (d: Dancer) => d.at(init);
-  const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
-  const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
-
-  const getGeom = computeSwingGeometry(instr, init);
-  const { approachBeats, swingBeats } = computeSwingTiming(
-    instr,
-    init,
-    getGeom,
-  );
-
-  const swingHands: HandsFn = (dancer) => {
-    const matchId = getMatch(dancer).id;
-    return hold(
-      isLark(dancer.protoId)
-        ? ["right", matchId, "left"]
-        : ["left", matchId, "right"],
-    );
-  };
-
-  const segments: Segment[] = [
-    {
-      dur: approachBeats,
-      position: (dancer, frac) =>
-        lerpVectors(dancer.pos, getGeom(dancer).postApproach.pos, frac),
-      facing: (dancer, frac) =>
-        lerpFacing(dancer.facing, getGeom(dancer).postApproach.facing, frac),
-      hands: () => ({}),
-      interactedWith: (dancer) => [getMatch(dancer).id],
-    },
-    {
-      dur: swingBeats,
-      position: (dancer, frac) =>
-        revolve(getGeom(dancer).postApproach.pos, {
-          around: getGeom(dancer).center,
-          radians: getGeom(dancer).numSwingRadians * frac,
-        }),
-      facing: (dancer, frac) =>
-        getGeom(dancer).postApproach.facing.rotateByRadians(
-          getGeom(dancer).numSwingRadians * frac,
-        ),
-      hands: swingHands,
-    },
-    {
-      dur: DISENGAGE_BEATS,
-      position: (dancer, frac) =>
-        lerpVectors(
-          getGeom(dancer).postSwing.pos,
-          getGeom(dancer).final.pos,
-          frac,
-        ),
-      facing: (dancer, frac) => {
-        let angle = ccwRadsBetween(
-          getGeom(dancer).postSwing.facing,
-          getGeom(dancer).final.facing,
-        );
-        // Robin unwinds CW from the swing; force the rotation CW.
-        if (!isLark(dancer.protoId) && angle > 0) angle -= TWO_PI;
-        return getGeom(dancer).postSwing.facing.rotateByRadians(angle * frac);
-      },
-      hands: swingHands,
-    },
-  ];
-
-  switch (instr.endFacing) {
-    case "across":
-    case "out": {
-      const getXDrift = (d: Dancer) => {
-        const center = getCenter(d);
-        const side = must(getSide(center), [
-          { dancerId: d.id },
-          "too close to center, not sure which side is east or west",
-        ]);
-        return { east: 0.5, west: -0.5 }[side] - center.x;
-      };
-      const xSnapped = addPositionDrift(
-        segments,
-        (id, globalFrac) =>
-          new Vector(getXDrift(Dancer.get(id, init)) * globalFrac, 0),
-      );
-      return fudgeToAlignY(
-        fudgeToSpaceEvenlyInY(xSnapped, init, who),
-        init,
-        who,
-      );
-    }
-  }
-
-  return segments;
-}
-
-export const swingSegments: InstructionAnimator<SwingInstruction> = (
-  instr,
-  init,
-  who,
-) => makeSwingSegments(instr, init, who);
-
-// ── Plan-based API (top-level instruction) ──────────────────────────────
-
-/**
- * Animate a swing instruction using per-dancer plans.
- *
- * Each dancer gets their own DancerSegment[] — the segment functions are
- * closures that already know which dancer they belong to (no `dancer`
- * parameter needed).
- */
 /**
  * Build per-dancer swing plans (with fudge drifts applied for across/out endings).
  *

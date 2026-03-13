@@ -14,7 +14,6 @@ import {
   pureDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
 
 export const FormShortWavesInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -123,18 +122,3 @@ export function formShortWavesAnimator(
     planFormShortWaves(dancer, finalState),
   );
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const formShortWavesSegments: InstructionAnimator<
-  FormShortWavesInstruction
-> = (_instr, init, who) => {
-  const finalState = validateAndComputeFinalState(init, who);
-  return [
-    makeImmediateSegment(init, (id, draft) => {
-      draft[id].facing = finalState[id].facing;
-      draft[id].pos = finalState[id].pos;
-      draft[id].hands = finalState[id].hands;
-    }),
-  ];
-};

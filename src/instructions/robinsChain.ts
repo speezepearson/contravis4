@@ -13,7 +13,6 @@ import {
   personInDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 import { planCourtesyTurnWithResolvedMatch } from "./courtesyTurn";
 
 export const RobinsChainInstructionSchema = z.object({
@@ -72,26 +71,6 @@ function getSendee(dancer: Dancer): Dancer {
     ]);
   return res;
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const robinsChainSegments: InstructionAnimator<
-  RobinsChainInstruction
-> = (instr, init, who) => {
-  const anim = animatePlans(init, who, (d) => planRobinsChain(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 function getCatchInfo(instr: RobinsChainInstruction, dancer: Dancer) {
   if (dancer.role === "robin")
