@@ -1,4 +1,16 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+
+/** Add an instruction via the text-input flow: click +, type text, press Enter. */
+async function addInstruction(page: Page, text = "neighbors balance and swing") {
+  await page.locator(".add-gap-btn").first().click();
+  const input = page.locator(".add-instruction-text-input");
+  await expect(input).toBeVisible();
+  await input.fill(text);
+  await input.press("Enter");
+  // Wait for the input to disappear (instruction committed)
+  await expect(input).not.toBeVisible();
+}
 
 test.describe("undo/redo", () => {
   test.beforeEach(async ({ page }) => {
@@ -14,7 +26,7 @@ test.describe("undo/redo", () => {
       .locator(".instruction-item")
       .count();
 
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page);
     const instructionsAfter = await page
       .locator(".instruction-item")
       .count();
@@ -32,7 +44,7 @@ test.describe("undo/redo", () => {
       .locator(".instruction-item")
       .count();
 
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page);
     await page.keyboard.press("Control+z");
     await page.keyboard.press("Control+Shift+z");
 
@@ -47,7 +59,7 @@ test.describe("undo/redo", () => {
       .locator(".instruction-item")
       .count();
 
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page);
     await page.keyboard.press("Control+z");
     await page.keyboard.press("Control+y");
 
@@ -59,7 +71,7 @@ test.describe("undo/redo", () => {
 
   test("deleting an instruction can be undone", async ({ page }) => {
     // Add an instruction first so there's something to delete
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page);
     const countAfterAdd = await page.locator(".instruction-item").count();
 
     // Delete it
@@ -79,10 +91,10 @@ test.describe("undo/redo", () => {
       .count();
 
     // Add, undo (redo should be available), then add again (redo cleared)
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page);
     await page.keyboard.press("Control+z");
 
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page, "circle left 3 places");
     // Redo should do nothing since history was cleared
     await page.keyboard.press("Control+Shift+z");
     expect(await page.locator(".instruction-item").count()).toBe(
@@ -94,8 +106,8 @@ test.describe("undo/redo", () => {
     const initial = await page.locator(".instruction-item").count();
 
     // Add two instructions
-    await page.locator(".add-gap-btn").first().click();
-    await page.locator(".add-gap-btn").first().click();
+    await addInstruction(page, "neighbors balance and swing");
+    await addInstruction(page, "circle left 3 places");
     expect(await page.locator(".instruction-item").count()).toBe(initial + 2);
 
     // Undo twice
