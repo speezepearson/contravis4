@@ -86,7 +86,7 @@ import {
   GreetShadowInstructionSchema,
   greetShadowSegments,
 } from "./greetShadow";
-import { HeyInstructionSchema, heySegments } from "./hey";
+import { heyAnimator, HeyInstructionSchema, heySegments } from "./hey";
 import {
   longLineInCenterAnimator,
   LongLineInCenterInstructionSchema,
@@ -384,6 +384,8 @@ export function animateAtomicInstruction(
       return greetNewNeighborsAnimator(instr, init, who);
     case "greet_shadow":
       return greetShadowAnimator(instr, init, who);
+    case "hey":
+      return heyAnimator(instr, init, who);
     case "long_line_in_center":
       return longLineInCenterAnimator(instr, init, who);
     case "long_lines_forward_back":

@@ -1,7 +1,12 @@
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { type DancerId, HandSchema, RoleSchema } from "../contraCore";
+import {
+  type DancerId,
+  HandSchema,
+  type ProtoId,
+  RoleSchema,
+} from "../contraCore";
 import {
   getGroupOfFour,
   makePreferHinted,
@@ -10,10 +15,20 @@ import {
   preferRecent,
   type Tiebreaker,
 } from "../formations";
-import { getSingleton, must } from "../utils";
-import { Dancer, getDancerSide } from "../worldState";
-import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
-import { fudgeToAlignY, fudgeToSpaceEvenlyInY } from "./_fudge";
+import { getSingleton, lerpVectors, must } from "../utils";
+import { Dancer, getDancerSide, type WorldState } from "../worldState";
+import {
+  CalledIdentifierSchema,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import {
+  fudgePlansToAlignY,
+  fudgePlansToSpaceEvenlyInY,
+  fudgeToAlignY,
+  fudgeToSpaceEvenlyInY,
+} from "./_fudge";
+import { animatePlans, type PlanGetter } from "./_plan";
 import { type InstructionAnimator, linearTo } from "./_segment";
 
 export const HeyInstructionSchema = z.object({
@@ -80,3 +95,58 @@ export const heySegments: InstructionAnimator<HeyInstruction> = (
     who,
   );
 };
+
+export function heyAnimator(
+  instr: HeyInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  if (who.size !== 4) throw new Error("hey requires all 4 dancers");
+
+  const tiebreakers: [Tiebreaker, ...Tiebreaker[]] = instr.disambiguatingCid
+    ? [
+        makePreferHinted(instr.disambiguatingCid),
+        preferCloser,
+        preferOneInFront,
+        preferRecent,
+      ]
+    : [preferCloser, preferOneInFront, preferRecent];
+
+  const basePlan: PlanGetter = (dancer) => {
+    const group = getGroupOfFour(dancer, { by: tiebreakers });
+    const side = getDancerSide(dancer);
+
+    const targetPos = (() => {
+      if (instr.full) {
+        const x = side === "west" ? -0.5 : 0.5;
+        return new Vector(x, dancer.pos.y);
+      } else {
+        const sameRoleOther = must(
+          getSingleton(
+            group.filter((d) => d.role === dancer.role && d.dir !== dancer.dir),
+          ),
+        );
+        const x = side === "west" ? 0.5 : -0.5;
+        return new Vector(x, sameRoleOther.pos.y);
+      }
+    })();
+
+    const interacted = group.filter((d) => d.id !== dancer.id).map((d) => d.id);
+
+    return [
+      {
+        dur: instr.beats,
+        position: (frac: number) => lerpVectors(dancer.pos, targetPos, frac),
+        hands: () => ({}),
+        interactedWith: () => interacted,
+      },
+    ];
+  };
+
+  const fudgedPlan = fudgePlansToAlignY(
+    fudgePlansToSpaceEvenlyInY(basePlan, init),
+    init,
+  );
+
+  return animatePlans(init, who, fudgedPlan);
+}
