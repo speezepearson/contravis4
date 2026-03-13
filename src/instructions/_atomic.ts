@@ -171,10 +171,12 @@ import {
   takeHandsInRingsSegments,
 } from "./takeHandsInRings";
 import {
+  templatedLLRRAnimator,
   TemplatedLLRRInstructionSchema,
   templatedLLRRSegments,
 } from "./templatedLLRRInstruction";
 import {
+  templatedLRAnimator,
   TemplatedLRInstructionSchema,
   templatedLRSegments,
 } from "./templatedLRInstruction";
@@ -432,6 +434,10 @@ export function animateAtomicInstruction(
       return upTheHallAnimator(instr, init, who);
     case "zig_zag":
       return zigZagAnimator(instr, init, who);
+    case "templated_llrr":
+      return templatedLLRRAnimator(instr, init, who);
+    case "templated_lr":
+      return templatedLRAnimator(instr, init, who);
     default:
       return animateSegments(
         init,
