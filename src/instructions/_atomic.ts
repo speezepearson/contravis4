@@ -93,6 +93,7 @@ import {
   longLineInCenterSegments,
 } from "./longLineInCenter";
 import {
+  longLinesForwardBackAnimator,
   LongLinesForwardBackInstructionSchema,
   longLinesForwardBackSegments,
 } from "./longLinesForwardBack";
@@ -385,6 +386,8 @@ export function animateAtomicInstruction(
       return greetShadowAnimator(instr, init, who);
     case "long_line_in_center":
       return longLineInCenterAnimator(instr, init, who);
+    case "long_lines_forward_back":
+      return longLinesForwardBackAnimator(instr, init, who);
     case "meltdown_swing":
       return meltdownSwingAnimator(instr, init, who);
     case "mad_robin":

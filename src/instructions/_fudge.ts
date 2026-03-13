@@ -17,6 +17,12 @@ import {
   type WorldState,
 } from "../worldState";
 import { personInDir } from "./_base";
+import {
+  addDancerDrift,
+  type DancerSegment,
+  evaluatePlansFinalState,
+  type PlanGetter,
+} from "./_plan";
 import { addPositionDrift, advanceState, type Segment } from "./_segment";
 
 /**
@@ -192,6 +198,221 @@ export function fudgeToSpaceEvenlyInY(
   }
 
   return result;
+}
+
+// ── Plan-based fudge utilities ────────────────────────────────────────
+
+/**
+ * Plan-based equivalent of `fudgeToAlignY`.
+ * Eagerly evaluates all dancers' plans, computes y-alignment drifts, and
+ * returns a new PlanGetter whose plans include the drift.
+ */
+export function fudgePlansToAlignY(
+  getPlan: PlanGetter,
+  init: WorldState,
+): PlanGetter {
+  const allProtos: ReadonlySet<ProtoId> = new Set(ALL_PROTO_IDS);
+
+  const basePlans = new Map<ProtoId, DancerSegment[]>();
+  for (const id of ALL_PROTO_IDS) {
+    basePlans.set(id, getPlan(Dancer.get(id, init)));
+  }
+  const finalState = evaluatePlansFinalState(init, allProtos, basePlans);
+
+  const westLark = must(
+    ALL_PROTO_IDS.find(
+      (id) =>
+        isLark(id) &&
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "west",
+    ),
+    [`no lark on the west side`],
+  );
+  const westRobin = must(
+    ALL_PROTO_IDS.find(
+      (id) =>
+        isRobin(id) &&
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "west",
+    ),
+    ["no robin on the west side"],
+  );
+  const eastLark = must(
+    ALL_PROTO_IDS.find(
+      (id) =>
+        isLark(id) &&
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "east",
+    ),
+    ["no lark on the east side"],
+  );
+  const eastRobin = must(
+    ALL_PROTO_IDS.find(
+      (id) =>
+        isRobin(id) &&
+        must(getSide(Dancer.get(id, finalState).pos), [
+          { dancerId: id },
+          "is too close to center",
+        ]) === "east",
+    ),
+    ["no robin on the east side"],
+  );
+
+  const westIds: ProtoId[] = [westLark, westRobin];
+
+  const dyWestLarkToNearestEastRobin = findDyToNearest(
+    westLark,
+    eastRobin,
+    finalState,
+    init,
+  );
+  const dyWestRobinToNearestEastLark = findDyToNearest(
+    westRobin,
+    eastLark,
+    finalState,
+    init,
+  );
+
+  if (
+    Math.abs(dyWestLarkToNearestEastRobin - dyWestRobinToNearestEastLark) > 0.01
+  ) {
+    throw new Error(
+      `[fudgePlansToAlignY] dy values differ: westLark→eastRobin=${dyWestLarkToNearestEastRobin}, westRobin→eastLark=${dyWestRobinToNearestEastLark}`,
+    );
+  }
+
+  const dyFudgeWest = dyWestLarkToNearestEastRobin / 2;
+  const dyFudgeEast = -dyFudgeWest;
+
+  const driftedPlans = new Map<ProtoId, DancerSegment[]>();
+  for (const id of ALL_PROTO_IDS) {
+    const basePlan = must(basePlans.get(id));
+    const dy = westIds.includes(id) ? dyFudgeWest : dyFudgeEast;
+    driftedPlans.set(
+      id,
+      addDancerDrift(
+        basePlan,
+        init[id].pos,
+        (globalFrac) => new Vector(0, dy * globalFrac),
+      ),
+    );
+  }
+
+  // Verify: after drift, each dancer's across-match should share the same y.
+  const resultFinalState = evaluatePlansFinalState(
+    init,
+    allProtos,
+    driftedPlans,
+  );
+  for (const id of ALL_PROTO_IDS) {
+    const dancer = Dancer.get(id, resultFinalState);
+    const match = dancer.resolveMatch(personInDir("across", "different"));
+    if (Math.abs(dancer.pos.y - match.pos.y) > 0.01) {
+      throw new SnazzyError([
+        "[fudgePlansToAlignY] after fudge, ",
+        { dancerId: id },
+        ` at y=${dancer.pos.y} is not aligned with across-match `,
+        { dancerId: match.id },
+        ` at y=${match.pos.y}`,
+      ]);
+    }
+  }
+
+  return (dancer: Dancer) => must(driftedPlans.get(dancer.protoId));
+}
+
+/**
+ * Plan-based equivalent of `fudgeToSpaceEvenlyInY`.
+ * Eagerly evaluates all dancers' plans, computes even-spacing drifts, and
+ * returns a new PlanGetter whose plans include the drift.
+ */
+export function fudgePlansToSpaceEvenlyInY(
+  getPlan: PlanGetter,
+  init: WorldState,
+): PlanGetter {
+  const allProtos: ReadonlySet<ProtoId> = new Set(ALL_PROTO_IDS);
+
+  const basePlans = new Map<ProtoId, DancerSegment[]>();
+  for (const id of ALL_PROTO_IDS) {
+    basePlans.set(id, getPlan(Dancer.get(id, init)));
+  }
+  const finalState = evaluatePlansFinalState(init, allProtos, basePlans);
+
+  // Partition dancers by side
+  const west: ProtoId[] = [];
+  const east: ProtoId[] = [];
+  for (const id of ALL_PROTO_IDS) {
+    const side = getDancerSide(Dancer.get(id, finalState));
+    if (side === "west") west.push(id);
+    else east.push(id);
+  }
+  if (west.length !== 2) {
+    throw new Error(
+      `[fudgePlansToSpaceEvenlyInY] expected 2 dancers on west, got ${west.length}`,
+    );
+  }
+  if (east.length !== 2) {
+    throw new Error(
+      `[fudgePlansToSpaceEvenlyInY] expected 2 dancers on east, got ${east.length}`,
+    );
+  }
+
+  const westFudges = computeEvenSpacingFudge(
+    finalState[west[0]].pos.y,
+    finalState[west[1]].pos.y,
+  );
+  const eastFudges = computeEvenSpacingFudge(
+    finalState[east[0]].pos.y,
+    finalState[east[1]].pos.y,
+  );
+
+  const driftMap = new Map<ProtoId, number>();
+  driftMap.set(west[0], westFudges[0]);
+  driftMap.set(west[1], westFudges[1]);
+  driftMap.set(east[0], eastFudges[0]);
+  driftMap.set(east[1], eastFudges[1]);
+
+  const driftedPlans = new Map<ProtoId, DancerSegment[]>();
+  for (const id of ALL_PROTO_IDS) {
+    const basePlan = must(basePlans.get(id));
+    const dy = driftMap.get(id) ?? 0;
+    driftedPlans.set(
+      id,
+      addDancerDrift(
+        basePlan,
+        init[id].pos,
+        (globalFrac) => new Vector(0, dy * globalFrac),
+      ),
+    );
+  }
+
+  // Verify: each side should have circular distance 1
+  const resultFinalState = evaluatePlansFinalState(
+    init,
+    allProtos,
+    driftedPlans,
+  );
+  for (const [label, ids] of [
+    ["west", west],
+    ["east", east],
+  ] as const) {
+    const y0 = resultFinalState[ids[0]].pos.y;
+    const y1 = resultFinalState[ids[1]].pos.y;
+    const dist = circularDistance(y0, y1, 2);
+    if (Math.abs(dist - 1) > 0.01) {
+      throw new Error(
+        `[fudgePlansToSpaceEvenlyInY] after fudge, ${label} side has circular distance ${dist.toFixed(4)}, expected 1`,
+      );
+    }
+  }
+
+  return (dancer: Dancer) => must(driftedPlans.get(dancer.protoId));
 }
 
 /**
