@@ -48,8 +48,8 @@ Every atomic instruction has these base fields:
 Most instructions are **atomic** — simple self-contained moves. Three instruction types are **top-level** (non-atomic):
 
 - **`split`** — runs different instructions for different groups simultaneously
-- **`swing`** — uses a plan-based animator rather than the segment-based atomic pipeline
-- **`robins_chain`** — uses a plan-based animator rather than the segment-based atomic pipeline
+- **`swing`** — compound instruction with approach, orbit, and disengage phases
+- **`robins_chain`** — compound instruction with crossing and courtesy turn phases
 
 `swing` and `robins_chain` can also appear as sub-instructions inside a `split`.
 
