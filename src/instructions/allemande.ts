@@ -1,19 +1,22 @@
-import memoize from "lodash/memoize";
 import { z } from "zod";
 
-import { type Beats, HandSchema } from "../contraCore";
-import { getDir, PI, TWO_PI } from "../geometry";
-import { avgPos, Dancer } from "../worldState";
-import { CalledIdentifierSchema, instructionBaseSchemaFields } from "./_base";
+import { type Beats, HandSchema, type ProtoId } from "../contraCore";
 import {
-  arc,
-  hold,
-  type InstructionAnimator,
-  lerpFacingTo,
-  orbit,
-  rotateFacingBy,
-  type Segment,
-} from "./_segment";
+  ellipsePosition,
+  getDir,
+  lerpFacing,
+  PI,
+  revolve,
+  TWO_PI,
+} from "../geometry";
+import { avgPos, Dancer, type WorldState } from "../worldState";
+import {
+  CalledIdentifierSchema,
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
+import { hold } from "./_segment";
 
 export const AllemandeInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -47,68 +50,92 @@ export function approachBeatsForSpeedMatch(
   return (approachFactor * totalBeats) / (orbitFactor + approachFactor);
 }
 
-export const allemandeSegments: InstructionAnimator<AllemandeInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const orig = (d: Dancer) => d.at(init);
+export function planAllemande(
+  instr: AllemandeInstruction,
+  dancer: Dancer,
+  approachBeats: Beats,
+): DancerSegment[] {
+  const rotationSign = instr.handedness === "left" ? 1 : -1;
+  const numAllemandeRadians =
+    (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
+  const circlingBeats = instr.beats - approachBeats;
+
+  const match = dancer.resolveMatch(instr.cid);
+  const startPos = dancer.pos;
+  const matchPos = match.pos;
+  const startFacing = dancer.facing;
+  const center = avgPos(dancer, match);
+  const distance = startPos.subtract(matchPos).length();
+
+  const targetFacing = getDir({ from: startPos, to: matchPos });
+
+  // Post-approach position: end of the elliptical arc
+  const postApproachPos = ellipsePosition(
+    startPos,
+    matchPos,
+    -ALLEMANDE_RADIUS * rotationSign,
+    APPROACH_ELLIPSE_RADIANS,
+  );
+  const postApproachFacing = lerpFacing(startFacing, targetFacing, 1);
+
+  return [
+    {
+      dur: approachBeats,
+      position: (frac) =>
+        ellipsePosition(
+          startPos,
+          matchPos,
+          -ALLEMANDE_RADIUS * rotationSign,
+          APPROACH_ELLIPSE_RADIANS * frac,
+        ),
+      facing: (frac) => lerpFacing(startFacing, targetFacing, frac),
+      hands: () =>
+        distance < 1.2
+          ? hold([instr.handedness, match.id, instr.handedness])
+          : {},
+    },
+    {
+      dur: circlingBeats,
+      position: (frac) =>
+        revolve(postApproachPos, {
+          around: center,
+          radians: numAllemandeRadians * frac,
+        }),
+      facing: (frac) =>
+        postApproachFacing.rotateByRadians(numAllemandeRadians * frac),
+      hands: () => hold([instr.handedness, match.id, instr.handedness]),
+      interactedWith: () => [match.id],
+    },
+  ];
+}
+
+export function allemandeAnimator(
+  instr: AllemandeInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
   const rotationSign = instr.handedness === "left" ? 1 : -1;
   const numAllemandeRadians =
     (TWO_PI * instr.rotations - APPROACH_ELLIPSE_RADIANS) * rotationSign;
 
-  const getMatch = memoize((d: Dancer) => {
-    return orig(d).resolveMatch(instr.cid);
-  });
+  // Compute average distance across all dancers for speed-matching
+  let totalDistance = 0;
+  let count = 0;
+  for (const id of who) {
+    const dancer = Dancer.get(id, init);
+    const match = dancer.resolveMatch(instr.cid);
+    totalDistance += dancer.pos.subtract(match.pos).length();
+    count++;
+  }
+  const avgDistance = totalDistance / count;
 
-  const avgDistance = (() => {
-    let totalDistance = 0;
-    let count = 0;
-    for (const id of who) {
-      const dancer = Dancer.get(id, init);
-      totalDistance += dancer.pos.subtract(getMatch(dancer).pos).length();
-      count++;
-    }
-    return totalDistance / count;
-  })();
   const approachBeats = approachBeatsForSpeedMatch(
     avgDistance,
     instr.beats,
     numAllemandeRadians,
   );
-  const circlingBeats = instr.beats - approachBeats;
 
-  return [
-    {
-      dur: approachBeats,
-      position: arc(instr.cid, {
-        semiMinor: -ALLEMANDE_RADIUS * rotationSign,
-        phi: APPROACH_ELLIPSE_RADIANS,
-      }),
-      facing: lerpFacingTo((dancer) => {
-        const match = getMatch(dancer);
-        if (!match) return dancer.facing;
-        return getDir({
-          from: orig(dancer).pos,
-          to: orig(match).pos,
-        });
-      }),
-      hands: (dancer) =>
-        orig(dancer).pos.subtract(getMatch(dancer).pos).length() < 1.2
-          ? hold([instr.handedness, getMatch(dancer).id, instr.handedness])
-          : {},
-    },
-    {
-      dur: circlingBeats,
-      position: orbit(
-        (d) => avgPos(orig(d), orig(getMatch(d))),
-        { radians: numAllemandeRadians },
-        who,
-      ),
-      facing: rotateFacingBy(() => numAllemandeRadians),
-      hands: (dancer) =>
-        hold([instr.handedness, getMatch(dancer).id, instr.handedness]),
-      interactedWith: (dancer) => [getMatch(dancer).id],
-    },
-  ] satisfies Segment[];
-};
+  return animatePlans(init, who, (dancer) =>
+    planAllemande(instr, dancer, approachBeats),
+  );
+}

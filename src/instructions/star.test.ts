@@ -3,9 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { labelId } from "../identifiers";
-import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
-import { type StarInstruction, starSegments } from "./star";
+import { starAnimator, type StarInstruction } from "./star";
 
 const allProtos = ALL_PROTO_IDS_SET;
 
@@ -24,11 +23,7 @@ describe("star", () => {
   it("full rotation returns dancers to starting positions", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 4 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      starSegments(instr, init, allProtos),
-    );
+    const animation = starAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     for (const id of ALL_PROTO_IDS) {
@@ -40,11 +35,7 @@ describe("star", () => {
   it("direction=right orbits clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "right", nPlaces: 1 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      starSegments(instr, init, allProtos),
-    );
+    const animation = starAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     // Same positions as circle right 1 place
@@ -58,11 +49,7 @@ describe("star", () => {
   it("direction=left orbits counter-clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 1 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      starSegments(instr, init, allProtos),
-    );
+    const animation = starAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     expect(final.up_lark_0.pos.x).toBeCloseTo(0.5);
@@ -72,11 +59,7 @@ describe("star", () => {
   it("facing is rotated 90° from circle facing (left star)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 1 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      starSegments(instr, init, allProtos),
-    );
+    const animation = starAnimator(instr, init, allProtos);
     // Check at midpoint: facings should be tangential, not center-facing
     const mid = animation.getFrame(animation.dur / 2);
 
@@ -94,11 +77,7 @@ describe("star", () => {
   it("inside hand connects with opposite person (left star = left hand)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 2 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      starSegments(instr, init, allProtos),
-    );
+    const animation = starAnimator(instr, init, allProtos);
     const mid = animation.getFrame(animation.dur / 2);
 
     for (const id of ALL_PROTO_IDS) {
@@ -121,20 +100,12 @@ describe("star", () => {
 
     // Without hint, should throw due to ambiguity
     expect(() =>
-      animateSegments(
-        becketNoRecents,
-        allProtos,
-        starSegments(makeInstr(), becketNoRecents, allProtos),
-      ),
+      starAnimator(makeInstr(), becketNoRecents, allProtos),
     ).toThrow();
 
     // With hint "partner", should succeed
     const instr = makeInstr({ disambiguatingCid: labelId("partner") });
-    const animation = animateSegments(
-      becketNoRecents,
-      allProtos,
-      starSegments(instr, becketNoRecents, allProtos),
-    );
+    const animation = starAnimator(instr, becketNoRecents, allProtos);
     const final = animation.getFrame(animation.dur);
 
     // Full rotation (4 places) should return dancers to starting positions
@@ -147,11 +118,7 @@ describe("star", () => {
   it("inside hand connects with opposite person (right star = right hand)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "right", nPlaces: 2 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      starSegments(instr, init, allProtos),
-    );
+    const animation = starAnimator(instr, init, allProtos);
     const mid = animation.getFrame(animation.dur / 2);
 
     for (const id of ALL_PROTO_IDS) {

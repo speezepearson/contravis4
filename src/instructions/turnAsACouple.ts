@@ -1,11 +1,21 @@
 import { z } from "zod";
 
+import { type ProtoId } from "../contraCore";
 import { ccwRadsBetween, PI } from "../geometry";
 import { SnazzyError } from "../snazzyError";
-import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields, perRoleId, personInDir } from "./_base";
+import { Dancer, type WorldState } from "../worldState";
+import {
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  perRoleId,
+  personInDir,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
 import { type InstructionAnimator } from "./_segment";
-import { californiaTwirlSegments } from "./californiaTwirl";
+import {
+  californiaTwirlSegments,
+  planCaliforniaTwirl,
+} from "./californiaTwirl";
 
 export const TurnAsACoupleInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -15,9 +25,7 @@ export type TurnAsACoupleInstruction = z.infer<
   typeof TurnAsACoupleInstructionSchema
 >;
 
-export const turnAsACoupleSegments: InstructionAnimator<
-  TurnAsACoupleInstruction
-> = (instr, init, who) => {
+function checkFacingSameDirection(init: WorldState, who: ReadonlySet<ProtoId>) {
   const checked = new Set<string>();
   for (const id of who) {
     const them = Dancer.get(id, init).resolveMatch(
@@ -39,6 +47,22 @@ export const turnAsACoupleSegments: InstructionAnimator<
       ]);
     }
   }
+}
+
+export function planTurnAsACouple(
+  instr: TurnAsACoupleInstruction,
+  dancer: Dancer,
+): DancerSegment[] {
+  return planCaliforniaTwirl(
+    { id: instr.id, beats: instr.beats, type: "california_twirl" },
+    dancer,
+  );
+}
+
+export const turnAsACoupleSegments: InstructionAnimator<
+  TurnAsACoupleInstruction
+> = (instr, init, who) => {
+  checkFacingSameDirection(init, who);
 
   return californiaTwirlSegments(
     { id: instr.id, beats: instr.beats, type: "california_twirl" },
@@ -46,3 +70,13 @@ export const turnAsACoupleSegments: InstructionAnimator<
     who,
   );
 };
+
+export function turnAsACoupleAnimator(
+  instr: TurnAsACoupleInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  checkFacingSameDirection(init, who);
+
+  return animatePlans(init, who, (dancer) => planTurnAsACouple(instr, dancer));
+}

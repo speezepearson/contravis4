@@ -25,24 +25,14 @@ import {
   instructionBaseSchemaFields,
   resolveCardinalDirection,
 } from "./_base";
-import {
-  computeEvenSpacingFudge,
-  fudgeToAlignY,
-  fudgeToSpaceEvenlyInY,
-} from "./_fudge";
+import { computeEvenSpacingFudge } from "./_fudge";
 import {
   addDancerDrift,
   animatePlans,
   type DancerSegment,
   evaluatePlansFinalState,
 } from "./_plan";
-import {
-  addPositionDrift,
-  type HandsFn,
-  hold,
-  type InstructionAnimator,
-  type Segment,
-} from "./_segment";
+import { hold } from "./_segment";
 
 export const SwingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -168,124 +158,18 @@ function computeSwingTiming(
   };
 }
 
-// ── Legacy Segment[] API (used by balanceAndSwing, meltdownSwing, etc.) ─
-
-export function makeSwingSegments(
-  instr: SwingInstruction,
-  init: WorldState,
-  who: ReadonlySet<ProtoId>,
-): Segment[] {
-  const orig = (d: Dancer) => d.at(init);
-  const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
-  const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
-
-  const getGeom = computeSwingGeometry(instr, init);
-  const { approachBeats, swingBeats } = computeSwingTiming(
-    instr,
-    init,
-    getGeom,
-  );
-
-  const swingHands: HandsFn = (dancer) => {
-    const matchId = getMatch(dancer).id;
-    return hold(
-      isLark(dancer.protoId)
-        ? ["right", matchId, "left"]
-        : ["left", matchId, "right"],
-    );
-  };
-
-  const segments: Segment[] = [
-    {
-      dur: approachBeats,
-      position: (dancer, frac) =>
-        lerpVectors(dancer.pos, getGeom(dancer).postApproach.pos, frac),
-      facing: (dancer, frac) =>
-        lerpFacing(dancer.facing, getGeom(dancer).postApproach.facing, frac),
-      hands: () => ({}),
-      interactedWith: (dancer) => [getMatch(dancer).id],
-    },
-    {
-      dur: swingBeats,
-      position: (dancer, frac) =>
-        revolve(getGeom(dancer).postApproach.pos, {
-          around: getGeom(dancer).center,
-          radians: getGeom(dancer).numSwingRadians * frac,
-        }),
-      facing: (dancer, frac) =>
-        getGeom(dancer).postApproach.facing.rotateByRadians(
-          getGeom(dancer).numSwingRadians * frac,
-        ),
-      hands: swingHands,
-    },
-    {
-      dur: DISENGAGE_BEATS,
-      position: (dancer, frac) =>
-        lerpVectors(
-          getGeom(dancer).postSwing.pos,
-          getGeom(dancer).final.pos,
-          frac,
-        ),
-      facing: (dancer, frac) => {
-        let angle = ccwRadsBetween(
-          getGeom(dancer).postSwing.facing,
-          getGeom(dancer).final.facing,
-        );
-        // Robin unwinds CW from the swing; force the rotation CW.
-        if (!isLark(dancer.protoId) && angle > 0) angle -= TWO_PI;
-        return getGeom(dancer).postSwing.facing.rotateByRadians(angle * frac);
-      },
-      hands: swingHands,
-    },
-  ];
-
-  switch (instr.endFacing) {
-    case "across":
-    case "out": {
-      const getXDrift = (d: Dancer) => {
-        const center = getCenter(d);
-        const side = must(getSide(center), [
-          { dancerId: d.id },
-          "too close to center, not sure which side is east or west",
-        ]);
-        return { east: 0.5, west: -0.5 }[side] - center.x;
-      };
-      const xSnapped = addPositionDrift(
-        segments,
-        (id, globalFrac) =>
-          new Vector(getXDrift(Dancer.get(id, init)) * globalFrac, 0),
-      );
-      return fudgeToAlignY(
-        fudgeToSpaceEvenlyInY(xSnapped, init, who),
-        init,
-        who,
-      );
-    }
-  }
-
-  return segments;
-}
-
-export const swingSegments: InstructionAnimator<SwingInstruction> = (
-  instr,
-  init,
-  who,
-) => makeSwingSegments(instr, init, who);
-
-// ── Plan-based API (top-level instruction) ──────────────────────────────
-
 /**
- * Animate a swing instruction using per-dancer plans.
+ * Build per-dancer swing plans (with fudge drifts applied for across/out endings).
  *
- * Each dancer gets their own DancerSegment[] — the segment functions are
- * closures that already know which dancer they belong to (no `dancer`
- * parameter needed).
+ * This is the composable building block: compound instructions (balanceAndSwing,
+ * meltdownSwing, etc.) can call this on an intermediate state, get back per-dancer
+ * DancerSegment[], and concatenate with their pre-swing plans.
  */
-export function swingAnimator(
+export function buildSwingPlans(
   instr: SwingInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
-): ContraAnimation {
+): Map<ProtoId, DancerSegment[]> {
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
   const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
@@ -297,7 +181,7 @@ export function swingAnimator(
     getGeom,
   );
 
-  const getPlans = (dancer: Dancer): DancerSegment[] => {
+  const getPlan = (dancer: Dancer): DancerSegment[] => {
     const geom = getGeom(dancer);
     const matchId = getMatch(dancer).id;
     const amLark = isLark(dancer.protoId);
@@ -346,16 +230,16 @@ export function swingAnimator(
     ];
   };
 
+  // Build plans for all dancers.
+  const unfudgedPlans = new Map<ProtoId, DancerSegment[]>();
+  for (const id of who) {
+    unfudgedPlans.set(id, getPlan(Dancer.get(id, init)));
+  }
+
   // For across/out endings, apply fudge drifts to each dancer's plan.
   switch (instr.endFacing) {
     case "across":
     case "out": {
-      // Build un-fudged plans for all dancers so we can compute drift values.
-      const unfudgedPlans = new Map<ProtoId, DancerSegment[]>();
-      for (const id of who) {
-        unfudgedPlans.set(id, getPlans(Dancer.get(id, init)));
-      }
-
       // Step 1: x-snap drift (snap center.x to ±0.5).
       const xDrifts = new Map<ProtoId, number>();
       for (const id of who) {
@@ -480,10 +364,19 @@ export function swingAnimator(
         );
       }
 
-      return animatePlans(init, who, (d) => finalPlans.get(d.protoId) ?? []);
+      return finalPlans;
     }
   }
 
   // Non-across/out endings: no fudge needed.
-  return animatePlans(init, who, getPlans);
+  return unfudgedPlans;
+}
+
+export function swingAnimator(
+  instr: SwingInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const plans = buildSwingPlans(instr, init, who);
+  return animatePlans(init, who, (d) => plans.get(d.protoId) ?? []);
 }

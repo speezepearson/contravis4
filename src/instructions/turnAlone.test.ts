@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET, isLark } from "../contraCore";
 import { ccwRadsBetween, PI } from "../geometry";
-import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
-import { type TurnAloneInstruction, turnAloneSegments } from "./turnAlone";
+import { turnAloneAnimator, type TurnAloneInstruction } from "./turnAlone";
 
 const allProtos = ALL_PROTO_IDS_SET;
 
@@ -22,11 +21,7 @@ function makeInstr(
 describe("turnAlone", () => {
   const init = initFormationStates.improper;
   const instr = makeInstr();
-  const animation = animateSegments(
-    init,
-    allProtos,
-    turnAloneSegments(instr, init, allProtos),
-  );
+  const animation = turnAloneAnimator(instr, init, allProtos);
   const final = animation.getFrame(animation.dur);
 
   it("does not move dancers' positions", () => {

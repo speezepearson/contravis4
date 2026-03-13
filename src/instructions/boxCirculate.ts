@@ -11,7 +11,6 @@ import {
   personInDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const BoxCirculateInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -77,45 +76,6 @@ export function planBoxCirculate(
     ];
   }
 }
-
-export const boxCirculateSegments: InstructionAnimator<
-  BoxCirculateInstruction
-> = (instr, init, who) => {
-  if (who.size !== ALL_PROTO_IDS.length)
-    throw new Error(`boxCirculate instruction must target all dancers`);
-
-  const outFacerSet = new Set<ProtoId>();
-  for (const id of who) {
-    if (Dancer.get(id, init).facesOut()) {
-      outFacerSet.add(id);
-    } else if (Dancer.get(id, init).facesAcross()) {
-      // acrossFacer — ok
-    } else {
-      throw new SnazzyError([{ dancerId: id }, " is not facing out or across"]);
-    }
-  }
-  if (!(outFacerSet.size === 2 && who.size - outFacerSet.size === 2)) {
-    throw new Error(
-      `boxCirculate requires two dancers to face out and two to face across`,
-    );
-  }
-
-  const anim = animatePlans(init, who, (d) =>
-    planBoxCirculate(instr, d, outFacerSet),
-  );
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function boxCirculateAnimator(
   instr: BoxCirculateInstruction,

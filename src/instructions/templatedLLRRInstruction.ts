@@ -1,11 +1,12 @@
 import { z } from "zod";
 
-import { Dancer } from "../worldState";
-import { instructionBaseSchemaFields } from "./_base";
-import type { InstructionAnimator } from "./_segment";
+import type { ProtoId } from "../contraCore";
+import { Dancer, type WorldState } from "../worldState";
+import { type ContraAnimation, instructionBaseSchemaFields } from "./_base";
+import { animatePlans } from "./_plan";
 import { ChoreographerSpecifiedFieldsSchema } from "./templates/_base";
 import { resolveTemplateBasis } from "./templates/_basisResolution";
-import { buildKeyframeSegments } from "./templates/_keyframeSegments";
+import { buildKeyframePlans } from "./templates/_keyframeSegments";
 import { allLLRRTemplates, LLRRTemplateIdSchema } from "./templates/index";
 
 // ── Instruction schema ───────────────────────────────────────────────────
@@ -20,18 +21,17 @@ export type TemplatedLLRRInstruction = z.infer<
   typeof TemplatedLLRRInstructionSchema
 >;
 
-// ── Animator ─────────────────────────────────────────────────────────────
-
-export const templatedLLRRSegments: InstructionAnimator<
-  TemplatedLLRRInstruction
-> = (instr, init) => {
+export function templatedLLRRAnimator(
+  instr: TemplatedLLRRInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
   const template = allLLRRTemplates[instr.templateId];
 
   if (template.keyframes.length === 0) {
-    return [];
+    return animatePlans(init, who, () => []);
   }
 
-  // Pre-resolve basis vectors for each proto dancer at init time.
   const basisCache = new Map<
     string,
     { xBasis: import("vecti").Vector; yBasis: import("vecti").Vector }
@@ -53,11 +53,15 @@ export const templatedLLRRSegments: InstructionAnimator<
   const totalKfDur = template.keyframes.reduce((sum, kf) => sum + kf.dur, 0);
   const scale = totalKfDur > 0 ? instr.beats / totalKfDur : 1;
 
-  return buildKeyframeSegments(
-    template.keyframes,
+  return animatePlans(
     init,
-    scale,
-    (dancer) => dancer.protoId,
-    getBasis,
+    who,
+    buildKeyframePlans(
+      template.keyframes,
+      init,
+      scale,
+      (dancer) => dancer.protoId,
+      getBasis,
+    ),
   );
-};
+}

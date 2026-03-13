@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type ProtoId } from "../contraCore";
+import { type ProtoId } from "../contraCore";
 import { lerpVectors } from "../utils";
 import { avgPos, Dancer, type WorldState } from "../worldState";
 import {
@@ -9,7 +9,6 @@ import {
   resolveRing,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const BalanceTheRingInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -44,27 +43,6 @@ export function planBalanceTheRing(
     },
   ];
 }
-
-export const balanceTheRingSegments: InstructionAnimator<
-  BalanceTheRingInstruction
-> = (instr, init, who) => {
-  if (who.size !== ALL_PROTO_IDS.length)
-    throw new Error(`balanceTheRing instruction must target all dancers`);
-
-  const anim = animatePlans(init, who, (d) => planBalanceTheRing(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function balanceTheRingAnimator(
   instr: BalanceTheRingInstruction,

@@ -2,7 +2,7 @@ import { Vector } from "vecti";
 
 import { catmullRom, catmullRomAngle } from "../../geometry";
 import { Dancer, type WorldState } from "../../worldState";
-import type { Segment } from "../_segment";
+import type { DancerSegment, PlanGetter } from "../_plan";
 import {
   relFacingToWorldWithBasis,
   relPosToWorldWithBasis,
@@ -14,15 +14,10 @@ import {
 type ResolvedPoint = { pos: Vector; angle: number };
 
 /**
- * Build Catmull-Rom-smoothed segments from template keyframes.
- *
- * @param keyframes    Array of { dur, states } keyframe entries
- * @param init         The initial world state
- * @param scale        Time scale factor (beats / totalKfDur)
- * @param getKey       Extract the state-key from a dancer (e.g. dancer.role or dancer.protoId)
- * @param getBasis     Resolve basis vectors for a dancer
+ * Build Catmull-Rom-smoothed plans from template keyframes.
+ * Precomputes control points per dancer, returning a PlanGetter.
  */
-export function buildKeyframeSegments<K extends string>(
+export function buildKeyframePlans<K extends string>(
   keyframes: ReadonlyArray<{
     dur: number;
     states: Partial<Record<K, { relPos: Vector; relFacing: number }>>;
@@ -31,117 +26,99 @@ export function buildKeyframeSegments<K extends string>(
   scale: number,
   getKey: (dancer: Dancer) => K,
   getBasis: (dancer: Dancer) => { xBasis: Vector; yBasis: Vector },
-): Segment[] {
-  const segments: Segment[] = [];
+): PlanGetter {
+  return (dancer: Dancer): DancerSegment[] => {
+    const key = getKey(dancer);
+    const segments: DancerSegment[] = [];
 
-  for (let i = 0; i < keyframes.length; i++) {
-    const kf = keyframes[i];
-    const dur = kf.dur * scale;
+    for (let i = 0; i < keyframes.length; i++) {
+      const kf = keyframes[i];
+      const dur = kf.dur * scale;
+      const state = kf.states[key];
 
-    // Indices for the 4 Catmull-Rom control points: p0, p1 (start), p2 (end), p3
-    // p1 = previous keyframe target (or init), p2 = this keyframe target
-    // p0 = the one before p1, p3 = the one after p2
-    // Clamped at boundaries.
-    const iPrev = i - 1; // p1 source (-1 means init state)
-    const iNext = Math.min(i + 1, keyframes.length - 1); // p3 source
+      if (!state) {
+        segments.push({ dur });
+        continue;
+      }
 
-    segments.push({
-      dur,
-      position: (dancer, frac) => {
-        const key = getKey(dancer);
-        const state = kf.states[key];
-        if (!state) return dancer.pos;
+      const iPrev = i - 1;
+      const iNext = Math.min(i + 1, keyframes.length - 1);
 
-        const resolved = resolvePoint(
-          dancer,
-          key,
-          i,
-          keyframes,
-          init,
-          getBasis,
-        );
-        if (!resolved) return dancer.pos;
+      const resolved = resolvePoint(dancer, key, i, keyframes, init, getBasis);
+      if (!resolved) {
+        segments.push({ dur });
+        continue;
+      }
 
-        const p1 = resolvePrevPoint(
-          dancer,
-          key,
-          iPrev,
-          keyframes,
-          init,
-          getBasis,
-        );
-        const p2 = resolved.pos;
-        const p0 = resolveSurroundingPoint(
-          dancer,
-          key,
-          iPrev - 1,
-          iPrev,
-          keyframes,
-          init,
-          getBasis,
-        );
-        const p3 = resolveSurroundingPoint(
-          dancer,
-          key,
-          iNext,
-          i,
-          keyframes,
-          init,
-          getBasis,
-        );
+      // Precompute all Catmull-Rom control points
+      const p1 = resolvePrevPoint(
+        dancer,
+        key,
+        iPrev,
+        keyframes,
+        init,
+        getBasis,
+      );
+      const p2 = resolved.pos;
+      const p0 = resolveSurroundingPoint(
+        dancer,
+        key,
+        iPrev - 1,
+        iPrev,
+        keyframes,
+        init,
+        getBasis,
+      );
+      const p3 = resolveSurroundingPoint(
+        dancer,
+        key,
+        iNext,
+        i,
+        keyframes,
+        init,
+        getBasis,
+      );
 
-        return catmullRom(p0, p1, p2, p3, frac);
-      },
-      facing: (dancer, frac) => {
-        const key = getKey(dancer);
-        const state = kf.states[key];
-        if (!state) return dancer.facing;
+      const a1 = resolvePrevAngle(
+        dancer,
+        key,
+        iPrev,
+        keyframes,
+        init,
+        getBasis,
+      );
+      const a2 = resolved.angle;
+      const a0 = resolveSurroundingAngle(
+        dancer,
+        key,
+        iPrev - 1,
+        iPrev,
+        keyframes,
+        init,
+        getBasis,
+      );
+      const a3 = resolveSurroundingAngle(
+        dancer,
+        key,
+        iNext,
+        i,
+        keyframes,
+        init,
+        getBasis,
+      );
 
-        const resolved = resolvePoint(
-          dancer,
-          key,
-          i,
-          keyframes,
-          init,
-          getBasis,
-        );
-        if (!resolved) return dancer.facing;
+      segments.push({
+        dur,
+        position: (frac: number) => catmullRom(p0, p1, p2, p3, frac),
+        facing: (frac: number) => {
+          const angle = catmullRomAngle(a0, a1, a2, a3, frac);
+          return new Vector(Math.cos(angle), Math.sin(angle));
+        },
+      });
+    }
 
-        const a1 = resolvePrevAngle(
-          dancer,
-          key,
-          iPrev,
-          keyframes,
-          init,
-          getBasis,
-        );
-        const a2 = resolved.angle;
-        const a0 = resolveSurroundingAngle(
-          dancer,
-          key,
-          iPrev - 1,
-          iPrev,
-          keyframes,
-          init,
-          getBasis,
-        );
-        const a3 = resolveSurroundingAngle(
-          dancer,
-          key,
-          iNext,
-          i,
-          keyframes,
-          init,
-          getBasis,
-        );
-
-        const angle = catmullRomAngle(a0, a1, a2, a3, frac);
-        return new Vector(Math.cos(angle), Math.sin(angle));
-      },
-    });
-  }
-
-  return segments;
+    return segments;
+  };
 }
 
 /** Resolve a keyframe's world-space position and facing angle for a dancer. */

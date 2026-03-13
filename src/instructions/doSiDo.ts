@@ -9,7 +9,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { arc, type InstructionAnimator } from "./_segment";
 
 export const DoSiDoInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -37,23 +36,6 @@ export function planDoSiDo(
     },
   ];
 }
-
-export const doSiDoSegments: InstructionAnimator<DoSiDoInstruction> = (
-  instr,
-) => [
-  {
-    dur: instr.beats,
-    position: arc(instr.cid, {
-      semiMinor: 0.25,
-      phi: TWO_PI * instr.rotations,
-    }),
-    facing: (dancer) => {
-      const match = dancer.resolveMatch(instr.cid);
-      return getDir({ from: dancer.pos, to: match.pos });
-    },
-    interactedWith: (dancer) => [dancer.resolveMatch(instr.cid).id],
-  },
-];
 
 export function doSiDoAnimator(
   instr: DoSiDoInstruction,

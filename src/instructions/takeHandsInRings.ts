@@ -21,11 +21,6 @@ import {
   resolveRing,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import {
-  getSegmentFrameAtFrac,
-  type InstructionAnimator,
-  type Segment,
-} from "./_segment";
 
 export const TakeHandsInRingsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -45,50 +40,11 @@ export type TakeHandsInRingsInstruction = z.infer<
  *   (b) the opposite-role dancer north or south (whichever is more like their facing)
  * Then turns to face halfway between those two, and takes inside hands with each.
  */
-export function makeRingSegment(
-  init: WorldState,
-  disambiguatingCid?: CalledIdentifier,
-): Segment {
-  const tiebreakers: [Tiebreaker, ...Tiebreaker[]] = disambiguatingCid
-    ? [
-        makePreferHinted(disambiguatingCid),
-        preferCloser,
-        preferOneInFront,
-        preferRecent,
-      ]
-    : [preferCloser, preferOneInFront, preferRecent];
-  const getGroup = memoize((dancer: Dancer) =>
-    getGroupOfFour(dancer, { by: tiebreakers }),
-  );
-  const final = mapWorldState(init, (dancer) => {
-    const group = getGroup(dancer);
-    const center = avgPos(...group);
-    dancer.facing = getDir({ from: dancer.pos, to: center });
-    const [right, left] = sortBy(
-      group.filter((d) => d.role !== dancer.role),
-      (d) =>
-        ccwRadsBetween(dancer.facing, getDir({ from: dancer.pos, to: d.pos })),
-    );
-    dancer.hands = {
-      left: { theirId: left.id, theirHand: "right" },
-      right: { theirId: right.id, theirHand: "left" },
-    };
-  });
-
-  return {
-    dur: 0,
-    position: (dancer) => final[dancer.protoId].pos,
-    facing: (dancer) => final[dancer.protoId].facing,
-    hands: (dancer) => final[dancer.protoId].hands,
-    interactedWith: (dancer) => getGroup(dancer).map((d) => d.id),
-  };
-}
-
 /**
  * Compute the final state after forming rings (facing center, hands connected).
  * Used by planTakeHandsInRings to give each dancer their final state.
  */
-function computeRingFinalState(
+export function computeRingFinalState(
   init: WorldState,
   disambiguatingCid?: CalledIdentifier,
 ): WorldState {
@@ -134,15 +90,6 @@ export function planTakeHandsInRings(
     },
   ];
 }
-
-export const takeHandsInRingsSegments: InstructionAnimator<
-  TakeHandsInRingsInstruction
-> = (instr, init, who) => {
-  const segment = makeRingSegment(init, instr.disambiguatingCid);
-  const endState = getSegmentFrameAtFrac(segment, init, who, 1);
-  for (const protoId of who) resolveRing(Dancer.get(protoId, endState));
-  return [segment];
-};
 
 export function takeHandsInRingsAnimator(
   instr: TakeHandsInRingsInstruction,

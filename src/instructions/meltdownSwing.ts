@@ -1,17 +1,23 @@
 import { z } from "zod";
 
+import { type ProtoId } from "../contraCore";
+import { TWO_PI } from "../geometry";
+import { must } from "../utils";
+import { Dancer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
+  type ContraAnimation,
   instructionBaseSchemaFields,
 } from "./_base";
 import {
-  advanceState,
-  type InstructionAnimator,
-  type Segment,
-} from "./_segment";
-import { shoulderRoundSegments } from "./shoulderRound";
-import { makeSwingSegments } from "./swing";
+  animatePlans,
+  type DancerSegment,
+  evaluatePlansFinalState,
+} from "./_plan";
+import { approachBeatsForSpeedMatch } from "./allemande";
+import { APPROACH_ELLIPSE_RADIANS, planShoulderRound } from "./shoulderRound";
+import { buildSwingPlans } from "./swing";
 
 const SHOULDER_ROUND_BEATS = 8;
 
@@ -25,50 +31,74 @@ export type MeltdownSwingInstruction = z.infer<
   typeof MeltdownSwingInstructionSchema
 >;
 
-export const meltdownSwingSegments: InstructionAnimator<
-  MeltdownSwingInstruction
-> = (instr, init, who) => {
-  const id = instr.id;
+export function meltdownSwingAnimator(
+  instr: MeltdownSwingInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const { id } = instr;
   const swingBeats = instr.beats - SHOULDER_ROUND_BEATS;
 
-  let state = init;
-  const allSegments: Segment[] = [];
+  const shoulderRoundInstr = {
+    id,
+    type: "shoulder_round" as const,
+    beats: SHOULDER_ROUND_BEATS,
+    cid: instr.cid,
+    handedness: "right" as const,
+    rotations: 1.5,
+  };
 
-  function append(segs: Segment[]) {
-    allSegments.push(...segs);
-    state = advanceState(segs, state, who);
+  // Compute shoulder round timing (mirrors shoulderRoundAnimator logic)
+  const rotationSign = shoulderRoundInstr.handedness === "left" ? 1 : -1;
+  const numAllemandeRadians =
+    (TWO_PI * shoulderRoundInstr.rotations - APPROACH_ELLIPSE_RADIANS) *
+    rotationSign;
+
+  let totalDistance = 0;
+  let count = 0;
+  for (const pid of who) {
+    const dancer = Dancer.get(pid, init);
+    const match = dancer.resolveMatch(shoulderRoundInstr.cid);
+    totalDistance += dancer.pos.subtract(match.pos).length();
+    count++;
+  }
+  const avgDistance = totalDistance / count;
+  const approachBeats = approachBeatsForSpeedMatch(
+    avgDistance,
+    shoulderRoundInstr.beats,
+    numAllemandeRadians,
+  );
+
+  // Build shoulder round plans
+  const srPlansMap = new Map<ProtoId, DancerSegment[]>();
+  for (const pid of who) {
+    srPlansMap.set(
+      pid,
+      planShoulderRound(
+        shoulderRoundInstr,
+        Dancer.get(pid, init),
+        approachBeats,
+      ),
+    );
   }
 
-  // 1. Right shoulder round 1.5x
-  append(
-    shoulderRoundSegments(
-      {
-        id,
-        type: "shoulder_round",
-        beats: SHOULDER_ROUND_BEATS,
-        cid: instr.cid,
-        handedness: "right",
-        rotations: 1.5,
-      },
-      state,
-      who,
-    ),
-  );
+  // Evaluate intermediate state after shoulder round
+  const postSrState = evaluatePlansFinalState(init, who, srPlansMap);
 
-  // 2. Swing
-  append(
-    makeSwingSegments(
-      {
-        id,
-        type: "swing",
-        beats: swingBeats,
-        cid: instr.cid,
-        endFacing: instr.endFacing,
-      },
-      state,
-      who,
-    ),
-  );
+  // Build swing plans from post-shoulder-round state
+  const swingInstr = {
+    id,
+    type: "swing" as const,
+    beats: swingBeats,
+    cid: instr.cid,
+    endFacing: instr.endFacing,
+  };
+  const swingPlans = buildSwingPlans(swingInstr, postSrState, who);
 
-  return allSegments;
-};
+  // Combine per-dancer plans
+  return animatePlans(init, who, (dancer) => {
+    const srSegs = must(srPlansMap.get(dancer.protoId));
+    const swingSegs = must(swingPlans.get(dancer.protoId));
+    return [...srSegs, ...swingSegs];
+  });
+}

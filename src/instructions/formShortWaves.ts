@@ -1,14 +1,19 @@
+import { produce } from "immer";
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, getRole } from "../contraCore";
+import { ALL_PROTO_IDS, getRole, type ProtoId } from "../contraCore";
 import { resolveShortLine } from "../formations";
 import { NORTH, SOUTH } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { indexOf, must, safeThreshold } from "../utils";
-import { connectHands, Dancer } from "../worldState";
-import { instructionBaseSchemaFields, pureDir } from "./_base";
-import { type InstructionAnimator, makeImmediateSegment } from "./_segment";
+import { connectHands, Dancer, type WorldState } from "../worldState";
+import {
+  type ContraAnimation,
+  instructionBaseSchemaFields,
+  pureDir,
+} from "./_base";
+import { animatePlans, type DancerSegment } from "./_plan";
 
 export const FormShortWavesInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -21,9 +26,10 @@ export type FormShortWavesInstruction = z.infer<
 
 const SHORT_WAVES_XS = [-0.75, -0.25, 0.25, 0.75] as const;
 
-export const formShortWavesSegments: InstructionAnimator<
-  FormShortWavesInstruction
-> = (_instr, init, who) => {
+function validateAndComputeFinalState(
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): WorldState {
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`formShortWaves instruction must target all dancers`);
 
@@ -60,8 +66,9 @@ export const formShortWavesSegments: InstructionAnimator<
     }
   }
 
-  return [
-    makeImmediateSegment(init, (id, draft) => {
+  return produce(init, (draft) => {
+    // First pass: set positions and facings
+    for (const id of ALL_PROTO_IDS) {
       const line = resolveShortLine(Dancer.get(id, init));
       const i = must(
         indexOf(
@@ -73,6 +80,9 @@ export const formShortWavesSegments: InstructionAnimator<
       draft[id].pos = new Vector(SHORT_WAVES_XS[i], init[id].pos.y).add(
         draft[id].facing.multiply(-0.1),
       );
+    }
+    // Second pass: connect hands (depends on updated positions/facings)
+    for (const id of ALL_PROTO_IDS) {
       const onLeft = Dancer.get(id, draft).findDancerInCalledDirection(
         pureDir("on_left"),
       );
@@ -81,6 +91,34 @@ export const formShortWavesSegments: InstructionAnimator<
       );
       if (onLeft) connectHands(draft, id, "left", onLeft.id, "left");
       if (onRight) connectHands(draft, id, "right", onRight.id, "right");
-    }),
+    }
+  });
+}
+
+// ── Plan-based API ──────────────────────────────────────────────────────
+
+export function planFormShortWaves(
+  dancer: Dancer,
+  finalState: WorldState,
+): DancerSegment[] {
+  const final = finalState[dancer.protoId];
+  return [
+    {
+      dur: 0,
+      position: () => final.pos,
+      facing: () => final.facing,
+      hands: () => final.hands,
+    },
   ];
-};
+}
+
+export function formShortWavesAnimator(
+  _instr: FormShortWavesInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const finalState = validateAndComputeFinalState(init, who);
+  return animatePlans(init, who, (dancer) =>
+    planFormShortWaves(dancer, finalState),
+  );
+}

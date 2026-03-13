@@ -260,6 +260,27 @@ function generateKeyframesFromWorktree(worktreeDir: string): AllResults {
 // Normalization & comparison
 // ---------------------------------------------------------------------------
 
+/** Strip fields we don't care about (recents) from each dancer in a WorldState-shaped object. */
+function stripImmaterial(state: unknown): unknown {
+  if (state === null || typeof state !== "object" || Array.isArray(state))
+    return state;
+  const rec = z.record(z.string(), z.unknown()).parse(state);
+  return Object.fromEntries(
+    Object.entries(rec).map(([id, dancer]) => {
+      if (
+        dancer !== null &&
+        typeof dancer === "object" &&
+        !Array.isArray(dancer)
+      ) {
+        const d = z.record(z.string(), z.unknown()).parse(dancer);
+        const { recents: _, ...rest } = d;
+        return [id, rest];
+      }
+      return [id, dancer];
+    }),
+  );
+}
+
 /** Round all numbers to 6 decimal places and sort object keys for deterministic comparison. */
 function normalize(val: unknown): unknown {
   if (typeof val === "number") return Math.round(val * 1e6) / 1e6;
@@ -304,8 +325,8 @@ function compareDance(
   for (let i = 0; i < totalFrames; i++) {
     const cf = current.frames[i];
     const wf = worktree.frames[i];
-    const cNorm = normalize(cf?.state);
-    const wNorm = normalize(wf?.state);
+    const cNorm = normalize(stripImmaterial(cf?.state));
+    const wNorm = normalize(stripImmaterial(wf?.state));
     if (JSON.stringify(cNorm) !== JSON.stringify(wNorm)) {
       differingFrames++;
       if (!firstDiff) {

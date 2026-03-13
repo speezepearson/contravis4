@@ -21,7 +21,6 @@ import {
   personInDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 import { makeHalfPoussetteArcDancerPositionFn } from "./poussette";
 
 export const ZigZagInstructionSchema = z.object({
@@ -117,8 +116,6 @@ function validateAndResolve(
   return { leaderRole, insideHandMap, matchIdMap };
 }
 
-// ── Plan-based API ──────────────────────────────────────────────────────
-
 function planZigZag(
   instr: ZigZagInstruction,
   dancer: Dancer,
@@ -193,43 +190,6 @@ function planZigZag(
 
   return segments;
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const zigZagSegments: InstructionAnimator<ZigZagInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const { leaderRole, insideHandMap, matchIdMap } = validateAndResolve(
-    instr,
-    init,
-    who,
-  );
-  const anim = animatePlans(init, who, (d) =>
-    planZigZag(
-      instr,
-      d,
-      leaderRole,
-      must(insideHandMap.get(d.protoId), ["missing insideHand for dancer"]),
-      must(matchIdMap.get(d.protoId), ["missing matchId for dancer"]),
-    ),
-  );
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
-
-// ── Animator API ────────────────────────────────────────────────────────
 
 export function zigZagAnimator(
   instr: ZigZagInstruction,

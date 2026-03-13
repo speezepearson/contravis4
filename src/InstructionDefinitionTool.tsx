@@ -19,7 +19,7 @@ import {
   ALL_CALLED_DIRECTIONS,
   ALL_CALLED_IDENTIFIERS,
 } from "./instructions/_base";
-import { animateSegments } from "./instructions/_segment";
+import { animatePlans } from "./instructions/_plan";
 import {
   InitFormationNameSchema,
   resolveInitFormation,
@@ -45,7 +45,7 @@ import {
   resolveTemplateBasisAtInit,
   worldToRelWithBasis,
 } from "./instructions/templates/_basisResolution";
-import { buildKeyframeSegments } from "./instructions/templates/_keyframeSegments";
+import { buildKeyframePlans } from "./instructions/templates/_keyframeSegments";
 import {
   allLLRRTemplates,
   allLRTemplates,
@@ -352,7 +352,7 @@ export default function InstructionDefinitionTool() {
         return cached;
       };
 
-      const segments = buildKeyframeSegments(
+      const plans = buildKeyframePlans(
         keyframes,
         initState,
         scale,
@@ -361,11 +361,7 @@ export default function InstructionDefinitionTool() {
       );
 
       return {
-        previewAnimation: animateSegments(
-          initState,
-          ALL_PROTO_IDS_SET,
-          segments,
-        ),
+        previewAnimation: animatePlans(initState, ALL_PROTO_IDS_SET, plans),
         previewError: null,
         previewErrorKfIndex: null,
       };

@@ -5,7 +5,6 @@ import { PI } from "../geometry";
 import { Dancer, type WorldState } from "../worldState";
 import { type ContraAnimation, instructionBaseSchemaFields } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const TurnAloneInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -26,15 +25,6 @@ export function planTurnAlone(
     },
   ];
 }
-
-export const turnAloneSegments: InstructionAnimator<TurnAloneInstruction> = (
-  instr,
-) => [
-  {
-    dur: instr.beats,
-    facing: rotateFacingBy((dancer) => (isLark(dancer.protoId) ? -PI : PI)),
-  },
-];
 
 export function turnAloneAnimator(
   instr: TurnAloneInstruction,

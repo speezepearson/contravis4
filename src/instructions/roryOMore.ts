@@ -10,7 +10,6 @@ import {
   labelId,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const RoryOMoreInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -55,26 +54,6 @@ export function planRoryOMore(
     },
   ];
 }
-
-export const roryOMoreSegments: InstructionAnimator<RoryOMoreInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const anim = animatePlans(init, who, (d) => planRoryOMore(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function roryOMoreAnimator(
   instr: RoryOMoreInstruction,

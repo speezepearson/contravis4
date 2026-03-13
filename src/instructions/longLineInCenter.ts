@@ -18,12 +18,7 @@ import {
   resolveCardinalDirection,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import {
-  hold,
-  type InstructionAnimator,
-  lerpFacingTo,
-  type Segment,
-} from "./_segment";
+import { hold } from "./_segment";
 
 export const LongLineInCenterInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -99,47 +94,6 @@ export function planLongLineInCenter(
     },
   ];
 }
-
-export const longLineInCenterSegments: InstructionAnimator<
-  LongLineInCenterInstruction
-> = (instr): Segment[] => {
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) => {
-        if (getRole(dancer.protoId) !== instr.role) return dancer.pos;
-        const target = new Vector(0, dancer.pos.y);
-        return dancer.pos.add(target.subtract(dancer.pos).multiply(frac));
-      },
-      facing: lerpFacingTo((dancer) => {
-        if (getRole(dancer.protoId) !== instr.role) return dancer.facing;
-        return must(resolveCardinalDirection("across", dancer.pos), [
-          { dancerId: dancer.protoId },
-          "too close to center, not sure which way to move",
-        ]);
-      }),
-      hands: () => ({}),
-    },
-    {
-      dur: 0,
-      hands: (dancer) => {
-        if (getRole(dancer.protoId) !== instr.role) return {};
-        return hold(
-          [
-            "left",
-            dancer.resolveMatch(personInDir("on_left", "same")).id,
-            "left",
-          ],
-          [
-            "right",
-            dancer.resolveMatch(personInDir("on_right", "same")).id,
-            "right",
-          ],
-        );
-      },
-    },
-  ];
-};
 
 export function longLineInCenterAnimator(
   instr: LongLineInCenterInstruction,
