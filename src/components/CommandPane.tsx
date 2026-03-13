@@ -917,23 +917,7 @@ function InlineForm({
   );
 }
 
-function describeInstruction(instr: Instruction): string {
-  if (instr.type === "split") return "split";
-  const label =
-    ACTION_LABELS[
-      instr.type === "templated_lr" || instr.type === "templated_llrr"
-        ? instr.templateId
-        : instr.type
-    ];
-  const parts = [label];
-  if ("cid" in instr) {
-    parts.push(calledIdentifierToText(instr.cid));
-  }
-  if ("beats" in instr && typeof instr.beats === "number") {
-    parts.push(`${instr.beats} beats`);
-  }
-  return parts.join(" — ");
-}
+const noop = () => {};
 
 function AddInstructionInput({
   onCommit,
@@ -944,9 +928,15 @@ function AddInstructionInput({
 }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Delay focus slightly so the click that opened this doesn't
+    // immediately blur the input.
+    const id = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   const parsed = useMemo(() => parseDanceInstruction(text), [text]);
@@ -963,8 +953,18 @@ function AddInstructionInput({
     }
   }
 
+  function handleBlur(e: React.FocusEvent) {
+    // Don't cancel if focus moves within the wrapper (e.g. to the preview)
+    if (wrapperRef.current?.contains(e.relatedTarget)) return;
+    onCancel();
+  }
+
   return (
-    <div className="add-instruction-input-wrapper">
+    <div
+      className="add-instruction-input-wrapper"
+      ref={wrapperRef}
+      onBlur={handleBlur}
+    >
       <div className="instruction-item add-instruction-input-item">
         <input
           ref={inputRef}
@@ -973,7 +973,6 @@ function AddInstructionInput({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={onCancel}
           placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
         />
       </div>
@@ -985,8 +984,9 @@ function AddInstructionInput({
             </div>
           ) : (
             parsed.map((instr) => (
-              <div key={instr.id} className="add-instruction-preview-item">
-                {describeInstruction(instr)}
+              <div key={instr.id} className="instruction-item dimmed">
+                <BeatGutter instruction={instr} onChange={noop} />
+                <InlineForm instruction={instr} onChange={noop} />
               </div>
             ))
           )}
