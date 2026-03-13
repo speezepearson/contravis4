@@ -10,17 +10,18 @@ import {
 } from "../contraCore";
 import { assertNever } from "../utils";
 import type { WorldState } from "../worldState";
+import { animateAtomicInstruction, AtomicInstructionSchema } from "./_atomic";
 import {
-  AtomicInstructionSchema,
-  makeAtomicInstructionSegments,
-} from "./_atomic";
-import { type ContraAnimation, InstructionIdSchema } from "./_base";
-import { advanceState, animateSegments, type Segment } from "./_segment";
+  type Animator,
+  chainAnimators,
+  type ContraAnimation,
+  InstructionIdSchema,
+} from "./_base";
 import {
+  robinsChainAnimator,
   RobinsChainInstructionSchema,
-  robinsChainSegments,
 } from "./robinsChain";
-import { SwingInstructionSchema, swingSegments } from "./swing";
+import { swingAnimator, SwingInstructionSchema } from "./swing";
 
 /**
  * A sub-instruction that can appear inside a split.
@@ -33,26 +34,13 @@ export const SplitSubInstructionSchema = z.union([
 ]);
 export type SplitSubInstruction = z.infer<typeof SplitSubInstructionSchema>;
 
-function chainSubInstructionSegments(
-  init: WorldState,
-  who: ReadonlySet<ProtoId>,
-  instructions: SplitSubInstruction[],
-): Segment[] {
-  let state = init;
-  const result: Segment[] = [];
-  for (const instr of instructions) {
-    let segments: Segment[];
-    if (instr.type === "swing") {
-      segments = swingSegments(instr, state, who);
-    } else if (instr.type === "robins_chain") {
-      segments = robinsChainSegments(instr, state, who);
-    } else {
-      segments = makeAtomicInstructionSegments(instr, state, who);
-    }
-    result.push(...segments);
-    state = advanceState(segments, state, who);
-  }
-  return result;
+function subInstructionAnimator(instr: SplitSubInstruction): Animator {
+  return (init, who) => {
+    if (instr.type === "swing") return swingAnimator(instr, init, who);
+    if (instr.type === "robins_chain")
+      return robinsChainAnimator(instr, init, who);
+    return animateAtomicInstruction(instr, init, who);
+  };
 }
 
 export const SplitSchema = z.discriminatedUnion("by", [
@@ -78,6 +66,26 @@ export type Split = z.infer<typeof SplitSchema>;
  * (e.g. larks vs robins), then stitches the correct proto states together.
  * The `animate` method evaluates both sub-animations at time `t` and merges them.
  */
+function mergeGroupAnimations(
+  groupA: ContraAnimation,
+  groupB: ContraAnimation,
+  bIds: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  return {
+    dur: Math.max(groupA.dur, groupB.dur),
+    getFrame(t) {
+      // Each side may have a different duration. When one side finishes
+      // early, those dancers hold their final positions while the other
+      // side continues, so we clamp t to each side's duration.
+      const aFrame = groupA.getFrame(Math.min(t, groupA.dur));
+      const bFrame = groupB.getFrame(Math.min(t, groupB.dur));
+      const result = { ...aFrame };
+      for (const id of bIds) result[id] = bFrame[id];
+      return result;
+    },
+  };
+}
+
 export const splitAnimator = (
   instr: Split,
   init: WorldState,
@@ -87,59 +95,27 @@ export const splitAnimator = (
     case "role": {
       const larks = new Set(LARK_PROTO_IDS.filter((id) => who.has(id)));
       const robins = new Set(ROBIN_PROTO_IDS.filter((id) => who.has(id)));
-      const larksAnim = animateSegments(
+      const larksAnim = chainAnimators(instr.larks.map(subInstructionAnimator))(
         init,
         larks,
-        chainSubInstructionSegments(init, larks, instr.larks),
       );
-      const robinsAnim = animateSegments(
-        init,
-        robins,
-        chainSubInstructionSegments(init, robins, instr.robins),
-      );
-      return {
-        dur: Math.max(larksAnim.dur, robinsAnim.dur),
-        getFrame(t) {
-          // Each side may have a different duration. When one side finishes
-          // early, those dancers hold their final positions while the other
-          // side continues, so we clamp t to each side's duration.
-          const larksKf = larksAnim.getFrame(Math.min(t, larksAnim.dur));
-          const robinsKf = robinsAnim.getFrame(Math.min(t, robinsAnim.dur));
-          return {
-            up_lark_0: larksKf["up_lark_0"],
-            up_robin_0: robinsKf["up_robin_0"],
-            down_lark_0: larksKf["down_lark_0"],
-            down_robin_0: robinsKf["down_robin_0"],
-          };
-        },
-      };
+      const robinsAnim = chainAnimators(
+        instr.robins.map(subInstructionAnimator),
+      )(init, robins);
+      return mergeGroupAnimations(larksAnim, robinsAnim, robins);
     }
     case "direction": {
       const ups = new Set(UP_PROTO_IDS.filter((id) => who.has(id)));
       const downs = new Set(DOWN_PROTO_IDS.filter((id) => who.has(id)));
-      const upsAnim = animateSegments(
+      const upsAnim = chainAnimators(instr.ups.map(subInstructionAnimator))(
         init,
         ups,
-        chainSubInstructionSegments(init, ups, instr.ups),
       );
-      const downsAnim = animateSegments(
+      const downsAnim = chainAnimators(instr.downs.map(subInstructionAnimator))(
         init,
         downs,
-        chainSubInstructionSegments(init, downs, instr.downs),
       );
-      return {
-        dur: Math.max(upsAnim.dur, downsAnim.dur),
-        getFrame(t) {
-          const upsKf = upsAnim.getFrame(Math.min(t, upsAnim.dur));
-          const downsKf = downsAnim.getFrame(Math.min(t, downsAnim.dur));
-          return {
-            up_lark_0: upsKf["up_lark_0"],
-            up_robin_0: upsKf["up_robin_0"],
-            down_lark_0: downsKf["down_lark_0"],
-            down_robin_0: downsKf["down_robin_0"],
-          };
-        },
-      };
+      return mergeGroupAnimations(upsAnim, downsAnim, downs);
     }
     default:
       assertNever(instr);
