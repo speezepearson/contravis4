@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
-import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
 import {
+  singleFilePromenadeAnimator,
   type SingleFilePromenadeInstruction,
-  singleFilePromenadeSegments,
 } from "./singleFilePromenade";
 
 const allProtos = ALL_PROTO_IDS_SET;
@@ -27,11 +26,7 @@ describe("singleFilePromenade", () => {
   it("full rotation returns dancers to starting positions", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 4 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      singleFilePromenadeSegments(instr, init, allProtos),
-    );
+    const animation = singleFilePromenadeAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     for (const id of ALL_PROTO_IDS) {
@@ -43,11 +38,7 @@ describe("singleFilePromenade", () => {
   it("direction=right orbits clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "right", nPlaces: 1 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      singleFilePromenadeSegments(instr, init, allProtos),
-    );
+    const animation = singleFilePromenadeAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     expect(final.up_lark_0.pos.x).toBeCloseTo(-0.5);
@@ -60,11 +51,7 @@ describe("singleFilePromenade", () => {
   it("direction=left orbits counter-clockwise (quarter turn)", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 1 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      singleFilePromenadeSegments(instr, init, allProtos),
-    );
+    const animation = singleFilePromenadeAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     expect(final.up_lark_0.pos.x).toBeCloseTo(0.5);
@@ -74,11 +61,7 @@ describe("singleFilePromenade", () => {
   it("facing is rotated 90° from circle facing", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 1 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      singleFilePromenadeSegments(instr, init, allProtos),
-    );
+    const animation = singleFilePromenadeAnimator(instr, init, allProtos);
     const mid = animation.getFrame(animation.dur / 2);
 
     for (const id of ALL_PROTO_IDS) {
@@ -91,11 +74,7 @@ describe("singleFilePromenade", () => {
   it("no hands are connected at any point", () => {
     const init = initFormationStates.improper;
     const instr = makeInstr({ direction: "left", nPlaces: 2 });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      singleFilePromenadeSegments(instr, init, allProtos),
-    );
+    const animation = singleFilePromenadeAnimator(instr, init, allProtos);
     const mid = animation.getFrame(animation.dur / 2);
 
     for (const id of ALL_PROTO_IDS) {

@@ -4,9 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { ccwRadsBetween, NORTH, PI } from "../geometry";
-import { animateSegments } from "./_segment";
 import { initFormationStates } from "./index";
-import { type RollAwayInstruction, rollAwaySegments } from "./rollAway";
+import { rollAwayAnimator, type RollAwayInstruction } from "./rollAway";
 
 const allProtos = ALL_PROTO_IDS_SET;
 
@@ -41,7 +40,7 @@ describe("rollAway", () => {
           onlyRole: "different",
         },
       });
-      expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
+      expect(() => rollAwayAnimator(instr, init, allProtos)).toThrow(
         "has no opposite-role",
       );
     });
@@ -64,7 +63,7 @@ describe("rollAway", () => {
           onlyRole: "different",
         },
       });
-      expect(() => rollAwaySegments(instr, init, allProtos)).toThrow(
+      expect(() => rollAwayAnimator(instr, init, allProtos)).toThrow(
         "both grabbed the same rollee",
       );
     });
@@ -80,11 +79,7 @@ describe("rollAway", () => {
         onlyRole: "different",
       },
     });
-    const animation = animateSegments(
-      init,
-      allProtos,
-      rollAwaySegments(instr, init, allProtos),
-    );
+    const animation = rollAwayAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 
     it("swaps places at the end", () => {

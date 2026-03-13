@@ -3,15 +3,14 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../contraCore";
 import { NORTH, SOUTH } from "../geometry";
-import { animateSegments } from "./_segment";
 import {
+  californiaTwirlAnimator,
   type CaliforniaTwirlInstruction,
-  californiaTwirlSegments,
 } from "./californiaTwirl";
 import { initFormationStates } from "./index";
 import {
+  turnAsACoupleAnimator,
   type TurnAsACoupleInstruction,
-  turnAsACoupleSegments,
 } from "./turnAsACouple";
 
 const allProtos = ALL_PROTO_IDS_SET;
@@ -50,23 +49,15 @@ describe("turnAsACouple", () => {
     // Direction-based matching (lark's right / robin's left) fails before
     // the facing validation can fire, since the robin's "left" no
     // longer points at the lark.
-    expect(() => turnAsACoupleSegments(instr, badInit, allProtos)).toThrow();
+    expect(() => turnAsACoupleAnimator(instr, badInit, allProtos)).toThrow();
   });
 
   it("produces the same final state as californiaTwirl", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = animateSegments(
-      init,
-      allProtos,
-      turnAsACoupleSegments(taacInstr, init, allProtos),
-    );
-    const ctAnimation = animateSegments(
-      init,
-      allProtos,
-      californiaTwirlSegments(ctInstr, init, allProtos),
-    );
+    const taacAnimation = turnAsACoupleAnimator(taacInstr, init, allProtos);
+    const ctAnimation = californiaTwirlAnimator(ctInstr, init, allProtos);
 
     const taacFinal = taacAnimation.getFrame(taacAnimation.dur);
     const ctFinal = ctAnimation.getFrame(ctAnimation.dur);
@@ -83,16 +74,8 @@ describe("turnAsACouple", () => {
     const taacInstr = makeTurnAsACouple();
     const ctInstr = makeCaliforniaTwirl();
 
-    const taacAnimation = animateSegments(
-      init,
-      allProtos,
-      turnAsACoupleSegments(taacInstr, init, allProtos),
-    );
-    const ctAnimation = animateSegments(
-      init,
-      allProtos,
-      californiaTwirlSegments(ctInstr, init, allProtos),
-    );
+    const taacAnimation = turnAsACoupleAnimator(taacInstr, init, allProtos);
+    const ctAnimation = californiaTwirlAnimator(ctInstr, init, allProtos);
 
     const taacMid = taacAnimation.getFrame(2);
     const ctMid = ctAnimation.getFrame(2);

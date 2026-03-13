@@ -13,8 +13,7 @@ import { enableMapSet } from "immer";
 
 import { ALL_PROTO_IDS, ALL_PROTO_IDS_SET } from "../src/contraCore";
 import { generateDanceAnimation } from "../src/generate";
-import { makeAtomicInstructionSegments } from "../src/instructions/_atomic";
-import { animateSegments } from "../src/instructions/_segment";
+import { animateAtomicInstruction } from "../src/instructions/_atomic";
 import type { Instruction } from "../src/instructions/index";
 import {
   instructionDuration,
@@ -74,12 +73,7 @@ function animateInstruction(
   if (instr.type === "robins_chain") {
     return robinsChainAnimator(instr, init, ALL_PROTO_IDS_SET);
   }
-  const segments = makeAtomicInstructionSegments(
-    instr,
-    init,
-    ALL_PROTO_IDS_SET,
-  );
-  return animateSegments(init, ALL_PROTO_IDS_SET, segments);
+  return animateAtomicInstruction(instr, init, ALL_PROTO_IDS_SET);
 }
 
 // --- Trace: step through each instruction ---
