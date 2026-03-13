@@ -44,7 +44,11 @@ import {
   CaliforniaTwirlInstructionSchema,
   californiaTwirlSegments,
 } from "./californiaTwirl";
-import { CircleInstructionSchema, circleSegments } from "./circle";
+import {
+  circleAnimator,
+  CircleInstructionSchema,
+  circleSegments,
+} from "./circle";
 import {
   doSiDoAnimator,
   DoSiDoInstructionSchema,
@@ -438,6 +442,8 @@ export function animateAtomicInstruction(
       return templatedLLRRAnimator(instr, init, who);
     case "templated_lr":
       return templatedLRAnimator(instr, init, who);
+    case "circle":
+      return circleAnimator(instr, init, who);
     default:
       return animateSegments(
         init,

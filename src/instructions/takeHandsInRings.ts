@@ -88,7 +88,7 @@ export function makeRingSegment(
  * Compute the final state after forming rings (facing center, hands connected).
  * Used by planTakeHandsInRings to give each dancer their final state.
  */
-function computeRingFinalState(
+export function computeRingFinalState(
   init: WorldState,
   disambiguatingCid?: CalledIdentifier,
 ): WorldState {
