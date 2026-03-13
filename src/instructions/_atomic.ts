@@ -152,7 +152,7 @@ import {
   SingleFilePromenadeInstructionSchema,
   singleFilePromenadeSegments,
 } from "./singleFilePromenade";
-import { SliceInstructionSchema, sliceSegments } from "./slice";
+import { sliceAnimator, SliceInstructionSchema, sliceSegments } from "./slice";
 import {
   squareThroughAnimator,
   SquareThroughInstructionSchema,
@@ -412,6 +412,8 @@ export function animateAtomicInstruction(
       return shoulderRoundAnimator(instr, init, who);
     case "single_file_promenade":
       return singleFilePromenadeAnimator(instr, init, who);
+    case "slice":
+      return sliceAnimator(instr, init, who);
     case "square_through":
       return squareThroughAnimator(instr, init, who);
     case "star":
