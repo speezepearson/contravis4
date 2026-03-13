@@ -281,11 +281,18 @@ export const swingSegments: InstructionAnimator<SwingInstruction> = (
  * closures that already know which dancer they belong to (no `dancer`
  * parameter needed).
  */
-export function swingAnimator(
+/**
+ * Build per-dancer swing plans (with fudge drifts applied for across/out endings).
+ *
+ * This is the composable building block: compound instructions (balanceAndSwing,
+ * meltdownSwing, etc.) can call this on an intermediate state, get back per-dancer
+ * DancerSegment[], and concatenate with their pre-swing plans.
+ */
+export function buildSwingPlans(
   instr: SwingInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
-): ContraAnimation {
+): Map<ProtoId, DancerSegment[]> {
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
   const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
@@ -297,7 +304,7 @@ export function swingAnimator(
     getGeom,
   );
 
-  const getPlans = (dancer: Dancer): DancerSegment[] => {
+  const getPlan = (dancer: Dancer): DancerSegment[] => {
     const geom = getGeom(dancer);
     const matchId = getMatch(dancer).id;
     const amLark = isLark(dancer.protoId);
@@ -346,16 +353,16 @@ export function swingAnimator(
     ];
   };
 
+  // Build plans for all dancers.
+  const unfudgedPlans = new Map<ProtoId, DancerSegment[]>();
+  for (const id of who) {
+    unfudgedPlans.set(id, getPlan(Dancer.get(id, init)));
+  }
+
   // For across/out endings, apply fudge drifts to each dancer's plan.
   switch (instr.endFacing) {
     case "across":
     case "out": {
-      // Build un-fudged plans for all dancers so we can compute drift values.
-      const unfudgedPlans = new Map<ProtoId, DancerSegment[]>();
-      for (const id of who) {
-        unfudgedPlans.set(id, getPlans(Dancer.get(id, init)));
-      }
-
       // Step 1: x-snap drift (snap center.x to ±0.5).
       const xDrifts = new Map<ProtoId, number>();
       for (const id of who) {
@@ -480,10 +487,19 @@ export function swingAnimator(
         );
       }
 
-      return animatePlans(init, who, (d) => finalPlans.get(d.protoId) ?? []);
+      return finalPlans;
     }
   }
 
   // Non-across/out endings: no fudge needed.
-  return animatePlans(init, who, getPlans);
+  return unfudgedPlans;
+}
+
+export function swingAnimator(
+  instr: SwingInstruction,
+  init: WorldState,
+  who: ReadonlySet<ProtoId>,
+): ContraAnimation {
+  const plans = buildSwingPlans(instr, init, who);
+  return animatePlans(init, who, (d) => plans.get(d.protoId) ?? []);
 }
