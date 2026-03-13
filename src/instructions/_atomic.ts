@@ -15,6 +15,7 @@ import {
   balanceSegments,
 } from "./balance";
 import {
+  balanceAndSwingAnimator,
   BalanceAndSwingInstructionSchema,
   balanceAndSwingSegments,
 } from "./balanceAndSwing";
@@ -350,6 +351,8 @@ export function animateAtomicInstruction(
       return allemandeAnimator(instr, init, who);
     case "balance":
       return balanceAnimator(instr, init, who);
+    case "balance_and_swing":
+      return balanceAndSwingAnimator(instr, init, who);
     case "balance_the_ring":
       return balanceTheRingAnimator(instr, init, who);
     case "bend_the_line":
