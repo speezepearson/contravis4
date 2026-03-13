@@ -11,11 +11,7 @@ import {
   personInDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
-import {
-  californiaTwirlSegments,
-  planCaliforniaTwirl,
-} from "./californiaTwirl";
+import { planCaliforniaTwirl } from "./californiaTwirl";
 
 export const TurnAsACoupleInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -58,18 +54,6 @@ export function planTurnAsACouple(
     dancer,
   );
 }
-
-export const turnAsACoupleSegments: InstructionAnimator<
-  TurnAsACoupleInstruction
-> = (instr, init, who) => {
-  checkFacingSameDirection(init, who);
-
-  return californiaTwirlSegments(
-    { id: instr.id, beats: instr.beats, type: "california_twirl" },
-    init,
-    who,
-  );
-};
 
 export function turnAsACoupleAnimator(
   instr: TurnAsACoupleInstruction,
