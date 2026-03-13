@@ -522,6 +522,47 @@ input[type="range"] {
   background: #3a4a5a;
 }
 
+/* Add instruction text input */
+
+.add-instruction-input-wrapper {
+  margin: 2px 0;
+}
+
+.add-instruction-input-item {
+  padding: 4px 8px;
+}
+
+.add-instruction-text-input {
+  background: #1e1e3a;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.82em;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+}
+
+.add-instruction-text-input:focus {
+  border-color: #6a9aff;
+}
+
+.add-instruction-text-input::placeholder {
+  color: #777;
+}
+
+.add-instruction-preview {
+  padding: 2px 0 4px 0;
+}
+
+.add-instruction-preview-empty {
+  color: #888;
+  font-style: italic;
+  padding: 2px 8px;
+  font-size: 0.78em;
+}
+
 /* Formation selector */
 
 .formation-selector {
