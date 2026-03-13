@@ -11,7 +11,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const TakeHandSchema = z.enum(["left", "right", "inside"]);
 export type TakeHand = z.infer<typeof TakeHandSchema>;
@@ -36,7 +35,7 @@ export const TakeHandsInstructionSchema = z.object({
 });
 export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
 
-function computeTakeHandsFinalState(
+export function computeTakeHandsFinalState(
   instr: TakeHandsInstruction,
   init: WorldState,
 ): WorldState {
@@ -88,26 +87,6 @@ export function planTakeHands(
     },
   ];
 }
-
-export const takeHandsSegments: InstructionAnimator<TakeHandsInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const finalState = computeTakeHandsFinalState(instr, init);
-  const anim = animatePlans(init, who, (d) =>
-    planTakeHands(instr, d, finalState),
-  );
-  return [
-    {
-      dur: 0,
-      position: (dancer) => dancer.at(anim.getFrame(0)).pos,
-      facing: (dancer) => dancer.at(anim.getFrame(0)).facing,
-      hands: (dancer) => dancer.at(anim.getFrame(0)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(0)).recents,
-    },
-  ];
-};
 
 export function takeHandsAnimator(
   instr: TakeHandsInstruction,
