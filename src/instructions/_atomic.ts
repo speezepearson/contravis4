@@ -101,6 +101,7 @@ import {
   madRobinSegments,
 } from "./madRobin";
 import {
+  meltdownSwingAnimator,
   MeltdownSwingInstructionSchema,
   meltdownSwingSegments,
 } from "./meltdownSwing";
@@ -381,6 +382,8 @@ export function animateAtomicInstruction(
       return greetShadowAnimator(instr, init, who);
     case "long_line_in_center":
       return longLineInCenterAnimator(instr, init, who);
+    case "meltdown_swing":
+      return meltdownSwingAnimator(instr, init, who);
     case "mad_robin":
       return madRobinAnimator(instr, init, who);
     case "petronella":

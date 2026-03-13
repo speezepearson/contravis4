@@ -27,7 +27,7 @@ export type ShoulderRoundInstruction = z.infer<
   typeof ShoulderRoundInstructionSchema
 >;
 
-const APPROACH_ELLIPSE_RADIANS = PI / 2;
+export const APPROACH_ELLIPSE_RADIANS = PI / 2;
 
 // ── Plan-based API ──────────────────────────────────────────────────────
 
