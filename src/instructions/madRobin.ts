@@ -12,7 +12,6 @@ import {
   resolveCardinalDirection,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const MadRobinInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -47,58 +46,6 @@ export function planMadRobin(
     },
   ];
 }
-
-export const madRobinSegments: InstructionAnimator<MadRobinInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  // Assert all pairs are on the same side of the set
-  for (const id of who) {
-    const me = Dancer.get(id, init);
-    const them = me.resolveMatch(instr.cid);
-    if (Math.sign(me.pos.x) !== Math.sign(them.pos.x)) {
-      throw new SnazzyError([
-        { dancerId: id },
-        " and ",
-        { dancerId: them.id },
-        " are not on the same side of the set for mad robin",
-      ]);
-    }
-  }
-
-  // Determine semiMinor sign so that whoInFront initially moves towards x=0.
-  let semiMinor = 0.25;
-  for (const id of who) {
-    if (getRole(id) === instr.whoInFront) {
-      const me = Dancer.get(id, init);
-      const start = me.pos;
-      const end = me.resolveMatch(instr.cid).pos;
-      const semiMajorDir = start.subtract(end).normalize();
-      const semiMinorDir = semiMajorDir.rotateByDegrees(90);
-      if (Math.sign(semiMinorDir.x) !== Math.sign(start.x)) {
-        semiMinor = -semiMinor;
-      }
-      break;
-    }
-  }
-
-  const anim = animatePlans(init, who, (d) =>
-    planMadRobin(instr, d, semiMinor),
-  );
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function madRobinAnimator(
   instr: MadRobinInstruction,

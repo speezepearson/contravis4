@@ -18,7 +18,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, rotateFacingBy } from "./_segment";
 
 export const SingleFilePromenadeInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -43,8 +42,6 @@ function makeTiebreakers(
       ]
     : [preferCloser, preferOneInFront, preferRecent];
 }
-
-// ── Plan-based API ──────────────────────────────────────────────────────
 
 export function planSingleFilePromenade(
   instr: SingleFilePromenadeInstruction,
@@ -95,49 +92,3 @@ export function singleFilePromenadeAnimator(
     planSingleFilePromenade(instr, dancer),
   );
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const singleFilePromenadeSegments: InstructionAnimator<
-  SingleFilePromenadeInstruction
-> = (instr, init) => {
-  const orig = (d: Dancer) => d.at(init);
-  const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
-
-  const tiebreakers = makeTiebreakers(instr);
-  const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(orig(dancer), { by: tiebreakers });
-
-  const getCenter = (dancer: Dancer) => avgPos(...getInitGroup(dancer));
-
-  // CW if direction=left, CCW if direction=right (same as circle/star)
-  const orbitRadians =
-    (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
-
-  return [
-    {
-      dur: 0,
-      facing: (dancer) =>
-        getDir({ from: dancer.pos, to: getCenter(dancer) }).rotateByRadians(
-          facingRotation,
-        ),
-      hands: () => ({}),
-    },
-    // Orbit (same as star/circle)
-    {
-      dur: instr.beats,
-      position: (dancer, frac) => {
-        const center = getCenter(dancer);
-        const revolved = revolve(dancer.pos, {
-          around: center,
-          radians: orbitRadians * frac,
-        });
-        const offset = revolved.subtract(center);
-        const targetScale =
-          Math.sqrt(2) / 2 / dancer.pos.subtract(center).length();
-        return center.add(offset.multiply(lerp(1, targetScale, frac)));
-      },
-      facing: rotateFacingBy(() => orbitRadians),
-    },
-  ];
-};

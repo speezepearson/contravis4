@@ -26,7 +26,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const RolleeSpecSchema = z.discriminatedUnion("type", [
   z.object({
@@ -187,29 +186,6 @@ function planRollAwayWithMatchMap(
     },
   ];
 }
-
-export const rollAwaySegments: InstructionAnimator<RollAwayInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const matchMap = validateAndBuildMatchMap(instr, init, who);
-  const anim = animatePlans(init, who, (d) =>
-    planRollAwayWithMatchMap(instr, d, matchMap),
-  );
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function rollAwayAnimator(
   instr: RollAwayInstruction,

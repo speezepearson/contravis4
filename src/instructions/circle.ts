@@ -20,8 +20,7 @@ import {
   resolveRing,
 } from "./_base";
 import { animatePlans } from "./_plan";
-import { type InstructionAnimator, rotateFacingBy } from "./_segment";
-import { computeRingFinalState, makeRingSegment } from "./takeHandsInRings";
+import { computeRingFinalState } from "./takeHandsInRings";
 
 export const CircleInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -31,36 +30,6 @@ export const CircleInstructionSchema = z.object({
   disambiguatingCid: CalledIdentifierSchema.optional(),
 });
 export type CircleInstruction = z.infer<typeof CircleInstructionSchema>;
-
-export const circleSegments: InstructionAnimator<CircleInstruction> = (
-  instr,
-  init,
-) => {
-  const ringSegment = makeRingSegment(init, instr.disambiguatingCid);
-
-  // CW if direction=left, CCW if direction=right
-  const orbitRadians =
-    (instr.direction === "right" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
-
-  return [
-    ringSegment,
-    {
-      dur: instr.beats,
-      position: (dancer, frac) => {
-        const center = avgPos(...resolveRing(dancer));
-        const revolved = revolve(dancer.pos, {
-          around: center,
-          radians: orbitRadians * frac,
-        });
-        const offset = revolved.subtract(center);
-        const targetScale =
-          Math.sqrt(2) / 2 / dancer.pos.subtract(center).length();
-        return center.add(offset.multiply(lerp(1, targetScale, frac)));
-      },
-      facing: rotateFacingBy(() => orbitRadians),
-    },
-  ];
-};
 
 export function circleAnimator(
   instr: CircleInstruction,

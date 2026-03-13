@@ -8,7 +8,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const DropHandsInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -59,55 +58,6 @@ export function planDropHands(
     }
   }
 }
-
-export const dropHandsSegments: InstructionAnimator<DropHandsInstruction> = (
-  instr,
-  init,
-) => {
-  switch (instr.which) {
-    case "left":
-      return [
-        {
-          dur: 0,
-          hands: (dancer) => ({
-            left: undefined,
-            right: init[dancer.protoId].hands.right,
-          }),
-        },
-      ];
-    case "right":
-      return [
-        {
-          dur: 0,
-          hands: (dancer) => ({
-            right: undefined,
-            left: init[dancer.protoId].hands.left,
-          }),
-        },
-      ];
-    case "both":
-      return [{ dur: 0, hands: () => ({}) }];
-    default: {
-      const which = instr.which;
-      return [
-        {
-          dur: 0,
-          hands: (dancer) => {
-            const match = dancer.resolveMatch(which);
-            const result: Dancer["hands"] = {};
-            for (const hand of ALL_HANDS) {
-              const existing = dancer.hands[hand];
-              if (existing && existing.theirId !== match.id) {
-                result[hand] = existing;
-              }
-            }
-            return result;
-          },
-        },
-      ];
-    }
-  }
-};
 
 export function dropHandsAnimator(
   instr: DropHandsInstruction,

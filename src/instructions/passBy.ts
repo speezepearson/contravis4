@@ -9,7 +9,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const PassByInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -37,25 +36,6 @@ export function planPassBy(
     },
   ];
 }
-
-export const passBySegments: InstructionAnimator<PassByInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const anim = animatePlans(init, who, (d) => planPassBy(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-    },
-  ];
-};
 
 export function passByAnimator(
   instr: PassByInstruction,

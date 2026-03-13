@@ -8,7 +8,6 @@ import { indexOf, must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import { type ContraAnimation, instructionBaseSchemaFields } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const BendTheLineInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -77,24 +76,6 @@ export function planBendTheLine(
     },
   ];
 }
-
-export const bendTheLineSegments: InstructionAnimator<
-  BendTheLineInstruction
-> = (instr, init, who) => {
-  const anim = animatePlans(init, who, (d) => planBendTheLine(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function bendTheLineAnimator(
   instr: BendTheLineInstruction,

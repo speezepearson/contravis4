@@ -18,7 +18,7 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { hold, type InstructionAnimator, rotateFacingBy } from "./_segment";
+import { hold } from "./_segment";
 
 export const StarInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -41,8 +41,6 @@ function makeTiebreakers(
       ]
     : [preferCloser, preferOneInFront, preferRecent];
 }
-
-// ── Plan-based API ──────────────────────────────────────────────────────
 
 export function planStar(
   instr: StarInstruction,
@@ -100,61 +98,3 @@ export function starAnimator(
 ): ContraAnimation {
   return animatePlans(init, who, (dancer) => planStar(instr, dancer));
 }
-
-// ── Legacy Segment[] API ────────────────────────────────────────────────
-
-export const starSegments: InstructionAnimator<StarInstruction> = (
-  instr,
-  init,
-) => {
-  const orig = (d: Dancer) => d.at(init);
-  const facingRotation = ((instr.direction === "right" ? 1 : -1) * Math.PI) / 2;
-
-  const insideHand = instr.direction;
-
-  // CW if direction=left, CCW if direction=right (same as circle)
-  const orbitRadians =
-    (instr.direction === "left" ? 1 : -1) * TWO_PI * (instr.nPlaces / 4);
-
-  const tiebreakers = makeTiebreakers(instr);
-  const getInitGroup = (dancer: Dancer) =>
-    getGroupOfFour(orig(dancer), { by: tiebreakers });
-  const opp = (dancer: Dancer) => {
-    const group = getInitGroup(dancer);
-    return must(
-      getSingleton(
-        group.filter((d) => d.role === dancer.role && d.dir !== dancer.dir),
-      ),
-    );
-  };
-
-  const getCenter = (dancer: Dancer) => avgPos(...getInitGroup(dancer));
-
-  return [
-    // Star setup: rotate facing 90°, connect inside hands with opposite
-    {
-      dur: 0,
-      facing: (dancer) =>
-        getDir({ from: dancer.pos, to: getCenter(dancer) }).rotateByRadians(
-          facingRotation,
-        ),
-      hands: (dancer) => hold([insideHand, opp(dancer).id, insideHand]),
-    },
-    // Orbit (same as circle)
-    {
-      dur: instr.beats,
-      position: (dancer, frac) => {
-        const center = getCenter(dancer);
-        const revolved = revolve(dancer.pos, {
-          around: center,
-          radians: orbitRadians * frac,
-        });
-        const offset = revolved.subtract(center);
-        const targetScale =
-          Math.sqrt(2) / 2 / dancer.pos.subtract(center).length();
-        return center.add(offset.multiply(lerp(1, targetScale, frac)));
-      },
-      facing: rotateFacingBy(() => orbitRadians),
-    },
-  ];
-};
