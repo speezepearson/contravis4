@@ -8,7 +8,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator, type Segment } from "./_segment";
 
 export const FaceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -25,17 +24,6 @@ export function planFace(
   const targetFacing = dancer.resolveCalledDirection(instr.direction);
   return [{ dur: 0, facing: () => targetFacing }];
 }
-
-export const faceSegments: InstructionAnimator<FaceInstruction> = (
-  instr,
-): Segment[] => [
-  {
-    dur: instr.beats,
-    facing: (dancer) => {
-      return dancer.resolveCalledDirection(instr.direction);
-    },
-  },
-];
 
 export function faceAnimator(
   instr: FaceInstruction,

@@ -3,8 +3,6 @@ import type { Vector } from "vecti";
 import { z } from "zod";
 
 import {
-  ALL_PROTO_IDS,
-  getRole,
   type Hand,
   HandSchema,
   otherRole,
@@ -23,7 +21,6 @@ import {
   resolveCardinalDirection,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type PositionFn } from "./_segment";
 
 export const PoussetteInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -33,45 +30,6 @@ export const PoussetteInstructionSchema = z.object({
   full: z.boolean(),
 });
 export type PoussetteInstruction = z.infer<typeof PoussetteInstructionSchema>;
-
-/**
- * Creates a position function for a poussette arc (legacy Segment API).
- * The backer traces an elliptical arc; the non-backer maintains displacement.
- * Arc dests are resolved by temporarily facing dancers across.
- */
-export function makeHalfPoussetteArcPositionFn(
-  backerRole: Role,
-  backerDir: Hand,
-  init: WorldState,
-): PositionFn {
-  const arcDests = new Map<ProtoId, { start: Vector; end: Vector }>();
-  for (const id of ALL_PROTO_IDS) {
-    const isBacker = getRole(id) === backerRole;
-    arcDests.set(id, {
-      start: init[id].pos,
-      end: init[id].pos.add(
-        Dancer.get(id, init)
-          .resolveCalledDirection(pureDir("across"))
-          .rotateByDegrees(
-            (isBacker ? 1 : -1) * { right: -90, left: 90 }[backerDir],
-          ),
-      ),
-    });
-  }
-
-  return (dancer, frac) => {
-    const { start, end } = must(arcDests.get(dancer.protoId), [
-      { dancerId: dancer.protoId },
-      "missing arc dest",
-    ]);
-    const semiMinorCw =
-      -0.75 *
-      Math.sign(start.x) *
-      Math.sign(end.y - start.y) *
-      (dancer.role === backerRole ? 1 : -1.3);
-    return ellipsePosition(start, end, semiMinorCw, PI * frac);
-  };
-}
 
 /**
  * Creates a per-dancer position function for a poussette arc (plan API).

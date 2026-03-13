@@ -11,7 +11,6 @@ import {
   instructionBaseSchemaFields,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const BalanceInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -49,26 +48,6 @@ export function planBalance(
     },
   ];
 }
-
-export const balanceSegments: InstructionAnimator<BalanceInstruction> = (
-  instr,
-  init,
-  who,
-) => {
-  const anim = animatePlans(init, who, (d) => planBalance(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function balanceAnimator(
   instr: BalanceInstruction,

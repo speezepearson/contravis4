@@ -10,7 +10,6 @@ import {
   personInDir,
 } from "./_base";
 import { animatePlans, type DancerSegment } from "./_plan";
-import { type InstructionAnimator } from "./_segment";
 
 export const CaliforniaTwirlInstructionSchema = z.object({
   ...instructionBaseSchemaFields,
@@ -73,24 +72,6 @@ export function planCaliforniaTwirl(
     },
   ];
 }
-
-export const californiaTwirlSegments: InstructionAnimator<
-  CaliforniaTwirlInstruction
-> = (instr, init, who) => {
-  const anim = animatePlans(init, who, (d) => planCaliforniaTwirl(instr, d));
-  return [
-    {
-      dur: instr.beats,
-      position: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).pos,
-      facing: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).facing,
-      hands: (dancer, frac) =>
-        dancer.at(anim.getFrame(instr.beats * frac)).hands,
-      interactedWith: (dancer) => dancer.at(anim.getFrame(instr.beats)).recents,
-    },
-  ];
-};
 
 export function californiaTwirlAnimator(
   instr: CaliforniaTwirlInstruction,
