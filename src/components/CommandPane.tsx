@@ -17,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   Fragment,
+  type KeyboardEvent,
   memo,
   useCallback,
   useContext,
@@ -56,6 +57,7 @@ import {
   LLRRTemplateIdSchema,
   LRTemplateIdSchema,
 } from "../instructions/templates/index";
+import { parseDanceInstruction } from "../parseDanceInstruction";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
@@ -106,11 +108,7 @@ import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
 import { ZigZagFields } from "./fields/ZigZagFields";
-import {
-  calledIdentifierToText,
-  makeDefaultInstruction,
-  makeInstructionId,
-} from "./fieldUtils";
+import { calledIdentifierToText, makeDefaultInstruction } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
@@ -433,6 +431,39 @@ function insertIntoContainer(
       const list = parsed.list === "A" ? listA : listB;
       const copy = [...list];
       copy.splice(index, 0, SplitSubInstructionSchema.parse(item));
+      const newLists =
+        parsed.list === "A"
+          ? splitWithLists(i.by, copy, listB)
+          : splitWithLists(i.by, listA, copy);
+      return { ...i, ...newLists };
+    }
+    return i;
+  });
+}
+
+function insertManyIntoContainer(
+  instrs: Instruction[],
+  containerId: string,
+  items: Instruction[],
+  index: number,
+): Instruction[] {
+  if (items.length === 0) return instrs;
+  const parsed = parseContainerId(containerId);
+  if (parsed.type === "top") {
+    const copy = [...instrs];
+    copy.splice(index, 0, ...items);
+    return copy;
+  }
+  return instrs.map((i) => {
+    if (i.type === "split" && i.id === parsed.splitId) {
+      const [listA, listB] = splitLists(i);
+      const list = parsed.list === "A" ? listA : listB;
+      const copy = [...list];
+      copy.splice(
+        index,
+        0,
+        ...items.map((item) => SplitSubInstructionSchema.parse(item)),
+      );
       const newLists =
         parsed.list === "A"
           ? splitWithLists(i.by, copy, listB)
@@ -886,6 +917,85 @@ function InlineForm({
   );
 }
 
+function describeInstruction(instr: Instruction): string {
+  if (instr.type === "split") return "split";
+  const label =
+    ACTION_LABELS[
+      instr.type === "templated_lr" || instr.type === "templated_llrr"
+        ? instr.templateId
+        : instr.type
+    ];
+  const parts = [label];
+  if ("cid" in instr) {
+    parts.push(calledIdentifierToText(instr.cid));
+  }
+  if ("beats" in instr && typeof instr.beats === "number") {
+    parts.push(`${instr.beats} beats`);
+  }
+  return parts.join(" — ");
+}
+
+function AddInstructionInput({
+  onCommit,
+  onCancel,
+}: {
+  onCommit: (instrs: Instruction[]) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const parsed = useMemo(() => parseDanceInstruction(text), [text]);
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (parsed.length > 0) {
+        onCommit(parsed);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  }
+
+  return (
+    <div className="add-instruction-input-wrapper">
+      <div className="instruction-item add-instruction-input-item">
+        <input
+          ref={inputRef}
+          type="text"
+          className="add-instruction-text-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={onCancel}
+          placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
+        />
+      </div>
+      {text.trim() !== "" && (
+        <div className="add-instruction-preview">
+          {parsed.length === 0 ? (
+            <div className="add-instruction-preview-empty">
+              No instructions recognized
+            </div>
+          ) : (
+            parsed.map((instr) => (
+              <div key={instr.id} className="add-instruction-preview-item">
+                {describeInstruction(instr)}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CustomFormationInput({
   onParsed,
 }: {
@@ -944,6 +1054,10 @@ export default memo(function CommandPane({
   onSkipToInstruction,
 }: Props) {
   const [newlyAddedId, setNewlyAddedId] = useState<InstructionId | null>(null);
+  const [pendingAdd, setPendingAdd] = useState<{
+    containerId: string;
+    index: number;
+  } | null>(null);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [pasteFeedback, setPasteFeedback] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<InstructionId>>(new Set());
@@ -1079,16 +1193,23 @@ export default memo(function CommandPane({
   }
 
   function handleAdd(containerId: string, index: number) {
-    const id = makeInstructionId();
-    const defaultInstr = makeDefaultInstruction("balance", id);
-    const newInstructions = insertIntoContainer(
+    setPendingAdd({ containerId, index });
+  }
+
+  function handleCommitAdd(parsed: Instruction[]) {
+    if (!pendingAdd) return;
+    const newInstructions = insertManyIntoContainer(
       instructions,
-      containerId,
-      defaultInstr,
-      index,
+      pendingAdd.containerId,
+      parsed,
+      pendingAdd.index,
     );
     setInstructions(newInstructions);
-    setNewlyAddedId(id);
+    setPendingAdd(null);
+  }
+
+  function handleCancelAdd() {
+    setPendingAdd(null);
   }
 
   function handleRemove(id: InstructionId) {
@@ -1243,6 +1364,21 @@ export default memo(function CommandPane({
   );
 
   function renderAddGap(containerId: string, index: number) {
+    const isPending =
+      pendingAdd !== null &&
+      pendingAdd.containerId === containerId &&
+      pendingAdd.index === index;
+
+    if (isPending) {
+      return (
+        <AddInstructionInput
+          key={`add-input-${containerId}-${index}`}
+          onCommit={handleCommitAdd}
+          onCancel={handleCancelAdd}
+        />
+      );
+    }
+
     return (
       <div className="add-gap" key={`gap-${containerId}-${index}`}>
         <button

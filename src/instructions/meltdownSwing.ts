@@ -49,7 +49,8 @@ export function meltdownSwingAnimator(
   };
 
   // Compute shoulder round timing (mirrors shoulderRoundAnimator logic)
-  const rotationSign = shoulderRoundInstr.handedness === "left" ? 1 : -1;
+  // handedness is always "right" for meltdown swing, so rotationSign is -1
+  const rotationSign = -1;
   const numAllemandeRadians =
     (TWO_PI * shoulderRoundInstr.rotations - APPROACH_ELLIPSE_RADIANS) *
     rotationSign;
