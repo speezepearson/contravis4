@@ -1,9 +1,9 @@
 /**
  * Parse freeform text descriptions of contra dance moves into Instruction objects.
  *
- * This is a best-effort parser for UI text input. It uses keyword matching
- * rather than NLP — the goal is to be easily interpretable and produce
- * results that are understandable in retrospect, not to be perfect.
+ * This is a best-effort parser for UI text input. It uses a chunk-based tokenizer
+ * backed by an explicit keyword dictionary — the dictionary is exported so that
+ * the autocomplete system can share it.
  */
 
 import {
@@ -17,173 +17,876 @@ import { type Instruction, InstructionSchema } from "./instructions/index";
 import { type ActionOptionType } from "./instructions/index";
 import { type Label } from "./labels";
 
-// ── Type detection ──────────────────────────────────────────────────────
+// ── Keyword dictionary ──────────────────────────────────────────────────
+//
+// Each entry is either a plain-text keyword or a regex pattern for numeric
+// values. Text entries are sorted longest-first at module load time so the
+// tokenizer does greedy longest-match.
 
-/** Ordered list of patterns to match instruction types. Earlier entries win. */
-const TYPE_PATTERNS: { pattern: RegExp; type: ActionOptionType }[] = [
-  // Multi-word phrases first (order matters!)
-  // "larks start a half hey" — role is part of the figure, not a split indicator
-  { pattern: /start\s+a\s+.*hey\b/i, type: "hey" },
-  { pattern: /balance\s+and\s+swing/i, type: "balance_and_swing" },
-  { pattern: /balance\s+the\s+ring/i, type: "balance_the_ring" },
-  { pattern: /box\s+circulate/i, type: "box_circulate" },
-  { pattern: /box\s+the\s+gnat/i, type: "box_the_gnat" },
-  { pattern: /california\s+twirl/i, type: "california_twirl" },
-  { pattern: /robins?\s+chain/i, type: "robins_chain" },
-  { pattern: /ladies?\s+chain/i, type: "robins_chain" },
-  { pattern: /right\s+(?:and\s+)?left\s+through/i, type: "right_left_through" },
-  { pattern: /do[-\s]?si[-\s]?do/i, type: "do_si_do" },
+type TextKeywordEntry =
+  | { text: string; chunk: "instruction_type"; value: ActionOptionType }
+  | { text: string; chunk: "label"; value: Label }
+  | { text: string; chunk: "direction_phrase"; value: PureDirection }
+  | { text: string; chunk: "handedness"; value: "left" | "right" }
+  | { text: string; chunk: "role"; value: Role }
+  | { text: string; chunk: "keyword"; value: string };
+
+type RegexKeywordEntry =
+  | {
+      pattern: RegExp;
+      chunk: "beats";
+      extract: (match: RegExpMatchArray) => number;
+    }
+  | {
+      pattern: RegExp;
+      chunk: "rotations";
+      extract: (match: RegExpMatchArray) => number;
+    }
+  | {
+      pattern: RegExp;
+      chunk: "n_places";
+      extract: (match: RegExpMatchArray) => number;
+    }
+  | {
+      pattern: RegExp;
+      chunk: "distance";
+      extract: (match: RegExpMatchArray) => number;
+    };
+
+export type KeywordEntry = TextKeywordEntry | RegexKeywordEntry;
+
+// ── Text keyword entries ─────────────────────────────────────────────────
+
+const TEXT_KEYWORDS: TextKeywordEntry[] = [
+  // Instruction types — multi-word phrases
+  // "start a ... hey" is special: handled via regex, not text keyword
   {
-    pattern: /give\s+and\s+take\s+(?:into\s+)?swing/i,
-    type: "give_and_take_into_swing",
-  },
-  { pattern: /meltdown\s+swing/i, type: "meltdown_swing" },
-  {
-    pattern: /long\s+lines?\s+forward\s+(?:and\s+)?back/i,
-    type: "long_lines_forward_back",
+    text: "balance and swing",
+    chunk: "instruction_type",
+    value: "balance_and_swing",
   },
   {
-    pattern: /long\s+line\s+in\s+(?:the\s+)?(?:center|centre|middle)/i,
-    type: "long_line_in_center",
+    text: "balance the ring",
+    chunk: "instruction_type",
+    value: "balance_the_ring",
   },
-  { pattern: /form\s+(?:a\s+)?long\s+(?:line|wave)/i, type: "form_long_waves" },
-  { pattern: /form\s+(?:a\s+)?short\s+wave/i, type: "form_short_waves" },
+  { text: "box circulate", chunk: "instruction_type", value: "box_circulate" },
+  { text: "box the gnat", chunk: "instruction_type", value: "box_the_gnat" },
   {
-    pattern: /take\s+hands?\s+in\s+(?:a\s+)?ring/i,
-    type: "take_hands_in_rings",
+    text: "california twirl",
+    chunk: "instruction_type",
+    value: "california_twirl",
   },
-  { pattern: /turn\s+as\s+a\s+couple/i, type: "turn_as_a_couple" },
-  { pattern: /turn\s+alone/i, type: "turn_alone" },
-  { pattern: /single\s+file\s+promenade/i, type: "single_file_promenade" },
-  { pattern: /shoulder\s+round/i, type: "shoulder_round" },
-  { pattern: /mad\s+robin/i, type: "mad_robin" },
-  { pattern: /roll\s+away/i, type: "roll_away" },
-  { pattern: /rory\s+o['']?\s*more/i, type: "rory_o_more" },
-  { pattern: /square\s+through/i, type: "square_through" },
-  { pattern: /bend\s+the\s+line/i, type: "bend_the_line" },
-  { pattern: /greet\s+(?:new\s+)?neighbor/i, type: "greet_new_neighbors" },
-  { pattern: /greet\s+shadow/i, type: "greet_shadow" },
-  { pattern: /down\s+the\s+hall/i, type: "down_the_hall" },
-  { pattern: /up\s+the\s+hall/i, type: "up_the_hall" },
-  { pattern: /pull\s+by/i, type: "pull_by" },
-  { pattern: /pass\s+by/i, type: "pass_by" },
-  { pattern: /drop\s+hands/i, type: "drop_hands" },
-  { pattern: /take\s+hands/i, type: "take_hands" },
-  { pattern: /zig\s*-?\s*zag/i, type: "zig_zag" },
-  // Single-word patterns last
-  { pattern: /\bstep\b/i, type: "step" },
-  { pattern: /swing/i, type: "swing" },
-  { pattern: /allemande/i, type: "allemande" },
-  { pattern: /petronella/i, type: "petronella" },
-  { pattern: /circle/i, type: "circle" },
-  { pattern: /star\b/i, type: "star" },
-  { pattern: /hey\b/i, type: "hey" },
-  { pattern: /balance/i, type: "balance" },
-  { pattern: /poussette/i, type: "poussette" },
-  { pattern: /slice/i, type: "slice" },
-  { pattern: /chain/i, type: "robins_chain" },
+  { text: "robins chain", chunk: "instruction_type", value: "robins_chain" },
+  { text: "robin chain", chunk: "instruction_type", value: "robins_chain" },
+  { text: "ladies chain", chunk: "instruction_type", value: "robins_chain" },
+  { text: "lady chain", chunk: "instruction_type", value: "robins_chain" },
+  {
+    text: "right and left through",
+    chunk: "instruction_type",
+    value: "right_left_through",
+  },
+  {
+    text: "right left through",
+    chunk: "instruction_type",
+    value: "right_left_through",
+  },
+  { text: "do si do", chunk: "instruction_type", value: "do_si_do" },
+  { text: "do-si-do", chunk: "instruction_type", value: "do_si_do" },
+  { text: "dosido", chunk: "instruction_type", value: "do_si_do" },
+  {
+    text: "give and take into swing",
+    chunk: "instruction_type",
+    value: "give_and_take_into_swing",
+  },
+  {
+    text: "give and take swing",
+    chunk: "instruction_type",
+    value: "give_and_take_into_swing",
+  },
+  {
+    text: "meltdown swing",
+    chunk: "instruction_type",
+    value: "meltdown_swing",
+  },
+  {
+    text: "long lines forward and back",
+    chunk: "instruction_type",
+    value: "long_lines_forward_back",
+  },
+  {
+    text: "long lines forward back",
+    chunk: "instruction_type",
+    value: "long_lines_forward_back",
+  },
+  {
+    text: "long line forward and back",
+    chunk: "instruction_type",
+    value: "long_lines_forward_back",
+  },
+  {
+    text: "long line forward back",
+    chunk: "instruction_type",
+    value: "long_lines_forward_back",
+  },
+  {
+    text: "long line in the center",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "long line in the centre",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "long line in the middle",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "long line in center",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "long line in centre",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "long line in middle",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form a long line in the center",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form a long line in the centre",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form a long line in the middle",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form a long line in center",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form long line in the center",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form long line in the centre",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form long line in center",
+    chunk: "instruction_type",
+    value: "long_line_in_center",
+  },
+  {
+    text: "form a long wave",
+    chunk: "instruction_type",
+    value: "form_long_waves",
+  },
+  {
+    text: "form a long line",
+    chunk: "instruction_type",
+    value: "form_long_waves",
+  },
+  {
+    text: "form long wave",
+    chunk: "instruction_type",
+    value: "form_long_waves",
+  },
+  {
+    text: "form long line",
+    chunk: "instruction_type",
+    value: "form_long_waves",
+  },
+  {
+    text: "form a short wave",
+    chunk: "instruction_type",
+    value: "form_short_waves",
+  },
+  {
+    text: "form short wave",
+    chunk: "instruction_type",
+    value: "form_short_waves",
+  },
+  {
+    text: "take hands in a ring",
+    chunk: "instruction_type",
+    value: "take_hands_in_rings",
+  },
+  {
+    text: "take hands in ring",
+    chunk: "instruction_type",
+    value: "take_hands_in_rings",
+  },
+  {
+    text: "take hand in a ring",
+    chunk: "instruction_type",
+    value: "take_hands_in_rings",
+  },
+  {
+    text: "take hand in ring",
+    chunk: "instruction_type",
+    value: "take_hands_in_rings",
+  },
+  {
+    text: "turn as a couple",
+    chunk: "instruction_type",
+    value: "turn_as_a_couple",
+  },
+  { text: "turn alone", chunk: "instruction_type", value: "turn_alone" },
+  {
+    text: "single file promenade",
+    chunk: "instruction_type",
+    value: "single_file_promenade",
+  },
+  {
+    text: "shoulder round",
+    chunk: "instruction_type",
+    value: "shoulder_round",
+  },
+  { text: "mad robin", chunk: "instruction_type", value: "mad_robin" },
+  { text: "roll away", chunk: "instruction_type", value: "roll_away" },
+  { text: "rory o more", chunk: "instruction_type", value: "rory_o_more" },
+  { text: "rory o'more", chunk: "instruction_type", value: "rory_o_more" },
+  { text: "rory o\u2019more", chunk: "instruction_type", value: "rory_o_more" },
+  { text: "rory omore", chunk: "instruction_type", value: "rory_o_more" },
+  {
+    text: "square through",
+    chunk: "instruction_type",
+    value: "square_through",
+  },
+  { text: "bend the line", chunk: "instruction_type", value: "bend_the_line" },
+  {
+    text: "greet new neighbor",
+    chunk: "instruction_type",
+    value: "greet_new_neighbors",
+  },
+  {
+    text: "greet neighbor",
+    chunk: "instruction_type",
+    value: "greet_new_neighbors",
+  },
+  { text: "greet shadow", chunk: "instruction_type", value: "greet_shadow" },
+  { text: "down the hall", chunk: "instruction_type", value: "down_the_hall" },
+  { text: "up the hall", chunk: "instruction_type", value: "up_the_hall" },
+  { text: "pull by", chunk: "instruction_type", value: "pull_by" },
+  { text: "pass by", chunk: "instruction_type", value: "pass_by" },
+  { text: "drop hands", chunk: "instruction_type", value: "drop_hands" },
+  { text: "take hands", chunk: "instruction_type", value: "take_hands" },
+  { text: "zig zag", chunk: "instruction_type", value: "zig_zag" },
+  { text: "zig-zag", chunk: "instruction_type", value: "zig_zag" },
+  { text: "zigzag", chunk: "instruction_type", value: "zig_zag" },
+  // Single-word instruction types
+  { text: "step", chunk: "instruction_type", value: "step" },
+  { text: "swing", chunk: "instruction_type", value: "swing" },
+  { text: "allemande", chunk: "instruction_type", value: "allemande" },
+  { text: "petronella", chunk: "instruction_type", value: "petronella" },
+  { text: "circle", chunk: "instruction_type", value: "circle" },
+  { text: "star", chunk: "instruction_type", value: "star" },
+  { text: "hey", chunk: "instruction_type", value: "hey" },
+  { text: "balance", chunk: "instruction_type", value: "balance" },
+  { text: "poussette", chunk: "instruction_type", value: "poussette" },
+  { text: "slice", chunk: "instruction_type", value: "slice" },
+  { text: "chain", chunk: "instruction_type", value: "robins_chain" },
+
+  // Labels (longest first, include plural forms)
+  { text: "previous neighbors", chunk: "label", value: "prev_neighbor" },
+  { text: "previous neighbor", chunk: "label", value: "prev_neighbor" },
+  { text: "prev neighbors", chunk: "label", value: "prev_neighbor" },
+  { text: "prev neighbor", chunk: "label", value: "prev_neighbor" },
+  { text: "next x2 neighbors", chunk: "label", value: "next_x2_neighbor" },
+  { text: "next x2 neighbor", chunk: "label", value: "next_x2_neighbor" },
+  { text: "3rd neighbors", chunk: "label", value: "next_x2_neighbor" },
+  { text: "3rd neighbor", chunk: "label", value: "next_x2_neighbor" },
+  { text: "next neighbors", chunk: "label", value: "next_neighbor" },
+  { text: "next neighbor", chunk: "label", value: "next_neighbor" },
+  { text: "2nd neighbors", chunk: "label", value: "next_neighbor" },
+  { text: "2nd neighbor", chunk: "label", value: "next_neighbor" },
+  { text: "1st neighbors", chunk: "label", value: "neighbor" },
+  { text: "1st neighbor", chunk: "label", value: "neighbor" },
+  { text: "partners", chunk: "label", value: "partner" },
+  { text: "partner", chunk: "label", value: "partner" },
+  { text: "neighbors", chunk: "label", value: "neighbor" },
+  { text: "neighbor", chunk: "label", value: "neighbor" },
+  { text: "shadow 2", chunk: "label", value: "shadow_2" },
+  { text: "shadow 3", chunk: "label", value: "shadow_3" },
+  { text: "shadow 4", chunk: "label", value: "shadow_4" },
+  { text: "shadow", chunk: "label", value: "shadow" },
+  { text: "opposite", chunk: "label", value: "opposite" },
+
+  // Direction phrases (longest first)
+  {
+    text: "on the left diagonal",
+    chunk: "direction_phrase",
+    value: "left_diagonal",
+  },
+  {
+    text: "on the right diagonal",
+    chunk: "direction_phrase",
+    value: "right_diagonal",
+  },
+  {
+    text: "on left diagonal",
+    chunk: "direction_phrase",
+    value: "left_diagonal",
+  },
+  {
+    text: "on right diagonal",
+    chunk: "direction_phrase",
+    value: "right_diagonal",
+  },
+  { text: "across the set", chunk: "direction_phrase", value: "across" },
+  { text: "across", chunk: "direction_phrase", value: "across" },
+
+  // Handedness
+  { text: "left hand", chunk: "handedness", value: "left" },
+  { text: "right hand", chunk: "handedness", value: "right" },
+
+  // Roles
+  { text: "gentlespoons", chunk: "role", value: "lark" },
+  { text: "gentlespoon", chunk: "role", value: "lark" },
+  { text: "larks", chunk: "role", value: "lark" },
+  { text: "lark", chunk: "role", value: "lark" },
+  { text: "gents", chunk: "role", value: "lark" },
+  { text: "gent", chunk: "role", value: "lark" },
+  { text: "robins", chunk: "role", value: "robin" },
+  { text: "robin", chunk: "role", value: "robin" },
+  { text: "ladles", chunk: "role", value: "robin" },
+  { text: "ladle", chunk: "role", value: "robin" },
+  { text: "ladies", chunk: "role", value: "robin" },
+  { text: "lady", chunk: "role", value: "robin" },
+
+  // Other keywords
+  { text: "lefts in the center", chunk: "keyword", value: "lefts_in_center" },
+  { text: "lefts in the centre", chunk: "keyword", value: "lefts_in_center" },
+  { text: "lefts in the middle", chunk: "keyword", value: "lefts_in_center" },
+  { text: "lefts in center", chunk: "keyword", value: "lefts_in_center" },
+  { text: "lefts in centre", chunk: "keyword", value: "lefts_in_center" },
+  { text: "lefts in middle", chunk: "keyword", value: "lefts_in_center" },
+  { text: "left in the center", chunk: "keyword", value: "lefts_in_center" },
+  { text: "left in the centre", chunk: "keyword", value: "lefts_in_center" },
+  { text: "left in center", chunk: "keyword", value: "lefts_in_center" },
+  { text: "left in centre", chunk: "keyword", value: "lefts_in_center" },
+  { text: "rights in the center", chunk: "keyword", value: "rights_in_center" },
+  { text: "rights in the centre", chunk: "keyword", value: "rights_in_center" },
+  { text: "rights in the middle", chunk: "keyword", value: "rights_in_center" },
+  { text: "rights in center", chunk: "keyword", value: "rights_in_center" },
+  { text: "rights in centre", chunk: "keyword", value: "rights_in_center" },
+  { text: "rights in middle", chunk: "keyword", value: "rights_in_center" },
+  { text: "right in the center", chunk: "keyword", value: "rights_in_center" },
+  { text: "right in the centre", chunk: "keyword", value: "rights_in_center" },
+  { text: "right in center", chunk: "keyword", value: "rights_in_center" },
+  { text: "right in centre", chunk: "keyword", value: "rights_in_center" },
+  { text: "once and a half", chunk: "keyword", value: "once_and_a_half" },
+  { text: "twice and a half", chunk: "keyword", value: "twice_and_a_half" },
+  { text: "start a", chunk: "keyword", value: "start_a" },
+  { text: "end facing across", chunk: "keyword", value: "end_facing_across" },
+  { text: "facing across", chunk: "keyword", value: "end_facing_across" },
+  { text: "end facing down", chunk: "keyword", value: "end_facing_down" },
+  { text: "facing down", chunk: "keyword", value: "end_facing_down" },
+  { text: "end facing up", chunk: "keyword", value: "end_facing_up" },
+  { text: "facing up", chunk: "keyword", value: "end_facing_up" },
+  { text: "end facing out", chunk: "keyword", value: "end_facing_out" },
+  { text: "facing out", chunk: "keyword", value: "end_facing_out" },
+  { text: "backward", chunk: "keyword", value: "backward" },
+  { text: "backwards", chunk: "keyword", value: "backward" },
+  { text: "forward", chunk: "keyword", value: "forward" },
+  { text: "while", chunk: "keyword", value: "while" },
+  { text: "twice", chunk: "keyword", value: "twice" },
+  { text: "once", chunk: "keyword", value: "once" },
+  { text: "half", chunk: "keyword", value: "half" },
+  { text: "full", chunk: "keyword", value: "full" },
+  { text: "back", chunk: "keyword", value: "backward" },
+  { text: "left", chunk: "keyword", value: "left" },
+  { text: "right", chunk: "keyword", value: "right" },
 ];
 
-function detectType(text: string): ActionOptionType | null {
-  for (const { pattern, type } of TYPE_PATTERNS) {
-    if (pattern.test(text)) return type;
-  }
-  return null;
-}
+// Sort text keywords longest-first for greedy matching
+TEXT_KEYWORDS.sort((a, b) => b.text.length - a.text.length);
 
-// ── Who detection (CalledIdentifier) ────────────────────────────────────
+// ── Regex keyword entries (for numeric patterns) ─────────────────────────
 
-const LABEL_PATTERNS: { pattern: RegExp; label: Label }[] = [
-  { pattern: /\bprev(?:ious)?\s+(?:x2\s+)?neighbor/i, label: "prev_neighbor" },
-  { pattern: /\bnext\s+(?:x2\s+)?neighbor/i, label: "next_neighbor" },
-  { pattern: /\bpartner/i, label: "partner" },
-  { pattern: /\bneighbor/i, label: "neighbor" },
-  { pattern: /\bshadow/i, label: "shadow" },
-  { pattern: /\bopposite/i, label: "opposite" },
+const REGEX_KEYWORDS: RegexKeywordEntry[] = [
+  {
+    pattern: /^(\d+)\s*beats?\b/i,
+    chunk: "beats",
+    extract: (m) => Number(m[1]),
+  },
+  {
+    pattern: /^(\d+)\s*places?\b/i,
+    chunk: "n_places",
+    extract: (m) => Number(m[1]),
+  },
+  {
+    pattern: /^(\d+(?:\.\d+)?)\s*(?:times?|rotations?)\b/i,
+    chunk: "rotations",
+    extract: (m) => Number(m[1]),
+  },
+  {
+    pattern: /^([\d.]+)\s*m(?:eters?)?\b/i,
+    chunk: "distance",
+    extract: (m) => Number(m[1]),
+  },
+  { pattern: /^[¾]/, chunk: "n_places", extract: () => 3 },
+  { pattern: /^1[½]/, chunk: "rotations", extract: () => 1.5 },
+  { pattern: /^2[½]/, chunk: "rotations", extract: () => 2.5 },
+  { pattern: /^[½]/, chunk: "rotations", extract: () => 0.5 },
+  { pattern: /^1\s*1\/2/, chunk: "rotations", extract: () => 1.5 },
+  { pattern: /^2\s*1\/2/, chunk: "rotations", extract: () => 2.5 },
 ];
 
-const DIRECTION_PHRASES: { pattern: RegExp; dir: PureDirection }[] = [
-  { pattern: /\bon\s+(?:the\s+)?left\s+diagonal/i, dir: "left_diagonal" },
-  { pattern: /\bon\s+(?:the\s+)?right\s+diagonal/i, dir: "right_diagonal" },
-  { pattern: /\bacross(?:\s+the\s+set)?/i, dir: "across" },
+/** The full keyword dictionary, exported for use by autocomplete. */
+export const KEYWORD_DICTIONARY: readonly KeywordEntry[] = [
+  ...TEXT_KEYWORDS,
+  ...REGEX_KEYWORDS,
 ];
 
-function parseCid(text: string): CalledIdentifier | null {
-  // Check label-based identifiers first
-  for (const { pattern, label } of LABEL_PATTERNS) {
-    if (pattern.test(text)) return labelId(label);
+// ── Autocomplete ────────────────────────────────────────────────────────
+
+export interface Completion {
+  /** The full keyword text that could be inserted. */
+  keyword: string;
+  /** How many characters of the keyword already match the input suffix. */
+  overlap: number;
+  /** The chunk type this keyword represents. */
+  chunk: TextKeywordEntry["chunk"];
+}
+
+/**
+ * Get autocomplete suggestions for the current input text.
+ *
+ * For each text keyword, checks if any nonempty prefix of the keyword equals
+ * a suffix of the input (case-insensitive). Returns matches sorted by overlap
+ * length descending (strongest matches first), deduplicated by keyword text.
+ */
+export function getCompletions(input: string): Completion[] {
+  if (!input) return [];
+  const lowerInput = input.toLowerCase();
+
+  // Collect the best match per synonym group (keyed by chunk+value).
+  // Within a group, prefer the match with the longest overlap.
+  const bestByGroup = new Map<string, Completion>();
+
+  for (const entry of TEXT_KEYWORDS) {
+    if (!("text" in entry)) continue;
+    const keyword = entry.text;
+    const lowerKeyword = keyword.toLowerCase();
+
+    // Find the longest prefix of the keyword that matches a suffix of the input.
+    const maxCheck = Math.min(lowerKeyword.length, lowerInput.length);
+    let bestOverlap = 0;
+    for (let len = 1; len <= maxCheck; len++) {
+      const inputSuffix = lowerInput.slice(-len);
+      const keywordPrefix = lowerKeyword.slice(0, len);
+      if (inputSuffix === keywordPrefix) {
+        // Also check word boundary: the character before the suffix in input
+        // should be a space or the suffix should be the entire input
+        const posBeforeSuffix = lowerInput.length - len - 1;
+        if (posBeforeSuffix < 0 || /\s/.test(lowerInput[posBeforeSuffix])) {
+          bestOverlap = len;
+        }
+      }
+    }
+
+    if (bestOverlap > 0 && bestOverlap < lowerKeyword.length) {
+      const groupKey = `${entry.chunk}\0${entry.value}`;
+      const existing = bestByGroup.get(groupKey);
+      if (!existing || bestOverlap > existing.overlap) {
+        bestByGroup.set(groupKey, {
+          keyword,
+          overlap: bestOverlap,
+          chunk: entry.chunk,
+        });
+      }
+    }
   }
-  // Check directional identifiers
-  for (const { pattern, dir } of DIRECTION_PHRASES) {
-    if (pattern.test(text)) return personInDir(dir, "different");
+
+  const results = [...bestByGroup.values()];
+
+  // Sort by overlap descending (strongest match first), then alphabetically
+  results.sort(
+    (a, b) => b.overlap - a.overlap || a.keyword.localeCompare(b.keyword),
+  );
+
+  return results;
+}
+
+// ── Tokenizer ───────────────────────────────────────────────────────────
+
+export type Chunk =
+  | { type: "instruction_type"; value: ActionOptionType; raw: string }
+  | { type: "label"; value: Label; raw: string }
+  | { type: "direction_phrase"; value: PureDirection; raw: string }
+  | { type: "handedness"; value: "left" | "right"; raw: string }
+  | { type: "role"; value: Role; raw: string }
+  | { type: "keyword"; value: string; raw: string }
+  | { type: "beats"; value: number; raw: string }
+  | { type: "rotations"; value: number; raw: string }
+  | { type: "n_places"; value: number; raw: string }
+  | { type: "distance"; value: number; raw: string }
+  | { type: "unparsed"; value: string; raw: string };
+
+/**
+ * Check if a character is a word character (letter, digit, or underscore).
+ * Used for word-boundary checks during tokenization.
+ */
+function isWordChar(ch: string): boolean {
+  return /\w/.test(ch);
+}
+
+/**
+ * Tokenize input text into typed chunks using the keyword dictionary.
+ *
+ * Algorithm:
+ * 1. Skip leading whitespace
+ * 2. Try each text keyword (longest-first) at the current position, case-insensitive
+ *    - Require word boundary at end of match (not in the middle of a longer word)
+ * 3. Try each regex pattern (anchored at start of remaining text)
+ * 4. If no match, consume one whitespace-delimited word as "unparsed"
+ */
+export function tokenize(text: string): Chunk[] {
+  const chunks: Chunk[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    // Skip leading whitespace and common filler
+    const wsMatch = remaining.match(/^[\s,\-–—]+/);
+    if (wsMatch) {
+      remaining = remaining.slice(wsMatch[0].length);
+      continue;
+    }
+
+    if (remaining.length === 0) break;
+
+    let matched = false;
+
+    // Try text keywords (already sorted longest-first)
+    const lowerRemaining = remaining.toLowerCase();
+    for (const entry of TEXT_KEYWORDS) {
+      const len = entry.text.length;
+      if (lowerRemaining.startsWith(entry.text)) {
+        // Word boundary check: the character after the match (if any) must not be a word char
+        const charAfter = remaining[len];
+        if (charAfter !== undefined && isWordChar(charAfter)) continue;
+
+        const raw = remaining.slice(0, len);
+        chunks.push(makeChunkFromText(entry, raw));
+        remaining = remaining.slice(len);
+        matched = true;
+        break;
+      }
+    }
+    if (matched) continue;
+
+    // Try regex patterns
+    for (const entry of REGEX_KEYWORDS) {
+      const m = remaining.match(entry.pattern);
+      if (m) {
+        const raw = m[0];
+        chunks.push(makeChunkFromRegex(entry, m));
+        remaining = remaining.slice(raw.length);
+        matched = true;
+        break;
+      }
+    }
+    if (matched) continue;
+
+    // No match — consume one word as unparsed
+    const wordMatch = remaining.match(/^\S+/);
+    if (wordMatch) {
+      chunks.push({
+        type: "unparsed",
+        value: wordMatch[0],
+        raw: wordMatch[0],
+      });
+      remaining = remaining.slice(wordMatch[0].length);
+    }
   }
+
+  return chunks;
+}
+
+function makeChunkFromText(entry: TextKeywordEntry, raw: string): Chunk {
+  switch (entry.chunk) {
+    case "instruction_type":
+      return { type: "instruction_type", value: entry.value, raw };
+    case "label":
+      return { type: "label", value: entry.value, raw };
+    case "direction_phrase":
+      return { type: "direction_phrase", value: entry.value, raw };
+    case "handedness":
+      return { type: "handedness", value: entry.value, raw };
+    case "role":
+      return { type: "role", value: entry.value, raw };
+    case "keyword":
+      return { type: "keyword", value: entry.value, raw };
+  }
+}
+
+function makeChunkFromRegex(
+  entry: RegexKeywordEntry,
+  match: RegExpMatchArray,
+): Chunk {
+  const raw = match[0];
+  switch (entry.chunk) {
+    case "beats":
+      return { type: "beats", value: entry.extract(match), raw };
+    case "rotations":
+      return { type: "rotations", value: entry.extract(match), raw };
+    case "n_places":
+      return { type: "n_places", value: entry.extract(match), raw };
+    case "distance":
+      return { type: "distance", value: entry.extract(match), raw };
+  }
+}
+
+// ── Chunk interpretation ────────────────────────────────────────────────
+
+/** Find the first chunk of a given type. */
+function findChunk<T extends Chunk["type"]>(
+  chunks: Chunk[],
+  type: T,
+): Extract<Chunk, { type: T }> | undefined {
+  return chunks.find((c): c is Extract<Chunk, { type: T }> => c.type === type);
+}
+
+/** Check if any chunk has a given keyword value. */
+function hasKeyword(chunks: Chunk[], value: string): boolean {
+  return chunks.some((c) => c.type === "keyword" && c.value === value);
+}
+
+/**
+ * Determine the CalledIdentifier from chunks, checking labels first,
+ * then directional phrases.
+ */
+function cidFromChunks(chunks: Chunk[]): CalledIdentifier | null {
+  const labelChunk = findChunk(chunks, "label");
+  if (labelChunk) return labelId(labelChunk.value);
+  const dirChunk = findChunk(chunks, "direction_phrase");
+  if (dirChunk) return personInDir(dirChunk.value, "different");
   return null;
 }
 
-// ── Modifier extraction ─────────────────────────────────────────────────
+/**
+ * Interpret tokenized chunks into an Instruction, given a detected type.
+ * Creates a default instruction then applies overrides from the chunks.
+ */
+function interpretChunks(type: ActionOptionType, chunks: Chunk[]): Instruction {
+  const id = makeInstructionId();
+  const base = makeDefaultInstruction(type, id);
 
-function parseBeats(text: string): number | null {
-  const match = text.match(/(\d+)\s*beats?\b/i);
-  return match ? Number(match[1]) : null;
+  const overrides: Record<string, unknown> = {};
+
+  const beatsChunk = findChunk(chunks, "beats");
+  if (beatsChunk) overrides.beats = beatsChunk.value;
+
+  const cid = cidFromChunks(chunks);
+  const handednessChunk = findChunk(chunks, "handedness");
+  const handedness =
+    handednessChunk?.value ?? findHandednessFromKeywords(chunks);
+  const rotationsChunk = findChunk(chunks, "rotations");
+  const rotations = rotationsChunk?.value ?? rotationsFromKeywords(chunks);
+  const nPlacesChunk = findChunk(chunks, "n_places");
+  const direction = directionFromChunksOrKeywords(chunks);
+
+  switch (base.type) {
+    case "swing":
+    case "balance_and_swing":
+    case "meltdown_swing":
+      if (cid) overrides.cid = cid;
+      {
+        const endFacing = endFacingFromKeywords(chunks);
+        if (endFacing) overrides.endFacing = endFacing;
+      }
+      break;
+
+    case "allemande":
+    case "shoulder_round":
+      if (cid) overrides.cid = cid;
+      if (handedness) overrides.handedness = handedness;
+      if (rotations !== null) overrides.rotations = rotations;
+      break;
+
+    case "do_si_do":
+      if (cid) overrides.cid = cid;
+      if (rotations !== null) overrides.rotations = rotations;
+      break;
+
+    case "balance":
+    case "box_the_gnat":
+    case "mad_robin":
+    case "pass_by":
+    case "pull_by":
+    case "take_hands":
+      if (cid) overrides.cid = cid;
+      if ("hand" in base && handedness) overrides.hand = handedness;
+      break;
+
+    case "robins_chain":
+      if (cid) overrides.cid = cid;
+      break;
+
+    case "circle":
+    case "star":
+    case "single_file_promenade":
+      if (direction) overrides.direction = direction;
+      if (nPlacesChunk) overrides.nPlaces = nPlacesChunk.value;
+      break;
+
+    case "rory_o_more":
+    case "slice":
+      if (direction) overrides.direction = direction;
+      break;
+
+    case "hey": {
+      if (hasKeyword(chunks, "half")) overrides.full = false;
+      if (hasKeyword(chunks, "full")) overrides.full = true;
+      // Role at start → centerRole (e.g. "larks start a half hey")
+      const roleChunk = findChunk(chunks, "role");
+      if (roleChunk) overrides.centerRole = roleChunk.value;
+      if (hasKeyword(chunks, "lefts_in_center")) overrides.centerHand = "left";
+      if (hasKeyword(chunks, "rights_in_center"))
+        overrides.centerHand = "right";
+      break;
+    }
+
+    case "step":
+      if (hasKeyword(chunks, "backward")) {
+        overrides.direction = { type: "PureDirection", dir: "behind" };
+      } else if (hasKeyword(chunks, "forward")) {
+        overrides.direction = { type: "PureDirection", dir: "in_front" };
+      }
+      {
+        const distChunk = findChunk(chunks, "distance");
+        if (distChunk) overrides.distance = distChunk.value;
+      }
+      break;
+
+    case "long_line_in_center": {
+      // Look for role mention (not necessarily leading)
+      const roleChunk = findChunk(chunks, "role");
+      if (roleChunk) overrides.role = roleChunk.value;
+      break;
+    }
+
+    // Types with no extra fields to override
+    case "balance_the_ring":
+    case "box_circulate":
+    case "california_twirl":
+    case "right_left_through":
+    case "long_lines_forward_back":
+    case "form_long_waves":
+    case "form_short_waves":
+    case "take_hands_in_rings":
+    case "turn_alone":
+    case "turn_as_a_couple":
+    case "petronella":
+    case "bend_the_line":
+    case "drop_hands":
+    case "face":
+    case "greet_new_neighbors":
+    case "greet_shadow":
+    case "down_the_hall":
+    case "up_the_hall":
+    case "square_through":
+    case "roll_away":
+    case "give_and_take_into_swing":
+    case "poussette":
+    case "zig_zag":
+    case "split":
+    case "templated_lr":
+    case "templated_llrr":
+      break;
+  }
+
+  if (Object.keys(overrides).length === 0) return base;
+  return InstructionSchema.parse({ ...base, ...overrides });
 }
 
-function parseHandedness(text: string): "left" | "right" | null {
-  // Look for "left hand" / "right hand" or standalone "left" / "right"
-  // but be careful not to confuse with directional uses
-  if (/\bleft\s+hand/i.test(text) || /\bleft\b/i.test(text)) return "left";
-  if (/\bright\s+hand/i.test(text) || /\bright\b/i.test(text)) return "right";
+/**
+ * Derive handedness from bare "left"/"right" keyword chunks
+ * (when no explicit "left hand"/"right hand" was tokenized).
+ */
+function findHandednessFromKeywords(chunks: Chunk[]): "left" | "right" | null {
+  if (hasKeyword(chunks, "left")) return "left";
+  if (hasKeyword(chunks, "right")) return "right";
   return null;
 }
 
-function parseRotations(text: string): number | null {
-  // "1½" or "1 1/2" or "1.5" or "once and a half"
-  if (/1[½]|1\s*1\/2|1\.5|once\s+and\s+a\s+half/i.test(text)) return 1.5;
-  if (/[2½]|2\s*1\/2|2\.5|twice\s+and\s+a\s+half/i.test(text)) return 2.5;
-  if (/\btwice\b/i.test(text)) return 2;
-  if (/\bonce\b/i.test(text)) return 1;
-  // Numeric: "2 times", "3 places", bare number before "time(s)"
-  const match = text.match(/(\d+(?:\.\d+)?)\s*(?:times?|rotations?)/i);
-  if (match) return Number(match[1]);
+/** Derive rotations from keyword chunks like "once", "twice", etc. */
+function rotationsFromKeywords(chunks: Chunk[]): number | null {
+  if (hasKeyword(chunks, "once_and_a_half")) return 1.5;
+  if (hasKeyword(chunks, "twice_and_a_half")) return 2.5;
+  if (hasKeyword(chunks, "twice")) return 2;
+  if (hasKeyword(chunks, "once")) return 1;
   return null;
 }
 
-function parseNPlaces(text: string): number | null {
-  const match = text.match(/(\d+)\s*places?\b/i);
-  if (match) return Number(match[1]);
-  // Fractions: ¾ → 3 places, etc.
-  if (/[¾]|3\/4/i.test(text)) return 3;
+/** Derive end-facing direction from "end facing ..." keywords. */
+function endFacingFromKeywords(
+  chunks: Chunk[],
+): "across" | "down" | "up" | "out" | null {
+  if (hasKeyword(chunks, "end_facing_across")) return "across";
+  if (hasKeyword(chunks, "end_facing_down")) return "down";
+  if (hasKeyword(chunks, "end_facing_up")) return "up";
+  if (hasKeyword(chunks, "end_facing_out")) return "out";
   return null;
 }
 
-function parseDirection(text: string): "left" | "right" | null {
-  if (/\bleft\b/i.test(text)) return "left";
-  if (/\bright\b/i.test(text)) return "right";
+/** Derive left/right direction from keywords. */
+function directionFromChunksOrKeywords(
+  chunks: Chunk[],
+): "left" | "right" | null {
+  if (hasKeyword(chunks, "left")) return "left";
+  if (hasKeyword(chunks, "right")) return "right";
   return null;
 }
 
-// ── Role detection (for splits) ─────────────────────────────────────────
+// ── Structural helpers ──────────────────────────────────────────────────
 
-function parseLeadingRole(text: string): Role | null {
-  // Detect if the text starts with a role name (indicating a role-specific instruction)
-  if (/^\s*(?:larks?|gentlespoons?|gents?)\b/i.test(text)) return "lark";
-  if (/^\s*(?:robins?|ladles?|ladies?)\b/i.test(text)) return "robin";
-  return null;
+/** Find the instruction type from chunks. Also handles "start a ... hey" pattern. */
+function detectTypeFromChunks(chunks: Chunk[]): ActionOptionType | null {
+  // Special case: "start a ... hey" → hey (with centerRole from leading role)
+  if (
+    hasKeyword(chunks, "start_a") &&
+    chunks.some((c) => c.type === "instruction_type" && c.value === "hey")
+  ) {
+    return "hey";
+  }
+
+  const typeChunk = findChunk(chunks, "instruction_type");
+  return typeChunk?.value ?? null;
 }
 
-/** Check if a leading role name is part of the figure name, not a split indicator. */
-function roleIsPartOfName(type: ActionOptionType, text: string): boolean {
+/** Check if a leading role is part of the figure name, not a split indicator. */
+function roleIsPartOfName(type: ActionOptionType, chunks: Chunk[]): boolean {
   if (type === "robins_chain") return true;
   // "larks start a half hey" — the role describes who starts, not a split
-  if (type === "hey" && /start\s+a\s+/i.test(text)) return true;
+  if (type === "hey" && hasKeyword(chunks, "start_a")) return true;
   return false;
 }
 
-// ── Split detection ─────────────────────────────────────────────────────
-
-function splitOnWhile(text: string): [string, string] | null {
-  const match = text.match(/^(.+?)\s+while\s+(.+)$/i);
-  if (!match) return null;
-  return [match[1], match[2]];
+/** Get the leading role from chunks (first chunk must be a role). */
+function leadingRole(chunks: Chunk[]): Role | null {
+  const firstSignificant = chunks.find((c) => c.type !== "unparsed");
+  if (firstSignificant?.type === "role") return firstSignificant.value;
+  return null;
 }
 
 // ── Main parser ─────────────────────────────────────────────────────────
@@ -233,34 +936,41 @@ function parseClause(trimmed: string): Instruction[] {
     return parseSplit(whileParts[0], whileParts[1]);
   }
 
-  // Check if a leading role implies a split (e.g. "larks allemande left 1½")
-  const leadingRole = parseLeadingRole(trimmed);
-  const detectedType = detectType(trimmed);
+  const chunks = tokenize(trimmed);
+  const detectedType = detectTypeFromChunks(chunks);
 
-  if (leadingRole && detectedType && !roleIsPartOfName(detectedType, trimmed)) {
+  // Check if a leading role implies a split (e.g. "larks allemande left 1½")
+  const role = leadingRole(chunks);
+
+  if (role && detectedType && !roleIsPartOfName(detectedType, chunks)) {
     // This is a role-specific instruction → wrap in a split
-    const innerInstrs = parseSingleInstruction(trimmed);
-    if (innerInstrs.length > 0) {
-      const splitInstr = InstructionSchema.parse({
-        id: makeInstructionId(),
-        type: "split",
-        by: "role",
-        larks: leadingRole === "lark" ? innerInstrs : [],
-        robins: leadingRole === "robin" ? innerInstrs : [],
-      });
-      return [splitInstr];
-    }
+    const innerInstr = interpretChunks(detectedType, chunks);
+    const splitInstr = InstructionSchema.parse({
+      id: makeInstructionId(),
+      type: "split",
+      by: "role",
+      larks: role === "lark" ? [innerInstr] : [],
+      robins: role === "robin" ? [innerInstr] : [],
+    });
+    return [splitInstr];
   }
 
-  return parseSingleInstruction(trimmed);
+  if (!detectedType) return [];
+  return [interpretChunks(detectedType, chunks)];
 }
 
 function parseSplit(part1: string, part2: string): Instruction[] {
-  const role1 = parseLeadingRole(part1);
-  const role2 = parseLeadingRole(part2);
+  const chunks1 = tokenize(part1);
+  const chunks2 = tokenize(part2);
 
-  const instrs1 = parseSingleInstruction(part1);
-  const instrs2 = parseSingleInstruction(part2);
+  const type1 = detectTypeFromChunks(chunks1);
+  const type2 = detectTypeFromChunks(chunks2);
+
+  const role1 = leadingRole(chunks1);
+  const role2 = leadingRole(chunks2);
+
+  const instrs1 = type1 ? [interpretChunks(type1, chunks1)] : [];
+  const instrs2 = type2 ? [interpretChunks(type2, chunks2)] : [];
 
   if (instrs1.length === 0 && instrs2.length === 0) return [];
 
@@ -290,153 +1000,8 @@ function parseSplit(part1: string, part2: string): Instruction[] {
   return [splitInstr];
 }
 
-function parseSingleInstruction(text: string): Instruction[] {
-  const type = detectType(text);
-  if (!type) return [];
-
-  const id = makeInstructionId();
-  const base = makeDefaultInstruction(type, id);
-
-  // Apply overrides from text
-  return [applyOverrides(base, text)];
-}
-
-/**
- * Starting from a default instruction, override fields based on what
- * we can extract from the text.
- */
-function applyOverrides(instr: Instruction, text: string): Instruction {
-  const beats = parseBeats(text);
-  const cid = parseCid(text);
-  const handedness = parseHandedness(text);
-  const rotations = parseRotations(text);
-  const nPlaces = parseNPlaces(text);
-  const direction = parseDirection(text);
-
-  // Build an override object based on what we parsed and what fields the
-  // instruction type actually has.
-  const overrides: Record<string, unknown> = {};
-
-  if (beats !== null) {
-    overrides.beats = beats;
-  }
-
-  switch (instr.type) {
-    case "swing":
-    case "balance_and_swing":
-    case "meltdown_swing":
-      if (cid) overrides.cid = cid;
-      break;
-
-    case "allemande":
-    case "shoulder_round":
-      if (cid) overrides.cid = cid;
-      if (handedness) overrides.handedness = handedness;
-      if (rotations) overrides.rotations = rotations;
-      break;
-
-    case "do_si_do":
-      if (cid) overrides.cid = cid;
-      if (rotations) overrides.rotations = rotations;
-      break;
-
-    case "balance":
-    case "box_the_gnat":
-    case "mad_robin":
-    case "pass_by":
-    case "pull_by":
-    case "take_hands":
-      if (cid) overrides.cid = cid;
-      if ("hand" in instr && handedness) overrides.hand = handedness;
-      break;
-
-    case "robins_chain":
-      if (cid) overrides.cid = cid;
-      break;
-
-    case "circle":
-    case "star":
-    case "single_file_promenade":
-      if (direction) overrides.direction = direction;
-      if (nPlaces) overrides.nPlaces = nPlaces;
-      break;
-
-    case "rory_o_more":
-    case "slice":
-      if (direction) overrides.direction = direction;
-      break;
-
-    case "hey": {
-      if (/\bhalf\b/i.test(text)) overrides.full = false;
-      if (/\bfull\b/i.test(text)) overrides.full = true;
-      // "larks start a half hey - lefts in center" → centerRole=lark, centerHand=left
-      const heyRole = parseLeadingRole(text);
-      if (heyRole) overrides.centerRole = heyRole;
-      if (/\blefts?\s+in\s+(?:the\s+)?(?:center|centre|middle)/i.test(text))
-        overrides.centerHand = "left";
-      if (/\brights?\s+in\s+(?:the\s+)?(?:center|centre|middle)/i.test(text))
-        overrides.centerHand = "right";
-      break;
-    }
-
-    case "step":
-      // "dance forward" / "dance backward" / "step back"
-      if (/\bback(?:ward)?s?\b/i.test(text)) {
-        overrides.direction = { type: "PureDirection", dir: "behind" };
-      } else if (/\bforward\b/i.test(text)) {
-        overrides.direction = { type: "PureDirection", dir: "in_front" };
-      }
-      // Parse distance like "0.5m" or "1 meter"
-      {
-        const distMatch = text.match(/([\d.]+)\s*m(?:eters?)?\b/i);
-        if (distMatch) overrides.distance = Number(distMatch[1]);
-      }
-      break;
-
-    case "long_line_in_center": {
-      const role = parseRoleMention(text);
-      if (role) overrides.role = role;
-      break;
-    }
-
-    // Types with no extra fields to override
-    case "balance_the_ring":
-    case "box_circulate":
-    case "california_twirl":
-    case "right_left_through":
-    case "long_lines_forward_back":
-    case "form_long_waves":
-    case "form_short_waves":
-    case "take_hands_in_rings":
-    case "turn_alone":
-    case "turn_as_a_couple":
-    case "petronella":
-    case "bend_the_line":
-    case "drop_hands":
-    case "face":
-    case "greet_new_neighbors":
-    case "greet_shadow":
-    case "down_the_hall":
-    case "up_the_hall":
-    case "square_through":
-    case "roll_away":
-    case "give_and_take_into_swing":
-    case "poussette":
-    case "zig_zag":
-    case "split":
-    case "templated_lr":
-    case "templated_llrr":
-      break;
-  }
-
-  if (Object.keys(overrides).length === 0) return instr;
-
-  return InstructionSchema.parse({ ...instr, ...overrides });
-}
-
-/** Look for a role mentioned in the text (not at the start). */
-function parseRoleMention(text: string): Role | null {
-  if (/\blarks?\b|\bgentlespoons?\b/i.test(text)) return "lark";
-  if (/\brobins?\b|\bladles?\b/i.test(text)) return "robin";
-  return null;
+function splitOnWhile(text: string): [string, string] | null {
+  const match = text.match(/^(.+?)\s+while\s+(.+)$/i);
+  if (!match) return null;
+  return [match[1], match[2]];
 }

@@ -57,7 +57,11 @@ import {
   LLRRTemplateIdSchema,
   LRTemplateIdSchema,
 } from "../instructions/templates/index";
-import { parseDanceInstruction } from "../parseDanceInstruction";
+import {
+  type Completion,
+  getCompletions,
+  parseDanceInstruction,
+} from "../parseDanceInstruction";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
@@ -117,6 +121,7 @@ import {
   DancerHighlightContext,
 } from "./RelationshipHighlightContext";
 import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
+import { useUndo } from "./UndoContext";
 
 function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   const highlightRel = useContext(CalledIdentifierHighlightContext);
@@ -922,27 +927,140 @@ const noop = () => {};
 function AddInstructionInput({
   onCommit,
   onCancel,
+  onPreview,
 }: {
-  onCommit: (instrs: Instruction[]) => void;
+  onCommit: () => void;
   onCancel: () => void;
+  onPreview: (instrs: Instruction[]) => void;
 }) {
   const [text, setText] = useState("");
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [userNavigated, setUserNavigated] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const parsed = useMemo(() => parseDanceInstruction(text), [text]);
+  const rawParsed = useMemo(() => parseDanceInstruction(text), [text]);
+
+  // Stabilize instruction IDs across re-parses: reuse IDs when the
+  // instruction list has the same length and types, so downstream
+  // components don't needlessly remount.
+  const [stableIds, setStableIds] = useState<{
+    types: string[];
+    ids: InstructionId[];
+  }>({ types: [], ids: [] });
+
+  const parsed = useMemo(() => {
+    const sameShape =
+      rawParsed.length === stableIds.types.length &&
+      rawParsed.every((instr, i) => instr.type === stableIds.types[i]);
+    if (sameShape) {
+      return rawParsed.map((instr, i) => ({ ...instr, id: stableIds.ids[i] }));
+    }
+    return rawParsed;
+  }, [rawParsed, stableIds]);
+
+  // Update stable IDs when the parse shape changes
+  const parsedTypes = rawParsed.map((instr) => instr.type).join("\0");
+  const [prevParsedTypes, setPrevParsedTypes] = useState(parsedTypes);
+  if (parsedTypes !== prevParsedTypes) {
+    setPrevParsedTypes(parsedTypes);
+    setStableIds({
+      types: rawParsed.map((instr) => instr.type),
+      ids: rawParsed.map((instr) => instr.id),
+    });
+  }
+
+  // Notify parent of preview changes
+  useEffect(() => {
+    onPreview(parsed);
+  }, [parsed, onPreview]);
+
+  const completions = useMemo(() => getCompletions(text), [text]);
+
+  // Reset highlight when completions change
+  const completionsKey = completions.map((c) => c.keyword).join("\0");
+  const [prevCompletionsKey, setPrevCompletionsKey] = useState(completionsKey);
+  if (completionsKey !== prevCompletionsKey) {
+    setPrevCompletionsKey(completionsKey);
+    setHighlightIndex(completions.length > 0 ? 0 : -1);
+    setUserNavigated(false);
+  }
+
+  // Auto-scroll highlighted item into view
+  useEffect(() => {
+    if (highlightIndex >= 0 && listRef.current) {
+      const child = listRef.current.children[highlightIndex];
+      if (child instanceof HTMLElement) {
+        child.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [highlightIndex]);
+
+  function applyCompletion(completion: Completion) {
+    // Replace the overlapping suffix with the full keyword, then add a trailing space
+    const newText =
+      text.slice(0, text.length - completion.overlap) +
+      completion.keyword +
+      " ";
+    setText(newText);
+    setHighlightIndex(-1);
+    inputRef.current?.focus();
+  }
+
+  const escapePressedRef = useRef(false);
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (completions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightIndex((prev) => (prev + 1) % completions.length);
+        setUserNavigated(true);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightIndex(
+          (prev) => (prev - 1 + completions.length) % completions.length,
+        );
+        setUserNavigated(true);
+        return;
+      }
+      if (e.key === "Tab" && highlightIndex >= 0) {
+        e.preventDefault();
+        applyCompletion(completions[highlightIndex]);
+        return;
+      }
+      if (e.key === "Enter" && highlightIndex >= 0 && userNavigated) {
+        e.preventDefault();
+        applyCompletion(completions[highlightIndex]);
+        return;
+      }
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       if (parsed.length > 0) {
-        onCommit(parsed);
+        onCommit();
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
+      escapePressedRef.current = true;
+      onCancel();
+    }
+  }
+
+  function handleBlur() {
+    if (escapePressedRef.current) {
+      // Escape already triggered onCancel, don't also commit
+      return;
+    }
+    if (parsed.length > 0) {
+      onCommit();
+    } else {
       onCancel();
     }
   }
@@ -950,16 +1068,43 @@ function AddInstructionInput({
   return (
     <div className="add-instruction-input-wrapper">
       <div className="instruction-item add-instruction-input-item">
-        <input
-          ref={inputRef}
-          type="text"
-          className="add-instruction-text-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={onCancel}
-          placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
-        />
+        <div className="add-instruction-input-container">
+          <input
+            ref={inputRef}
+            type="text"
+            className="add-instruction-text-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
+            placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
+            autoComplete="off"
+          />
+          {completions.length > 0 && (
+            <ul className="autocomplete-popover" role="listbox" ref={listRef}>
+              {completions.map((completion, i) => (
+                <li
+                  key={completion.keyword}
+                  role="option"
+                  aria-selected={i === highlightIndex}
+                  className={i === highlightIndex ? "highlighted" : ""}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    applyCompletion(completion);
+                  }}
+                >
+                  <span className="autocomplete-matched">
+                    {completion.keyword.slice(0, completion.overlap)}
+                  </span>
+                  <span className="autocomplete-rest">
+                    {completion.keyword.slice(completion.overlap)}
+                  </span>
+                  <span className="autocomplete-chunk">{completion.chunk}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
       {text.trim() !== "" && (
         <div className="add-instruction-preview">
@@ -1115,9 +1260,14 @@ export default memo(function CommandPane({
     [instructions],
   );
 
+  // Use base (pre-preview) instructions for rendering the list, so that
+  // inserting preview instructions doesn't change the DOM tree structure
+  // and cause the AddInstructionInput to remount/lose state.
+  const preAddInstructionsRef = useRef<Instruction[] | null>(null);
+  const displayInstructions = preAddInstructionsRef.current ?? instructions;
   const sections = useMemo(
-    () => groupIntoSections(instructions),
-    [instructions],
+    () => groupIntoSections(displayInstructions),
+    [displayInstructions],
   );
 
   const progression = useMemo(() => {
@@ -1177,23 +1327,50 @@ export default memo(function CommandPane({
     setInstructions(replaceInTree(instructions, id, updated));
   }
 
+  const { beginTransient, endTransient } = useUndo();
+
   function handleAdd(containerId: string, index: number) {
+    preAddInstructionsRef.current = instructions;
+    beginTransient();
     setPendingAdd({ containerId, index });
   }
 
-  function handleCommitAdd(parsed: Instruction[]) {
-    if (!pendingAdd) return;
-    const newInstructions = insertManyIntoContainer(
-      instructions,
-      pendingAdd.containerId,
-      parsed,
-      pendingAdd.index,
-    );
-    setInstructions(newInstructions);
+  const handlePreview = useCallback(
+    (parsed: Instruction[]) => {
+      const base = preAddInstructionsRef.current;
+      if (!pendingAdd || base === null) return;
+
+      if (parsed.length === 0) {
+        setInstructions(base);
+        return;
+      }
+      const newInstructions = insertManyIntoContainer(
+        base,
+        pendingAdd.containerId,
+        parsed,
+        pendingAdd.index,
+      );
+      setInstructions(newInstructions);
+    },
+    [pendingAdd, setInstructions],
+  );
+
+  function handleCommitAdd() {
+    // Instructions are already in place from the last preview update.
+
+    endTransient();
+    preAddInstructionsRef.current = null;
     setPendingAdd(null);
   }
 
   function handleCancelAdd() {
+    // Restore pre-add state.
+
+    if (preAddInstructionsRef.current !== null) {
+      setInstructions(preAddInstructionsRef.current);
+    }
+    endTransient();
+    preAddInstructionsRef.current = null;
     setPendingAdd(null);
   }
 
@@ -1368,6 +1545,7 @@ export default memo(function CommandPane({
           key={`add-input-${containerId}-${index}`}
           onCommit={handleCommitAdd}
           onCancel={handleCancelAdd}
+          onPreview={handlePreview}
         />
       );
     }
@@ -1552,7 +1730,7 @@ export default memo(function CommandPane({
         <div className="instruction-list">
           <SortableContext
             id="top"
-            items={instructions.map((i) => i.id)}
+            items={displayInstructions.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
             {sections.map((section, sectionIdx) => {
