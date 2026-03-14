@@ -12,6 +12,7 @@ import {
 } from "./components/RelationshipHighlightContext";
 import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "./contraCore";
+import { exampleDances } from "./exampleDances";
 import { exportGif, type GifOptions } from "./exportGif";
 import {
   findInstructionStartBeat,
@@ -143,6 +144,7 @@ export default function App() {
   const rafRef = useRef<number>(0);
 
   const [initialLoadResult] = useState(() => loadDanceFromLocalStorage());
+  const isFirstVisit = initialLoadResult === null;
   const [localStorageError, setLocalStorageError] = useState<string | null>(
     () =>
       initialLoadResult && "error" in initialLoadResult
@@ -150,32 +152,38 @@ export default function App() {
         : null,
   );
 
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(isFirstVisit);
   const [looping, setLooping] = useState(true);
   const [bpm, setBpm] = useState(120);
   const [beat, setBeat] = useState(0);
-  const initialDanceState: DanceState = useMemo(
-    () => ({
-      instructions:
-        initialLoadResult && "dance" in initialLoadResult
-          ? initialLoadResult.dance.instructions
-          : [],
-      initFormation:
-        initialLoadResult && "dance" in initialLoadResult
-          ? initialLoadResult.dance.initFormation
-          : "improper",
-      name:
-        initialLoadResult && "dance" in initialLoadResult
-          ? (initialLoadResult.dance.name ?? "")
-          : "",
-      author:
-        initialLoadResult && "dance" in initialLoadResult
-          ? (initialLoadResult.dance.author ?? "")
-          : "",
-    }),
+  const initialDanceState: DanceState = useMemo(() => {
+    if (initialLoadResult && "dance" in initialLoadResult) {
+      return {
+        instructions: initialLoadResult.dance.instructions,
+        initFormation: initialLoadResult.dance.initFormation,
+        name: initialLoadResult.dance.name ?? "",
+        author: initialLoadResult.dance.author ?? "",
+      };
+    }
+    const otters = exampleDances.find(
+      (d) => d.dance.name === "Otter's Allemande",
+    );
+    if (otters) {
+      return {
+        instructions: otters.dance.instructions,
+        initFormation: otters.dance.initFormation,
+        name: otters.dance.name ?? "",
+        author: otters.dance.author ?? "",
+      };
+    }
+    return {
+      instructions: [],
+      initFormation: "improper",
+      name: "",
+      author: "",
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only compute once
-    [],
-  );
+  }, []);
 
   const {
     state: danceState,

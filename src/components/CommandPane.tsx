@@ -1663,7 +1663,6 @@ export default memo(function CommandPane({
               </option>
             ))}
           </select>
-          <button onClick={handleClear}>&lt;clear&gt;</button>
         </div>
       )}
 
@@ -1719,7 +1718,9 @@ export default memo(function CommandPane({
         <CustomFormationInput onParsed={setInitFormation} />
       </div>
 
-      <h2>Instructions</h2>
+      <h2>
+        Instructions <button onClick={handleClear}>clear</button>
+      </h2>
 
       <DndContext
         sensors={sensors}
