@@ -310,12 +310,23 @@ const TEXT_KEYWORDS: TextKeywordEntry[] = [
   { text: "previous neighbor", chunk: "label", value: "prev_neighbor" },
   { text: "prev neighbors", chunk: "label", value: "prev_neighbor" },
   { text: "prev neighbor", chunk: "label", value: "prev_neighbor" },
+  { text: "next x2 neighbors", chunk: "label", value: "next_x2_neighbor" },
+  { text: "next x2 neighbor", chunk: "label", value: "next_x2_neighbor" },
+  { text: "3rd neighbors", chunk: "label", value: "next_x2_neighbor" },
+  { text: "3rd neighbor", chunk: "label", value: "next_x2_neighbor" },
   { text: "next neighbors", chunk: "label", value: "next_neighbor" },
   { text: "next neighbor", chunk: "label", value: "next_neighbor" },
+  { text: "2nd neighbors", chunk: "label", value: "next_neighbor" },
+  { text: "2nd neighbor", chunk: "label", value: "next_neighbor" },
+  { text: "1st neighbors", chunk: "label", value: "neighbor" },
+  { text: "1st neighbor", chunk: "label", value: "neighbor" },
   { text: "partners", chunk: "label", value: "partner" },
   { text: "partner", chunk: "label", value: "partner" },
   { text: "neighbors", chunk: "label", value: "neighbor" },
   { text: "neighbor", chunk: "label", value: "neighbor" },
+  { text: "shadow 2", chunk: "label", value: "shadow_2" },
+  { text: "shadow 3", chunk: "label", value: "shadow_3" },
+  { text: "shadow 4", chunk: "label", value: "shadow_4" },
   { text: "shadow", chunk: "label", value: "shadow" },
   { text: "opposite", chunk: "label", value: "opposite" },
 
@@ -460,17 +471,14 @@ export function getCompletions(input: string): Completion[] {
   if (!input) return [];
   const lowerInput = input.toLowerCase();
 
-  const seen = new Set<string>();
-  const results: Completion[] = [];
+  // Collect the best match per synonym group (keyed by chunk+value).
+  // Within a group, prefer the match with the longest overlap.
+  const bestByGroup = new Map<string, Completion>();
 
   for (const entry of TEXT_KEYWORDS) {
     if (!("text" in entry)) continue;
     const keyword = entry.text;
     const lowerKeyword = keyword.toLowerCase();
-
-    // Skip if we've already seen this keyword text
-    // (multiple entries can map to the same text)
-    if (seen.has(lowerKeyword)) continue;
 
     // Find the longest prefix of the keyword that matches a suffix of the input.
     const maxCheck = Math.min(lowerKeyword.length, lowerInput.length);
@@ -489,14 +497,19 @@ export function getCompletions(input: string): Completion[] {
     }
 
     if (bestOverlap > 0 && bestOverlap < lowerKeyword.length) {
-      seen.add(lowerKeyword);
-      results.push({
-        keyword,
-        overlap: bestOverlap,
-        chunk: entry.chunk,
-      });
+      const groupKey = `${entry.chunk}\0${entry.value}`;
+      const existing = bestByGroup.get(groupKey);
+      if (!existing || bestOverlap > existing.overlap) {
+        bestByGroup.set(groupKey, {
+          keyword,
+          overlap: bestOverlap,
+          chunk: entry.chunk,
+        });
+      }
     }
   }
+
+  const results = [...bestByGroup.values()];
 
   // Sort by overlap descending (strongest match first), then alphabetically
   results.sort(
