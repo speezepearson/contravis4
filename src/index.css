@@ -20,7 +20,7 @@ body {
 .app-layout {
   display: flex;
   flex-direction: row;
-  height: 100vh;
+  height: 100dvh;
 }
 
 /* Left: visualization column */
@@ -28,7 +28,7 @@ body {
 .vis-column {
   width: 500px;
   min-width: 300px;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -47,7 +47,7 @@ body {
 
 .sidebar-column {
   flex: 1;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -906,19 +906,19 @@ input[type="range"] {
 .def-instr-layout {
   display: flex;
   flex-direction: row;
-  height: 100vh;
+  height: 100dvh;
 }
 
 .def-instr-canvas-column {
   flex: 1;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 
 .def-instr-controls-column {
   width: 420px;
-  height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
   padding: 16px;
   border-left: 1px solid #333;

@@ -303,6 +303,7 @@ const TEXT_KEYWORDS: TextKeywordEntry[] = [
   { text: "balance", chunk: "instruction_type", value: "balance" },
   { text: "poussette", chunk: "instruction_type", value: "poussette" },
   { text: "slice", chunk: "instruction_type", value: "slice" },
+  { text: "face", chunk: "instruction_type", value: "face" },
   { text: "chain", chunk: "instruction_type", value: "robins_chain" },
 
   // Labels (longest first, include plural forms)
