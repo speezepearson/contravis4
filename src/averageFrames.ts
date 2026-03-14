@@ -2,6 +2,7 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 
 import { parseProtoId } from "./contraCore";
+import { lerpFacing } from "./geometry";
 import { buildProtoRecord, type WorldState } from "./worldState";
 
 export function averageFrames(frames: WorldState[]): WorldState {
@@ -10,24 +11,25 @@ export function averageFrames(frames: WorldState[]): WorldState {
   return buildProtoRecord((id) => {
     let posX = 0;
     let posY = 0;
-    let facingX = 0;
-    let facingY = 0;
 
     for (const frame of frames) {
       const dancer = frame[id];
       posX += dancer.pos.x;
       posY += dancer.pos.y;
-      facingX += dancer.facing.x;
-      facingY += dancer.facing.y;
     }
 
-    const avgFacing = new Vector(facingX, facingY);
-    const facingLen = avgFacing.length();
+    // Iterative running mean via lerpFacing so that opposite facings
+    // interpolate through the perpendicular instead of canceling out.
+    let avgFacing = frames[0][id].facing;
+    for (let i = 1; i < n; i++) {
+      avgFacing = lerpFacing(avgFacing, frames[i][id].facing, 1 / (i + 1));
+    }
+
     const mid = frames[Math.floor(n / 2)][id];
 
     return produce(frames[Math.floor(n / 2)][id], (draft) => {
       draft.pos = new Vector(posX / n, posY / n);
-      draft.facing = facingLen > 0 ? avgFacing.normalize() : mid.facing;
+      draft.facing = avgFacing;
       draft.hands = mid.hands;
       draft.labels = mid.labels;
       draft.recents = mid.recents;
