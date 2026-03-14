@@ -121,6 +121,7 @@ import {
   DancerHighlightContext,
 } from "./RelationshipHighlightContext";
 import { groupIntoSections, spillTargetLabel } from "./sectionGrouping";
+import { useUndo } from "./UndoContext";
 
 function SnazzyErrorMessage({ segments }: { segments: SnazzySegment[] }) {
   const highlightRel = useContext(CalledIdentifierHighlightContext);
@@ -921,14 +922,14 @@ function InlineForm({
   );
 }
 
-const noop = () => {};
-
 function AddInstructionInput({
   onCommit,
   onCancel,
+  onPreview,
 }: {
-  onCommit: (instrs: Instruction[]) => void;
+  onCommit: () => void;
   onCancel: () => void;
+  onPreview: (instrs: Instruction[]) => void;
 }) {
   const [text, setText] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -939,7 +940,42 @@ function AddInstructionInput({
     inputRef.current?.focus();
   }, []);
 
-  const parsed = useMemo(() => parseDanceInstruction(text), [text]);
+  const rawParsed = useMemo(() => parseDanceInstruction(text), [text]);
+
+  // Stabilize instruction IDs across re-parses: reuse IDs when the
+  // instruction list has the same length and types, so downstream
+  // components don't needlessly remount.
+  const [stableIds, setStableIds] = useState<{
+    types: string[];
+    ids: InstructionId[];
+  }>({ types: [], ids: [] });
+
+  const parsed = useMemo(() => {
+    const sameShape =
+      rawParsed.length === stableIds.types.length &&
+      rawParsed.every((instr, i) => instr.type === stableIds.types[i]);
+    if (sameShape) {
+      return rawParsed.map((instr, i) => ({ ...instr, id: stableIds.ids[i] }));
+    }
+    return rawParsed;
+  }, [rawParsed, stableIds]);
+
+  // Update stable IDs when the parse shape changes
+  const parsedTypes = rawParsed.map((instr) => instr.type).join("\0");
+  const [prevParsedTypes, setPrevParsedTypes] = useState(parsedTypes);
+  if (parsedTypes !== prevParsedTypes) {
+    setPrevParsedTypes(parsedTypes);
+    setStableIds({
+      types: rawParsed.map((instr) => instr.type),
+      ids: rawParsed.map((instr) => instr.id),
+    });
+  }
+
+  // Notify parent of preview changes
+  useEffect(() => {
+    onPreview(parsed);
+  }, [parsed, onPreview]);
+
   const completions = useMemo(() => getCompletions(text), [text]);
 
   // Reset highlight when completions change
@@ -985,7 +1021,7 @@ function AddInstructionInput({
         );
         return;
       }
-      if (e.key === "Tab" && highlightIndex >= 0) {
+      if ((e.key === "Tab" || e.key === "Enter") && highlightIndex >= 0) {
         e.preventDefault();
         applyCompletion(completions[highlightIndex]);
         return;
@@ -995,7 +1031,7 @@ function AddInstructionInput({
     if (e.key === "Enter") {
       e.preventDefault();
       if (parsed.length > 0) {
-        onCommit(parsed);
+        onCommit();
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -1044,20 +1080,11 @@ function AddInstructionInput({
           )}
         </div>
       </div>
-      {text.trim() !== "" && (
+      {text.trim() !== "" && parsed.length === 0 && (
         <div className="add-instruction-preview">
-          {parsed.length === 0 ? (
-            <div className="add-instruction-preview-empty">
-              No instructions recognized
-            </div>
-          ) : (
-            parsed.map((instr) => (
-              <div key={instr.id} className="instruction-item dimmed">
-                <BeatGutter instruction={instr} onChange={noop} />
-                <InlineForm instruction={instr} onChange={noop} />
-              </div>
-            ))
-          )}
+          <div className="add-instruction-preview-empty">
+            No instructions recognized
+          </div>
         </div>
       )}
     </div>
@@ -1260,23 +1287,52 @@ export default memo(function CommandPane({
     setInstructions(replaceInTree(instructions, id, updated));
   }
 
+  const { beginTransient, endTransient } = useUndo();
+  const preAddInstructionsRef = useRef<Instruction[] | null>(null);
+  const previewIdsRef = useRef<Set<InstructionId>>(new Set());
+
   function handleAdd(containerId: string, index: number) {
+    preAddInstructionsRef.current = instructions;
+    beginTransient();
     setPendingAdd({ containerId, index });
   }
 
-  function handleCommitAdd(parsed: Instruction[]) {
-    if (!pendingAdd) return;
-    const newInstructions = insertManyIntoContainer(
-      instructions,
-      pendingAdd.containerId,
-      parsed,
-      pendingAdd.index,
-    );
-    setInstructions(newInstructions);
+  const handlePreview = useCallback(
+    (parsed: Instruction[]) => {
+      const base = preAddInstructionsRef.current;
+      if (!pendingAdd || base === null) return;
+      previewIdsRef.current = new Set(parsed.map((instr) => instr.id));
+      if (parsed.length === 0) {
+        setInstructions(base);
+        return;
+      }
+      const newInstructions = insertManyIntoContainer(
+        base,
+        pendingAdd.containerId,
+        parsed,
+        pendingAdd.index,
+      );
+      setInstructions(newInstructions);
+    },
+    [pendingAdd, setInstructions],
+  );
+
+  function handleCommitAdd() {
+    // Instructions are already in place from the last preview update.
+    previewIdsRef.current = new Set();
+    endTransient();
+    preAddInstructionsRef.current = null;
     setPendingAdd(null);
   }
 
   function handleCancelAdd() {
+    // Restore pre-add state.
+    previewIdsRef.current = new Set();
+    if (preAddInstructionsRef.current !== null) {
+      setInstructions(preAddInstructionsRef.current);
+    }
+    endTransient();
+    preAddInstructionsRef.current = null;
     setPendingAdd(null);
   }
 
@@ -1451,6 +1507,7 @@ export default memo(function CommandPane({
           key={`add-input-${containerId}-${index}`}
           onCommit={handleCommitAdd}
           onCancel={handleCancelAdd}
+          onPreview={handlePreview}
         />
       );
     }
@@ -1488,7 +1545,7 @@ export default memo(function CommandPane({
         }}
       >
         <div
-          className={`instruction-item${options?.extraClass ? " " + options.extraClass : ""}${instr.id === activeId ? " active" : ""}${errorById.has(instr.id) ? " errored" : ""}${isSelected ? " selected" : ""}${isDraggedAway ? " dragged-away" : ""}`}
+          className={`instruction-item${options?.extraClass ? " " + options.extraClass : ""}${instr.id === activeId ? " active" : ""}${errorById.has(instr.id) ? " errored" : ""}${isSelected ? " selected" : ""}${isDraggedAway ? " dragged-away" : ""}${previewIdsRef.current.has(instr.id) ? " dimmed" : ""}`}
           onClick={() => onSkipToInstruction?.(instr.id)}
           onMouseEnter={() => onHoverInstruction?.(instr.id)}
           onMouseLeave={() => onHoverInstruction?.(null)}

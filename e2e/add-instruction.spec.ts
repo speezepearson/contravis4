@@ -78,10 +78,8 @@ test.describe("add instruction via text input", () => {
     await expect(
       page.locator(".add-instruction-preview-empty"),
     ).not.toBeVisible();
-    // Preview should show instruction items (dimmed)
-    const previewItems = page.locator(
-      ".add-instruction-preview .instruction-item",
-    );
+    // Preview instructions should appear as dimmed items in the instruction list
+    const previewItems = page.locator(".instruction-item.dimmed");
     await expect(previewItems.first()).toBeVisible();
   });
 });
