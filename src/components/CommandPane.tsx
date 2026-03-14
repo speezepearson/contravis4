@@ -57,7 +57,11 @@ import {
   LLRRTemplateIdSchema,
   LRTemplateIdSchema,
 } from "../instructions/templates/index";
-import { parseDanceInstruction } from "../parseDanceInstruction";
+import {
+  type Completion,
+  getCompletions,
+  parseDanceInstruction,
+} from "../parseDanceInstruction";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
 import { type WorldState, WorldStateSchema } from "../worldState";
@@ -927,15 +931,67 @@ function AddInstructionInput({
   onCancel: () => void;
 }) {
   const [text, setText] = useState("");
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
   const parsed = useMemo(() => parseDanceInstruction(text), [text]);
+  const completions = useMemo(() => getCompletions(text), [text]);
+
+  // Reset highlight when completions change
+  const completionsKey = completions.map((c) => c.keyword).join("\0");
+  const [prevCompletionsKey, setPrevCompletionsKey] = useState(completionsKey);
+  if (completionsKey !== prevCompletionsKey) {
+    setPrevCompletionsKey(completionsKey);
+    setHighlightIndex(completions.length > 0 ? 0 : -1);
+  }
+
+  // Auto-scroll highlighted item into view
+  useEffect(() => {
+    if (highlightIndex >= 0 && listRef.current) {
+      const child = listRef.current.children[highlightIndex];
+      if (child instanceof HTMLElement) {
+        child.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [highlightIndex]);
+
+  function applyCompletion(completion: Completion) {
+    // Replace the overlapping suffix with the full keyword, then add a trailing space
+    const newText =
+      text.slice(0, text.length - completion.overlap) +
+      completion.keyword +
+      " ";
+    setText(newText);
+    setHighlightIndex(-1);
+    inputRef.current?.focus();
+  }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (completions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightIndex((prev) => (prev + 1) % completions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightIndex(
+          (prev) => (prev - 1 + completions.length) % completions.length,
+        );
+        return;
+      }
+      if (e.key === "Tab" && highlightIndex >= 0) {
+        e.preventDefault();
+        applyCompletion(completions[highlightIndex]);
+        return;
+      }
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       if (parsed.length > 0) {
@@ -950,16 +1006,43 @@ function AddInstructionInput({
   return (
     <div className="add-instruction-input-wrapper">
       <div className="instruction-item add-instruction-input-item">
-        <input
-          ref={inputRef}
-          type="text"
-          className="add-instruction-text-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={onCancel}
-          placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
-        />
+        <div className="add-instruction-input-container">
+          <input
+            ref={inputRef}
+            type="text"
+            className="add-instruction-text-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={onCancel}
+            placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
+            autoComplete="off"
+          />
+          {completions.length > 0 && (
+            <ul className="autocomplete-popover" role="listbox" ref={listRef}>
+              {completions.map((completion, i) => (
+                <li
+                  key={completion.keyword}
+                  role="option"
+                  aria-selected={i === highlightIndex}
+                  className={i === highlightIndex ? "highlighted" : ""}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    applyCompletion(completion);
+                  }}
+                >
+                  <span className="autocomplete-matched">
+                    {completion.keyword.slice(0, completion.overlap)}
+                  </span>
+                  <span className="autocomplete-rest">
+                    {completion.keyword.slice(completion.overlap)}
+                  </span>
+                  <span className="autocomplete-chunk">{completion.chunk}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
       {text.trim() !== "" && (
         <div className="add-instruction-preview">

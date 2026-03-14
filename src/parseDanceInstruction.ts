@@ -438,6 +438,74 @@ export const KEYWORD_DICTIONARY: readonly KeywordEntry[] = [
   ...REGEX_KEYWORDS,
 ];
 
+// ── Autocomplete ────────────────────────────────────────────────────────
+
+export interface Completion {
+  /** The full keyword text that could be inserted. */
+  keyword: string;
+  /** How many characters of the keyword already match the input suffix. */
+  overlap: number;
+  /** The chunk type this keyword represents. */
+  chunk: TextKeywordEntry["chunk"];
+}
+
+/**
+ * Get autocomplete suggestions for the current input text.
+ *
+ * For each text keyword, checks if any nonempty prefix of the keyword equals
+ * a suffix of the input (case-insensitive). Returns matches sorted by overlap
+ * length descending (strongest matches first), deduplicated by keyword text.
+ */
+export function getCompletions(input: string): Completion[] {
+  if (!input) return [];
+  const lowerInput = input.toLowerCase();
+
+  const seen = new Set<string>();
+  const results: Completion[] = [];
+
+  for (const entry of TEXT_KEYWORDS) {
+    if (!("text" in entry)) continue;
+    const keyword = entry.text;
+    const lowerKeyword = keyword.toLowerCase();
+
+    // Skip if we've already seen this keyword text
+    // (multiple entries can map to the same text)
+    if (seen.has(lowerKeyword)) continue;
+
+    // Find the longest prefix of the keyword that matches a suffix of the input.
+    const maxCheck = Math.min(lowerKeyword.length, lowerInput.length);
+    let bestOverlap = 0;
+    for (let len = 1; len <= maxCheck; len++) {
+      const inputSuffix = lowerInput.slice(-len);
+      const keywordPrefix = lowerKeyword.slice(0, len);
+      if (inputSuffix === keywordPrefix) {
+        // Also check word boundary: the character before the suffix in input
+        // should be a space or the suffix should be the entire input
+        const posBeforeSuffix = lowerInput.length - len - 1;
+        if (posBeforeSuffix < 0 || /\s/.test(lowerInput[posBeforeSuffix])) {
+          bestOverlap = len;
+        }
+      }
+    }
+
+    if (bestOverlap > 0 && bestOverlap < lowerKeyword.length) {
+      seen.add(lowerKeyword);
+      results.push({
+        keyword,
+        overlap: bestOverlap,
+        chunk: entry.chunk,
+      });
+    }
+  }
+
+  // Sort by overlap descending (strongest match first), then alphabetically
+  results.sort(
+    (a, b) => b.overlap - a.overlap || a.keyword.localeCompare(b.keyword),
+  );
+
+  return results;
+}
+
 // ── Tokenizer ───────────────────────────────────────────────────────────
 
 export type Chunk =
