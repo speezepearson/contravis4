@@ -922,6 +922,8 @@ function InlineForm({
   );
 }
 
+const noop = () => {};
+
 function AddInstructionInput({
   onCommit,
   onCancel,
@@ -933,6 +935,7 @@ function AddInstructionInput({
 }) {
   const [text, setText] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [userNavigated, setUserNavigated] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -984,6 +987,7 @@ function AddInstructionInput({
   if (completionsKey !== prevCompletionsKey) {
     setPrevCompletionsKey(completionsKey);
     setHighlightIndex(completions.length > 0 ? 0 : -1);
+    setUserNavigated(false);
   }
 
   // Auto-scroll highlighted item into view
@@ -1012,6 +1016,7 @@ function AddInstructionInput({
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setHighlightIndex((prev) => (prev + 1) % completions.length);
+        setUserNavigated(true);
         return;
       }
       if (e.key === "ArrowUp") {
@@ -1019,9 +1024,15 @@ function AddInstructionInput({
         setHighlightIndex(
           (prev) => (prev - 1 + completions.length) % completions.length,
         );
+        setUserNavigated(true);
         return;
       }
-      if ((e.key === "Tab" || e.key === "Enter") && highlightIndex >= 0) {
+      if (e.key === "Tab" && highlightIndex >= 0) {
+        e.preventDefault();
+        applyCompletion(completions[highlightIndex]);
+        return;
+      }
+      if (e.key === "Enter" && highlightIndex >= 0 && userNavigated) {
         e.preventDefault();
         applyCompletion(completions[highlightIndex]);
         return;
@@ -1080,11 +1091,20 @@ function AddInstructionInput({
           )}
         </div>
       </div>
-      {text.trim() !== "" && parsed.length === 0 && (
+      {text.trim() !== "" && (
         <div className="add-instruction-preview">
-          <div className="add-instruction-preview-empty">
-            No instructions recognized
-          </div>
+          {parsed.length === 0 ? (
+            <div className="add-instruction-preview-empty">
+              No instructions recognized
+            </div>
+          ) : (
+            parsed.map((instr) => (
+              <div key={instr.id} className="instruction-item dimmed">
+                <BeatGutter instruction={instr} onChange={noop} />
+                <InlineForm instruction={instr} onChange={noop} />
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -1225,9 +1245,14 @@ export default memo(function CommandPane({
     [instructions],
   );
 
+  // Use base (pre-preview) instructions for rendering the list, so that
+  // inserting preview instructions doesn't change the DOM tree structure
+  // and cause the AddInstructionInput to remount/lose state.
+  const preAddInstructionsRef = useRef<Instruction[] | null>(null);
+  const displayInstructions = preAddInstructionsRef.current ?? instructions;
   const sections = useMemo(
-    () => groupIntoSections(instructions),
-    [instructions],
+    () => groupIntoSections(displayInstructions),
+    [displayInstructions],
   );
 
   const progression = useMemo(() => {
@@ -1288,8 +1313,6 @@ export default memo(function CommandPane({
   }
 
   const { beginTransient, endTransient } = useUndo();
-  const preAddInstructionsRef = useRef<Instruction[] | null>(null);
-  const previewIdsRef = useRef<Set<InstructionId>>(new Set());
 
   function handleAdd(containerId: string, index: number) {
     preAddInstructionsRef.current = instructions;
@@ -1301,7 +1324,7 @@ export default memo(function CommandPane({
     (parsed: Instruction[]) => {
       const base = preAddInstructionsRef.current;
       if (!pendingAdd || base === null) return;
-      previewIdsRef.current = new Set(parsed.map((instr) => instr.id));
+
       if (parsed.length === 0) {
         setInstructions(base);
         return;
@@ -1319,7 +1342,7 @@ export default memo(function CommandPane({
 
   function handleCommitAdd() {
     // Instructions are already in place from the last preview update.
-    previewIdsRef.current = new Set();
+
     endTransient();
     preAddInstructionsRef.current = null;
     setPendingAdd(null);
@@ -1327,7 +1350,7 @@ export default memo(function CommandPane({
 
   function handleCancelAdd() {
     // Restore pre-add state.
-    previewIdsRef.current = new Set();
+
     if (preAddInstructionsRef.current !== null) {
       setInstructions(preAddInstructionsRef.current);
     }
@@ -1545,7 +1568,7 @@ export default memo(function CommandPane({
         }}
       >
         <div
-          className={`instruction-item${options?.extraClass ? " " + options.extraClass : ""}${instr.id === activeId ? " active" : ""}${errorById.has(instr.id) ? " errored" : ""}${isSelected ? " selected" : ""}${isDraggedAway ? " dragged-away" : ""}${previewIdsRef.current.has(instr.id) ? " dimmed" : ""}`}
+          className={`instruction-item${options?.extraClass ? " " + options.extraClass : ""}${instr.id === activeId ? " active" : ""}${errorById.has(instr.id) ? " errored" : ""}${isSelected ? " selected" : ""}${isDraggedAway ? " dragged-away" : ""}`}
           onClick={() => onSkipToInstruction?.(instr.id)}
           onMouseEnter={() => onHoverInstruction?.(instr.id)}
           onMouseLeave={() => onHoverInstruction?.(null)}
@@ -1692,7 +1715,7 @@ export default memo(function CommandPane({
         <div className="instruction-list">
           <SortableContext
             id="top"
-            items={instructions.map((i) => i.id)}
+            items={displayInstructions.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
             {sections.map((section, sectionIdx) => {

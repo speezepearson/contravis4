@@ -78,8 +78,31 @@ test.describe("add instruction via text input", () => {
     await expect(
       page.locator(".add-instruction-preview-empty"),
     ).not.toBeVisible();
-    // Preview instructions should appear as dimmed items in the instruction list
-    const previewItems = page.locator(".instruction-item.dimmed");
+    // Preview should show instruction items (dimmed)
+    const previewItems = page.locator(
+      ".add-instruction-preview .instruction-item",
+    );
     await expect(previewItems.first()).toBeVisible();
+  });
+
+  test("typing 'balance and swing your neighbor' adds a matching instruction", async ({
+    page,
+  }) => {
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    await input.fill("balance and swing your neighbor");
+    await input.press("Enter");
+
+    // Input should close
+    await expect(input).not.toBeVisible();
+
+    // A balance_and_swing instruction should now be visible
+    const instrItems = page.locator(".instruction-item");
+    await expect(instrItems).toHaveCount(1);
+
+    // The instruction should contain "balance & swing" text
+    await expect(instrItems.first()).toContainText("balance & swing");
   });
 });
