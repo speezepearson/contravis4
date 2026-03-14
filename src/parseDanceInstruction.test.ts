@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseDanceInstruction } from "./parseDanceInstruction";
+import { getCompletions, parseDanceInstruction } from "./parseDanceInstruction";
 
 describe("parseDanceInstruction", () => {
   it("returns empty array for empty string", () => {
@@ -277,6 +277,15 @@ describe("parseDanceInstruction", () => {
       expect(result[0].type).toBe("circle");
       expect(result[1].type).toBe("swing");
       expect(result[2].type).toBe("greet_new_neighbors");
+    });
+  });
+
+  describe("getCompletions", () => {
+    it("suggests 'end facing across' and 'end facing down' for 'neighbors balance and swing end f'", () => {
+      const completions = getCompletions("neighbors balance and swing end f");
+      const keywords = completions.map((c) => c.keyword);
+      expect(keywords).toContain("end facing across");
+      expect(keywords).toContain("end facing down");
     });
   });
 

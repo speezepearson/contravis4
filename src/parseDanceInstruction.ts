@@ -396,6 +396,14 @@ const TEXT_KEYWORDS: TextKeywordEntry[] = [
   { text: "once and a half", chunk: "keyword", value: "once_and_a_half" },
   { text: "twice and a half", chunk: "keyword", value: "twice_and_a_half" },
   { text: "start a", chunk: "keyword", value: "start_a" },
+  { text: "end facing across", chunk: "keyword", value: "end_facing_across" },
+  { text: "facing across", chunk: "keyword", value: "end_facing_across" },
+  { text: "end facing down", chunk: "keyword", value: "end_facing_down" },
+  { text: "facing down", chunk: "keyword", value: "end_facing_down" },
+  { text: "end facing up", chunk: "keyword", value: "end_facing_up" },
+  { text: "facing up", chunk: "keyword", value: "end_facing_up" },
+  { text: "end facing out", chunk: "keyword", value: "end_facing_out" },
+  { text: "facing out", chunk: "keyword", value: "end_facing_out" },
   { text: "backward", chunk: "keyword", value: "backward" },
   { text: "backwards", chunk: "keyword", value: "backward" },
   { text: "forward", chunk: "keyword", value: "forward" },
@@ -702,6 +710,10 @@ function interpretChunks(type: ActionOptionType, chunks: Chunk[]): Instruction {
     case "balance_and_swing":
     case "meltdown_swing":
       if (cid) overrides.cid = cid;
+      {
+        const endFacing = endFacingFromKeywords(chunks);
+        if (endFacing) overrides.endFacing = endFacing;
+      }
       break;
 
     case "allemande":
@@ -823,6 +835,17 @@ function rotationsFromKeywords(chunks: Chunk[]): number | null {
   if (hasKeyword(chunks, "twice_and_a_half")) return 2.5;
   if (hasKeyword(chunks, "twice")) return 2;
   if (hasKeyword(chunks, "once")) return 1;
+  return null;
+}
+
+/** Derive end-facing direction from "end facing ..." keywords. */
+function endFacingFromKeywords(
+  chunks: Chunk[],
+): "across" | "down" | "up" | "out" | null {
+  if (hasKeyword(chunks, "end_facing_across")) return "across";
+  if (hasKeyword(chunks, "end_facing_down")) return "down";
+  if (hasKeyword(chunks, "end_facing_up")) return "up";
+  if (hasKeyword(chunks, "end_facing_out")) return "out";
   return null;
 }
 
