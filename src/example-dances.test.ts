@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { isDanceVerified } from "./exampleDances";
 import { generateDanceAnimation } from "./generate";
 import { inferProgression } from "./inferProgression";
 import { initFormationStates } from "./instructions/index";
@@ -18,7 +19,7 @@ const files = readdirSync(dir)
 describe("verified dances have valid nonzero progressions", () => {
   it.each(files)("%s", async (file) => {
     const dance = await loadDance(file);
-    if (dance.status !== "verified") return;
+    if (!isDanceVerified(dance)) return;
     const initState =
       typeof dance.initFormation === "string"
         ? initFormationStates[dance.initFormation]
@@ -42,7 +43,7 @@ describe("verified dances have valid nonzero progressions", () => {
 describe("verified dances are 64 beats long", () => {
   it.each(files)("%s", async (file) => {
     const dance = await loadDance(file);
-    if (dance.status !== "verified") return;
+    if (!isDanceVerified(dance)) return;
     const initState =
       typeof dance.initFormation === "string"
         ? initFormationStates[dance.initFormation]

@@ -60,11 +60,15 @@ export const contradbInstructionFrequencies: Map<ActionOptionType, number> =
     return counts;
   })();
 
+export function isDanceVerified(d: Dance): boolean {
+  return d.status === "verified";
+}
+
 export function sortedExampleDances(isDevMode: boolean): ExampleDance[] {
   const isDummy = (d: ExampleDance) => d.dance.status === "dummy";
   const filtered = isDevMode
     ? exampleDances
-    : exampleDances.filter((d) => !isDummy(d));
+    : exampleDances.filter((d) => isDanceVerified(d.dance));
   return [...filtered].sort((a, b) => {
     const aDummy = isDummy(a);
     const bDummy = isDummy(b);
