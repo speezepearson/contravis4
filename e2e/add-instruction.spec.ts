@@ -106,7 +106,7 @@ test.describe("add instruction via text input", () => {
     await expect(instrItems.first()).toContainText("balance & swing");
   });
 
-  test("input persists when it loses focus", async ({ page }) => {
+  test("blurring input commits the instruction", async ({ page }) => {
     await page.locator(".add-gap-btn").first().click();
     const input = page.locator(".add-instruction-text-input");
     await expect(input).toBeVisible();
@@ -115,38 +115,62 @@ test.describe("add instruction via text input", () => {
 
     // Click elsewhere to blur the input
     await page.locator(".command-pane").click({ position: { x: 5, y: 5 } });
-    await expect(input).not.toBeFocused();
 
-    // Input should still be visible with its text intact
-    await expect(input).toBeVisible();
-    await expect(input).toHaveValue("neighbors swing");
+    // Input should close and instruction should be committed
+    await expect(input).not.toBeVisible();
+    const instrItems = page.locator(".instruction-item");
+    await expect(instrItems).toHaveCount(1);
+    await expect(instrItems.first()).toContainText("swing");
   });
 
-  test("Commit button adds instruction and removes input", async ({
+  test("blurring via Escape does NOT commit", async ({ page }) => {
+    const initialCount = await page.locator(".instruction-item").count();
+
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    await input.fill("neighbors swing");
+    await input.press("Escape");
+
+    // Input should close and no instruction should be added
+    await expect(input).not.toBeVisible();
+    const afterCancel = await page.locator(".instruction-item").count();
+    expect(afterCancel).toBe(initialCount);
+  });
+
+  test("uncommitted instruction interactive elements have not-allowed cursor and are non-interactive", async ({
     page,
   }) => {
     await page.locator(".add-gap-btn").first().click();
     const input = page.locator(".add-instruction-text-input");
     await expect(input).toBeVisible();
 
-    const commitBtn = page.locator(".add-instruction-commit-btn");
+    // Type something that will produce an instruction with an InlineDropdown
+    await input.fill("neighbors balance and swing");
 
-    // Commit button should be disabled when input is empty
-    await expect(commitBtn).toBeDisabled();
+    // Wait for the preview to appear
+    const previewItems = page.locator(
+      ".add-instruction-preview .instruction-item",
+    );
+    await expect(previewItems.first()).toBeVisible();
 
-    // Type something parseable
-    await input.fill("neighbors swing");
+    // Find inline-value elements (InlineDropdown triggers) in the preview
+    const inlineValues = page.locator(
+      ".add-instruction-preview .inline-value",
+    );
+    await expect(inlineValues.first()).toBeVisible();
 
-    // Commit button should now be enabled
-    await expect(commitBtn).toBeEnabled();
+    // Check that they have cursor: not-allowed
+    const cursor = await inlineValues.first().evaluate(
+      (el) => getComputedStyle(el).cursor,
+    );
+    expect(cursor).toBe("not-allowed");
 
-    // Click Commit
-    await commitBtn.click();
-
-    // Input should close and instruction should be added
-    await expect(input).not.toBeVisible();
-    const instrItems = page.locator(".instruction-item");
-    await expect(instrItems).toHaveCount(1);
-    await expect(instrItems.first()).toContainText("swing");
+    // Check that pointer-events are disabled (clicking won't open a popover)
+    const pointerEvents = await inlineValues.first().evaluate(
+      (el) => getComputedStyle(el).pointerEvents,
+    );
+    expect(pointerEvents).toBe("none");
   });
 });

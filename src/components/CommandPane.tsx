@@ -1046,6 +1046,21 @@ function AddInstructionInput({
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
+      escapePressedRef.current = true;
+      onCancel();
+    }
+  }
+
+  const escapePressedRef = useRef(false);
+
+  function handleBlur() {
+    if (escapePressedRef.current) {
+      // Escape already triggered onCancel, don't also commit
+      return;
+    }
+    if (parsed.length > 0) {
+      onCommit();
+    } else {
       onCancel();
     }
   }
@@ -1061,17 +1076,10 @@ function AddInstructionInput({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
             placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
             autoComplete="off"
           />
-          <button
-            className="add-instruction-commit-btn"
-            disabled={parsed.length === 0}
-            onClick={() => onCommit()}
-            title="Add to dance (Enter)"
-          >
-            Commit
-          </button>
           {completions.length > 0 && (
             <ul className="autocomplete-popover" role="listbox" ref={listRef}>
               {completions.map((completion, i) => (
