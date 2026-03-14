@@ -105,4 +105,48 @@ test.describe("add instruction via text input", () => {
     // The instruction should contain "balance & swing" text
     await expect(instrItems.first()).toContainText("balance & swing");
   });
+
+  test("input persists when it loses focus", async ({ page }) => {
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    await input.fill("neighbors swing");
+
+    // Click elsewhere to blur the input
+    await page.locator(".command-pane").click({ position: { x: 5, y: 5 } });
+    await expect(input).not.toBeFocused();
+
+    // Input should still be visible with its text intact
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue("neighbors swing");
+  });
+
+  test("Commit button adds instruction and removes input", async ({
+    page,
+  }) => {
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    const commitBtn = page.locator(".add-instruction-commit-btn");
+
+    // Commit button should be disabled when input is empty
+    await expect(commitBtn).toBeDisabled();
+
+    // Type something parseable
+    await input.fill("neighbors swing");
+
+    // Commit button should now be enabled
+    await expect(commitBtn).toBeEnabled();
+
+    // Click Commit
+    await commitBtn.click();
+
+    // Input should close and instruction should be added
+    await expect(input).not.toBeVisible();
+    const instrItems = page.locator(".instruction-item");
+    await expect(instrItems).toHaveCount(1);
+    await expect(instrItems.first()).toContainText("swing");
+  });
 });

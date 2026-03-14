@@ -1061,10 +1061,17 @@ function AddInstructionInput({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={onCancel}
             placeholder="Type an instruction, e.g. 'neighbors balance and swing'..."
             autoComplete="off"
           />
+          <button
+            className="add-instruction-commit-btn"
+            disabled={parsed.length === 0}
+            onClick={() => onCommit()}
+            title="Add to dance (Enter)"
+          >
+            Commit
+          </button>
           {completions.length > 0 && (
             <ul className="autocomplete-popover" role="listbox" ref={listRef}>
               {completions.map((completion, i) => (
