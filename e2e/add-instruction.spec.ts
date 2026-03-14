@@ -43,24 +43,6 @@ test.describe("add instruction via text input", () => {
     expect(afterSecond).toBeGreaterThan(afterFirst);
   });
 
-  test("pressing Escape cancels adding without inserting", async ({
-    page,
-  }) => {
-    const initialCount = await page.locator(".instruction-item").count();
-
-    await page.locator(".add-gap-btn").first().click();
-    const input = page.locator(".add-instruction-text-input");
-    await expect(input).toBeVisible();
-
-    await input.fill("neighbors swing");
-    await input.press("Escape");
-
-    // Input should be gone and no instructions added
-    await expect(input).not.toBeVisible();
-    const afterCancel = await page.locator(".instruction-item").count();
-    expect(afterCancel).toBe(initialCount);
-  });
-
   test("preview shows parsed instructions while typing", async ({ page }) => {
     await page.locator(".add-gap-btn").first().click();
     const input = page.locator(".add-instruction-text-input");
@@ -83,5 +65,94 @@ test.describe("add instruction via text input", () => {
       ".add-instruction-preview .instruction-item",
     );
     await expect(previewItems.first()).toBeVisible();
+  });
+
+  test("typing 'balance and swing your neighbor' adds a matching instruction", async ({
+    page,
+  }) => {
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    await input.fill("balance and swing your neighbor");
+    await input.press("Enter");
+
+    // Input should close
+    await expect(input).not.toBeVisible();
+
+    // A balance_and_swing instruction should now be visible
+    const instrItems = page.locator(".instruction-item");
+    await expect(instrItems).toHaveCount(1);
+
+    // The instruction should contain "balance & swing" text
+    await expect(instrItems.first()).toContainText("balance & swing");
+  });
+
+  test("blurring input commits the instruction", async ({ page }) => {
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    await input.fill("neighbors swing");
+
+    // Click elsewhere to blur the input
+    await page.locator(".command-pane").click({ position: { x: 5, y: 5 } });
+
+    // Input should close and instruction should be committed
+    await expect(input).not.toBeVisible();
+    const instrItems = page.locator(".instruction-item");
+    await expect(instrItems).toHaveCount(1);
+    await expect(instrItems.first()).toContainText("swing");
+  });
+
+  test("blurring via Escape does NOT commit", async ({ page }) => {
+    const initialCount = await page.locator(".instruction-item").count();
+
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    await input.fill("neighbors swing");
+    await input.press("Escape");
+
+    // Input should close and no instruction should be added
+    await expect(input).not.toBeVisible();
+    const afterCancel = await page.locator(".instruction-item").count();
+    expect(afterCancel).toBe(initialCount);
+  });
+
+  test("uncommitted instruction interactive elements have not-allowed cursor and are non-interactive", async ({
+    page,
+  }) => {
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    // Type something that will produce an instruction with an InlineDropdown
+    await input.fill("neighbors balance and swing");
+
+    // Wait for the preview to appear
+    const previewItems = page.locator(
+      ".add-instruction-preview .instruction-item",
+    );
+    await expect(previewItems.first()).toBeVisible();
+
+    // Find inline-value elements (InlineDropdown triggers) in the preview
+    const inlineValues = page.locator(
+      ".add-instruction-preview .inline-value",
+    );
+    await expect(inlineValues.first()).toBeVisible();
+
+    // Check that they have cursor: not-allowed
+    const cursor = await inlineValues.first().evaluate(
+      (el) => getComputedStyle(el).cursor,
+    );
+    expect(cursor).toBe("not-allowed");
+
+    // Check that pointer-events are disabled (clicking won't open a popover)
+    const pointerEvents = await inlineValues.first().evaluate(
+      (el) => getComputedStyle(el).pointerEvents,
+    );
+    expect(pointerEvents).toBe("none");
   });
 });

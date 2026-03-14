@@ -12,7 +12,6 @@ import { SnazzyError } from "../snazzyError";
 import {
   Dancer,
   type DancerHandPointer,
-  sanityCheckWorldState,
   setLabel,
   type WorldState,
 } from "../worldState";
@@ -135,96 +134,94 @@ export function animatePlans(
   const animation: ContraAnimation = {
     dur: overallDur,
     getFrame(t) {
-      return sanityCheckWorldState(
-        produce(init, (draft) => {
-          for (const id of who) {
-            const plan = allPlans.get(id);
-            if (!plan) continue;
-            const { segments, segInits, totalDur } = plan;
+      return produce(init, (draft) => {
+        for (const id of who) {
+          const plan = allPlans.get(id);
+          if (!plan) continue;
+          const { segments, segInits, totalDur } = plan;
 
-            // Clamp t to this dancer's total duration.
-            const clampedT = Math.min(t, totalDur);
+          // Clamp t to this dancer's total duration.
+          const clampedT = Math.min(t, totalDur);
 
-            if (segments.length === 0) continue;
+          if (segments.length === 0) continue;
 
-            // Find the active segment for this dancer.
-            let accDur = 0;
-            let segIdx = 0;
-            for (let i = 0; i < segments.length; i++) {
-              if (
-                clampedT >= accDur + segments[i].dur &&
-                i < segments.length - 1
-              ) {
-                accDur += segments[i].dur;
-                segIdx = i + 1;
-                continue;
-              }
-              segIdx = i;
-              break;
+          // Find the active segment for this dancer.
+          let accDur = 0;
+          let segIdx = 0;
+          for (let i = 0; i < segments.length; i++) {
+            if (
+              clampedT >= accDur + segments[i].dur &&
+              i < segments.length - 1
+            ) {
+              accDur += segments[i].dur;
+              segIdx = i + 1;
+              continue;
             }
-
-            const seg = segments[segIdx];
-            const segInit = segInits[segIdx];
-            const localT = clampedT - accDur;
-            const frac = seg.dur > 0 ? localT / seg.dur : 1;
-
-            draft[id].pos = seg.position ? seg.position(frac) : segInit.pos;
-            draft[id].facing = seg.facing ? seg.facing(frac) : segInit.facing;
-
-            draft[id].hands = {};
-            draft[id].hands = seg.hands ? seg.hands(frac) : segInit.hands;
-
-            // Accumulate interactedWith from ALL segments up to the active one,
-            // matching the legacy behavior where segInit carries forward recents.
-            for (let j = 0; j <= segIdx; j++) {
-              const s = segments[j];
-              if (s.interactedWith) {
-                const newRecents = s.interactedWith();
-                draft[id].recents = [
-                  ...newRecents,
-                  ...draft[id].recents.filter((i) => !newRecents.includes(i)),
-                ];
-              }
-            }
+            segIdx = i;
+            break;
           }
 
-          // Labels are applied in a second pass so setLabel's cross-dancer
-          // updates don't collide with position writes.
-          for (const id of who) {
-            const plan = allPlans.get(id);
-            if (!plan) continue;
-            const { segments, totalDur } = plan;
+          const seg = segments[segIdx];
+          const segInit = segInits[segIdx];
+          const localT = clampedT - accDur;
+          const frac = seg.dur > 0 ? localT / seg.dur : 1;
 
-            const clampedT = Math.min(t, totalDur);
-            if (segments.length === 0) continue;
+          draft[id].pos = seg.position ? seg.position(frac) : segInit.pos;
+          draft[id].facing = seg.facing ? seg.facing(frac) : segInit.facing;
 
-            let accDur = 0;
-            let segIdx = 0;
-            for (let i = 0; i < segments.length; i++) {
-              if (
-                clampedT >= accDur + segments[i].dur &&
-                i < segments.length - 1
-              ) {
-                accDur += segments[i].dur;
-                segIdx = i + 1;
-                continue;
-              }
-              segIdx = i;
-              break;
-            }
+          draft[id].hands = {};
+          draft[id].hands = seg.hands ? seg.hands(frac) : segInit.hands;
 
-            const seg = segments[segIdx];
-            const localT = clampedT - accDur;
-            const frac = seg.dur > 0 ? localT / seg.dur : 1;
-
-            if (seg.labels) {
-              for (const [label, theirId] of seg.labels(frac)) {
-                setLabel(draft, id, label, theirId);
-              }
+          // Accumulate interactedWith from ALL segments up to the active one,
+          // matching the legacy behavior where segInit carries forward recents.
+          for (let j = 0; j <= segIdx; j++) {
+            const s = segments[j];
+            if (s.interactedWith) {
+              const newRecents = s.interactedWith();
+              draft[id].recents = [
+                ...newRecents,
+                ...draft[id].recents.filter((i) => !newRecents.includes(i)),
+              ];
             }
           }
-        }),
-      );
+        }
+
+        // Labels are applied in a second pass so setLabel's cross-dancer
+        // updates don't collide with position writes.
+        for (const id of who) {
+          const plan = allPlans.get(id);
+          if (!plan) continue;
+          const { segments, totalDur } = plan;
+
+          const clampedT = Math.min(t, totalDur);
+          if (segments.length === 0) continue;
+
+          let accDur = 0;
+          let segIdx = 0;
+          for (let i = 0; i < segments.length; i++) {
+            if (
+              clampedT >= accDur + segments[i].dur &&
+              i < segments.length - 1
+            ) {
+              accDur += segments[i].dur;
+              segIdx = i + 1;
+              continue;
+            }
+            segIdx = i;
+            break;
+          }
+
+          const seg = segments[segIdx];
+          const localT = clampedT - accDur;
+          const frac = seg.dur > 0 ? localT / seg.dur : 1;
+
+          if (seg.labels) {
+            for (const [label, theirId] of seg.labels(frac)) {
+              setLabel(draft, id, label, theirId);
+            }
+          }
+        }
+      });
     },
   };
 

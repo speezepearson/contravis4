@@ -8,6 +8,7 @@ import {
   lerpFacing,
   NORTH,
   PI,
+  SOUTH,
   WEST,
 } from "./geometry";
 
@@ -66,6 +67,19 @@ describe("lerpFacing", () => {
     const normal = lerpFacing(NORTH, EAST, 0.5);
     // They should differ (forced goes the long way)
     expect(forced.x).not.toBeCloseTo(normal.x);
+  });
+
+  it("returns something perpendicular when interpolating opposite vectors", () => {
+    // lerpFacing(x, -x, 0.5) should return a vector perpendicular to x,
+    // not degenerate to zero length. This is important for smoothing across
+    // 180° facing changes (e.g. a "face" instruction).
+    const midNS = lerpFacing(NORTH, SOUTH, 0.5);
+    expect(midNS.dot(NORTH)).toBeCloseTo(0);
+    expect(midNS.length()).toBeCloseTo(1);
+
+    const midEW = lerpFacing(EAST, WEST, 0.5);
+    expect(midEW.dot(EAST)).toBeCloseTo(0);
+    expect(midEW.length()).toBeCloseTo(1);
   });
 });
 

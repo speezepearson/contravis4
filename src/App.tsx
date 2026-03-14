@@ -39,7 +39,7 @@ import { assignToGlobalThis } from "./typecasts";
 import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
 import { isLocalStorageAvailable, try_ } from "./utils";
-import { Dancer, type WorldState } from "./worldState";
+import { Dancer, sanityCheckWorldState, type WorldState } from "./worldState";
 
 type DanceState = {
   instructions: Instruction[];
@@ -370,6 +370,8 @@ export default function App() {
 
     if (frame) {
       lastFrameRef.current = frame;
+      const warnings = sanityCheckWorldState(frame); // TODO: render these somewhere using our SnazzyError fancy stuff
+      if (warnings.length > 0) console.log(warnings);
       renderer.drawFrame(t, frame);
 
       // Draw recents highlight for hovered dancer

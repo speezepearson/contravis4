@@ -625,7 +625,9 @@ export function avgPos(...dancers: Dancer[]): Vector {
     .divide(dancers.length);
 }
 
-export function sanityCheckWorldState(state: WorldState): WorldState {
+export function sanityCheckWorldState(state: WorldState): Error[] {
+  const warnings: Error[] = [];
+
   for (const id of ALL_PROTO_IDS) {
     const dancer = state[id];
     if (
@@ -634,10 +636,12 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
         Math.abs(dancer.facing.length() - 1) < 0.01
       )
     ) {
-      throw new SnazzyError([
-        { dancerId: id },
-        ` has a crazy facing: ${dancer.facing.x}, ${dancer.facing.y}`,
-      ]);
+      warnings.push(
+        new SnazzyError([
+          { dancerId: id },
+          ` has a crazy facing: ${dancer.facing.x}, ${dancer.facing.y}`,
+        ]),
+      );
     }
     if (
       !(
@@ -649,30 +653,36 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
         dancer.pos.y < 30
       )
     ) {
-      throw new SnazzyError([
-        { dancerId: id },
-        ` has a crazy position: ${dancer.pos.x}, ${dancer.pos.y}`,
-      ]);
+      warnings.push(
+        new SnazzyError([
+          { dancerId: id },
+          ` has a crazy position: ${dancer.pos.x}, ${dancer.pos.y}`,
+        ]),
+      );
     }
     if (!dancer.labels["neighbor"])
-      throw new SnazzyError([
-        { dancerId: id },
-        " has no ",
-        { cid: labelId("neighbor") },
-      ]);
+      warnings.push(
+        new SnazzyError([
+          { dancerId: id },
+          " has no ",
+          { cid: labelId("neighbor") },
+        ]),
+      );
     for (const label of IrreducibleLabelSchema.options) {
       const theirId = dancer.labels[label];
       if (!theirId) continue;
       const theirSymmetricPointer = Dancer.get(theirId, state).labels[label];
       if (theirSymmetricPointer !== id)
-        throw new SnazzyError([
-          { dancerId: id },
-          "'s ",
-          { cid: labelId(label) },
-          " thinks their ",
-          { cid: labelId(label) },
-          ` is ${theirSymmetricPointer} -- this should never be asymmetric!`,
-        ]);
+        warnings.push(
+          new SnazzyError([
+            { dancerId: id },
+            "'s ",
+            { cid: labelId(label) },
+            " thinks their ",
+            { cid: labelId(label) },
+            ` is ${theirSymmetricPointer} -- this should never be asymmetric!`,
+          ]),
+        );
     }
     for (const hand of HandSchema.options) {
       const holding = dancer.hands[hand];
@@ -681,23 +691,27 @@ export function sanityCheckWorldState(state: WorldState): WorldState {
       const them = Dancer.get(theirId, state);
       const theirSymmetricPointer = them.hands[theirHand];
       if (!isEqual(theirSymmetricPointer, { theirId: id, theirHand: hand }))
-        throw new SnazzyError([
-          { dancerId: id },
-          ` thinks their ${hand} hand is holding `,
-          { dancerId: theirId },
-          `'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
-        ]);
+        warnings.push(
+          new SnazzyError([
+            { dancerId: id },
+            ` thinks their ${hand} hand is holding `,
+            { dancerId: theirId },
+            `'s ${theirHand}, but they think that that's holding ${theirSymmetricPointer == null ? "nothing" : `${theirSymmetricPointer.theirId}'s ${theirSymmetricPointer.theirHand}`}`,
+          ]),
+        );
       if (getDist(them.pos, dancer.pos) > 2) {
-        throw new SnazzyError([
-          { dancerId: id },
-          ` and `,
-          { dancerId: theirId },
-          ` are holding hands, but super far away from each other`,
-        ]);
+        warnings.push(
+          new SnazzyError([
+            { dancerId: id },
+            ` and `,
+            { dancerId: theirId },
+            ` are holding hands, but super far away from each other`,
+          ]),
+        );
       }
     }
   }
-  return state;
+  return warnings;
 }
 
 /** Sets a label for all dancers, updating each proto's value for `label` consistently. */
