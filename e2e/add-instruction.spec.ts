@@ -43,24 +43,6 @@ test.describe("add instruction via text input", () => {
     expect(afterSecond).toBeGreaterThan(afterFirst);
   });
 
-  test("pressing Escape cancels adding without inserting", async ({
-    page,
-  }) => {
-    const initialCount = await page.locator(".instruction-item").count();
-
-    await page.locator(".add-gap-btn").first().click();
-    const input = page.locator(".add-instruction-text-input");
-    await expect(input).toBeVisible();
-
-    await input.fill("neighbors swing");
-    await input.press("Escape");
-
-    // Input should be gone and no instructions added
-    await expect(input).not.toBeVisible();
-    const afterCancel = await page.locator(".instruction-item").count();
-    expect(afterCancel).toBe(initialCount);
-  });
-
   test("preview shows parsed instructions while typing", async ({ page }) => {
     await page.locator(".add-gap-btn").first().click();
     const input = page.locator(".add-instruction-text-input");

@@ -1011,6 +1011,8 @@ function AddInstructionInput({
     inputRef.current?.focus();
   }
 
+  const escapePressedRef = useRef(false);
+
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (completions.length > 0) {
       if (e.key === "ArrowDown") {
@@ -1050,8 +1052,6 @@ function AddInstructionInput({
       onCancel();
     }
   }
-
-  const escapePressedRef = useRef(false);
 
   function handleBlur() {
     if (escapePressedRef.current) {
