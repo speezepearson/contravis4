@@ -221,7 +221,7 @@ export default function App() {
     [setDanceState, instructions, initFormation, name],
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 1);
+  const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 0.5);
   const [exporting, setExporting] = useState(false);
   const [gifOptions, setGifOptions] = useState<GifOptions>(() => {
     const defaults: GifOptions = { fps: 15, width: 400, height: 600 };
@@ -691,12 +691,12 @@ export default function App() {
         />
       </div>
       <div className="controls">
-        <span className="speed-display">Smooth {smoothness.toFixed(1)}</span>
+        <span className="speed-display">Smooth {smoothness.toFixed(2)}</span>
         <input
           type="range"
           min={0}
-          max={2}
-          step={0.1}
+          max={1}
+          step={0.01}
           value={smoothness}
           onChange={(e) => setSmoothness(Number(e.target.value))}
         />
@@ -862,7 +862,7 @@ export default function App() {
               </div>
               <div className="controls">
                 <span className="speed-display">
-                  Smooth {smoothness.toFixed(1)}
+                  Smooth {smoothness.toFixed(2)}
                 </span>
                 <input
                   type="range"
