@@ -31,6 +31,7 @@ import {
   animatePlans,
   type DancerSegment,
   evaluatePlansFinalState,
+  type PlanGetter,
 } from "./_plan";
 import { hold } from "./_segment";
 
@@ -169,7 +170,7 @@ export function buildSwingPlans(
   instr: SwingInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
-): Map<ProtoId, DancerSegment[]> {
+): PlanGetter {
   const orig = (d: Dancer) => d.at(init);
   const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
   const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
@@ -230,44 +231,31 @@ export function buildSwingPlans(
     ];
   };
 
-  // Build plans for all dancers.
-  const unfudgedPlans = new Map<ProtoId, DancerSegment[]>();
-  for (const id of who) {
-    unfudgedPlans.set(id, getPlan(Dancer.get(id, init)));
-  }
-
   // For across/out endings, apply fudge drifts to each dancer's plan.
   switch (instr.endFacing) {
     case "across":
     case "out": {
       // Step 1: x-snap drift (snap center.x to ±0.5).
-      const xDrifts = new Map<ProtoId, number>();
-      for (const id of who) {
-        const d = Dancer.get(id, init);
-        const center = getCenter(d);
+      const getXDrift = (dancer: Dancer): number => {
+        const center = getCenter(dancer);
         const side = must(getSide(center), [
-          { dancerId: d.id },
+          { dancerId: dancer.id },
           "too close to center, not sure which side is east or west",
         ]);
-        xDrifts.set(id, { east: 0.5, west: -0.5 }[side] - center.x);
-      }
+        return { east: 0.5, west: -0.5 }[side] - center.x;
+      };
 
-      const xSnappedPlans = new Map<ProtoId, DancerSegment[]>();
-      for (const id of who) {
-        const xDrift = xDrifts.get(id) ?? 0;
-        const dancerInitPos = Dancer.get(id, init).pos;
-        xSnappedPlans.set(
-          id,
-          addDancerDrift(
-            unfudgedPlans.get(id) ?? [],
-            dancerInitPos,
-            (globalFrac) => new Vector(xDrift * globalFrac, 0),
-          ),
+      const getXSnappedPlan: PlanGetter = (dancer: Dancer) => {
+        const xDrift = getXDrift(dancer);
+        return addDancerDrift(
+          getPlan(dancer),
+          dancer.pos,
+          (globalFrac) => new Vector(xDrift * globalFrac, 0),
         );
-      }
+      };
 
       // Step 2: y-spacing drift (space dancers evenly on each side).
-      const xSnappedFinal = evaluatePlansFinalState(init, who, xSnappedPlans);
+      const xSnappedFinal = evaluatePlansFinalState(init, who, getXSnappedPlan);
       const west: ProtoId[] = [];
       const east: ProtoId[] = [];
       for (const id of ALL_PROTO_IDS) {
@@ -283,28 +271,24 @@ export function buildSwingPlans(
         xSnappedFinal[east[0]].pos.y,
         xSnappedFinal[east[1]].pos.y,
       );
-      const ySpacingDrifts = new Map<ProtoId, number>();
-      ySpacingDrifts.set(west[0], westFudges[0]);
-      ySpacingDrifts.set(west[1], westFudges[1]);
-      ySpacingDrifts.set(east[0], eastFudges[0]);
-      ySpacingDrifts.set(east[1], eastFudges[1]);
+      const getYSpacingDrift = (dancer: Dancer): number => {
+        const side = getDancerSide(Dancer.get(dancer.protoId, xSnappedFinal));
+        const ids = side === "west" ? west : east;
+        const fudges = side === "west" ? westFudges : eastFudges;
+        return fudges[must(indexOf(ids, dancer.protoId))];
+      };
 
-      const ySpacedPlans = new Map<ProtoId, DancerSegment[]>();
-      for (const id of who) {
-        const dy = ySpacingDrifts.get(id) ?? 0;
-        const dancerInitPos = Dancer.get(id, init).pos;
-        ySpacedPlans.set(
-          id,
-          addDancerDrift(
-            xSnappedPlans.get(id) ?? [],
-            dancerInitPos,
-            (globalFrac) => new Vector(0, dy * globalFrac),
-          ),
+      const getYSpacedPlan: PlanGetter = (dancer: Dancer) => {
+        const dy = getYSpacingDrift(dancer);
+        return addDancerDrift(
+          getXSnappedPlan(dancer),
+          dancer.pos,
+          (globalFrac) => new Vector(0, dy * globalFrac),
         );
-      }
+      };
 
       // Step 3: y-alignment drift (align across-matches in y).
-      const ySpacedFinal = evaluatePlansFinalState(init, who, ySpacedPlans);
+      const ySpacedFinal = evaluatePlansFinalState(init, who, getYSpacedPlan);
 
       const findDyToNearest = (
         fromProto: ProtoId,
@@ -350,26 +334,21 @@ export function buildSwingPlans(
       const dyFudgeEast = -dyFudgeWest;
 
       const westIds = new Set(west);
-      const finalPlans = new Map<ProtoId, DancerSegment[]>();
-      for (const id of who) {
-        const dy = westIds.has(id) ? dyFudgeWest : dyFudgeEast;
-        const dancerInitPos = Dancer.get(id, init).pos;
-        finalPlans.set(
-          id,
-          addDancerDrift(
-            ySpacedPlans.get(id) ?? [],
-            dancerInitPos,
-            (globalFrac) => new Vector(0, dy * globalFrac),
-          ),
+      const getFinalPlan: PlanGetter = (dancer: Dancer) => {
+        const dy = westIds.has(dancer.protoId) ? dyFudgeWest : dyFudgeEast;
+        return addDancerDrift(
+          getYSpacedPlan(dancer),
+          dancer.pos,
+          (globalFrac) => new Vector(0, dy * globalFrac),
         );
-      }
+      };
 
-      return finalPlans;
+      return getFinalPlan;
     }
   }
 
   // Non-across/out endings: no fudge needed.
-  return unfudgedPlans;
+  return getPlan;
 }
 
 export function swingAnimator(
@@ -378,5 +357,5 @@ export function swingAnimator(
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
   const plans = buildSwingPlans(instr, init, who);
-  return animatePlans(init, who, (d) => plans.get(d.protoId) ?? []);
+  return animatePlans(init, who, plans);
 }
