@@ -46,91 +46,46 @@ export const RollAwayInstructionSchema = z.object({
 });
 export type RollAwayInstruction = z.infer<typeof RollAwayInstructionSchema>;
 
-function validateAndResolveMatches(
+function validateRollAway(
   instr: RollAwayInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
-): {
-  getMatchId: (dancer: Dancer) => DancerId;
-  isRtl: boolean;
-} {
-  // Build match pairs for validation and isRtl computation.
-  const pairs: { rollerId: ProtoId; rolleeId: DancerId }[] = [];
-  const seenRollees = new Map<DancerId, ProtoId>();
+): { isRtl: boolean } {
+  const rolleesSeen = new Set<DancerId>();
+  const rollerSides = new Set<number>();
+
   for (const id of who) {
     if (getRole(id) !== instr.roller) continue;
-    const rollee = Dancer.get(id, init).resolveCalledIdentifier(instr.rollee);
-    if (!rollee) {
+    const roller = Dancer.get(id, init);
+    const rollee = roller.resolveMatch(instr.rollee);
+    if (rolleesSeen.has(rollee.id)) {
       throw new SnazzyError([
-        { dancerId: id },
-        " has no opposite-role ",
-        { cid: instr.rollee },
-        " to roll away",
-      ]);
-    }
-    if (seenRollees.has(rollee.id)) {
-      throw new SnazzyError([
-        "rollers ",
-        { dancerId: seenRollees.get(rollee.id)! },
-        " and ",
-        { dancerId: id },
-        " both grabbed the same rollee ",
+        "multiple rollers grabbed the same rollee ",
         { dancerId: rollee.id },
       ]);
     }
-    seenRollees.set(rollee.id, id);
-    pairs.push({ rollerId: id, rolleeId: rollee.id });
-  }
-
-  const rollerSides = new Set(
-    pairs.map(({ rollerId, rolleeId }) => {
-      const roller = Dancer.get(rollerId, init);
-      const rollee = Dancer.get(rolleeId, init);
-      return Math.sign(
+    rolleesSeen.add(rollee.id);
+    rollerSides.add(
+      Math.sign(
         ccwRadsBetween(
           roller.facing,
           getDir({ from: roller.pos, to: rollee.pos }),
         ),
-      );
-    }),
-  );
+      ),
+    );
+  }
   if (rollerSides.size !== 1) throw new Error(`rollers have different sides`);
 
-  const isRtl = rollerSides.has(-1);
-
-  const getMatchId = (dancer: Dancer): DancerId => {
-    const isRoller = getRole(dancer.protoId) === instr.roller;
-    if (isRoller) {
-      const pair = pairs.find((p) => p.rollerId === dancer.protoId);
-      if (!pair)
-        throw new SnazzyError([
-          "dancer ",
-          { dancerId: dancer.id },
-          " has no match",
-        ]);
-      return pair.rolleeId;
-    }
-    const pair = pairs.find((p) => p.rolleeId === dancer.protoId);
-    if (!pair)
-      throw new SnazzyError([
-        "dancer ",
-        { dancerId: dancer.id },
-        " has no match",
-      ]);
-    return pair.rollerId;
-  };
-
-  return { getMatchId, isRtl };
+  return { isRtl: rollerSides.has(-1) };
 }
 
 function planRollAway(
   instr: RollAwayInstruction,
   dancer: Dancer,
-  getMatchId: (dancer: Dancer) => DancerId,
   isRtl: boolean,
 ): DancerSegment[] {
-  const themId = getMatchId(dancer);
-  const them = Dancer.get(themId, dancer.worldState);
+  const them = dancer.resolveMatch(instr.rollee);
+  const themId = them.id;
   const startPos = dancer.pos;
   const themPos = them.pos;
   const startFacing = dancer.facing;
@@ -195,8 +150,8 @@ export function rollAwayAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const { getMatchId, isRtl } = validateAndResolveMatches(instr, init, who);
+  const { isRtl } = validateRollAway(instr, init, who);
   return animatePlans(init, who, (dancer) =>
-    planRollAway(instr, dancer, getMatchId, isRtl),
+    planRollAway(instr, dancer, isRtl),
   );
 }
