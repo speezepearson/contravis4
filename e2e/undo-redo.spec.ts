@@ -122,14 +122,16 @@ test.describe("undo/redo", () => {
   });
 
   test("loading a dance is a single undo entry", async ({ page }) => {
+    const initialCount = await page.locator(".instruction-item").count();
+
     // Load a dance
     await page.locator(".dance-loader select").selectOption({ index: 1 });
     await expect(page.locator(".instruction-item").first()).toBeVisible();
     const countAfterLoad = await page.locator(".instruction-item").count();
-    expect(countAfterLoad).toBeGreaterThan(0);
+    expect(countAfterLoad).not.toBe(initialCount);
 
-    // Single undo should return to the empty state
+    // Single undo should return to the initial state
     await page.keyboard.press("Control+z");
-    expect(await page.locator(".instruction-item").count()).toBe(0);
+    expect(await page.locator(".instruction-item").count()).toBe(initialCount);
   });
 });

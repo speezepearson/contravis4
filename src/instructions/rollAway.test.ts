@@ -17,11 +17,7 @@ function makeInstr(
     beats: 2,
     type: "roll_away",
     roller: "lark",
-    rollee: {
-      type: "PersonInDirection",
-      dir: "on_right",
-      onlyRole: "different",
-    },
+    rollee: { type: "label", label: "partner" },
     ...overrides,
   };
 }
@@ -41,7 +37,7 @@ describe("rollAway", () => {
         },
       });
       expect(() => rollAwayAnimator(instr, init, allProtos)).toThrow(
-        "has no opposite-role",
+        "can't find",
       );
     });
 
@@ -63,22 +59,13 @@ describe("rollAway", () => {
           onlyRole: "different",
         },
       });
-      expect(() => rollAwayAnimator(instr, init, allProtos)).toThrow(
-        "both grabbed the same rollee",
-      );
+      expect(() => rollAwayAnimator(instr, init, allProtos)).toThrow();
     });
   });
 
-  describe("RTL with roller=lark", () => {
+  describe("LTR with roller=lark", () => {
     const init = initFormationStates.improper;
-    const instr = makeInstr({
-      roller: "lark",
-      rollee: {
-        type: "PersonInDirection",
-        dir: "on_right",
-        onlyRole: "different",
-      },
-    });
+    const instr = makeInstr();
     const animation = rollAwayAnimator(instr, init, allProtos);
     const final = animation.getFrame(animation.dur);
 

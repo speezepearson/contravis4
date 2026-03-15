@@ -14,6 +14,7 @@ import {
   parseProtoId,
   type ProtoId,
 } from "./contraCore";
+import { isDanceVerified } from "./exampleDances";
 import { generateDanceAnimation } from "./generate";
 import { NORTH, SOUTH } from "./geometry";
 import { inferProgression } from "./inferProgression";
@@ -85,7 +86,7 @@ describe("progression shift invariance", () => {
     it(file, async () => {
       const dance = await loadDance(resolve(exampleDancesDir, file));
       if (dance.instructions.length === 0) return;
-      if (dance.status !== "verified") return;
+      if (!isDanceVerified(dance)) return;
       const initState = resolveInitFormation(dance.initFormation);
       const { animation: origAnim, errors: origErrors } =
         generateDanceAnimation(dance.instructions, initState);

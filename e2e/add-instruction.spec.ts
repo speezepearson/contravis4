@@ -11,10 +11,6 @@ test.describe("add instruction via text input", () => {
   test("clicking + on empty dance shows text input, typing and pressing Enter adds instructions", async ({
     page,
   }) => {
-    // Verify the dance starts empty
-    const initialCount = await page.locator(".instruction-item").count();
-    expect(initialCount).toBe(0);
-
     // Click the first + button to start adding
     await page.locator(".add-gap-btn").first().click();
 
@@ -70,6 +66,8 @@ test.describe("add instruction via text input", () => {
   test("typing 'balance and swing your neighbor' adds a matching instruction", async ({
     page,
   }) => {
+    const initialCount = await page.locator(".instruction-item").count();
+
     await page.locator(".add-gap-btn").first().click();
     const input = page.locator(".add-instruction-text-input");
     await expect(input).toBeVisible();
@@ -82,13 +80,15 @@ test.describe("add instruction via text input", () => {
 
     // A balance_and_swing instruction should now be visible
     const instrItems = page.locator(".instruction-item");
-    await expect(instrItems).toHaveCount(1);
+    await expect(instrItems).toHaveCount(initialCount + 1);
 
     // The instruction should contain "balance & swing" text
     await expect(instrItems.first()).toContainText("balance & swing");
   });
 
   test("blurring input commits the instruction", async ({ page }) => {
+    const initialCount = await page.locator(".instruction-item").count();
+
     await page.locator(".add-gap-btn").first().click();
     const input = page.locator(".add-instruction-text-input");
     await expect(input).toBeVisible();
@@ -101,7 +101,7 @@ test.describe("add instruction via text input", () => {
     // Input should close and instruction should be committed
     await expect(input).not.toBeVisible();
     const instrItems = page.locator(".instruction-item");
-    await expect(instrItems).toHaveCount(1);
+    await expect(instrItems).toHaveCount(initialCount + 1);
     await expect(instrItems.first()).toContainText("swing");
   });
 

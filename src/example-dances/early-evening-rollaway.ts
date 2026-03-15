@@ -2,7 +2,7 @@ import { DanceSchema } from "../instructions/index";
 import { typedParse } from "../utils";
 
 export default typedParse(DanceSchema, {
-  status: "preliminary",
+  status: "verified",
   url: "https://contradb.com/dances/2593",
   name: "Early Evening Rollaway",
   author: "Bob Isaacs",
@@ -39,7 +39,7 @@ export default typedParse(DanceSchema, {
       id: "4b7bd56e-a5d0-4e8d-a7c9-b125d72dd294",
       beats: 8,
       type: "robins_chain",
-      cid: { type: "label", label: "opposite" },
+      cid: { type: "label", label: "partner" },
     },
     {
       id: "14a748bb-815f-4e87-b9d1-d123c7014c6f",
