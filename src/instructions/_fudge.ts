@@ -19,7 +19,6 @@ import {
 import { personInDir } from "./_base";
 import {
   addDancerDrift,
-  type DancerSegment,
   evaluatePlansFinalState,
   type PlanGetter,
 } from "./_plan";
@@ -36,11 +35,7 @@ export function fudgePlansToAlignY(
 ): PlanGetter {
   const allProtos: ReadonlySet<ProtoId> = new Set(ALL_PROTO_IDS);
 
-  const basePlans = new Map<ProtoId, DancerSegment[]>();
-  for (const id of ALL_PROTO_IDS) {
-    basePlans.set(id, getPlan(Dancer.get(id, init)));
-  }
-  const finalState = evaluatePlansFinalState(init, allProtos, basePlans);
+  const finalState = evaluatePlansFinalState(init, allProtos, getPlan);
 
   const westLark = must(
     ALL_PROTO_IDS.find(
@@ -113,25 +108,21 @@ export function fudgePlansToAlignY(
   const dyFudgeWest = dyWestLarkToNearestEastRobin / 2;
   const dyFudgeEast = -dyFudgeWest;
 
-  const driftedPlans = new Map<ProtoId, DancerSegment[]>();
-  for (const id of ALL_PROTO_IDS) {
-    const basePlan = must(basePlans.get(id));
-    const dy = westIds.includes(id) ? dyFudgeWest : dyFudgeEast;
-    driftedPlans.set(
-      id,
-      addDancerDrift(
-        basePlan,
-        init[id].pos,
-        (globalFrac) => new Vector(0, dy * globalFrac),
-      ),
+  const getDriftedPlan = (d: Dancer) => {
+    const basePlan = getPlan(d);
+    const dy = westIds.includes(d.protoId) ? dyFudgeWest : dyFudgeEast;
+    return addDancerDrift(
+      basePlan,
+      d.pos,
+      (globalFrac) => new Vector(0, dy * globalFrac),
     );
-  }
+  };
 
   // Verify: after drift, each dancer's across-match should share the same y.
   const resultFinalState = evaluatePlansFinalState(
     init,
     allProtos,
-    driftedPlans,
+    getDriftedPlan,
   );
   for (const id of ALL_PROTO_IDS) {
     const dancer = Dancer.get(id, resultFinalState);
@@ -147,7 +138,7 @@ export function fudgePlansToAlignY(
     }
   }
 
-  return (dancer: Dancer) => must(driftedPlans.get(dancer.protoId));
+  return getDriftedPlan;
 }
 
 /**
@@ -161,11 +152,7 @@ export function fudgePlansToSpaceEvenlyInY(
 ): PlanGetter {
   const allProtos: ReadonlySet<ProtoId> = new Set(ALL_PROTO_IDS);
 
-  const basePlans = new Map<ProtoId, DancerSegment[]>();
-  for (const id of ALL_PROTO_IDS) {
-    basePlans.set(id, getPlan(Dancer.get(id, init)));
-  }
-  const finalState = evaluatePlansFinalState(init, allProtos, basePlans);
+  const finalState = evaluatePlansFinalState(init, allProtos, getPlan);
 
   // Partition dancers by side
   const west: ProtoId[] = [];
@@ -195,31 +182,28 @@ export function fudgePlansToSpaceEvenlyInY(
     finalState[east[1]].pos.y,
   );
 
-  const driftMap = new Map<ProtoId, number>();
-  driftMap.set(west[0], westFudges[0]);
-  driftMap.set(west[1], westFudges[1]);
-  driftMap.set(east[0], eastFudges[0]);
-  driftMap.set(east[1], eastFudges[1]);
+  const getSpacingDrift = (d: Dancer): number => {
+    const side = getDancerSide(Dancer.get(d.protoId, finalState));
+    const ids = side === "west" ? west : east;
+    const fudges = side === "west" ? westFudges : eastFudges;
+    return fudges[must(indexOf(ids, d.protoId))];
+  };
 
-  const driftedPlans = new Map<ProtoId, DancerSegment[]>();
-  for (const id of ALL_PROTO_IDS) {
-    const basePlan = must(basePlans.get(id));
-    const dy = driftMap.get(id) ?? 0;
-    driftedPlans.set(
-      id,
-      addDancerDrift(
-        basePlan,
-        init[id].pos,
-        (globalFrac) => new Vector(0, dy * globalFrac),
-      ),
+  const getDriftedPlan = (d: Dancer) => {
+    const basePlan = getPlan(d);
+    const dy = getSpacingDrift(d);
+    return addDancerDrift(
+      basePlan,
+      d.pos,
+      (globalFrac) => new Vector(0, dy * globalFrac),
     );
-  }
+  };
 
   // Verify: each side should have circular distance 1
   const resultFinalState = evaluatePlansFinalState(
     init,
     allProtos,
-    driftedPlans,
+    getDriftedPlan,
   );
   for (const [label, ids] of [
     ["west", west],
@@ -235,7 +219,7 @@ export function fudgePlansToSpaceEvenlyInY(
     }
   }
 
-  return (dancer: Dancer) => must(driftedPlans.get(dancer.protoId));
+  return getDriftedPlan;
 }
 
 /**
