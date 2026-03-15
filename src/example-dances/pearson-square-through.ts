@@ -5,6 +5,7 @@ export default typedParse(DanceSchema, {
   name: "Pearson Square Through",
   author: "Ramya Rajan and Spencer Pearson",
   initFormation: "improper",
+  status: "verified",
   instructions: [
     {
       id: "e8f44806-9041-472f-89c2-bc93b6e8fdef",
