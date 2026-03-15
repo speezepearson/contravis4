@@ -5,36 +5,68 @@ import { parseProtoId } from "./contraCore";
 import { lerpFacing } from "./geometry";
 import { buildProtoRecord, type WorldState } from "./worldState";
 
-export function averageFrames(frames: WorldState[]): WorldState {
-  const n = frames.length;
+export type WeightedFrame = { frame: WorldState; weight: number };
 
+/**
+ * Produce a smoothed frame: a copy of `baseFrame` whose positions and facings
+ * are replaced by weighted averages taken from `samples`.
+ *
+ * Hands, labels, and recents come from `baseFrame` (the frame at the "true" time T).
+ */
+export function smoothFrame(
+  baseFrame: WorldState,
+  samples: readonly WeightedFrame[],
+): WorldState {
   return buildProtoRecord((id) => {
+    let totalWeight = 0;
     let posX = 0;
     let posY = 0;
 
-    for (const frame of frames) {
+    for (const { frame, weight } of samples) {
       const dancer = frame[id];
-      posX += dancer.pos.x;
-      posY += dancer.pos.y;
+      posX += dancer.pos.x * weight;
+      posY += dancer.pos.y * weight;
+      totalWeight += weight;
     }
 
-    // Iterative running mean via lerpFacing so that opposite facings
-    // interpolate through the perpendicular instead of canceling out.
-    let avgFacing = frames[0][id].facing;
-    for (let i = 1; i < n; i++) {
-      avgFacing = lerpFacing(avgFacing, frames[i][id].facing, 1 / (i + 1));
-    }
+    const avgFacing = weightedAverageFacing(
+      samples.map(({ frame, weight }) => ({
+        facing: frame[id].facing,
+        weight,
+      })),
+    );
 
-    const mid = frames[Math.floor(n / 2)][id];
+    const base = baseFrame[id];
 
-    return produce(frames[Math.floor(n / 2)][id], (draft) => {
-      draft.pos = new Vector(posX / n, posY / n);
+    return produce(base, (draft) => {
+      draft.pos = new Vector(posX / totalWeight, posY / totalWeight);
       draft.facing = avgFacing;
-      draft.hands = mid.hands;
-      draft.labels = mid.labels;
-      draft.recents = mid.recents;
+      draft.hands = base.hands;
+      draft.labels = base.labels;
+      draft.recents = base.recents;
     });
   });
+}
+
+/**
+ * Weighted average of facing directions via iterated lerpFacing.
+ *
+ * Entries are sorted by weight descending so each successive lerp uses a
+ * smaller coefficient (w_i / cumulative_weight), which keeps the running
+ * average stable and biased towards the highest-weight directions.
+ */
+export function weightedAverageFacing(
+  entries: readonly { facing: Vector; weight: number }[],
+): Vector {
+  const sorted = [...entries].sort((a, b) => b.weight - a.weight);
+
+  let result = sorted[0].facing;
+  let cumWeight = sorted[0].weight;
+  for (let i = 1; i < sorted.length; i++) {
+    cumWeight += sorted[i].weight;
+    result = lerpFacing(result, sorted[i].facing, sorted[i].weight / cumWeight);
+  }
+  return result;
 }
 
 /** Shift every dancer by `n` meters in their progression direction (NORTH for up, SOUTH for down).

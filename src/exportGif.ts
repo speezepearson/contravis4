@@ -1,9 +1,10 @@
 import * as _gifencNs from "gifenc";
 
 import {
-  averageFrames,
   shiftFrameByProgression,
   shiftFrameUniformly,
+  smoothFrame,
+  type WeightedFrame,
 } from "./averageFrames";
 import { Renderer } from "./components/Renderer";
 import type { ContraAnimation } from "./instructions/_base";
@@ -81,12 +82,19 @@ function sampleFrame(
     }
   }
 
-  const N = 10;
   const dur = animation.dur;
-  const frames: WorldState[] = [];
-  for (let i = 0; i < N; i++) {
-    const sampleT = t + smoothness * (i / (N - 1) - 0.5);
+  let baseFrame: WorldState;
+  try {
+    baseFrame = animation.getFrame(Math.max(0, Math.min(dur, t)));
+  } catch {
+    return null;
+  }
+  const samples: WeightedFrame[] = [];
+  for (let k = -10; k <= 10; k++) {
+    const sampleT = t + k * 0.1 * smoothness;
+    const weight = Math.exp(-(k * k) / 200);
     try {
+      let sampleFrame: WorldState;
       if (
         inferredProgression !== null &&
         dur > 0 &&
@@ -98,20 +106,22 @@ function sampleFrame(
         const rawFrame = animation.getFrame(
           Math.max(0, Math.min(dur, wrappedT)),
         );
-        frames.push(
-          shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
+        sampleFrame = shiftFrameByProgression(
+          rawFrame,
+          -wraps * inferredProgression,
         );
       } else {
         const clampedT = Math.max(0, Math.min(dur, sampleT));
-        frames.push(animation.getFrame(clampedT));
+        sampleFrame = animation.getFrame(clampedT);
       }
+      samples.push({ frame: sampleFrame, weight });
     } catch {
       // Skip this sample — other samples may still be valid
     }
   }
 
-  if (frames.length === 0) return null;
-  return averageFrames(frames);
+  if (samples.length === 0) return null;
+  return smoothFrame(baseFrame, samples);
 }
 
 /**

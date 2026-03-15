@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  averageFrames,
   shiftFrameByProgression,
   shiftFrameUniformly,
+  smoothFrame,
+  type WeightedFrame,
 } from "./averageFrames";
 import CommandPane from "./components/CommandPane";
 import {
@@ -319,13 +320,15 @@ export default function App() {
 
     try {
       if (smoothness > 0) {
-        const N = 10;
         const dur = animation.dur;
-        const frames: WorldState[] = [];
+        const baseFrame = animation.getFrame(t);
+        const samples: WeightedFrame[] = [];
         let lastSampleError: string | null = null;
-        for (let i = 0; i < N; i++) {
-          const sampleT = t + smoothness * (i / (N - 1) - 0.5);
+        for (let k = -10; k <= 10; k++) {
+          const sampleT = t + k * 0.1 * smoothness;
+          const weight = Math.exp(-(k * k) / 200);
           try {
+            let sampleFrame: WorldState;
             if (
               inferredProgression !== null &&
               dur > 0 &&
@@ -340,19 +343,21 @@ export default function App() {
               const rawFrame = animation.getFrame(
                 Math.max(0, Math.min(dur, wrappedT)),
               );
-              frames.push(
-                shiftFrameByProgression(rawFrame, -wraps * inferredProgression),
+              sampleFrame = shiftFrameByProgression(
+                rawFrame,
+                -wraps * inferredProgression,
               );
             } else {
               const clampedT = Math.max(0, Math.min(dur, sampleT));
-              frames.push(animation.getFrame(clampedT));
+              sampleFrame = animation.getFrame(clampedT);
             }
+            samples.push({ frame: sampleFrame, weight });
           } catch (e) {
             lastSampleError = e instanceof Error ? e.message : String(e);
           }
         }
-        if (frames.length > 0) {
-          frame = averageFrames(frames);
+        if (samples.length > 0) {
+          frame = smoothFrame(baseFrame, samples);
         } else {
           frameError =
             lastSampleError ?? "all frame samples failed sanity check";
