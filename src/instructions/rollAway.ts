@@ -46,17 +46,17 @@ export const RollAwayInstructionSchema = z.object({
 });
 export type RollAwayInstruction = z.infer<typeof RollAwayInstructionSchema>;
 
-function validateAndBuildMatchMap(
+function validateAndResolveMatches(
   instr: RollAwayInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): {
-  rollerToRollee: Map<ProtoId, DancerId>;
-  rolleeToRoller: Map<DancerId, ProtoId>;
+  getMatchId: (dancer: Dancer) => DancerId;
   isRtl: boolean;
 } {
-  const rollerToRollee = new Map<ProtoId, DancerId>();
-  const rolleeToRoller = new Map<DancerId, ProtoId>();
+  // Build match pairs for validation and isRtl computation.
+  const pairs: { rollerId: ProtoId; rolleeId: DancerId }[] = [];
+  const seenRollees = new Map<DancerId, ProtoId>();
   for (const id of who) {
     if (getRole(id) !== instr.roller) continue;
     const rollee = Dancer.get(id, init).resolveCalledIdentifier(instr.rollee);
@@ -68,22 +68,22 @@ function validateAndBuildMatchMap(
         " to roll away",
       ]);
     }
-    rollerToRollee.set(id, rollee.id);
-    if (rolleeToRoller.has(rollee.id)) {
+    if (seenRollees.has(rollee.id)) {
       throw new SnazzyError([
         "rollers ",
-        { dancerId: rolleeToRoller.get(rollee.id)! },
+        { dancerId: seenRollees.get(rollee.id)! },
         " and ",
         { dancerId: id },
         " both grabbed the same rollee ",
         { dancerId: rollee.id },
       ]);
     }
-    rolleeToRoller.set(rollee.id, id);
+    seenRollees.set(rollee.id, id);
+    pairs.push({ rollerId: id, rolleeId: rollee.id });
   }
 
   const rollerSides = new Set(
-    [...rollerToRollee].map(([rollerId, rolleeId]) => {
+    pairs.map(({ rollerId, rolleeId }) => {
       const roller = Dancer.get(rollerId, init);
       const rollee = Dancer.get(rolleeId, init);
       return Math.sign(
@@ -98,35 +98,38 @@ function validateAndBuildMatchMap(
 
   const isRtl = rollerSides.has(-1);
 
-  return { rollerToRollee, rolleeToRoller, isRtl };
-}
-
-function planRollAwayWithMatchMap(
-  instr: RollAwayInstruction,
-  dancer: Dancer,
-  matchMap: {
-    rollerToRollee: Map<ProtoId, DancerId>;
-    rolleeToRoller: Map<DancerId, ProtoId>;
-    isRtl: boolean;
-  },
-): DancerSegment[] {
-  const { rollerToRollee, rolleeToRoller, isRtl } = matchMap;
-
-  const getMatchId = (): DancerId => {
-    const res =
-      getRole(dancer.protoId) === instr.roller
-        ? rollerToRollee.get(dancer.protoId)
-        : rolleeToRoller.get(dancer.protoId);
-    if (!res)
+  const getMatchId = (dancer: Dancer): DancerId => {
+    const isRoller = getRole(dancer.protoId) === instr.roller;
+    if (isRoller) {
+      const pair = pairs.find((p) => p.rollerId === dancer.protoId);
+      if (!pair)
+        throw new SnazzyError([
+          "dancer ",
+          { dancerId: dancer.id },
+          " has no match",
+        ]);
+      return pair.rolleeId;
+    }
+    const pair = pairs.find((p) => p.rolleeId === dancer.protoId);
+    if (!pair)
       throw new SnazzyError([
         "dancer ",
         { dancerId: dancer.id },
         " has no match",
       ]);
-    return res;
+    return pair.rollerId;
   };
 
-  const themId = getMatchId();
+  return { getMatchId, isRtl };
+}
+
+function planRollAway(
+  instr: RollAwayInstruction,
+  dancer: Dancer,
+  getMatchId: (dancer: Dancer) => DancerId,
+  isRtl: boolean,
+): DancerSegment[] {
+  const themId = getMatchId(dancer);
   const them = Dancer.get(themId, dancer.worldState);
   const startPos = dancer.pos;
   const themPos = them.pos;
@@ -192,8 +195,8 @@ export function rollAwayAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const matchMap = validateAndBuildMatchMap(instr, init, who);
+  const { getMatchId, isRtl } = validateAndResolveMatches(instr, init, who);
   return animatePlans(init, who, (dancer) =>
-    planRollAwayWithMatchMap(instr, dancer, matchMap),
+    planRollAway(instr, dancer, getMatchId, isRtl),
   );
 }
