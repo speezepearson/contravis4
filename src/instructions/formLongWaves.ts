@@ -1,12 +1,16 @@
-import { produce } from "immer";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, parseProtoId, type ProtoId } from "../contraCore";
+import {
+  ALL_PROTO_IDS,
+  type Hand,
+  parseProtoId,
+  type ProtoId,
+} from "../contraCore";
 import { EAST, WEST } from "../geometry";
 import { must, safeThreshold } from "../utils";
 import {
-  connectHands,
   Dancer,
+  type DancerHandPointer,
   getDancerSide,
   type WorldState,
 } from "../worldState";
@@ -26,10 +30,7 @@ export type FormLongWavesInstruction = z.infer<
   typeof FormLongWavesInstructionSchema
 >;
 
-function validateAndComputeFinalState(
-  init: WorldState,
-  who: ReadonlySet<ProtoId>,
-): WorldState {
+function validate(init: WorldState, who: ReadonlySet<ProtoId>): void {
   if (who.size !== ALL_PROTO_IDS.length)
     throw new Error(`formLongWaves instruction must target all dancers`);
 
@@ -45,16 +46,6 @@ function validateAndComputeFinalState(
       );
   }
 
-  // Snap facings to across or out (whichever is closer = EAST or WEST)
-  const snappedState = produce(init, (draft) => {
-    for (const id of ALL_PROTO_IDS) {
-      draft[id].facing = must(
-        safeThreshold(draft[id].facing.x, { neg: WEST, pos: EAST }),
-        [{ dancerId: id }, " isn't sure whether to face in or out"],
-      );
-    }
-  });
-
   // Assert that either larks face out & robins across, or vice versa.
   const larkIds = ALL_PROTO_IDS.filter(
     (id) => parseProtoId(id).role === "lark",
@@ -62,59 +53,47 @@ function validateAndComputeFinalState(
   const robinIds = ALL_PROTO_IDS.filter(
     (id) => parseProtoId(id).role === "robin",
   );
-  const larksOut = larkIds.every((id) =>
-    Dancer.get(id, snappedState).facesOut(),
-  );
-  const larksAcross = larkIds.every(
-    (id) => !Dancer.get(id, snappedState).facesOut(),
-  );
-  const robinsOut = robinIds.every((id) =>
-    Dancer.get(id, snappedState).facesOut(),
-  );
-  const robinsAcross = robinIds.every(
-    (id) => !Dancer.get(id, snappedState).facesOut(),
-  );
+
+  const out = (id: ProtoId): boolean => Dancer.get(id, init).facesOut();
+
+  const larksOut = larkIds.every((id) => out(id));
+  const larksAcross = larkIds.every((id) => !out(id));
+  const robinsOut = robinIds.every((id) => out(id));
+  const robinsAcross = robinIds.every((id) => !out(id));
   if (!((larksOut && robinsAcross) || (larksAcross && robinsOut))) {
     throw new Error(
       `formLongWaves requires all larks facing the same way (across or out) and all robins the opposite`,
     );
   }
-
-  // Compute full final state with hands connected
-  return produce(init, (draft) => {
-    for (const id of ALL_PROTO_IDS) {
-      draft[id].facing = snappedState[id].facing;
-      const snapped = Dancer.get(id, snappedState);
-      connectHands(
-        draft,
-        id,
-        "left",
-        snapped.resolveMatch(personInDir("on_left", "different")).id,
-        "left",
-      );
-      connectHands(
-        draft,
-        id,
-        "right",
-        snapped.resolveMatch(personInDir("on_right", "different")).id,
-        "right",
-      );
-    }
-  });
 }
 
 // ── Plan-based API ──────────────────────────────────────────────────────
 
-export function planFormLongWaves(
-  dancer: Dancer,
-  finalState: WorldState,
-): DancerSegment[] {
-  const final = finalState[dancer.protoId];
+export function planFormLongWaves(dancer: Dancer): DancerSegment[] {
+  const facing = must(
+    safeThreshold(dancer.facing.x, { neg: WEST, pos: EAST }),
+    [{ dancerId: dancer.id }, " isn't sure whether to face in or out"],
+  );
+
+  const out = dancer.facesOut();
+  // Facing out: left = setcounterclockwise, right = setclockwise
+  // Facing in:  left = setclockwise,        right = setcounterclockwise
+  const leftDir = out ? "setcounterclockwise" : "setclockwise";
+  const rightDir = out ? "setclockwise" : "setcounterclockwise";
+
+  const leftPartner = dancer.resolveMatch(personInDir(leftDir, "different"));
+  const rightPartner = dancer.resolveMatch(personInDir(rightDir, "different"));
+
+  const hands: Partial<Record<Hand, DancerHandPointer>> = {
+    left: { theirId: leftPartner.id, theirHand: "left" },
+    right: { theirId: rightPartner.id, theirHand: "right" },
+  };
+
   return [
     {
       dur: 0,
-      facing: () => final.facing,
-      hands: () => final.hands,
+      facing: () => facing,
+      hands: () => hands,
     },
   ];
 }
@@ -124,8 +103,6 @@ export function formLongWavesAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const finalState = validateAndComputeFinalState(init, who);
-  return animatePlans(init, who, (dancer) =>
-    planFormLongWaves(dancer, finalState),
-  );
+  validate(init, who);
+  return animatePlans(init, who, (dancer) => planFormLongWaves(dancer));
 }
