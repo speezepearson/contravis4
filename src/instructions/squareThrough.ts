@@ -22,7 +22,7 @@ import {
 import { planBalance } from "./balance";
 import { planFace } from "./face";
 import { planPullBy } from "./pullBy";
-import { computeTakeHandsFinalState, planTakeHands } from "./takeHands";
+import { planTakeHands, type TakeHandsInstruction } from "./takeHands";
 
 const NPullBysSchema = z.union([z.literal(2), z.literal(3), z.literal(4)]);
 
@@ -95,11 +95,8 @@ export function planSquareThrough(
     state = evaluatePlansFinalState(capturedState, who, planBuilder);
   }
 
-  function addTakeHandsPhase(
-    takeInstr: Parameters<typeof computeTakeHandsFinalState>[0],
-  ) {
-    const finalState = computeTakeHandsFinalState(takeInstr, state);
-    addPhase((d) => planTakeHands(takeInstr, d, finalState));
+  function addTakeHandsPhase(takeInstr: TakeHandsInstruction) {
+    addPhase((d) => planTakeHands(takeInstr, d));
   }
 
   // 1. Face cid1

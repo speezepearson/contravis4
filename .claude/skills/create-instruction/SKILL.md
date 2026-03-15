@@ -66,7 +66,7 @@ export const fooSegments =
 |------|-------------|
 | `ellipsePosition`, `PI`, `TWO_PI`, `revolve`, `getDir` | `../geometry` |
 | `getRole`, `isLark`, `otherHand`, `otherRole`, `ProtoId`, `Hand`, `RoleSchema` | `../contraCore` |
-| `Dancer`, `connectHands`, `disconnectHands` | `../worldState` |
+| `Dancer`, `DancerHandPointer` | `../worldState` |
 | `resolveCalledIdentifier`, `findDancerInCalledDirection`, `CalledIdentifierSchema` | `./_base` |
 | `arc`, `orbit`, `linearTo`, `lerpFacingTo`, `rotateFacingBy`, `hold`, `holdByRole`, `holdUntil`, `disconnect` | `./_segment` |
 | `must` | `../utils` |

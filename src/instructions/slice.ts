@@ -2,13 +2,13 @@ import { produce } from "immer";
 import { Vector } from "vecti";
 import { z } from "zod";
 
-import { HandSchema, isLark, type ProtoId } from "../contraCore";
+import { type Hand, HandSchema, isLark, type ProtoId } from "../contraCore";
 import { lerpFacing, roughlySameDir } from "../geometry";
 import { SnazzyError } from "../snazzyError";
 import { lerpVectors, must } from "../utils";
 import {
-  connectHands,
   Dancer,
+  type DancerHandPointer,
   getDancerSide,
   type WorldState,
 } from "../worldState";
@@ -50,17 +50,13 @@ export function sliceAnimator(
     }
   }
 
-  // Compute post-setup state: snap facing across and take hands
+  // Compute post-setup state: snap facing across (hands computed per-dancer below)
   const postSetup = produce(init, (draft) => {
     for (const pid of who) {
       draft[pid].facing = must(
         resolveCardinalDirection("across", draft[pid].pos),
         [{ dancerId: pid }, "is in the middle, can't tell which way is across"],
       );
-      const them = Dancer.get(pid, init).resolveMatch(cid);
-      const myHand = isLark(pid) ? "right" : "left";
-      const theirHand = isLark(pid) ? "left" : "right";
-      connectHands(draft, pid, myHand, them.id, theirHand);
     }
   });
 
@@ -93,11 +89,17 @@ export function sliceAnimator(
   );
 
   return animatePlans(init, who, (dancer) => {
-    // Setup: snap facing and hands (dur=0)
+    // Setup: snap facing and take hands (dur=0)
+    const match = Dancer.get(dancer.protoId, init).resolveMatch(cid);
+    const myHand: Hand = isLark(dancer.protoId) ? "right" : "left";
+    const theirHand: Hand = isLark(dancer.protoId) ? "left" : "right";
+    const hands: Partial<Record<Hand, DancerHandPointer>> = {
+      [myHand]: { theirId: match.id, theirHand },
+    };
     const setupSeg: DancerSegment = {
       dur: 0,
       facing: () => postSetup[dancer.protoId].facing,
-      hands: () => postSetup[dancer.protoId].hands,
+      hands: () => hands,
     };
 
     // Fudged first segment

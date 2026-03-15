@@ -1,8 +1,7 @@
-import { produce } from "immer";
 import { z } from "zod";
 
-import { type ProtoId } from "../contraCore";
-import { connectHands, Dancer, type WorldState } from "../worldState";
+import { type Hand, type ProtoId } from "../contraCore";
+import { type DancerHandPointer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
   CardinalDirectionSchema,
@@ -33,17 +32,8 @@ export function balanceAndSwingAnimator(
   const { id } = instr;
   const swingBeats = instr.beats - BALANCE_BEATS;
 
-  // Step 1: Compute state after taking hands with match
-  const postHandsState = produce(init, (draft) => {
-    for (const pid of who) {
-      const match = Dancer.get(pid, init).resolveMatch(instr.cid);
-      connectHands(draft, pid, "left", match.id, "right");
-      connectHands(draft, pid, "right", match.id, "left");
-    }
-  });
-
-  // Step 2: Build swing plans from post-hands state
-  // (balance returns dancers to starting positions, so post-balance ≡ post-hands)
+  // Build swing plans from init state
+  // (positions and facings are unchanged by hand-taking; balance returns to start)
   const swingInstr = {
     id,
     type: "swing" as const,
@@ -51,9 +41,8 @@ export function balanceAndSwingAnimator(
     cid: instr.cid,
     endFacing: instr.endFacing,
   };
-  const swingPlans = buildSwingPlans(swingInstr, postHandsState, who);
+  const swingPlans = buildSwingPlans(swingInstr, init, who);
 
-  // Step 3: Combine per-dancer plans: take-hands → balance → swing
   const balanceInstr = {
     id,
     beats: BALANCE_BEATS,
@@ -61,14 +50,16 @@ export function balanceAndSwingAnimator(
     cid: instr.cid,
   };
 
+  // Combine per-dancer plans: take-hands → balance → swing
   return animatePlans(init, who, (dancer) => {
-    const postHandsDancer = Dancer.get(dancer.protoId, postHandsState);
-    const handsSeg: DancerSegment = {
-      dur: 0,
-      hands: () => postHandsState[dancer.protoId].hands,
+    const match = dancer.resolveMatch(instr.cid);
+    const hands: Partial<Record<Hand, DancerHandPointer>> = {
+      left: { theirId: match.id, theirHand: "right" },
+      right: { theirId: match.id, theirHand: "left" },
     };
-    const balanceSegs = planBalance(balanceInstr, postHandsDancer);
-    const swingSegs = swingPlans(postHandsDancer);
+    const handsSeg: DancerSegment = { dur: 0, hands: () => hands };
+    const balanceSegs = planBalance(balanceInstr, dancer);
+    const swingSegs = swingPlans(dancer);
     return [handsSeg, ...balanceSegs, ...swingSegs];
   });
 }

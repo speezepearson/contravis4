@@ -6,28 +6,20 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_PROTO_IDS,
   DancerIdSchema,
-  getOffset,
   parseDancerId,
   projectDancerIdToProtoId,
-  protoIdToDancerId,
 } from "./contraCore";
 import { initFormationStates } from "./instructions/index";
 import { ShadowLabelSchema } from "./labels";
 import {
   fcAnyWorldState,
   fcDancerId,
-  fcHand,
   fcNonzeroOffset,
   fcProtoId,
   fcSettableLabel,
 } from "./testHelpers";
 import { must, parses } from "./utils";
-import {
-  connectHands,
-  findNearbyDancers,
-  setLabel,
-  WorldStateSchema,
-} from "./worldState";
+import { findNearbyDancers, setLabel, WorldStateSchema } from "./worldState";
 
 describe("WorldStateSchema", () => {
   it("parses JSON.stringify of a WorldState", () => {
@@ -44,45 +36,6 @@ describe("WorldStateSchema", () => {
       expect(result.data[id].facing.y).toBeCloseTo(ws[id].facing.y);
       expect(result.data[id].labels).toEqual(ws[id].labels);
     }
-  });
-});
-
-describe("connectHands", () => {
-  it("creates bidirectional hand connections with correct offset adjustment", () => {
-    fc.assert(
-      fc.property(fcProtoId, fcHand, fcDancerId, fcHand, (p1, h1, d2, h2) => {
-        fc.pre(projectDancerIdToProtoId(d2) !== p1);
-
-        const state = produce(initFormationStates.improper, (draft) => {
-          connectHands(draft, p1, h1, d2, h2);
-        });
-
-        expect(state[p1].hands[h1]).toEqual({
-          theirId: d2,
-          theirHand: h2,
-        });
-
-        expect(state[projectDancerIdToProtoId(d2)].hands[h2]).toEqual({
-          theirId: protoIdToDancerId(p1, -getOffset(d2)),
-          theirHand: h1,
-        });
-      }),
-    );
-  });
-
-  it("throws when connecting hands between dancers that share a proto", () => {
-    fc.assert(
-      fc.property(fcProtoId, fcHand, fcDancerId, fcHand, (p1, h1, d2, h2) => {
-        fc.pre(projectDancerIdToProtoId(d2) === p1);
-        fc.pre(p1 !== d2); // offset !== 0, so they're different dancers
-
-        expect(() => {
-          produce(initFormationStates.improper, (draft) => {
-            connectHands(draft, p1, h1, d2, h2);
-          });
-        }).toThrow();
-      }),
-    );
   });
 });
 

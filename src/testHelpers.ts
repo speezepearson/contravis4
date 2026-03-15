@@ -27,7 +27,6 @@ import {
 import { typedParse } from "./utils";
 import {
   buildProtoRecord,
-  connectHands,
   ProtoDancerStateSchema,
   setLabel,
   type WorldState,
@@ -137,14 +136,12 @@ export const fcAnyWorldState: fc.Arbitrary<WorldState> = fc
         });
       });
 
-      // Connect 0-4 random hands, ignoring conflicts
+      // Set 0-4 random hand pointers (one-sided; only the named dancer gets the entry)
       for (const conn of handConnections) {
-        try {
-          connectHands(state, conn.id, conn.hand, conn.theirId, conn.theirHand);
-        } catch {
-          // SWALLOW_EXCEPTION: randomly generated hand connections will often
-          // conflict (same proto, hand already occupied, etc.) — that's expected.
-        }
+        state[conn.id].hands[conn.hand] = {
+          theirId: conn.theirId,
+          theirHand: conn.theirHand,
+        };
       }
 
       setLabel(state, "up_lark_0", "neighbor", upLarkNeighbor);

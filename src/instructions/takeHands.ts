@@ -1,10 +1,9 @@
-import { produce } from "immer";
 import { z } from "zod";
 
-import { ALL_PROTO_IDS, type Hand, type ProtoId } from "../contraCore";
+import { type Hand, type ProtoId } from "../contraCore";
 import { SnazzyError } from "../snazzyError";
 import { assertNever, safeThreshold } from "../utils";
-import { connectHands, Dancer, type WorldState } from "../worldState";
+import { Dancer, type DancerHandPointer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
   type ContraAnimation,
@@ -35,57 +34,43 @@ export const TakeHandsInstructionSchema = z.object({
 });
 export type TakeHandsInstruction = z.infer<typeof TakeHandsInstructionSchema>;
 
-export function computeTakeHandsFinalState(
-  instr: TakeHandsInstruction,
-  init: WorldState,
-): WorldState {
-  return produce(init, (draft) => {
-    for (const id of ALL_PROTO_IDS) {
-      const other = Dancer.get(id, init).resolveMatch(instr.cid);
-      switch (instr.hand) {
-        case "left":
-          connectHands(draft, id, "left", other.id, "left");
-          break;
-        case "right":
-          connectHands(draft, id, "right", other.id, "right");
-          break;
-        case "inside": {
-          const ourHand = resolveInsideHand(Dancer.get(id, draft), other);
-          if (!ourHand)
-            throw new SnazzyError([
-              { dancerId: id },
-              " can't determine inside hand with ",
-              { dancerId: other.id },
-            ]);
-          const theirHand = resolveInsideHand(other, Dancer.get(id, draft));
-          if (!theirHand)
-            throw new SnazzyError([
-              { dancerId: other.id },
-              " can't determine inside hand with ",
-              { dancerId: id },
-            ]);
-          connectHands(draft, id, ourHand, other.id, theirHand);
-          break;
-        }
-        default:
-          assertNever(instr.hand);
-      }
-    }
-  });
-}
-
 export function planTakeHands(
-  _instr: TakeHandsInstruction,
+  instr: TakeHandsInstruction,
   dancer: Dancer,
-  finalState: WorldState,
 ): DancerSegment[] {
-  const final = Dancer.get(dancer.protoId, finalState);
-  return [
-    {
-      dur: 0,
-      hands: () => final.hands,
-    },
-  ];
+  const match = dancer.resolveMatch(instr.cid);
+
+  const hands: Partial<Record<Hand, DancerHandPointer>> = {};
+  switch (instr.hand) {
+    case "left":
+      hands.left = { theirId: match.id, theirHand: "left" };
+      break;
+    case "right":
+      hands.right = { theirId: match.id, theirHand: "right" };
+      break;
+    case "inside": {
+      const ourHand = resolveInsideHand(dancer, match);
+      if (!ourHand)
+        throw new SnazzyError([
+          { dancerId: dancer.id },
+          " can't determine inside hand with ",
+          { dancerId: match.id },
+        ]);
+      const theirHand = resolveInsideHand(match, dancer);
+      if (!theirHand)
+        throw new SnazzyError([
+          { dancerId: match.id },
+          " can't determine inside hand with ",
+          { dancerId: dancer.id },
+        ]);
+      hands[ourHand] = { theirId: match.id, theirHand };
+      break;
+    }
+    default:
+      assertNever(instr.hand);
+  }
+
+  return [{ dur: 0, hands: () => hands }];
 }
 
 export function takeHandsAnimator(
@@ -93,8 +78,5 @@ export function takeHandsAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const finalState = computeTakeHandsFinalState(instr, init);
-  return animatePlans(init, who, (dancer) =>
-    planTakeHands(instr, dancer, finalState),
-  );
+  return animatePlans(init, who, (dancer) => planTakeHands(instr, dancer));
 }
