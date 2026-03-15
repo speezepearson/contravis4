@@ -2,7 +2,6 @@ import { produce } from "immer";
 import { z } from "zod";
 
 import { type ProtoId } from "../contraCore";
-import { must } from "../utils";
 import { connectHands, Dancer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -69,7 +68,7 @@ export function balanceAndSwingAnimator(
       hands: () => postHandsState[dancer.protoId].hands,
     };
     const balanceSegs = planBalance(balanceInstr, postHandsDancer);
-    const swingSegs = must(swingPlans.get(dancer.protoId));
+    const swingSegs = swingPlans(postHandsDancer);
     return [handsSeg, ...balanceSegs, ...swingSegs];
   });
 }

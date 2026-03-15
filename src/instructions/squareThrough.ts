@@ -97,7 +97,9 @@ export function planSquareThrough(
       plansMap.set(pid, planBuilder(Dancer.get(pid, state)));
     }
     phases.push(plansMap);
-    state = evaluatePlansFinalState(state, who, plansMap);
+    state = evaluatePlansFinalState(state, who, (dancer) =>
+      must(plansMap.get(dancer.protoId)),
+    );
     return plansMap;
   }
 

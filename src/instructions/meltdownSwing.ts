@@ -14,6 +14,7 @@ import {
   animatePlans,
   type DancerSegment,
   evaluatePlansFinalState,
+  type PlanGetter,
 } from "./_plan";
 import { approachBeatsForSpeedMatch } from "./allemande";
 import { APPROACH_ELLIPSE_RADIANS, planShoulderRound } from "./shoulderRound";
@@ -83,7 +84,9 @@ export function meltdownSwingAnimator(
   }
 
   // Evaluate intermediate state after shoulder round
-  const postSrState = evaluatePlansFinalState(init, who, srPlansMap);
+  const srPlanGetter: PlanGetter = (dancer) =>
+    must(srPlansMap.get(dancer.protoId));
+  const postSrState = evaluatePlansFinalState(init, who, srPlanGetter);
 
   // Build swing plans from post-shoulder-round state
   const swingInstr = {
@@ -98,7 +101,7 @@ export function meltdownSwingAnimator(
   // Combine per-dancer plans
   return animatePlans(init, who, (dancer) => {
     const srSegs = must(srPlansMap.get(dancer.protoId));
-    const swingSegs = must(swingPlans.get(dancer.protoId));
+    const swingSegs = swingPlans(Dancer.get(dancer.protoId, postSrState));
     return [...srSegs, ...swingSegs];
   });
 }
