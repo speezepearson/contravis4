@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { type ProtoId } from "../contraCore";
-import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
   type ContraAnimation,
@@ -10,8 +9,8 @@ import {
 } from "./_base";
 import {
   animatePlans,
-  type DancerSegment,
   evaluatePlansFinalState,
+  type PlanGetter,
 } from "./_plan";
 import { planCourtesyTurn } from "./courtesyTurn";
 import { planPullBy } from "./pullBy";
@@ -44,17 +43,16 @@ export function rightLeftThroughAnimator(
   };
 
   // Build pullBy plans for all dancers
-  const pullByPlansMap = new Map<ProtoId, DancerSegment[]>();
-  for (const pid of who) {
-    pullByPlansMap.set(pid, planPullBy(pullByInstr, Dancer.get(pid, init)));
-  }
+  const getPullByPlan: PlanGetter = (dancer: Dancer) => {
+    return planPullBy(pullByInstr, dancer);
+  };
 
   // Evaluate intermediate state after pullBy
-  const postPullByState = evaluatePlansFinalState(init, who, pullByPlansMap);
+  const postPullByState = evaluatePlansFinalState(init, who, getPullByPlan);
 
   // Build combined plans: pullBy segments + courtesy turn segments
   return animatePlans(init, who, (dancer) => {
-    const pullBySegs = must(pullByPlansMap.get(dancer.protoId));
+    const pullBySegs = getPullByPlan(dancer);
     const postPullByDancer = Dancer.get(dancer.protoId, postPullByState);
     const courtesyTurnSegs = planCourtesyTurn(
       { id, beats: courtesyTurnBeats, type: "courtesy_turn" },
