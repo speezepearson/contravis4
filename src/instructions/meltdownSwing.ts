@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { type ProtoId } from "../contraCore";
 import { TWO_PI } from "../geometry";
-import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -12,7 +11,6 @@ import {
 } from "./_base";
 import {
   animatePlans,
-  type DancerSegment,
   evaluatePlansFinalState,
   type PlanGetter,
 } from "./_plan";
@@ -71,22 +69,11 @@ export function meltdownSwingAnimator(
   );
 
   // Build shoulder round plans
-  const srPlansMap = new Map<ProtoId, DancerSegment[]>();
-  for (const pid of who) {
-    srPlansMap.set(
-      pid,
-      planShoulderRound(
-        shoulderRoundInstr,
-        Dancer.get(pid, init),
-        approachBeats,
-      ),
-    );
-  }
+  const getSrPlan: PlanGetter = (dancer) =>
+    planShoulderRound(shoulderRoundInstr, dancer, approachBeats);
 
   // Evaluate intermediate state after shoulder round
-  const srPlanGetter: PlanGetter = (dancer) =>
-    must(srPlansMap.get(dancer.protoId));
-  const postSrState = evaluatePlansFinalState(init, who, srPlanGetter);
+  const postSrState = evaluatePlansFinalState(init, who, getSrPlan);
 
   // Build swing plans from post-shoulder-round state
   const swingInstr = {
@@ -100,7 +87,7 @@ export function meltdownSwingAnimator(
 
   // Combine per-dancer plans
   return animatePlans(init, who, (dancer) => {
-    const srSegs = must(srPlansMap.get(dancer.protoId));
+    const srSegs = getSrPlan(dancer);
     const swingSegs = swingPlans(Dancer.get(dancer.protoId, postSrState));
     return [...srSegs, ...swingSegs];
   });
