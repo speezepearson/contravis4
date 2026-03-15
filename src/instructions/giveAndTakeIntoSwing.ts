@@ -8,7 +8,7 @@ import {
 } from "../contraCore";
 import { getDir, lerpFacing } from "../geometry";
 import { SnazzyError } from "../snazzyError";
-import { lerpVectors, must } from "../utils";
+import { lerpVectors } from "../utils";
 import { Dancer, getDancerSide, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
@@ -18,8 +18,8 @@ import {
 } from "./_base";
 import {
   animatePlans,
-  type DancerSegment,
   evaluatePlansFinalState,
+  type PlanGetter,
 } from "./_plan";
 import { buildSwingPlans } from "./swing";
 
@@ -62,9 +62,7 @@ export function giveAndTakeIntoSwingAnimator(
   }
 
   // Build approach plans for all dancers
-  const approachPlans = new Map<ProtoId, DancerSegment[]>();
-  for (const pid of who) {
-    const dancer = Dancer.get(pid, init);
+  const getApproachPlan: PlanGetter = (dancer: Dancer) => {
     const amDrawer = parseProtoId(dancer.protoId).role === instr.drawerRole;
     const drawer = amDrawer ? orig(dancer) : getMatch(dancer);
     const drawee = amDrawer ? getMatch(dancer) : orig(dancer);
@@ -79,18 +77,18 @@ export function giveAndTakeIntoSwingAnimator(
     );
 
     const matchId = getMatch(dancer).id;
-    approachPlans.set(pid, [
+    return [
       {
         dur: approachDur,
         position: (frac) => lerpVectors(dancer.pos, targetPos, frac),
         facing: (frac) => lerpFacing(dancer.facing, targetFacing, frac),
         interactedWith: () => [matchId],
       },
-    ]);
-  }
+    ];
+  };
 
   // Evaluate post-approach state
-  const postApproachState = evaluatePlansFinalState(init, who, approachPlans);
+  const postApproachState = evaluatePlansFinalState(init, who, getApproachPlan);
 
   // Build swing plans from post-approach state
   const swingPlans = buildSwingPlans(
@@ -107,8 +105,8 @@ export function giveAndTakeIntoSwingAnimator(
 
   // Combine per-dancer plans
   return animatePlans(init, who, (dancer) => {
-    const approachSegs = must(approachPlans.get(dancer.protoId));
-    const swingSegs = must(swingPlans.get(dancer.protoId));
+    const approachSegs = getApproachPlan(dancer);
+    const swingSegs = swingPlans(Dancer.get(dancer.protoId, postApproachState));
     return [...approachSegs, ...swingSegs];
   });
 }

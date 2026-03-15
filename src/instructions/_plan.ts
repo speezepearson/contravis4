@@ -239,11 +239,11 @@ export function animatePlans(
 export function evaluatePlansFinalState(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
-  plans: Map<ProtoId, DancerSegment[]>,
+  getPlan: PlanGetter,
 ): WorldState {
   return produce(init, (draft) => {
     for (const id of who) {
-      const segments = plans.get(id);
+      const segments = getPlan(Dancer.get(id, init));
       if (!segments || segments.length === 0) continue;
 
       const d = Dancer.get(id, init);

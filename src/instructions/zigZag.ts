@@ -44,8 +44,8 @@ function validateAndResolve(
   who: ReadonlySet<ProtoId>,
 ): {
   leaderRole: Role;
-  insideHandMap: Map<ProtoId, Hand>;
-  matchIdMap: Map<ProtoId, DancerId>;
+  getInsideHand: (dancer: Dancer) => Hand;
+  getMatchId: (dancer: Dancer) => DancerId;
 } {
   if (who.size !== 4) {
     throw new Error(`[zig zag] expected 4 dancers, got ${who.size}`);
@@ -102,18 +102,16 @@ function validateAndResolve(
   }
 
   // Inside hands based on position: west dancer's right, east dancer's left
-  const insideHandMap = new Map<ProtoId, Hand>();
-  const matchIdMap = new Map<ProtoId, DancerId>();
-  for (const id of who) {
-    const side = must(getSide(init[id].pos), [
-      { dancerId: id },
+  const getInsideHand = (dancer: Dancer): Hand => {
+    const side = must(getSide(dancer.pos), [
+      { dancerId: dancer.id },
       "too close to center, not sure which side is east or west",
     ]);
-    insideHandMap.set(id, side === "west" ? "right" : "left");
-    matchIdMap.set(id, getMatch(Dancer.get(id, init)).id);
-  }
+    return side === "west" ? "right" : "left";
+  };
+  const getMatchId = (dancer: Dancer): DancerId => getMatch(dancer).id;
 
-  return { leaderRole, insideHandMap, matchIdMap };
+  return { leaderRole, getInsideHand, getMatchId };
 }
 
 function planZigZag(
@@ -196,18 +194,12 @@ export function zigZagAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const { leaderRole, insideHandMap, matchIdMap } = validateAndResolve(
+  const { leaderRole, getInsideHand, getMatchId } = validateAndResolve(
     instr,
     init,
     who,
   );
   return animatePlans(init, who, (d) =>
-    planZigZag(
-      instr,
-      d,
-      leaderRole,
-      must(insideHandMap.get(d.protoId), ["missing insideHand for dancer"]),
-      must(matchIdMap.get(d.protoId), ["missing matchId for dancer"]),
-    ),
+    planZigZag(instr, d, leaderRole, getInsideHand(d), getMatchId(d)),
   );
 }

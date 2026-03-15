@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { HandSchema, otherHand, type ProtoId } from "../contraCore";
-import { must } from "../utils";
 import { Dancer, type WorldState } from "../worldState";
 import {
   type BaseCalledDirection,
@@ -18,6 +17,7 @@ import {
   animatePlans,
   type DancerSegment,
   evaluatePlansFinalState,
+  type PlanGetter,
 } from "./_plan";
 import { planBalance } from "./balance";
 import { planFace } from "./face";
@@ -86,19 +86,13 @@ export function planSquareThrough(
   const pullByBeats = unitBeats;
 
   // Each phase: build per-dancer plans for all dancers, then compute next state.
-  const phases: Map<ProtoId, DancerSegment[]>[] = [];
+  const phases: { planBuilder: PlanGetter; capturedState: WorldState }[] = [];
   let state = init;
 
-  function addPhase(
-    planBuilder: (d: Dancer) => DancerSegment[],
-  ): Map<ProtoId, DancerSegment[]> {
-    const plansMap = new Map<ProtoId, DancerSegment[]>();
-    for (const pid of who) {
-      plansMap.set(pid, planBuilder(Dancer.get(pid, state)));
-    }
-    phases.push(plansMap);
-    state = evaluatePlansFinalState(state, who, plansMap);
-    return plansMap;
+  function addPhase(planBuilder: PlanGetter): void {
+    const capturedState = state;
+    phases.push({ planBuilder, capturedState });
+    state = evaluatePlansFinalState(capturedState, who, planBuilder);
   }
 
   function addTakeHandsPhase(
@@ -255,7 +249,9 @@ export function planSquareThrough(
   }
 
   return (dancer: Dancer): DancerSegment[] =>
-    phases.flatMap((phase) => must(phase.get(dancer.protoId)));
+    phases.flatMap(({ planBuilder, capturedState }) =>
+      planBuilder(Dancer.get(dancer.protoId, capturedState)),
+    );
 }
 
 export function squareThroughAnimator(
