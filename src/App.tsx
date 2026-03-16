@@ -471,6 +471,7 @@ export default function App({
       getNProgressions: () => nProgressionsRef.current,
       addProgression: (n: number) => {
         nProgressionsRef.current += n;
+        nProgressionsRef.current %= 2;
         drawRef.current();
       },
     });
@@ -562,6 +563,7 @@ export default function App({
           rendererRef.current?.clearTrails();
           if (inferredProgression !== null) {
             nProgressionsRef.current += inferredProgression;
+            nProgressionsRef.current %= 2;
           }
         } else {
           beatRef.current = DANCE_LENGTH;
