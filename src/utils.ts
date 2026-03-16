@@ -143,3 +143,7 @@ export function getSingleton<T>(arr: T[]): T | undefined {
 export function typeUnknownJSONParse(x: string): unknown {
   return JSON.parse(x);
 }
+
+export function mathMod(a: number, n: number): number {
+  return ((a % n) + n) % n;
+}

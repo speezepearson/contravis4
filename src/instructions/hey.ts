@@ -10,14 +10,14 @@ import {
   preferRecent,
   type Tiebreaker,
 } from "../formations";
-import { getSingleton, lerpVectors, must } from "../utils";
-import { getDancerSide, type WorldState } from "../worldState";
+import { getDir, PI, TWO_PI } from "../geometry";
+import { getSingleton, must, safeThreshold } from "../utils";
+import { avgPos, getDancerSide, type WorldState } from "../worldState";
 import {
   CalledIdentifierSchema,
   type ContraAnimation,
   instructionBaseSchemaFields,
 } from "./_base";
-import { fudgePlansToAlignY, fudgePlansToSpaceEvenlyInY } from "./_fudge";
 import { animatePlans, type PlanGetter } from "./_plan";
 
 export const HeyInstructionSchema = z.object({
@@ -48,39 +48,119 @@ export function heyAnimator(
 
   const basePlan: PlanGetter = (dancer) => {
     const group = getGroupOfFour(dancer, { by: tiebreakers });
-    const side = getDancerSide(dancer);
+    const centerY = avgPos(...group).y;
 
-    const targetPos = (() => {
-      if (instr.full) {
-        const x = side === "west" ? -0.5 : 0.5;
-        return new Vector(x, dancer.pos.y);
-      } else {
-        const sameRoleOther = must(
-          getSingleton(
-            group.filter((d) => d.role === dancer.role && d.dir !== dancer.dir),
-          ),
-        );
-        const x = side === "west" ? 0.5 : -0.5;
-        return new Vector(x, sameRoleOther.pos.y);
-      }
-    })();
+    console.log("a");
+    const hSide = getDancerSide(dancer) === "west" ? 1 : -1;
+    console.log("b");
+    const vSide = must(
+      safeThreshold(
+        dancer.pos.y -
+          must(
+            getSingleton(
+              group.filter(
+                (d) => d.role === dancer.role && d.dir !== dancer.dir,
+              ),
+            ),
+          ).pos.y,
+        { neg: -1, pos: 1 },
+      ),
+    );
 
     const interacted = group.filter((d) => d.id !== dancer.id).map((d) => d.id);
 
-    return [
-      {
-        dur: instr.beats,
-        position: (frac: number) => lerpVectors(dancer.pos, targetPos, frac),
+    if (instr.full) {
+      const posFuncs: Array<(frac: number) => Vector> =
+        dancer.role === instr.centerRole
+          ? [
+              (frac) =>
+                new Vector(
+                  hSide * (-0.5 + frac * 1.0),
+                  centerY + vSide * 0.5 * Math.cos(frac * TWO_PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (0.75 - 0.5 * Math.abs(frac - 0.5)),
+                  centerY + vSide * 0.5 * Math.cos(frac * PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (0.5 - frac * 1.0),
+                  centerY + vSide * -0.5 * Math.cos(frac * TWO_PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (-0.75 + 0.5 * Math.abs(frac - 0.5)),
+                  centerY - vSide * 0.5 * Math.cos(frac * PI),
+                ),
+            ]
+          : [
+              (frac) =>
+                new Vector(
+                  hSide * (-0.75 + 0.5 * Math.abs(frac - 0.5)),
+                  centerY + vSide * 0.5 * Math.cos(frac * PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (-0.5 + frac * 1.0),
+                  centerY - vSide * 0.5 * Math.cos(frac * TWO_PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (0.75 - 0.5 * Math.abs(frac - 0.5)),
+                  centerY - vSide * 0.5 * Math.cos(frac * PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (0.5 - frac * 1.0),
+                  centerY + vSide * 0.5 * Math.cos(frac * TWO_PI),
+                ),
+            ];
+      return posFuncs.map((posFunc) => ({
+        dur: instr.beats / 4,
+        position: posFunc,
+        facing: (frac) =>
+          getDir({ from: posFunc(frac), to: posFunc(frac + 0.1) }),
         hands: () => ({}),
         interactedWith: () => interacted,
-      },
-    ];
+      }));
+    } else {
+      const posFuncs: Array<(frac: number) => Vector> =
+        dancer.role === instr.centerRole
+          ? [
+              (frac) =>
+                new Vector(
+                  hSide * (-0.5 + frac * 1.0),
+                  centerY + vSide * 0.5 * Math.cos(frac * TWO_PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (0.75 - 0.5 * Math.abs(frac - 0.5)),
+                  centerY + vSide * 0.5 * Math.cos(frac * PI),
+                ),
+            ]
+          : [
+              (frac) =>
+                new Vector(
+                  hSide * (-0.75 + 0.5 * Math.abs(frac - 0.5)),
+                  centerY + vSide * 0.5 * Math.cos(frac * PI),
+                ),
+              (frac) =>
+                new Vector(
+                  hSide * (-0.5 + frac * 1.0),
+                  centerY - vSide * 0.5 * Math.cos(frac * TWO_PI),
+                ),
+            ];
+      return posFuncs.map((posFunc) => ({
+        dur: instr.beats / 2,
+        position: posFunc,
+        facing: (frac) =>
+          getDir({ from: posFunc(frac), to: posFunc(frac + 0.1) }),
+        hands: () => ({}),
+        interactedWith: () => interacted,
+      }));
+    }
   };
 
-  const fudgedPlan = fudgePlansToAlignY(
-    fudgePlansToSpaceEvenlyInY(basePlan, init),
-    init,
-  );
-
-  return animatePlans(init, who, fudgedPlan);
+  return animatePlans(init, who, basePlan);
 }
