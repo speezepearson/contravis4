@@ -45,18 +45,12 @@ import {
 import type { Split } from "../instructions/split";
 import { SplitSubInstructionSchema } from "../instructions/split";
 import {
-  allLLRRTemplates,
-  allLRTemplates,
-  LLRRTemplateIdSchema,
-  LRTemplateIdSchema,
-} from "../instructions/templates/index";
-import {
   type Completion,
   getCompletions,
   parseDanceInstruction,
 } from "../parseDanceInstruction";
 import { type SnazzyError, type SnazzySegment } from "../snazzyError";
-import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
+import { assertNever, buildEnumRecord, indexOf } from "../utils";
 import { type WorldState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceAndSwingFields } from "./fields/BalanceAndSwingFields";
@@ -99,8 +93,6 @@ import { StepFields } from "./fields/StepFields";
 import { SwingFields } from "./fields/SwingFields";
 import { TakeHandsFields } from "./fields/TakeHandsFields";
 import { TakeHandsInRingsFields } from "./fields/TakeHandsInRingsFields";
-import { TemplatedLLRRFields } from "./fields/TemplatedLLRRFields";
-import { TemplatedLRFields } from "./fields/TemplatedLRFields";
 import { TurnAloneFields } from "./fields/TurnAloneFields";
 import { TurnAsACoupleFields } from "./fields/TurnAsACoupleFields";
 import { UpTheHallFields } from "./fields/UpTheHallFields";
@@ -208,8 +200,6 @@ const ActionOptionTypeSchema = z.enum([
   "turn_as_a_couple",
   "up_the_hall",
   "zig_zag",
-  ...LRTemplateIdSchema.options,
-  ...LLRRTemplateIdSchema.options,
 ]);
 export type ActionOptionType = z.infer<typeof ActionOptionTypeSchema>;
 export const ACTION_OPTION_TYPES = ActionOptionTypeSchema.options
@@ -322,12 +312,6 @@ const ACTION_LABELS = buildEnumRecord(ActionOptionTypeSchema, (t) => {
       return "zig zag";
   }
 
-  if (parses(LRTemplateIdSchema, t)) {
-    return allLRTemplates[t].name;
-  }
-  if (parses(LLRRTemplateIdSchema, t)) {
-    return allLLRRTemplates[t].name;
-  }
   assertNever(t);
 });
 
@@ -678,8 +662,6 @@ function doesRequireBeatsInput(
     case "turn_as_a_couple":
     case "up_the_hall":
     case "zig_zag":
-    case "templated_lr":
-    case "templated_llrr":
       return true;
     case "drop_hands":
     case "face":
@@ -747,10 +729,7 @@ function InlineForm({
     ? ActionOptionTypeSchema.options
     : ActionOptionTypeSchema.options.filter((o) => o !== "split");
 
-  const actionOptionValue: ActionOptionType =
-    instruction.type === "templated_lr" || instruction.type === "templated_llrr"
-      ? instruction.templateId
-      : instruction.type;
+  const actionOptionValue: ActionOptionType = instruction.type;
 
   function handleActionChange(newAction: ActionOptionType) {
     if (newAction !== actionOptionValue) {
@@ -912,12 +891,6 @@ function InlineForm({
             return <UpTheHallFields {...common} instruction={instruction} />;
           case "zig_zag":
             return <ZigZagFields {...common} instruction={instruction} />;
-          case "templated_lr":
-            return <TemplatedLRFields {...common} instruction={instruction} />;
-          case "templated_llrr":
-            return (
-              <TemplatedLLRRFields {...common} instruction={instruction} />
-            );
           default:
             assertNever(instruction);
         }

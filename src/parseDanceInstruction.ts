@@ -8,11 +8,60 @@
 
 import { makeDefaultInstruction } from "./components/fieldUtils";
 import { type Role } from "./contraCore";
-import { type PureDirection } from "./directions";
+import { pureDir, type PureDirection } from "./directions";
 import { type CalledIdentifier, labelId, personInDir } from "./identifiers";
+import { AllemandeInstructionSchema } from "./instructions/allemande";
+import { BalanceInstructionSchema } from "./instructions/balance";
+import { BalanceAndSwingInstructionSchema } from "./instructions/balanceAndSwing";
+import { BalanceTheRingInstructionSchema } from "./instructions/balanceTheRing";
+import { BendTheLineInstructionSchema } from "./instructions/bendTheLine";
+import { BoxCirculateInstructionSchema } from "./instructions/boxCirculate";
+import { BoxTheGnatInstructionSchema } from "./instructions/boxTheGnat";
+import { CaliforniaTwirlInstructionSchema } from "./instructions/californiaTwirl";
+import { CircleInstructionSchema } from "./instructions/circle";
+import { DoSiDoInstructionSchema } from "./instructions/doSiDo";
+import { DownTheHallInstructionSchema } from "./instructions/downTheHall";
+import { DropHandsInstructionSchema } from "./instructions/dropHands";
+import { FaceInstructionSchema } from "./instructions/face";
+import { FormLongWavesInstructionSchema } from "./instructions/formLongWaves";
+import { FormShortWavesInstructionSchema } from "./instructions/formShortWaves";
+import { GiveAndTakeIntoSwingInstructionSchema } from "./instructions/giveAndTakeIntoSwing";
+import { GreetNewNeighborsInstructionSchema } from "./instructions/greetNewNeighbors";
+import { GreetShadowInstructionSchema } from "./instructions/greetShadow";
+import { HeyInstructionSchema } from "./instructions/hey";
 import { type Instruction, InstructionSchema } from "./instructions/index";
 import { type ActionOptionType } from "./instructions/index";
-import { type Label } from "./labels";
+import { LongLineInCenterInstructionSchema } from "./instructions/longLineInCenter";
+import { LongLinesForwardBackInstructionSchema } from "./instructions/longLinesForwardBack";
+import { MadRobinInstructionSchema } from "./instructions/madRobin";
+import { MeltdownSwingInstructionSchema } from "./instructions/meltdownSwing";
+import { PassByInstructionSchema } from "./instructions/passBy";
+import { PetronellaInstructionSchema } from "./instructions/petronella";
+import { PoussetteInstructionSchema } from "./instructions/poussette";
+import { PullByInstructionSchema } from "./instructions/pullBy";
+import { RightLeftThroughInstructionSchema } from "./instructions/rightLeftThrough";
+import { RobinsChainInstructionSchema } from "./instructions/robinsChain";
+import { RollAwayInstructionSchema } from "./instructions/rollAway";
+import { RoryOMoreInstructionSchema } from "./instructions/roryOMore";
+import { ShoulderRoundInstructionSchema } from "./instructions/shoulderRound";
+import { SingleFilePromenadeInstructionSchema } from "./instructions/singleFilePromenade";
+import { SliceInstructionSchema } from "./instructions/slice";
+import { SquareThroughInstructionSchema } from "./instructions/squareThrough";
+import { StarInstructionSchema } from "./instructions/star";
+import { StepInstructionSchema } from "./instructions/step";
+import { SwingInstructionSchema } from "./instructions/swing";
+import { TakeHandsInstructionSchema } from "./instructions/takeHands";
+import { TakeHandsInRingsInstructionSchema } from "./instructions/takeHandsInRings";
+import { TurnAloneInstructionSchema } from "./instructions/turnAlone";
+import { TurnAsACoupleInstructionSchema } from "./instructions/turnAsACouple";
+import { UpTheHallInstructionSchema } from "./instructions/upTheHall";
+import { ZigZagInstructionSchema } from "./instructions/zigZag";
+import {
+  IrreducibleLabelSchema,
+  type Label,
+  ShadowLabelSchema,
+} from "./labels";
+import { assertNever, parses, typedParse } from "./utils";
 
 // ── Keyword dictionary ──────────────────────────────────────────────────
 //
@@ -343,6 +392,7 @@ const TEXT_KEYWORDS: TextKeywordEntry[] = [
   },
   { text: "across the set", chunk: "direction_phrase", value: "across" },
   { text: "across", chunk: "direction_phrase", value: "across" },
+  { text: "out", chunk: "direction_phrase", value: "out" },
 
   // Handedness
   { text: "left hand", chunk: "handedness", value: "left" },
@@ -674,12 +724,12 @@ function hasKeyword(chunks: Chunk[], value: string): boolean {
  * Determine the CalledIdentifier from chunks, checking labels first,
  * then directional phrases.
  */
-function cidFromChunks(chunks: Chunk[]): CalledIdentifier | null {
+function cidFromChunks(chunks: Chunk[]): CalledIdentifier | undefined {
   const labelChunk = findChunk(chunks, "label");
   if (labelChunk) return labelId(labelChunk.value);
   const dirChunk = findChunk(chunks, "direction_phrase");
   if (dirChunk) return personInDir(dirChunk.value, "different");
-  return null;
+  return undefined;
 }
 
 /**
@@ -687,179 +737,360 @@ function cidFromChunks(chunks: Chunk[]): CalledIdentifier | null {
  * Creates a default instruction then applies overrides from the chunks.
  */
 function interpretChunks(type: ActionOptionType, chunks: Chunk[]): Instruction {
-  const base = makeDefaultInstruction(type);
-
   const overrides: Record<string, unknown> = {};
 
   const beatsChunk = findChunk(chunks, "beats");
   if (beatsChunk) overrides.beats = beatsChunk.value;
 
-  const cid = cidFromChunks(chunks);
-  const handednessChunk = findChunk(chunks, "handedness");
-  const handedness =
-    handednessChunk?.value ?? findHandednessFromKeywords(chunks);
-  const rotationsChunk = findChunk(chunks, "n_rotations");
-  const rotations = rotationsChunk?.value ?? rotationsFromKeywords(chunks);
-  const nPlacesChunk = findChunk(chunks, "n_places");
-  const direction = directionFromChunksOrKeywords(chunks);
-
-  switch (base.type) {
+  switch (type) {
     case "swing":
+      return typedParse(SwingInstructionSchema, {
+        type: "swing",
+        beats: findChunk(chunks, "beats")?.value ?? 16,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        endFacing: endFacingFromKeywords(chunks) ?? "across",
+      });
     case "balance_and_swing":
+      return typedParse(BalanceAndSwingInstructionSchema, {
+        type: "balance_and_swing",
+        beats: findChunk(chunks, "beats")?.value ?? 16,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        endFacing: endFacingFromKeywords(chunks) ?? "across",
+      });
     case "meltdown_swing":
-      if (cid) overrides.cid = cid;
-      {
-        const endFacing = endFacingFromKeywords(chunks);
-        if (endFacing) overrides.endFacing = endFacing;
-      }
-      break;
+      return typedParse(MeltdownSwingInstructionSchema, {
+        type: "meltdown_swing",
+        beats: findChunk(chunks, "beats")?.value ?? 16,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        endFacing: endFacingFromKeywords(chunks) ?? "across",
+      });
+    case "give_and_take_into_swing":
+      return typedParse(GiveAndTakeIntoSwingInstructionSchema, {
+        type: "give_and_take_into_swing",
+        beats: findChunk(chunks, "beats")?.value ?? 16,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        drawerRole: findChunk(chunks, "role")?.value ?? "lark",
+        endFacing: endFacingFromKeywords(chunks) ?? "across",
+      });
 
     case "allemande":
+      return typedParse(AllemandeInstructionSchema, {
+        type: "allemande",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        cid: cidFromChunks(chunks) ?? labelId("neighbor"),
+        handedness: findChunk(chunks, "handedness")?.value ?? "right",
+        rotations: findChunk(chunks, "n_rotations")?.value ?? 1,
+      });
     case "shoulder_round":
-      if (cid) overrides.cid = cid;
-      if (handedness) overrides.handedness = handedness;
-      if (rotations !== null) overrides.rotations = rotations;
-      break;
+      return typedParse(ShoulderRoundInstructionSchema, {
+        type: "shoulder_round",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        cid: cidFromChunks(chunks) ?? labelId("neighbor"),
+        handedness: findChunk(chunks, "handedness")?.value ?? "right",
+        rotations: findChunk(chunks, "n_rotations")?.value ?? 1,
+      });
 
     case "do_si_do":
-      if (cid) overrides.cid = cid;
-      if (rotations !== null) overrides.rotations = rotations;
-      break;
+      return typedParse(DoSiDoInstructionSchema, {
+        type: "do_si_do",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        cid: cidFromChunks(chunks) ?? labelId("neighbor"),
+        rotations: findChunk(chunks, "n_rotations")?.value ?? 1,
+      });
 
     case "balance":
+      return typedParse(BalanceInstructionSchema, {
+        type: "balance",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+      });
     case "box_the_gnat":
+      return typedParse(BoxTheGnatInstructionSchema, {
+        type: "box_the_gnat",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+      });
     case "mad_robin":
+      return typedParse(MadRobinInstructionSchema, {
+        type: "mad_robin",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        rotations: findChunk(chunks, "n_rotations")?.value ?? 1,
+        whoInFront: findChunk(chunks, "role")?.value ?? "lark",
+      });
     case "pass_by":
+      return typedParse(PassByInstructionSchema, {
+        type: "pass_by",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        hand: findChunk(chunks, "handedness")?.value ?? "right",
+      });
     case "pull_by":
+      return typedParse(PullByInstructionSchema, {
+        type: "pull_by",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        hand: findChunk(chunks, "handedness")?.value ?? "right",
+      });
     case "take_hands":
-      if (cid) overrides.cid = cid;
-      if ("hand" in base && handedness) overrides.hand = handedness;
-      break;
-
-    case "robins_chain":
-      if (cid) overrides.cid = cid;
-      break;
-
-    case "circle":
-    case "star":
-    case "single_file_promenade":
-      if (direction) overrides.direction = direction;
-      if (nPlacesChunk) overrides.nPlaces = nPlacesChunk.value;
-      break;
-
+      return typedParse(TakeHandsInstructionSchema, {
+        type: "take_hands",
+        beats: 0,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+        hand: findChunk(chunks, "handedness")?.value ?? "right",
+      });
     case "rory_o_more":
+      return typedParse(RoryOMoreInstructionSchema, {
+        type: "rory_o_more",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+        direction: findChunk(chunks, "handedness")?.value ?? "right",
+      });
     case "slice":
-      if (direction) overrides.direction = direction;
-      break;
+      return typedParse(SliceInstructionSchema, {
+        type: "slice",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        direction: findChunk(chunks, "handedness")?.value ?? "left",
+      });
 
     case "hey": {
-      if (hasKeyword(chunks, "half")) overrides.full = false;
-      if (hasKeyword(chunks, "full")) overrides.full = true;
-      // Role at start → centerRole (e.g. "larks start a half hey")
-      const roleChunk = findChunk(chunks, "role");
-      if (roleChunk) overrides.centerRole = roleChunk.value;
-      if (hasKeyword(chunks, "lefts_in_center")) overrides.centerHand = "left";
-      if (hasKeyword(chunks, "rights_in_center"))
-        overrides.centerHand = "right";
-      break;
+      const isHalf = findChunk(chunks, "keyword")?.value === "half";
+      return typedParse(HeyInstructionSchema, {
+        type: "hey",
+        beats: findChunk(chunks, "beats")?.value ?? (isHalf ? 8 : 16),
+        disambiguatingCid: cidFromChunks(chunks),
+        full: !isHalf,
+        centerRole: findChunk(chunks, "role")?.value ?? "lark",
+        centerHand: findChunk(chunks, "handedness")?.value ?? "right",
+      });
     }
 
-    case "step":
-      if (hasKeyword(chunks, "backward")) {
-        overrides.direction = { type: "PureDirection", dir: "behind" };
-      } else if (hasKeyword(chunks, "forward")) {
-        overrides.direction = { type: "PureDirection", dir: "in_front" };
-      }
-      {
-        const distChunk = findChunk(chunks, "distance");
-        if (distChunk) overrides.distance = distChunk.value;
-      }
-      break;
+    case "step": {
+      return typedParse(StepInstructionSchema, {
+        type: "step",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        direction: pureDir(
+          findChunk(chunks, "direction_phrase")?.value ?? "in_front",
+        ),
+        facing: pureDir("in_front"),
+        distance: findChunk(chunks, "distance")?.value ?? 1,
+      });
+    }
 
     case "long_line_in_center": {
-      // Look for role mention (not necessarily leading)
-      const roleChunk = findChunk(chunks, "role");
-      if (roleChunk) overrides.role = roleChunk.value;
-      break;
+      return typedParse(LongLineInCenterInstructionSchema, {
+        type: "long_line_in_center",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        role: findChunk(chunks, "role")?.value ?? "lark",
+      });
     }
 
-    // Types with no extra fields to override
-    case "balance_the_ring":
-    case "box_circulate":
-    case "california_twirl":
-    case "right_left_through":
-    case "long_lines_forward_back":
-    case "form_long_waves":
-    case "form_short_waves":
-    case "take_hands_in_rings":
-    case "turn_alone":
-    case "turn_as_a_couple":
-    case "petronella":
-    case "bend_the_line":
-    case "drop_hands":
     case "face":
+      return typedParse(FaceInstructionSchema, {
+        type: "face",
+        beats: 0,
+        direction: pureDir(
+          findChunk(chunks, "direction_phrase")?.value ?? "in_front",
+        ),
+      });
+
+    case "right_left_through": {
+      return typedParse(RightLeftThroughInstructionSchema, {
+        type: "right_left_through",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+      });
+    }
+
+    case "balance_the_ring":
+      return typedParse(BalanceTheRingInstructionSchema, {
+        type: "balance_the_ring",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+      });
+    case "box_circulate":
+      return typedParse(BoxCirculateInstructionSchema, {
+        type: "box_circulate",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+      });
+    case "california_twirl":
+      return typedParse(CaliforniaTwirlInstructionSchema, {
+        type: "california_twirl",
+        beats: findChunk(chunks, "beats")?.value ?? 4,
+      });
+    case "long_lines_forward_back":
+      return typedParse(LongLinesForwardBackInstructionSchema, {
+        type: "long_lines_forward_back",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+      });
+    case "form_long_waves":
+      return typedParse(FormLongWavesInstructionSchema, {
+        type: "form_long_waves",
+        beats: 0,
+      });
+    case "form_short_waves":
+      return typedParse(FormShortWavesInstructionSchema, {
+        type: "form_short_waves",
+        beats: 0,
+      });
+    case "take_hands_in_rings":
+      return typedParse(TakeHandsInRingsInstructionSchema, {
+        type: "take_hands_in_rings",
+        beats: 0,
+      });
+    case "turn_alone":
+      return typedParse(TurnAloneInstructionSchema, {
+        type: "turn_alone",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+      });
+    case "turn_as_a_couple":
+      return typedParse(TurnAsACoupleInstructionSchema, {
+        type: "turn_as_a_couple",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+      });
+    case "petronella":
+      return typedParse(PetronellaInstructionSchema, {
+        type: "petronella",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+      });
+    case "bend_the_line":
+      return typedParse(BendTheLineInstructionSchema, {
+        type: "bend_the_line",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+      });
+    case "drop_hands":
+      return typedParse(DropHandsInstructionSchema, {
+        type: "drop_hands",
+        beats: 0,
+        which: findChunk(chunks, "handedness")?.value ?? "both",
+      });
     case "greet_new_neighbors":
-    case "greet_shadow":
+      return typedParse(GreetNewNeighborsInstructionSchema, {
+        type: "greet_new_neighbors",
+        beats: 0,
+        cid: {
+          type: "PersonInDirection",
+          dir: findChunk(chunks, "direction_phrase")?.value ?? "in_front",
+          onlyRole: "different",
+        },
+      });
+    case "greet_shadow": {
+      const label = findChunk(chunks, "label")?.value;
+      return typedParse(GreetShadowInstructionSchema, {
+        type: "greet_shadow",
+        beats: 0,
+        label: parses(ShadowLabelSchema, label) ? label : "shadow",
+        cid: {
+          type: "PersonInDirection",
+          dir: findChunk(chunks, "direction_phrase")?.value ?? "in_front",
+          onlyRole: "different",
+        },
+      });
+    }
     case "down_the_hall":
+      return typedParse(DownTheHallInstructionSchema, {
+        type: "down_the_hall",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        distance: findChunk(chunks, "distance")?.value ?? 1.5,
+      });
     case "up_the_hall":
+      return typedParse(UpTheHallInstructionSchema, {
+        type: "up_the_hall",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        distance: findChunk(chunks, "distance")?.value ?? 1.5,
+      });
     case "square_through":
-    case "roll_away":
-    case "give_and_take_into_swing":
+      return typedParse(SquareThroughInstructionSchema, {
+        type: "square_through",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        nPullBys: 2,
+        firstHand: findChunk(chunks, "handedness")?.value ?? "right",
+        cid1: cidFromChunks(chunks) ?? labelId("partner"),
+        cid2: cidFromChunks(chunks) ?? labelId("partner"),
+      });
+    case "roll_away": {
+      const rollee = cidFromChunks(chunks);
+      return typedParse(RollAwayInstructionSchema, {
+        type: "roll_away",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        roller: findChunk(chunks, "role")?.value ?? "lark",
+        rollee:
+          rollee?.type === "label" &&
+          parses(IrreducibleLabelSchema, rollee.label)
+            ? { type: "label", label: rollee.label }
+            : rollee?.type === "PersonInDirection"
+              ? {
+                  type: "PersonInDirection",
+                  dir: rollee.dir === "on_left" ? "on_left" : "on_right",
+                  onlyRole: rollee.onlyRole,
+                }
+              : { type: "label", label: "partner" },
+      });
+    }
     case "poussette":
+      return typedParse(PoussetteInstructionSchema, {
+        type: "poussette",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        backer: findChunk(chunks, "role")?.value ?? "lark",
+        backerDir: findChunk(chunks, "handedness")?.value ?? "left",
+        full: findChunk(chunks, "keyword")?.value === "full",
+      });
     case "zig_zag":
+      return typedParse(ZigZagInstructionSchema, {
+        type: "zig_zag",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        dir: findChunk(chunks, "handedness")?.value ?? "left",
+        nZigs: 2,
+      });
+    case "circle":
+      return typedParse(CircleInstructionSchema, {
+        type: "circle",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        direction: findChunk(chunks, "handedness")?.value ?? "left",
+        nPlaces: findChunk(chunks, "n_places")?.value ?? 1,
+        disambiguatingCid: cidFromChunks(chunks),
+      });
+    case "star":
+      return typedParse(StarInstructionSchema, {
+        type: "star",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        direction: findChunk(chunks, "handedness")?.value ?? "left",
+        nPlaces: findChunk(chunks, "n_places")?.value ?? 1,
+        disambiguatingCid: cidFromChunks(chunks),
+      });
+    case "single_file_promenade":
+      return typedParse(SingleFilePromenadeInstructionSchema, {
+        type: "single_file_promenade",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        direction: findChunk(chunks, "handedness")?.value ?? "left",
+        nPlaces: findChunk(chunks, "n_places")?.value ?? 1,
+        disambiguatingCid: cidFromChunks(chunks),
+      });
     case "split":
-    case "templated_lr":
-    case "templated_llrr":
-      break;
+      throw new Error("split is not supported");
+    case "robins_chain":
+      return typedParse(RobinsChainInstructionSchema, {
+        type: "robins_chain",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        cid: cidFromChunks(chunks) ?? labelId("partner"),
+      });
+    default:
+      assertNever(type);
   }
-
-  if (Object.keys(overrides).length === 0) return base;
-  return InstructionSchema.parse({ ...base, ...overrides });
-}
-
-/**
- * Derive handedness from bare "left"/"right" keyword chunks
- * (when no explicit "left hand"/"right hand" was tokenized).
- */
-function findHandednessFromKeywords(chunks: Chunk[]): "left" | "right" | null {
-  if (hasKeyword(chunks, "left")) return "left";
-  if (hasKeyword(chunks, "right")) return "right";
-  return null;
-}
-
-/** Derive rotations from keyword chunks like "once", "twice", etc. */
-function rotationsFromKeywords(chunks: Chunk[]): number | null {
-  if (hasKeyword(chunks, "once_and_a_half")) return 1.5;
-  if (hasKeyword(chunks, "twice_and_a_half")) return 2.5;
-  if (hasKeyword(chunks, "twice")) return 2;
-  if (hasKeyword(chunks, "once")) return 1;
-  return null;
 }
 
 /** Derive end-facing direction from "end facing ..." keywords. */
 function endFacingFromKeywords(
   chunks: Chunk[],
-): "across" | "down" | "up" | "out" | null {
+): "across" | "down" | "up" | "out" | undefined {
   if (hasKeyword(chunks, "end_facing_across")) return "across";
   if (hasKeyword(chunks, "end_facing_down")) return "down";
   if (hasKeyword(chunks, "end_facing_up")) return "up";
   if (hasKeyword(chunks, "end_facing_out")) return "out";
-  return null;
-}
-
-/** Derive left/right direction from keywords. */
-function directionFromChunksOrKeywords(
-  chunks: Chunk[],
-): "left" | "right" | null {
-  if (hasKeyword(chunks, "left")) return "left";
-  if (hasKeyword(chunks, "right")) return "right";
-  return null;
+  return undefined;
 }
 
 // ── Structural helpers ──────────────────────────────────────────────────
 
 /** Find the instruction type from chunks. Also handles "start a ... hey" pattern. */
-function detectTypeFromChunks(chunks: Chunk[]): ActionOptionType | null {
+function detectTypeFromChunks(chunks: Chunk[]): ActionOptionType | undefined {
   // Special case: "start a ... hey" → hey (with centerRole from leading role)
   if (
     hasKeyword(chunks, "start_a") &&
@@ -869,7 +1100,7 @@ function detectTypeFromChunks(chunks: Chunk[]): ActionOptionType | null {
   }
 
   const typeChunk = findChunk(chunks, "instruction_type");
-  return typeChunk?.value ?? null;
+  return typeChunk?.value ?? undefined;
 }
 
 /** Check if a leading role is part of the figure name, not a split indicator. */
@@ -881,10 +1112,10 @@ function roleIsPartOfName(type: ActionOptionType, chunks: Chunk[]): boolean {
 }
 
 /** Get the leading role from chunks (first chunk must be a role). */
-function leadingRole(chunks: Chunk[]): Role | null {
+function leadingRole(chunks: Chunk[]): Role | undefined {
   const firstSignificant = chunks.find((c) => c.type !== "unparsed");
   if (firstSignificant?.type === "role") return firstSignificant.value;
-  return null;
+  return undefined;
 }
 
 // ── Main parser ─────────────────────────────────────────────────────────
@@ -993,8 +1224,8 @@ function parseSplit(part1: string, part2: string): Instruction[] {
   return [splitInstr];
 }
 
-function splitOnWhile(text: string): [string, string] | null {
+function splitOnWhile(text: string): [string, string] | undefined {
   const match = text.match(/^(.+?)\s+while\s+(.+)$/i);
-  if (!match) return null;
+  if (!match) return undefined;
   return [match[1], match[2]];
 }

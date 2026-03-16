@@ -103,14 +103,6 @@ import {
   takeHandsInRingsAnimator,
   TakeHandsInRingsInstructionSchema,
 } from "./takeHandsInRings";
-import {
-  templatedLLRRAnimator,
-  TemplatedLLRRInstructionSchema,
-} from "./templatedLLRRInstruction";
-import {
-  templatedLRAnimator,
-  TemplatedLRInstructionSchema,
-} from "./templatedLRInstruction";
 import { turnAloneAnimator, TurnAloneInstructionSchema } from "./turnAlone";
 import {
   turnAsACoupleAnimator,
@@ -160,8 +152,6 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
   TakeHandsInstructionSchema,
-  TemplatedLLRRInstructionSchema,
-  TemplatedLRInstructionSchema,
   TurnAloneInstructionSchema,
   TurnAsACoupleInstructionSchema,
   UpTheHallInstructionSchema,
@@ -261,10 +251,6 @@ export function animateAtomicInstruction(
       return upTheHallAnimator(instr, init, who);
     case "zig_zag":
       return zigZagAnimator(instr, init, who);
-    case "templated_llrr":
-      return templatedLLRRAnimator(instr, init, who);
-    case "templated_lr":
-      return templatedLRAnimator(instr, init, who);
     case "circle":
       return circleAnimator(instr, init, who);
   }

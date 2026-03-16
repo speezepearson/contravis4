@@ -15,13 +15,8 @@ import {
   type Instruction,
   InstructionSchema,
 } from "../instructions/index";
-import {
-  allLLRRTemplates,
-  allLRTemplates,
-  LLRRTemplateIdSchema,
-} from "../instructions/templates/index";
 import { type Label } from "../labels";
-import { assertNever, parses } from "../utils";
+import { assertNever } from "../utils";
 
 /** Props for inline field components. */
 export interface SubFormProps {
@@ -244,26 +239,8 @@ export function makeDefaultInstruction(type: ActionOptionType): Instruction {
       case "down_the_hall":
       case "up_the_hall":
         return { type, beats: 6, distance: 1.5 };
-      default: {
-        // Template IDs: create a templated_lr or templated_llrr instruction
-        if (parses(LLRRTemplateIdSchema, type)) {
-          const template = allLLRRTemplates[type];
-          return {
-            type: "templated_llrr",
-            beats: template.defaultBeats,
-            templateId: type,
-            fields: {},
-          };
-        }
-        const _exhaustive: keyof typeof allLRTemplates = type;
-        const template = allLRTemplates[_exhaustive];
-        return {
-          type: "templated_lr",
-          beats: template.defaultBeats,
-          templateId: _exhaustive,
-          fields: {},
-        };
-      }
+      default:
+        assertNever(type);
     }
   })();
   return InstructionSchema.parse(unverified);

@@ -25,8 +25,6 @@ export const exampleDances: ExampleDance[] = Object.entries(modules).map(
 );
 
 function actionOptionType(instr: Instruction): ActionOptionType {
-  if (instr.type === "templated_lr") return instr.templateId;
-  if (instr.type === "templated_llrr") return instr.templateId;
   return instr.type;
 }
 
