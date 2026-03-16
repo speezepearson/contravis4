@@ -187,7 +187,7 @@ export default function App({
   const [smoothness, setSmoothness] = useState(import.meta.env.DEV ? 0 : 0.5);
   const [exporting, setExporting] = useState(false);
   const [gifOptions, setGifOptions] = useState<GifOptions>(() => {
-    const defaults: GifOptions = { fps: 15, width: 400, height: 600 };
+    const defaults: GifOptions = { fps: 15, width: 200, height: 500 };
     if (!isLocalStorageAvailable()) return defaults;
     const raw = localStorage.getItem(GIF_OPTIONS_KEY);
     if (raw === null) return defaults;

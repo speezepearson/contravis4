@@ -149,6 +149,7 @@ export function exportGif(
   const delayMs = Math.round(1000 / fps);
 
   const renderer = new Renderer(ctx, width, height);
+  renderer.setZoom(0.5);
 
   const frames: {
     data: Uint8ClampedArray;
