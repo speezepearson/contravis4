@@ -23,7 +23,6 @@ import { danceToHash } from "./danceUrl";
 import { exampleDances } from "./exampleDances";
 import { exportGif, type GifOptions } from "./exportGif";
 import { findInstructionStartBeat, generateDanceAnimation } from "./generate";
-import { formatDanceParseError } from "./generate";
 import { inferProgression } from "./inferProgression";
 import { type CalledIdentifier } from "./instructions/_base";
 import type { InitFormation } from "./instructions/index";
@@ -47,32 +46,7 @@ type DanceState = {
   author: string;
 };
 
-const LOCALSTORAGE_KEY = "contravis4-dance";
 const GIF_OPTIONS_KEY = "contravis4-gif-options";
-
-function loadDanceFromLocalStorage():
-  | { dance: Dance }
-  | { error: string }
-  | null {
-  if (!isLocalStorageAvailable()) return null;
-  const raw = localStorage.getItem(LOCALSTORAGE_KEY);
-  if (raw === null) return null;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (e) {
-    return {
-      error: `Saved dance JSON is malformed: ${e instanceof SyntaxError ? e.message : String(e)}`,
-    };
-  }
-
-  const result = DanceSchema.safeParse(parsed);
-  if (!result.success) {
-    return { error: formatDanceParseError(result.error, parsed) };
-  }
-  return { dance: result.data };
-}
 
 function findInstructionById(
   instrs: InstructionWithId[],
@@ -146,9 +120,7 @@ export default function App({
   const lastTimestampRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
 
-  const [initialLoadResult] = useState(
-    () => hashDanceResult ?? loadDanceFromLocalStorage(),
-  );
+  const initialLoadResult = hashDanceResult;
   const isFirstVisit = initialLoadResult === null;
   const [loadError, setLoadError] = useState<string | null>(() =>
     initialLoadResult && "error" in initialLoadResult
@@ -234,7 +206,7 @@ export default function App({
     return try_(() => ({ ...defaults, ...JSON.parse(raw) })) ?? defaults; // DEFAULT_VALUE: fall back to defaults if stored JSON is corrupt
   });
 
-  // Persist dance to localStorage and URL hash whenever it changes
+  // Persist dance to URL hash whenever it changes
   useEffect(() => {
     const dance = {
       initFormation,
@@ -242,9 +214,6 @@ export default function App({
       ...(name ? { name } : {}),
       ...(author ? { author } : {}),
     };
-    if (isLocalStorageAvailable()) {
-      localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
-    }
     void danceToHash(DanceSchema.parse(dance)).then((hash) => {
       history.replaceState(undefined, "", "#" + hash);
     });
