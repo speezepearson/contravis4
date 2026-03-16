@@ -122,23 +122,8 @@ test.describe("add instruction via text input", () => {
   });
 
   test("add input persists after typing into empty dance", async ({ page }) => {
-    // Load an empty dance via JSON paste
-    const emptyDance = JSON.stringify({
-      name: "empty",
-      initFormation: "improper",
-      instructions: [],
-    });
-    const pasteArea = page.locator('textarea[placeholder="Paste JSON here to load"]');
-    await pasteArea.evaluateHandle(
-      (el, json) => {
-        const dt = new DataTransfer();
-        dt.setData("text/plain", json);
-        el.dispatchEvent(
-          new ClipboardEvent("paste", { clipboardData: dt, bubbles: true }),
-        );
-      },
-      emptyDance,
-    );
+    // Clear all instructions to get an empty dance
+    await page.locator("button", { hasText: "clear" }).click();
     await expect(page.locator(".instruction-item")).toHaveCount(0);
 
     // Click + to open input

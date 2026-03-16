@@ -691,25 +691,35 @@ export default function App({
         <div className="beat-display">Beat {beat.toFixed(1)}</div>
       </div>
       <div className="controls">
-        <span className="speed-display">{bpm} BPM</span>
-        <input
-          type="range"
-          min={60}
-          max={120}
-          value={bpm}
-          onChange={(e) => setBpm(Number(e.target.value))}
-        />
+        <label>
+          BPM:{" "}
+          <input
+            type="number"
+            min={60}
+            max={120}
+            value={bpm}
+            onChange={(e) => setBpm(Number(e.target.value))}
+          />
+        </label>
       </div>
       <div className="controls">
-        <span className="speed-display">Smooth {smoothness.toFixed(2)}</span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={smoothness}
-          onChange={(e) => setSmoothness(Number(e.target.value))}
-        />
+        <label>
+          Smoothness:{" "}
+          <input
+            type="number"
+            min={0}
+            max={1}
+            step={0.01}
+            value={smoothness}
+            onChange={(e) => setSmoothness(Number(e.target.value))}
+          />
+        </label>
+        <span
+          className="tooltip-trigger"
+          title="Make dancers move more or less smoothly. (~= smoothing window width)"
+        >
+          (?)
+        </span>
       </div>
       <div className="controls">
         <button onClick={downloadGif} disabled={exporting || !animation}>
@@ -765,21 +775,6 @@ export default function App({
             />
           </label>
         </details>
-      </div>
-      <div className="legend">
-        <div className="legend-item">
-          <span className="legend-dot" style={{ background: "#4a90d9" }} /> Lark
-        </div>
-        <div className="legend-item">
-          <span className="legend-dot" style={{ background: "#d94a4a" }} />{" "}
-          Robin
-        </div>
-        <div className="legend-item">
-          <span style={{ color: "#7a7" }}>{"\u25B2"}</span> Up
-        </div>
-        <div className="legend-item">
-          <span style={{ color: "#a77" }}>{"\u25BC"}</span> Down
-        </div>
       </div>
     </>
   );
@@ -859,27 +854,35 @@ export default function App({
                 <div className="beat-display">Beat {beat.toFixed(1)}</div>
               </div>
               <div className="controls">
-                <span className="speed-display">{bpm} BPM</span>
-                <input
-                  type="range"
-                  min={60}
-                  max={120}
-                  value={bpm}
-                  onChange={(e) => setBpm(Number(e.target.value))}
-                />
+                <label>
+                  BPM:{" "}
+                  <input
+                    type="number"
+                    min={60}
+                    max={120}
+                    value={bpm}
+                    onChange={(e) => setBpm(Number(e.target.value))}
+                  />
+                </label>
               </div>
               <div className="controls">
-                <span className="speed-display">
-                  Smooth {smoothness.toFixed(2)}
+                <label>
+                  Smoothness:{" "}
+                  <input
+                    type="number"
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    value={smoothness}
+                    onChange={(e) => setSmoothness(Number(e.target.value))}
+                  />
+                </label>
+                <span
+                  className="tooltip-trigger"
+                  title="Make dancers move more or less smoothly. (~= smoothing window width)"
+                >
+                  (?)
                 </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  value={smoothness}
-                  onChange={(e) => setSmoothness(Number(e.target.value))}
-                />
               </div>
               <button onClick={downloadGif} disabled={exporting || !animation}>
                 {exporting ? "..." : "GIF"}

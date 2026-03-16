@@ -148,16 +148,6 @@ export class Renderer {
     }
     ctx.setLineDash([]);
 
-    // "up" arrow label
-    ctx.fillStyle = "#444";
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "center";
-    const [arx, ary] = this.worldToCanvas(
-      -this.xRange / 2 + 0.15,
-      viewYMax - 0.3,
-    );
-    ctx.fillText("\u2191 up", arx, ary);
-
     // Hand connections
     ctx.strokeStyle = "#666";
     ctx.lineWidth = 2;

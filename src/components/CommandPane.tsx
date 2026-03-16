@@ -33,12 +33,10 @@ import {
   sortedExampleDances,
 } from "../exampleDances";
 import type { GenerateError } from "../generate";
-import { formatDanceParseError } from "../generate";
 import { inferProgression } from "../inferProgression";
 import type { ContraAnimation } from "../instructions/_base";
 import type { InitFormation, Instruction } from "../instructions/index";
 import {
-  DanceSchema,
   InitFormationNameSchema,
   instructionDuration,
   InstructionSchema,
@@ -59,7 +57,7 @@ import {
 } from "../parseDanceInstruction";
 import type { SnazzySegment } from "../snazzyError";
 import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
-import { type WorldState, WorldStateSchema } from "../worldState";
+import { type WorldState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
 import { BalanceAndSwingFields } from "./fields/BalanceAndSwingFields";
 import { BalanceFields } from "./fields/BalanceFields";
@@ -1134,46 +1132,6 @@ function AddInstructionInput({
   );
 }
 
-function CustomFormationInput({
-  onParsed,
-}: {
-  onParsed: (ws: InitFormation) => void;
-}) {
-  const [error, setError] = useState<string | null>(null);
-
-  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
-    const text = e.clipboardData.getData("text");
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      setError("Invalid JSON");
-      return;
-    }
-    const result = WorldStateSchema.safeParse(parsed);
-    if (!result.success) {
-      setError("Not a valid WorldState");
-      return;
-    }
-    setError(null);
-    onParsed(result.data);
-    e.currentTarget.value = "";
-  }
-
-  return (
-    <span className="custom-formation-input">
-      <input
-        type="text"
-        placeholder="...or paste custom"
-        onPaste={handlePaste}
-        onChange={() => setError(null)}
-        size={15}
-      />
-      {error && <span className="custom-formation-error">{error}</span>}
-    </span>
-  );
-}
-
 export default memo(function CommandPane({
   instructions,
   setInstructions,
@@ -1196,8 +1154,6 @@ export default memo(function CommandPane({
     containerId: string;
     index: number;
   } | null>(null);
-  const [copyFeedback, setCopyFeedback] = useState("");
-  const [pasteFeedback, setPasteFeedback] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<InstructionId>>(new Set());
   const [activeDragId, setActiveDragId] = useState<InstructionId | null>(null);
   const lastClickedIdRef = useRef<InstructionId | null>(null);
@@ -1492,49 +1448,6 @@ export default memo(function CommandPane({
     );
   }
 
-  function copyJson() {
-    const dance = {
-      ...(name ? { name } : {}),
-      ...(author ? { author } : {}),
-      initFormation,
-      instructions,
-    };
-    navigator.clipboard.writeText(JSON.stringify(dance, null, 2));
-    setCopyFeedback("Copied!");
-    setTimeout(() => setCopyFeedback(""), 1500);
-  }
-
-  function tryLoadJson(text: string) {
-    let raw: unknown;
-    try {
-      raw = JSON.parse(text);
-    } catch (e) {
-      console.error(e);
-      setPasteFeedback(
-        `Invalid JSON: ${e instanceof SyntaxError ? e.message : String(e)}`,
-      );
-      setTimeout(() => setPasteFeedback(""), 3000);
-      return;
-    }
-    const result = DanceSchema.safeParse(raw);
-    if (!result.success) {
-      console.error(result.error);
-      setPasteFeedback(
-        `Invalid dance:\n${formatDanceParseError(result.error, raw)}`,
-      );
-      setTimeout(() => setPasteFeedback(""), 10000);
-      return;
-    }
-    const parsed = result.data;
-    setPasteFeedback("");
-    setDanceState({
-      initFormation: parsed.initFormation,
-      instructions: assignIds(parsed.instructions),
-      name: parsed.name ?? "",
-      author: parsed.author ?? "",
-    });
-  }
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
@@ -1666,7 +1579,7 @@ export default memo(function CommandPane({
     <div className="command-pane">
       {dances.length > 0 && (
         <div className="dance-loader">
-          <label>Load dance: </label>
+          <label>Load example dance: </label>
           <select value="" onChange={(e) => handleLoadDance(e.target.value)}>
             <option value="" disabled>
               Select a dance...
@@ -1706,30 +1619,12 @@ export default memo(function CommandPane({
 
       <div className="formation-selector">
         <label>Formation: </label>
-        {typeof initFormation === "string" ? (
-          <InlineDropdown
-            options={InitFormationNameSchema.options}
-            value={initFormation}
-            onChange={(v) => setInitFormation(InitFormationNameSchema.parse(v))}
-            getLabel={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
-          />
-        ) : (
-          <span
-            className="inline-value"
-            tabIndex={0}
-            role="button"
-            onClick={() => setInitFormation("improper")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setInitFormation("improper");
-              }
-            }}
-          >
-            Custom
-          </span>
-        )}
-        <CustomFormationInput onParsed={setInitFormation} />
+        <InlineDropdown
+          options={InitFormationNameSchema.options}
+          value={typeof initFormation === "string" ? initFormation : "improper"}
+          onChange={(v) => setInitFormation(InitFormationNameSchema.parse(v))}
+          getLabel={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
+        />
       </div>
 
       <h2>
@@ -1822,21 +1717,6 @@ export default memo(function CommandPane({
           </span>
         </div>
 
-        <div className="json-io">
-          <button onClick={copyJson}>{copyFeedback || "Copy JSON"}</button>
-          <textarea
-            value=""
-            onChange={() => {}}
-            onPaste={(e) => {
-              e.preventDefault();
-              const text = e.clipboardData.getData("text");
-              tryLoadJson(text);
-            }}
-            placeholder="Paste JSON here to load"
-            rows={3}
-          />
-          {pasteFeedback && <div className="paste-error">{pasteFeedback}</div>}
-        </div>
         {activeDragId &&
           selectedIds.has(activeDragId) &&
           selectedIds.size > 1 && (
