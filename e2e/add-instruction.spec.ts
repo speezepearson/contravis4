@@ -63,7 +63,7 @@ test.describe("add instruction via text input", () => {
     await expect(previewItems.first()).toBeVisible();
   });
 
-  test("typing 'balance and swing your neighbor' adds a matching instruction", async ({
+  test("typing 'balance and swing your neighbors' adds a matching instruction", async ({
     page,
   }) => {
     const initialCount = await page.locator(".instruction-item").count();
@@ -72,7 +72,7 @@ test.describe("add instruction via text input", () => {
     const input = page.locator(".add-instruction-text-input");
     await expect(input).toBeVisible();
 
-    await input.fill("balance and swing your neighbor");
+    await input.fill("balance and swing your neighbors");
     await input.press("Enter");
 
     // Input should close
