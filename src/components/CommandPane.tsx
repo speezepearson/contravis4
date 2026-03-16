@@ -1781,7 +1781,7 @@ export default memo(function CommandPane({
             })}
           </SortableContext>
           <DropZone containerId="top" />
-          {instructions.length === 0 && (
+          {displayInstructions.length === 0 && (
             <>
               {renderAddGap("top", 0)}
               <div className="instruction-empty">

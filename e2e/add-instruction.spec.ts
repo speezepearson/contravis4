@@ -121,6 +121,37 @@ test.describe("add instruction via text input", () => {
     expect(afterCancel).toBe(initialCount);
   });
 
+  test("add input persists after typing into empty dance", async ({ page }) => {
+    // Load an empty dance via JSON paste
+    const emptyDance = JSON.stringify({
+      name: "empty",
+      initFormation: "improper",
+      instructions: [],
+    });
+    const pasteArea = page.locator('textarea[placeholder="Paste JSON here to load"]');
+    await pasteArea.evaluateHandle(
+      (el, json) => {
+        const dt = new DataTransfer();
+        dt.setData("text/plain", json);
+        el.dispatchEvent(
+          new ClipboardEvent("paste", { clipboardData: dt, bubbles: true }),
+        );
+      },
+      emptyDance,
+    );
+    await expect(page.locator(".instruction-item")).toHaveCount(0);
+
+    // Click + to open input
+    await page.locator(".add-gap-btn").first().click();
+    const input = page.locator(".add-instruction-text-input");
+    await expect(input).toBeVisible();
+
+    // Type a valid instruction — input should still exist
+    await input.fill("neighbors swing");
+    await expect(input).toBeVisible();
+    await expect(input).toBeFocused();
+  });
+
   test("uncommitted instruction interactive elements have not-allowed cursor and are non-interactive", async ({
     page,
   }) => {
