@@ -12,11 +12,8 @@ import { assertNever } from "../utils";
 import type { WorldState } from "../worldState";
 import { animateAtomicInstruction, AtomicInstructionSchema } from "./_atomic";
 import { type Animator, chainAnimators, type ContraAnimation } from "./_base";
-import {
-  robinsChainAnimator,
-  RobinsChainInstructionSchema,
-} from "./robinsChain";
-import { swingAnimator, SwingInstructionSchema } from "./swing";
+import { RobinsChainInstructionSchema } from "./robinsChain";
+import { SwingInstructionSchema } from "./swing";
 
 /**
  * A sub-instruction that can appear inside a split.
@@ -31,9 +28,6 @@ export type SplitSubInstruction = z.infer<typeof SplitSubInstructionSchema>;
 
 function subInstructionAnimator(instr: SplitSubInstruction): Animator {
   return (init, who) => {
-    if (instr.type === "swing") return swingAnimator(instr, init, who);
-    if (instr.type === "robins_chain")
-      return robinsChainAnimator(instr, init, who);
     return animateAtomicInstruction(instr, init, who);
   };
 }

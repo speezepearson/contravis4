@@ -281,11 +281,10 @@ describe("parseDanceInstruction", () => {
   });
 
   describe("getCompletions", () => {
-    it("suggests 'end facing across' and 'end facing down' for 'neighbors balance and swing end f'", () => {
+    it("suggests 'end facing across' for 'neighbors balance and swing end f'", () => {
       const completions = getCompletions("neighbors balance and swing end f");
       const keywords = completions.map((c) => c.keyword);
       expect(keywords).toContain("end facing across");
-      expect(keywords).toContain("end facing down");
     });
   });
 

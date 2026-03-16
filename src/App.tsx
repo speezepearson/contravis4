@@ -20,7 +20,6 @@ import {
 import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "./contraCore";
 import { danceToHash } from "./danceUrl";
-import { exampleDances } from "./exampleDances";
 import { exportGif, type GifOptions } from "./exportGif";
 import { findInstructionStartBeat, generateDanceAnimation } from "./generate";
 import { inferProgression } from "./inferProgression";
@@ -121,14 +120,13 @@ export default function App({
   const rafRef = useRef<number>(0);
 
   const initialLoadResult = hashDanceResult;
-  const isFirstVisit = initialLoadResult === null;
   const [loadError, setLoadError] = useState<string | null>(() =>
     initialLoadResult && "error" in initialLoadResult
       ? initialLoadResult.error
       : null,
   );
 
-  const [playing, setPlaying] = useState(isFirstVisit);
+  const [playing, setPlaying] = useState(true);
   const [looping, setLooping] = useState(true);
   const [bpm, setBpm] = useState(120);
   const [beat, setBeat] = useState(0);
@@ -139,17 +137,6 @@ export default function App({
         initFormation: initialLoadResult.dance.initFormation,
         name: initialLoadResult.dance.name ?? "",
         author: initialLoadResult.dance.author ?? "",
-      };
-    }
-    const otters = exampleDances.find(
-      (d) => d.dance.name === "Otter's Allemande",
-    );
-    if (otters) {
-      return {
-        instructions: assignIds(otters.dance.instructions),
-        initFormation: otters.dance.initFormation,
-        name: otters.dance.name ?? "",
-        author: otters.dance.author ?? "",
       };
     }
     return {
@@ -672,8 +659,6 @@ export default function App({
             onChange={(e) => setBpm(Number(e.target.value))}
           />
         </label>
-      </div>
-      <div className="controls">
         <label>
           Smoothness:{" "}
           <input

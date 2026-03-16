@@ -76,6 +76,10 @@ import {
   rightLeftThroughAnimator,
   RightLeftThroughInstructionSchema,
 } from "./rightLeftThrough";
+import {
+  robinsChainAnimator,
+  RobinsChainInstructionSchema,
+} from "./robinsChain";
 import { rollAwayAnimator, RollAwayInstructionSchema } from "./rollAway";
 import { roryOMoreAnimator, RoryOMoreInstructionSchema } from "./roryOMore";
 import {
@@ -93,6 +97,7 @@ import {
 } from "./squareThrough";
 import { starAnimator, StarInstructionSchema } from "./star";
 import { stepAnimator, StepInstructionSchema } from "./step";
+import { swingAnimator, SwingInstructionSchema } from "./swing";
 import { takeHandsAnimator, TakeHandsInstructionSchema } from "./takeHands";
 import {
   takeHandsInRingsAnimator,
@@ -143,6 +148,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   PoussetteInstructionSchema,
   PullByInstructionSchema,
   RightLeftThroughInstructionSchema,
+  RobinsChainInstructionSchema,
   RollAwayInstructionSchema,
   RoryOMoreInstructionSchema,
   ShoulderRoundInstructionSchema,
@@ -151,6 +157,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   SquareThroughInstructionSchema,
   StarInstructionSchema,
   StepInstructionSchema,
+  SwingInstructionSchema,
   TakeHandsInRingsInstructionSchema,
   TakeHandsInstructionSchema,
   TemplatedLLRRInstructionSchema,
@@ -222,6 +229,8 @@ export function animateAtomicInstruction(
       return pullByAnimator(instr, init, who);
     case "right_left_through":
       return rightLeftThroughAnimator(instr, init, who);
+    case "robins_chain":
+      return robinsChainAnimator(instr, init, who);
     case "roll_away":
       return rollAwayAnimator(instr, init, who);
     case "rory_o_more":
@@ -238,6 +247,8 @@ export function animateAtomicInstruction(
       return starAnimator(instr, init, who);
     case "step":
       return stepAnimator(instr, init, who);
+    case "swing":
+      return swingAnimator(instr, init, who);
     case "take_hands":
       return takeHandsAnimator(instr, init, who);
     case "take_hands_in_rings":

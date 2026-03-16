@@ -2,13 +2,11 @@ import { ALL_PROTO_IDS_SET } from "./contraCore";
 import { animateAtomicInstruction } from "./instructions/_atomic";
 import { chainAnimations, type ContraAnimation } from "./instructions/_base";
 import { type Instruction, instructionDuration } from "./instructions/index";
-import { robinsChainAnimator } from "./instructions/robinsChain";
 import {
   type Split,
   splitAnimator,
   type SplitSubInstruction,
 } from "./instructions/split";
-import { swingAnimator } from "./instructions/swing";
 import { SnazzyError, type SnazzySegment } from "./snazzyError";
 import { assertNever } from "./utils";
 import type { WorldState } from "./worldState";
@@ -47,10 +45,6 @@ function animateInstruction(
   switch (instr.type) {
     case "split":
       return splitAnimator(instr, init, ALL_PROTO_IDS_SET);
-    case "swing":
-      return swingAnimator(instr, init, ALL_PROTO_IDS_SET);
-    case "robins_chain":
-      return robinsChainAnimator(instr, init, ALL_PROTO_IDS_SET);
     default:
       return animateAtomicInstruction(instr, init, ALL_PROTO_IDS_SET);
   }
@@ -92,7 +86,10 @@ export function generateDanceAnimation(
   }
 
   return {
-    animation: segments.length > 0 ? chainAnimations(segments) : null,
+    animation:
+      segments.length > 0
+        ? chainAnimations(segments)
+        : { dur: 0, getFrame: () => initState },
     errors,
   };
 }

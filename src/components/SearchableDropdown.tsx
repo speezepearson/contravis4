@@ -167,7 +167,7 @@ export function SearchableDropdown<T extends string>({
         type="text"
         value={inputValue}
         placeholder={placeholder}
-        size={Math.max((inputValue?.length || placeholder?.length || 0) + 2, 4)}
+        size={((inputValue?.length || placeholder?.length || 0) + 2, 4)}
         onChange={handleChange}
         onFocus={handleFocus}
         onClick={handleClick}

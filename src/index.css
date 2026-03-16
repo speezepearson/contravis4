@@ -1058,3 +1058,7 @@ input[type="range"] {
 .def-instr-kf-role {
   color: #8ac;
 }
+
+.tooltip-trigger {
+  cursor: help;
+}

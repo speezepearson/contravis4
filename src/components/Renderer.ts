@@ -14,7 +14,7 @@ const COLORS: Record<ProtoId, { fill: string; stroke: string; label: string }> =
   };
 
 const MARGIN = 40;
-const PX_PER_METER = 103;
+const DEFAULT_PX_PER_METER = 200;
 
 /** Extract hand connections from WorldState, deduplicating (each appears from both sides). */
 function extractHandConnections(
@@ -65,7 +65,7 @@ export class Renderer {
   private trails: Partial<Record<ProtoId, { x: number; y: number }[]>> = {};
   private trailLength = 20;
   private zoom = 1;
-  private pxPerMeter = PX_PER_METER;
+  private pxPerMeter = DEFAULT_PX_PER_METER;
 
   constructor(ctx: CanvasRenderingContext2D, width: number, height: number) {
     this.ctx = ctx;
@@ -95,7 +95,7 @@ export class Renderer {
 
   setZoom(z: number) {
     this.zoom = z;
-    this.pxPerMeter = PX_PER_METER * z;
+    this.pxPerMeter = DEFAULT_PX_PER_METER * z;
     this.recomputeRanges();
   }
 

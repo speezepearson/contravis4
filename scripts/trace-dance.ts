@@ -19,9 +19,7 @@ import {
   instructionDuration,
   resolveInitFormation,
 } from "../src/instructions/index";
-import { robinsChainAnimator } from "../src/instructions/robinsChain";
 import { splitAnimator } from "../src/instructions/split";
-import { swingAnimator } from "../src/instructions/swing";
 import type { WorldState } from "../src/worldState";
 import { loadDance } from "./lib";
 
@@ -66,12 +64,6 @@ function animateInstruction(
 ): { dur: number; getFrame: (t: number) => WorldState } {
   if (instr.type === "split") {
     return splitAnimator(instr, init, ALL_PROTO_IDS_SET);
-  }
-  if (instr.type === "swing") {
-    return swingAnimator(instr, init, ALL_PROTO_IDS_SET);
-  }
-  if (instr.type === "robins_chain") {
-    return robinsChainAnimator(instr, init, ALL_PROTO_IDS_SET);
   }
   return animateAtomicInstruction(instr, init, ALL_PROTO_IDS_SET);
 }

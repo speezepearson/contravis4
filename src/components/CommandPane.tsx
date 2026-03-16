@@ -938,7 +938,6 @@ function AddInstructionInput({
 }) {
   const [text, setText] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [userNavigated, setUserNavigated] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -993,7 +992,6 @@ function AddInstructionInput({
   if (completionsKey !== prevCompletionsKey) {
     setPrevCompletionsKey(completionsKey);
     setHighlightIndex(completions.length > 0 ? 0 : -1);
-    setUserNavigated(false);
   }
 
   // Auto-scroll highlighted item into view
@@ -1024,7 +1022,6 @@ function AddInstructionInput({
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setHighlightIndex((prev) => (prev + 1) % completions.length);
-        setUserNavigated(true);
         return;
       }
       if (e.key === "ArrowUp") {
@@ -1032,7 +1029,6 @@ function AddInstructionInput({
         setHighlightIndex(
           (prev) => (prev - 1 + completions.length) % completions.length,
         );
-        setUserNavigated(true);
         return;
       }
       if (e.key === "Tab" && highlightIndex >= 0) {
@@ -1040,7 +1036,7 @@ function AddInstructionInput({
         applyCompletion(completions[highlightIndex]);
         return;
       }
-      if (e.key === "Enter" && highlightIndex >= 0 && userNavigated) {
+      if (e.key === "Enter" && highlightIndex >= 0) {
         e.preventDefault();
         applyCompletion(completions[highlightIndex]);
         return;
