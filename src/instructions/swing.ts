@@ -170,9 +170,10 @@ export function buildSwingPlans(
   instr: SwingInstruction,
   init: WorldState,
   who: ReadonlySet<ProtoId>,
+  { getMatch }: { getMatch?: (d: Dancer) => Dancer } = {},
 ): PlanGetter {
   const orig = (d: Dancer) => d.at(init);
-  const getMatch = (d: Dancer) => orig(d).resolveMatch(instr.cid);
+  getMatch ??= (d: Dancer) => orig(d).resolveMatch(instr.cid);
   const getCenter = (d: Dancer) => avgPos(orig(d), getMatch(d));
 
   const getGeom = computeSwingGeometry(instr, init);

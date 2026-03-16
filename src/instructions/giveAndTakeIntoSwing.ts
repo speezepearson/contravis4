@@ -95,11 +95,12 @@ export function giveAndTakeIntoSwingAnimator(
     {
       type: "swing" as const,
       beats: swingDur,
-      cid: instr.cid, // TODO: this isn't right, we need to plumb the original `matches` into this somehow
+      cid: instr.cid,
       endFacing: instr.endFacing,
     },
     postApproachState,
     who,
+    { getMatch: (d) => getMatch(orig(d)).at(d.worldState) }, // TODO: this is kinda subtle and non-ergonomic, figure out a better pattern
   );
 
   // Combine per-dancer plans
