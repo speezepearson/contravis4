@@ -26,22 +26,14 @@ type TextKeywordEntry =
   | { text: string; chunk: "direction_phrase"; value: PureDirection }
   | { text: string; chunk: "handedness"; value: "left" | "right" }
   | { text: string; chunk: "role"; value: Role }
+  | { text: string; chunk: "n_places"; value: number }
+  | { text: string; chunk: "n_rotations"; value: number }
   | { text: string; chunk: "keyword"; value: string };
 
 type RegexKeywordEntry =
   | {
       pattern: RegExp;
       chunk: "beats";
-      extract: (match: RegExpMatchArray) => number;
-    }
-  | {
-      pattern: RegExp;
-      chunk: "rotations";
-      extract: (match: RegExpMatchArray) => number;
-    }
-  | {
-      pattern: RegExp;
-      chunk: "n_places";
       extract: (match: RegExpMatchArray) => number;
     }
   | {
@@ -370,6 +362,31 @@ const TEXT_KEYWORDS: TextKeywordEntry[] = [
   { text: "ladies", chunk: "role", value: "robin" },
   { text: "lady", chunk: "role", value: "robin" },
 
+  // Numbers of places for circles, stars, etc.
+  { text: "2 places", chunk: "n_places", value: 2 },
+  { text: "3 places", chunk: "n_places", value: 3 },
+  { text: "4 places", chunk: "n_places", value: 4 },
+
+  // Numbers of rotations for allemande, shoulder round, etc.
+  { text: "1/2", chunk: "n_rotations", value: 1 / 2 },
+  { text: "½", chunk: "n_rotations", value: 1 / 2 },
+  { text: "3/4", chunk: "n_rotations", value: 3 / 4 },
+  { text: "¾", chunk: "n_rotations", value: 3 / 4 },
+  { text: "once", chunk: "n_rotations", value: 1 },
+  { text: "1 1/4", chunk: "n_rotations", value: 1 + 1 / 4 },
+  { text: "1¼", chunk: "n_rotations", value: 1 + 1 / 4 },
+  { text: "1 1/2", chunk: "n_rotations", value: 1 + 1 / 2 },
+  { text: "1½", chunk: "n_rotations", value: 1 + 1 / 2 },
+  { text: "1 3/4", chunk: "n_rotations", value: 1 + 3 / 4 },
+  { text: "1¾", chunk: "n_rotations", value: 1 + 3 / 4 },
+  { text: "twice", chunk: "n_rotations", value: 2 },
+  { text: "1 1/4", chunk: "n_rotations", value: 1 + 1 / 4 },
+  { text: "1¼", chunk: "n_rotations", value: 1 + 1 / 4 },
+  { text: "1 1/2", chunk: "n_rotations", value: 1 + 1 / 2 },
+  { text: "1½", chunk: "n_rotations", value: 1 + 1 / 2 },
+  { text: "1 3/4", chunk: "n_rotations", value: 1 + 3 / 4 },
+  { text: "1¾", chunk: "n_rotations", value: 1 + 3 / 4 },
+
   // Other keywords
   { text: "lefts in the center", chunk: "keyword", value: "lefts_in_center" },
   { text: "lefts in the centre", chunk: "keyword", value: "lefts_in_center" },
@@ -422,18 +439,8 @@ TEXT_KEYWORDS.sort((a, b) => b.text.length - a.text.length);
 
 const REGEX_KEYWORDS: RegexKeywordEntry[] = [
   {
-    pattern: /^(\d+)\s*beats?\b/i,
+    pattern: /^(\d+)\s*b(eats?)?\b/i,
     chunk: "beats",
-    extract: (m) => Number(m[1]),
-  },
-  {
-    pattern: /^(\d+)\s*places?\b/i,
-    chunk: "n_places",
-    extract: (m) => Number(m[1]),
-  },
-  {
-    pattern: /^(\d+(?:\.\d+)?)\s*(?:times?|rotations?)\b/i,
-    chunk: "rotations",
     extract: (m) => Number(m[1]),
   },
   {
@@ -441,12 +448,6 @@ const REGEX_KEYWORDS: RegexKeywordEntry[] = [
     chunk: "distance",
     extract: (m) => Number(m[1]),
   },
-  { pattern: /^[¾]/, chunk: "n_places", extract: () => 3 },
-  { pattern: /^1[½]/, chunk: "rotations", extract: () => 1.5 },
-  { pattern: /^2[½]/, chunk: "rotations", extract: () => 2.5 },
-  { pattern: /^[½]/, chunk: "rotations", extract: () => 0.5 },
-  { pattern: /^1\s*1\/2/, chunk: "rotations", extract: () => 1.5 },
-  { pattern: /^2\s*1\/2/, chunk: "rotations", extract: () => 2.5 },
 ];
 
 /** The full keyword dictionary, exported for use by autocomplete. */
@@ -535,8 +536,8 @@ export type Chunk =
   | { type: "role"; value: Role; raw: string }
   | { type: "keyword"; value: string; raw: string }
   | { type: "beats"; value: number; raw: string }
-  | { type: "rotations"; value: number; raw: string }
   | { type: "n_places"; value: number; raw: string }
+  | { type: "n_rotations"; value: number; raw: string }
   | { type: "distance"; value: number; raw: string }
   | { type: "unparsed"; value: string; raw: string };
 
@@ -632,6 +633,10 @@ function makeChunkFromText(entry: TextKeywordEntry, raw: string): Chunk {
       return { type: "handedness", value: entry.value, raw };
     case "role":
       return { type: "role", value: entry.value, raw };
+    case "n_places":
+      return { type: "n_places", value: entry.value, raw };
+    case "n_rotations":
+      return { type: "n_rotations", value: entry.value, raw };
     case "keyword":
       return { type: "keyword", value: entry.value, raw };
   }
@@ -645,10 +650,6 @@ function makeChunkFromRegex(
   switch (entry.chunk) {
     case "beats":
       return { type: "beats", value: entry.extract(match), raw };
-    case "rotations":
-      return { type: "rotations", value: entry.extract(match), raw };
-    case "n_places":
-      return { type: "n_places", value: entry.extract(match), raw };
     case "distance":
       return { type: "distance", value: entry.extract(match), raw };
   }
@@ -697,7 +698,7 @@ function interpretChunks(type: ActionOptionType, chunks: Chunk[]): Instruction {
   const handednessChunk = findChunk(chunks, "handedness");
   const handedness =
     handednessChunk?.value ?? findHandednessFromKeywords(chunks);
-  const rotationsChunk = findChunk(chunks, "rotations");
+  const rotationsChunk = findChunk(chunks, "n_rotations");
   const rotations = rotationsChunk?.value ?? rotationsFromKeywords(chunks);
   const nPlacesChunk = findChunk(chunks, "n_places");
   const direction = directionFromChunksOrKeywords(chunks);
