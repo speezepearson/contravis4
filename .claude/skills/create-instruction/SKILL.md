@@ -94,21 +94,21 @@ export const fooSegments =
 
 ### Pre-computing partners
 
-When you need role-filtered or direction-based partner lookups (which can't use the `arc`/`hold` primitives that take a `cid`), pre-compute in the animator body:
+When you need role-filtered or direction-based partner lookups (which can't use the `arc`/`hold` primitives that take a `cid`), resolve them in the plan function from the `Dancer`:
 
 ```ts
-(init, who) => {
-  const partners = new Map<ProtoId, DancerId>();
-  for (const id of who) {
-    const found = findDancerInCalledDirection(id, "on_right", init, { roles: "different" });
-    if (!found) throw new Error(`${id} has no partner for foo`);
-    partners.set(id, found);
-  }
-  return [{ dur: instr.beats, position: (id, frac, segInit) => {
-    const themId = partners.get(id)!;
-    // use themId with Dancer.get(themId, segInit).pos etc.
-  }}];
-};
+export function planFoo(dancer: Dancer): DancerSegment[] {
+  const partner = dancer.findDancerInDirection(
+    dancer.resolvePureDirection("on_right"),
+    { roles: "different" },
+  );
+  if (!partner) throw new SnazzyError([{ dancerId: dancer.id }, " has no partner for foo"]);
+  return [{
+    dur: instr.beats,
+    position: (frac) => lerpVectors(dancer.pos, partner.pos, frac),
+    hands: () => ({ right: { theirId: partner.id, theirHand: "left" } }),
+  }];
+}
 ```
 
 ## 2. Register in `src/instructions/_atomic.ts`
