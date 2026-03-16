@@ -6,6 +6,7 @@ import {
   type DancerId,
   type ProtoId,
 } from "../contraCore";
+import type { SnazzyError } from "../snazzyError";
 import { Dancer, type WorldState } from "../worldState";
 
 export const instructionBaseSchemaFields = {
@@ -39,6 +40,7 @@ export function chainAnimators(animators: Animator[]): Animator {
 export type ContraAnimation = {
   dur: Beats;
   getFrame: (t: Beats) => WorldState;
+  warnings?: SnazzyError[];
 };
 
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
@@ -53,6 +55,7 @@ export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
   if (segments.length === 0) {
     throw new Error("chainAnimations requires at least one segment");
   }
+  const allWarnings = segments.flatMap((s) => s.warnings ?? []);
   return {
     dur: segments.reduce((acc, segment) => acc + segment.dur, 0),
     getFrame(t) {
@@ -67,6 +70,7 @@ export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
       }
       throw new Error(`time ${t} is out of range for this animation sequence`);
     },
+    ...(allWarnings.length > 0 ? { warnings: allWarnings } : {}),
   };
 }
 

@@ -216,7 +216,11 @@ export default function App({
   const [hoveredInstructionId, setHoveredInstructionId] =
     useState<InstructionId | null>(null);
 
-  const { animation, errors: generateErrors } = useMemo(
+  const {
+    animation,
+    errors: generateErrors,
+    warnings: velocityWarnings,
+  } = useMemo(
     () =>
       generateDanceAnimation(instructions, resolveInitFormation(initFormation)),
     [instructions, initFormation],
@@ -235,13 +239,28 @@ export default function App({
     }
   }, [generateErrors]);
 
-  // Per-instruction sanity-check warnings, computed from keyframe samples
-  const sanityWarningsById = useMemo(() => {
+  // Per-instruction warnings (sanity-check + velocity), computed from keyframe samples
+  const warningsById = useMemo(() => {
     const map = new Map<
       InstructionId,
       { beat: number; warnings: SnazzyError[] }
     >();
     if (!animation || generateErrors.length > 0) return map;
+
+    // Build instruction ref → id mapping for velocity warnings
+    const refToId = new Map<object, InstructionId>();
+    for (const instr of instructions) {
+      refToId.set(instr, instr.id);
+    }
+
+    // Collect velocity warnings (keyed by instruction reference → id)
+    for (const [instrRef, warnings] of velocityWarnings) {
+      const id = refToId.get(instrRef);
+      if (id !== undefined) {
+        // Velocity warning messages already contain the beat
+        map.set(id, { beat: 0, warnings });
+      }
+    }
 
     // Build a list of (startBeat, endBeat, instructionId) spans
     const spans: Array<{
@@ -271,12 +290,13 @@ export default function App({
       beat += dur;
     }
 
-    // Sample keyframes at quarter-beat intervals
+    // Sample keyframes at quarter-beat intervals for sanity-check warnings
     const STEP = 0.25;
     const nSteps = Math.ceil(beat / STEP);
 
     // For each instruction, find the earliest keyframe with warnings
     for (const span of spans) {
+      if (map.has(span.id)) continue; // already has velocity warnings
       const startStep = Math.floor(span.start / STEP);
       const endStep = Math.min(Math.ceil(span.end / STEP), nSteps);
       for (let i = startStep; i <= endStep; i++) {
@@ -302,7 +322,7 @@ export default function App({
     }
 
     return map;
-  }, [animation, generateErrors, instructions]);
+  }, [animation, generateErrors, velocityWarnings, instructions]);
 
   // Compute preview frames when hovering over an instruction
   const previewFrames = useMemo(() => {
@@ -820,7 +840,7 @@ export default function App({
     setDanceState,
     activeId: activeInstructionId(instructions, beat),
     generateErrors,
-    sanityWarningsById,
+    warningsById,
     animation,
     onHoverInstruction: handleHoverInstruction,
     onEditInstruction: handleEditInstruction,

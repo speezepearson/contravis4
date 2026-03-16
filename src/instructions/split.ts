@@ -58,6 +58,7 @@ function mergeGroupAnimations(
   groupB: ContraAnimation,
   bIds: ReadonlySet<ProtoId>,
 ): ContraAnimation {
+  const allWarnings = [...(groupA.warnings ?? []), ...(groupB.warnings ?? [])];
   return {
     dur: Math.max(groupA.dur, groupB.dur),
     getFrame(t) {
@@ -70,6 +71,7 @@ function mergeGroupAnimations(
       for (const id of bIds) result[id] = bFrame[id];
       return result;
     },
+    ...(allWarnings.length > 0 ? { warnings: allWarnings } : {}),
   };
 }
 

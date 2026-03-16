@@ -35,6 +35,8 @@ export class GenerateError extends Error {
 export interface GenerateResult {
   animation: ContraAnimation | null;
   errors: GenerateError[];
+  /** Per-instruction velocity warnings (keyed by instruction reference). */
+  warnings: Map<Instruction, SnazzyError[]>;
 }
 
 /** Animate a single instruction (atomic, split, or plan-based) from `init`. */
@@ -60,6 +62,7 @@ export function generateDanceAnimation(
 ): GenerateResult {
   const segments: ContraAnimation[] = [];
   const errors: GenerateError[] = [];
+  const warnings = new Map<Instruction, SnazzyError[]>();
 
   let currentState = initState;
 
@@ -67,6 +70,9 @@ export function generateDanceAnimation(
     try {
       const anim = animateInstruction(currentState, instr);
       segments.push(anim);
+      if (anim.warnings && anim.warnings.length > 0) {
+        warnings.set(instr, anim.warnings);
+      }
       currentState = anim.getFrame(anim.dur);
     } catch (e) {
       errors.push(
@@ -91,6 +97,7 @@ export function generateDanceAnimation(
         ? chainAnimations(segments)
         : { dur: 0, getFrame: () => initState },
     errors,
+    warnings,
   };
 }
 

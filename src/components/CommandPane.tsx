@@ -594,10 +594,7 @@ interface Props {
   }) => void;
   activeId: InstructionId | null;
   generateErrors: GenerateError[];
-  sanityWarningsById: Map<
-    InstructionId,
-    { beat: number; warnings: SnazzyError[] }
-  >;
+  warningsById: Map<InstructionId, { beat: number; warnings: SnazzyError[] }>;
   animation: ContraAnimation | null;
   onHoverInstruction?: (id: InstructionId | null) => void;
   onEditInstruction?: (id: InstructionId) => void;
@@ -1144,7 +1141,7 @@ export default memo(function CommandPane({
   setDanceState,
   activeId,
   generateErrors,
-  sanityWarningsById,
+  warningsById,
   animation,
   onHoverInstruction,
   onEditInstruction,
@@ -1550,12 +1547,12 @@ export default memo(function CommandPane({
             <SnazzyErrorMessage segments={errorById.get(instr.id)!.segments} />
           </div>
         )}
-        {sanityWarningsById.has(instr.id) && (
+        {warningsById.has(instr.id) && (
           <div className="instruction-warning">
             <span className="instruction-warning-beat">
-              {"t=" + sanityWarningsById.get(instr.id)!.beat.toFixed(2)}
+              {"t=" + warningsById.get(instr.id)!.beat.toFixed(2)}
             </span>
-            {sanityWarningsById.get(instr.id)!.warnings.map((warning, i) => (
+            {warningsById.get(instr.id)!.warnings.map((warning, i) => (
               <div key={i}>
                 <SnazzyErrorMessage segments={warning.segments} />
               </div>

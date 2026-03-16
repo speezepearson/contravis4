@@ -81,8 +81,9 @@ const VELOCITY_CHECK_STEP: Beats = 0.25;
 function checkVelocity(
   animation: ContraAnimation,
   who: ReadonlySet<ProtoId>,
-): void {
-  if (animation.dur === 0) return;
+): SnazzyError[] {
+  const warnings: SnazzyError[] = [];
+  if (animation.dur === 0) return warnings;
 
   let prevState = animation.getFrame(0);
   const nSteps = Math.floor(animation.dur / VELOCITY_CHECK_STEP);
@@ -94,14 +95,17 @@ function checkVelocity(
       const dist = state[id].pos.subtract(prevState[id].pos).length();
       const speed = dist / dt;
       if (speed > MAX_SPEED_PER_BEAT) {
-        throw new SnazzyError([
-          { dancerId: id },
-          ` is moving too fast (${speed.toFixed(2)} units/beat, max ${MAX_SPEED_PER_BEAT}) at beat ${t.toFixed(2)}`,
-        ]);
+        warnings.push(
+          new SnazzyError([
+            { dancerId: id },
+            ` is moving too fast (${speed.toFixed(2)} units/beat, max ${MAX_SPEED_PER_BEAT}) at beat ${t.toFixed(2)}`,
+          ]),
+        );
       }
     }
     prevState = state;
   }
+  return warnings;
 }
 
 /**
@@ -225,7 +229,10 @@ export function animatePlans(
     },
   };
 
-  checkVelocity(animation, who);
+  const velocityWarnings = checkVelocity(animation, who);
+  if (velocityWarnings.length > 0) {
+    animation.warnings = velocityWarnings;
+  }
 
   return animation;
 }
