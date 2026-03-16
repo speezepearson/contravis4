@@ -4,14 +4,14 @@ import { DanceSchema } from "./instructions/index";
 async function compress(data: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
   const stream = new Blob([data])
     .stream()
-    .pipeThrough(new CompressionStream("deflate-raw"));
+    .pipeThrough(new CompressionStream("gzip"));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 async function decompress(data: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
   const stream = new Blob([data])
     .stream()
-    .pipeThrough(new DecompressionStream("deflate-raw"));
+    .pipeThrough(new DecompressionStream("gzip"));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
