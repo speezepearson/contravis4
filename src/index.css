@@ -464,6 +464,13 @@ input[type="range"] {
   padding: 2px 8px 2px 12px;
 }
 
+.instruction-warning {
+  color: #e6a700;
+  font-weight: bold;
+  font-size: 0.75em;
+  padding: 2px 8px 2px 12px;
+}
+
 .snazzy-dancer,
 .snazzy-cid {
   text-decoration: underline dotted;

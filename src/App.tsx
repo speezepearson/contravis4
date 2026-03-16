@@ -32,6 +32,7 @@ import {
   instructionDuration,
 } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
+import { SnazzyError } from "./snazzyError";
 import { assignToGlobalThis } from "./typecasts";
 import { useCanvasRenderer } from "./useCanvasRenderer";
 import { useUndoRedo } from "./useUndoRedo";
@@ -234,6 +235,69 @@ export default function App({
     }
   }, [generateErrors]);
 
+  // Per-instruction sanity-check warnings, computed from keyframe samples
+  const sanityWarningsById = useMemo(() => {
+    const map = new Map<InstructionId, SnazzyError[]>();
+    if (!animation || generateErrors.length > 0) return map;
+
+    // Build a list of (startBeat, endBeat, instructionId) spans
+    const spans: Array<{
+      id: InstructionId;
+      start: number;
+      end: number;
+    }> = [];
+    let beat = 0;
+    for (const instr of instructions) {
+      const dur = instructionDuration(instr);
+      if (instr.type === "split") {
+        const [listA, listB] = splitListsWithId(instr);
+        for (const list of [listA, listB]) {
+          let subBeat = beat;
+          for (const sub of list) {
+            spans.push({
+              id: sub.id,
+              start: subBeat,
+              end: subBeat + sub.beats,
+            });
+            subBeat += sub.beats;
+          }
+        }
+      } else {
+        spans.push({ id: instr.id, start: beat, end: beat + dur });
+      }
+      beat += dur;
+    }
+
+    // Sample keyframes at quarter-beat intervals
+    const STEP = 0.25;
+    const nSteps = Math.ceil(beat / STEP);
+
+    // For each instruction, find the earliest keyframe with warnings
+    for (const span of spans) {
+      const startStep = Math.floor(span.start / STEP);
+      const endStep = Math.min(Math.ceil(span.end / STEP), nSteps);
+      for (let i = startStep; i <= endStep; i++) {
+        const t = Math.min(i * STEP, animation.dur);
+        try {
+          const frame = animation.getFrame(t);
+          const warnings = sanityCheckWorldState(frame);
+          const snazzyWarnings = warnings.filter(
+            (w): w is SnazzyError => w instanceof SnazzyError,
+          );
+          if (snazzyWarnings.length > 0) {
+            map.set(span.id, snazzyWarnings);
+            break;
+          }
+        } catch {
+          // SWALLOW_EXCEPTION: frame may fail to generate due to animation errors
+          break;
+        }
+      }
+    }
+
+    return map;
+  }, [animation, generateErrors, instructions]);
+
   // Compute preview frames when hovering over an instruction
   const previewFrames = useMemo(() => {
     if (!hoveredInstructionId || !animation) return [];
@@ -337,8 +401,6 @@ export default function App({
 
     if (frame) {
       lastFrameRef.current = frame;
-      const warnings = sanityCheckWorldState(frame); // TODO: render these somewhere using our SnazzyError fancy stuff
-      if (warnings.length > 0) console.log(warnings);
       renderer.drawFrame(t, frame);
 
       // Draw recents highlight for hovered dancer
@@ -752,6 +814,7 @@ export default function App({
     setDanceState,
     activeId: activeInstructionId(instructions, beat),
     generateErrors,
+    sanityWarningsById,
     animation,
     onHoverInstruction: handleHoverInstruction,
     onEditInstruction: handleEditInstruction,

@@ -55,7 +55,7 @@ import {
   getCompletions,
   parseDanceInstruction,
 } from "../parseDanceInstruction";
-import type { SnazzySegment } from "../snazzyError";
+import { type SnazzyError, type SnazzySegment } from "../snazzyError";
 import { assertNever, buildEnumRecord, indexOf, parses } from "../utils";
 import { type WorldState } from "../worldState";
 import { AllemandeFields } from "./fields/AllemandeFields";
@@ -594,6 +594,7 @@ interface Props {
   }) => void;
   activeId: InstructionId | null;
   generateErrors: GenerateError[];
+  sanityWarningsById: Map<InstructionId, SnazzyError[]>;
   animation: ContraAnimation | null;
   onHoverInstruction?: (id: InstructionId | null) => void;
   onEditInstruction?: (id: InstructionId) => void;
@@ -1140,6 +1141,7 @@ export default memo(function CommandPane({
   setDanceState,
   activeId,
   generateErrors,
+  sanityWarningsById,
   animation,
   onHoverInstruction,
   onEditInstruction,
@@ -1545,6 +1547,12 @@ export default memo(function CommandPane({
             <SnazzyErrorMessage segments={errorById.get(instr.id)!.segments} />
           </div>
         )}
+        {sanityWarningsById.has(instr.id) &&
+          sanityWarningsById.get(instr.id)!.map((warning, i) => (
+            <div key={i} className="instruction-warning">
+              <SnazzyErrorMessage segments={warning.segments} />
+            </div>
+          ))}
       </InstructionEditContext.Provider>
     );
   }
