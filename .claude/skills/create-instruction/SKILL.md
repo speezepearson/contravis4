@@ -90,7 +90,7 @@ export const fooSegments =
 - **`holdByRole({ lark: [h, cid, th], robin: [h, cid, th] })`** — Role-dependent hands.
 - **`holdUntil(threshold, hand, cid, theirHand)`** — Hold until frac, then disconnect.
 - **`disconnect()`** — Remove all hand connections.
-- **Custom**: `(id, frac, draft) => void` — call `connectHands(draft, id, myHand, themId, theirHand)` directly.
+- **Custom**: `(frac) => Partial<Record<Hand, DancerHandPointer | undefined>>` — return hand pointers directly (e.g. `{ left: { theirId: matchId, theirHand: "left" } }`).
 
 ### Pre-computing partners
 
