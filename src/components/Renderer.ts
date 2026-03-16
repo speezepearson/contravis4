@@ -168,6 +168,7 @@ export class Renderer {
           d.pos.y + offset,
           d.facing,
           offset === 0 ? 1.0 : 0.35,
+          offset / 2,
         );
       }
     }
@@ -474,7 +475,14 @@ export class Renderer {
     ctx.globalAlpha = 1.0;
   }
 
-  drawDancer(id: ProtoId, x: number, y: number, facing: Vector, alpha: number) {
+  drawDancer(
+    id: ProtoId,
+    x: number,
+    y: number,
+    facing: Vector,
+    alpha: number,
+    dancerOffset: number,
+  ) {
     const color = COLORS[id];
     if (!color) return;
     const ctx = this.ctx;
@@ -524,7 +532,7 @@ export class Renderer {
     ctx.font = "bold 10px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(color.label, cx, cy);
+    ctx.fillText(color.label + dancerOffset, cx, cy);
 
     ctx.globalAlpha = 1.0;
   }
