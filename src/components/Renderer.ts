@@ -156,12 +156,12 @@ export class Renderer {
       this.drawHandsForAllCopies(conn.a, conn.ha, conn.b, conn.hb);
     }
 
-    // Dancers tiled every 2m to fill viewport
-    const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
-    const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
-    for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
-      for (const id of ALL_PROTO_IDS) {
-        const d = frame[id];
+    // Dancers tiled every 2m to fill viewport, per-dancer offset range
+    for (const id of ALL_PROTO_IDS) {
+      const d = frame[id];
+      const firstCopy = Math.floor((viewYMin - 1 - d.pos.y) / 2) * 2;
+      const lastCopy = Math.ceil((viewYMax + 1 - d.pos.y) / 2) * 2;
+      for (let offset = firstCopy; offset <= lastCopy; offset += 2) {
         this.drawDancer(
           id,
           d.pos.x,
@@ -217,8 +217,10 @@ export class Renderer {
     const ctx = this.ctx;
     const viewYMin = -this.yRange / 2;
     const viewYMax = this.yRange / 2;
-    const firstCopy = Math.floor((viewYMin - 1) / 2) * 2;
-    const lastCopy = Math.ceil((viewYMax + 1) / 2) * 2;
+    // Use the midpoint of the two dancers to determine which offsets are visible
+    const midY = (da.pos.y + db.pos.y) / 2;
+    const firstCopy = Math.floor((viewYMin - 1 - midY) / 2) * 2;
+    const lastCopy = Math.ceil((viewYMax + 1 - midY) / 2) * 2;
     const r = 14 * this.zoom;
     const [dxA, dyA] = this.handAnchorOffset(da.facing, handA, r);
     const [dxB, dyB] = this.handAnchorOffset(db.facing, handB, r);
