@@ -237,7 +237,10 @@ export default function App({
 
   // Per-instruction sanity-check warnings, computed from keyframe samples
   const sanityWarningsById = useMemo(() => {
-    const map = new Map<InstructionId, SnazzyError[]>();
+    const map = new Map<
+      InstructionId,
+      { beat: number; warnings: SnazzyError[] }
+    >();
     if (!animation || generateErrors.length > 0) return map;
 
     // Build a list of (startBeat, endBeat, instructionId) spans
@@ -285,7 +288,10 @@ export default function App({
             (w): w is SnazzyError => w instanceof SnazzyError,
           );
           if (snazzyWarnings.length > 0) {
-            map.set(span.id, snazzyWarnings);
+            map.set(span.id, {
+              beat: t - span.start,
+              warnings: snazzyWarnings,
+            });
             break;
           }
         } catch {

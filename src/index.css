@@ -471,6 +471,11 @@ input[type="range"] {
   padding: 2px 8px 2px 12px;
 }
 
+.instruction-warning-beat {
+  opacity: 0.7;
+  margin-right: 6px;
+}
+
 .snazzy-dancer,
 .snazzy-cid {
   text-decoration: underline dotted;
