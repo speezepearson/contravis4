@@ -1526,8 +1526,8 @@ export default memo(function CommandPane({
   );
 
   // Track whether we've already rendered the pending-add input this render.
-  // Multiple gaps can share the same containerId/index (e.g. all four empty
-  // sections map to "top"/0), but we must only render the input once.
+  // Adjacent sections can produce gaps with the same containerId/index,
+  // but we must only render the input once.
   const pendingAddRendered = useRef(false);
   pendingAddRendered.current = false;
 
@@ -1734,22 +1734,10 @@ export default memo(function CommandPane({
             items={displayInstructions.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            {sections.map((section, sectionIdx) => {
-              let emptyGapIndex = 0;
-              if (section.items.length === 0) {
-                for (let si = sectionIdx - 1; si >= 0; si--) {
-                  const prev = sections[si].items;
-                  if (prev.length > 0) {
-                    emptyGapIndex = prev[prev.length - 1].index + 1;
-                    break;
-                  }
-                }
-              }
+            {sections.map((section) => {
               return (
                 <Fragment key={section.label}>
                   <div className="section-header">{section.label}</div>
-                  {section.items.length === 0 &&
-                    renderAddGap("top", emptyGapIndex)}
                   {section.items.map((item, si) => (
                     <Fragment key={item.instruction.id}>
                       {si === 0 && renderAddGap("top", item.index)}
@@ -1793,9 +1781,12 @@ export default memo(function CommandPane({
           </SortableContext>
           <DropZone containerId="top" />
           {instructions.length === 0 && (
-            <div className="instruction-empty">
-              No instructions yet. Click + to add one.
-            </div>
+            <>
+              {renderAddGap("top", 0)}
+              <div className="instruction-empty">
+                No instructions yet. Click + to add one.
+              </div>
+            </>
           )}
         </div>
 
