@@ -20,13 +20,10 @@ export function SwingFields({
 }: SubFormProps & {
   instruction: SwingInstruction;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof SwingInstructionSchema>>,
   ) {
     const result = typedSafeParse(SwingInstructionSchema, {
-      id,
       type: "swing",
       beats: instruction.beats,
       cid: instruction.cid,

@@ -6,7 +6,6 @@ export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
-      id: "bdaa0c3f-455a-42e9-9b7c-b61c975dffb7",
       beats: 8,
       type: "poussette",
       backer: "lark",
@@ -14,7 +13,6 @@ export default typedParse(DanceSchema, {
       full: true,
     },
     {
-      id: "ffa9fd6b-7493-4763-bb1d-679ab720781f",
       beats: 8,
       type: "poussette",
       backer: "lark",
@@ -22,7 +20,6 @@ export default typedParse(DanceSchema, {
       full: false,
     },
     {
-      id: "479bcc12-62d2-4aba-a306-b075ade6ecd4",
       beats: 8,
       type: "poussette",
       backer: "robin",

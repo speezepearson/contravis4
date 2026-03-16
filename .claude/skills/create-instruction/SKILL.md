@@ -16,10 +16,10 @@ Every instruction requires changes to **5 locations**. Follow each step in order
 ```ts
 import { z } from "zod";
 import { BeatsSchema, RoleSchema, /* ... */ } from "../contraCore";
-import { InstructionIdSchema, instructionBaseSchemaFields } from "./_base";
+import { instructionBaseSchemaFields } from "./_base";
 
 export const FooInstructionSchema = z.object({
-  ...instructionBaseSchemaFields,   // { id: UUID, beats: integer }
+  ...instructionBaseSchemaFields,   // { beats: integer }
   type: z.literal("foo"),
   // instruction-specific fields here
 });

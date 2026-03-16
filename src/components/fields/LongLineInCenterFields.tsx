@@ -15,13 +15,10 @@ export function LongLineInCenterFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "long_line_in_center" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof LongLineInCenterInstructionSchema>>,
   ) {
     const result = typedSafeParse(LongLineInCenterInstructionSchema, {
-      id,
       type: "long_line_in_center",
       beats: instruction.beats,
       role: instruction.role,

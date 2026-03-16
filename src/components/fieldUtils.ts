@@ -5,7 +5,6 @@ import {
   type CalledDirection,
   type CalledIdentifier,
   type CardinalDirection,
-  InstructionIdSchema,
   labelId,
   personInDir,
   pureDir,
@@ -14,7 +13,6 @@ import {
 import {
   type ActionOptionType,
   type Instruction,
-  type InstructionId,
   InstructionSchema,
 } from "../instructions/index";
 import {
@@ -32,15 +30,11 @@ export interface SubFormProps {
 }
 
 /** Create a default instruction for a given type. */
-export function makeDefaultInstruction(
-  type: ActionOptionType,
-  id: InstructionId,
-): Instruction {
+export function makeDefaultInstruction(type: ActionOptionType): Instruction {
   const unverified = ((): z.input<typeof InstructionSchema> => {
     switch (type) {
       case "allemande":
         return {
-          id,
           type: "allemande",
           beats: 8,
           cid: labelId("neighbor"),
@@ -48,28 +42,26 @@ export function makeDefaultInstruction(
           rotations: 1,
         };
       case "balance":
-        return { id, type: "balance", beats: 4, cid: labelId("partner") };
+        return { type: "balance", beats: 4, cid: labelId("partner") };
       case "balance_and_swing":
         return {
-          id,
           type: "balance_and_swing",
           beats: 16,
           cid: labelId("partner"),
           endFacing: "across",
         };
       case "balance_the_ring":
-        return { id, type: "balance_the_ring", beats: 4 };
+        return { type: "balance_the_ring", beats: 4 };
       case "box_circulate":
-        return { id, type: "box_circulate", beats: 4 };
+        return { type: "box_circulate", beats: 4 };
       case "box_the_gnat":
-        return { id, type: "box_the_gnat", beats: 4, cid: labelId("partner") };
+        return { type: "box_the_gnat", beats: 4, cid: labelId("partner") };
       case "california_twirl":
-        return { id, type: "california_twirl", beats: 4 };
+        return { type: "california_twirl", beats: 4 };
       case "robins_chain":
-        return { id, type: "robins_chain", beats: 8, cid: labelId("neighbor") };
+        return { type: "robins_chain", beats: 8, cid: labelId("neighbor") };
       case "circle":
         return {
-          id,
           type: "circle",
           beats: 8,
           direction: "left",
@@ -77,23 +69,21 @@ export function makeDefaultInstruction(
         };
       case "do_si_do":
         return {
-          id,
           type: "do_si_do",
           beats: 8,
           cid: labelId("neighbor"),
           rotations: 1,
         };
       case "drop_hands":
-        return { id, type: "drop_hands", beats: 0, which: "both" };
+        return { type: "drop_hands", beats: 0, which: "both" };
       case "face":
-        return { id, type: "face", beats: 0, direction: pureDir("across") };
+        return { type: "face", beats: 0, direction: pureDir("across") };
       case "form_long_waves":
-        return { id, type: "form_long_waves", beats: 0 };
+        return { type: "form_long_waves", beats: 0 };
       case "form_short_waves":
-        return { id, type: "form_short_waves", beats: 0 };
+        return { type: "form_short_waves", beats: 0 };
       case "give_and_take_into_swing":
         return {
-          id,
           type: "give_and_take_into_swing",
           beats: 16,
           cid: labelId("partner"),
@@ -102,7 +92,6 @@ export function makeDefaultInstruction(
         };
       case "hey":
         return {
-          id,
           type: "hey",
           beats: 16,
           full: true,
@@ -110,12 +99,11 @@ export function makeDefaultInstruction(
           centerHand: "right",
         };
       case "long_line_in_center":
-        return { id, type: "long_line_in_center", role: "lark", beats: 4 };
+        return { type: "long_line_in_center", role: "lark", beats: 4 };
       case "long_lines_forward_back":
-        return { id, type: "long_lines_forward_back", beats: 8 };
+        return { type: "long_lines_forward_back", beats: 8 };
       case "mad_robin":
         return {
-          id,
           beats: 8,
           type: "mad_robin",
           cid: labelId("neighbor"),
@@ -124,7 +112,6 @@ export function makeDefaultInstruction(
         };
       case "meltdown_swing":
         return {
-          id,
           type: "meltdown_swing",
           beats: 16,
           cid: labelId("neighbor"),
@@ -132,17 +119,15 @@ export function makeDefaultInstruction(
         };
       case "pass_by":
         return {
-          id,
           type: "pass_by",
           beats: 2,
           cid: labelId("neighbor"),
           hand: "right",
         };
       case "petronella":
-        return { id, type: "petronella", beats: 4 };
+        return { type: "petronella", beats: 4 };
       case "poussette":
         return {
-          id,
           type: "poussette",
           beats: 8,
           backer: "lark",
@@ -151,7 +136,6 @@ export function makeDefaultInstruction(
         };
       case "pull_by":
         return {
-          id,
           type: "pull_by",
           beats: 2,
           cid: labelId("partner"),
@@ -159,24 +143,21 @@ export function makeDefaultInstruction(
         };
       case "greet_new_neighbors":
         return {
-          id,
           type: "greet_new_neighbors",
           beats: 0,
           cid: personInDir("in_front", "different"),
         };
       case "greet_shadow":
         return {
-          id,
           type: "greet_shadow",
           beats: 0,
           cid: personInDir("in_front", "different"),
           label: "shadow",
         };
       case "right_left_through":
-        return { id, type: "right_left_through", beats: 8 };
+        return { type: "right_left_through", beats: 8 };
       case "roll_away":
         return {
-          id,
           type: "roll_away",
           roller: "lark",
           rollee: {
@@ -187,12 +168,11 @@ export function makeDefaultInstruction(
           beats: 4,
         };
       case "rory_o_more":
-        return { id, type: "rory_o_more", beats: 4, direction: "right" };
+        return { type: "rory_o_more", beats: 4, direction: "right" };
       case "slice":
-        return { id, type: "slice", beats: 8, direction: "left" };
+        return { type: "slice", beats: 8, direction: "left" };
       case "shoulder_round":
         return {
-          id,
           type: "shoulder_round",
           beats: 8,
           cid: labelId("partner"),
@@ -201,7 +181,6 @@ export function makeDefaultInstruction(
         };
       case "square_through":
         return {
-          id,
           type: "square_through",
           beats: 8,
           nPullBys: 4,
@@ -211,7 +190,6 @@ export function makeDefaultInstruction(
         };
       case "single_file_promenade":
         return {
-          id,
           type: "single_file_promenade",
           beats: 8,
           direction: "left",
@@ -219,17 +197,15 @@ export function makeDefaultInstruction(
         };
       case "star":
         return {
-          id,
           type: "star",
           beats: 8,
           direction: "left",
           nPlaces: 4,
         };
       case "split":
-        return { id, type: "split", by: "role", larks: [], robins: [] };
+        return { type: "split", by: "role", larks: [], robins: [] };
       case "step":
         return {
-          id,
           type: "step",
           beats: 1,
           direction: pureDir("in_front"),
@@ -238,45 +214,41 @@ export function makeDefaultInstruction(
         };
       case "swing":
         return {
-          id,
           type: "swing",
           beats: 16,
           cid: labelId("partner"),
           endFacing: "across",
         };
       case "take_hands_in_rings":
-        return { id, type: "take_hands_in_rings", beats: 0 };
+        return { type: "take_hands_in_rings", beats: 0 };
       case "take_hands":
         return {
-          id,
           type: "take_hands",
           beats: 0,
           cid: labelId("partner"),
           hand: "right",
         };
       case "turn_alone":
-        return { id, type: "turn_alone", beats: 2 };
+        return { type: "turn_alone", beats: 2 };
       case "turn_as_a_couple":
-        return { id, type: "turn_as_a_couple", beats: 4 };
+        return { type: "turn_as_a_couple", beats: 4 };
       case "zig_zag":
         return {
-          id,
           type: "zig_zag",
           beats: 8,
           dir: "left",
           nZigs: 2,
         };
       case "bend_the_line":
-        return { id, type: "bend_the_line", beats: 2 };
+        return { type: "bend_the_line", beats: 2 };
       case "down_the_hall":
       case "up_the_hall":
-        return { id, type, beats: 6, distance: 1.5 };
+        return { type, beats: 6, distance: 1.5 };
       default: {
         // Template IDs: create a templated_lr or templated_llrr instruction
         if (parses(LLRRTemplateIdSchema, type)) {
           const template = allLLRRTemplates[type];
           return {
-            id,
             type: "templated_llrr",
             beats: template.defaultBeats,
             templateId: type,
@@ -286,7 +258,6 @@ export function makeDefaultInstruction(
         const _exhaustive: keyof typeof allLRTemplates = type;
         const template = allLRTemplates[_exhaustive];
         return {
-          id,
           type: "templated_lr",
           beats: template.defaultBeats,
           templateId: _exhaustive,
@@ -296,10 +267,6 @@ export function makeDefaultInstruction(
     }
   })();
   return InstructionSchema.parse(unverified);
-}
-
-export function makeInstructionId(): InstructionId {
-  return InstructionIdSchema.parse(crypto.randomUUID());
 }
 
 export function cardinalDirectionToText(dir: CardinalDirection): string {

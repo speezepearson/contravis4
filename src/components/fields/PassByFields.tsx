@@ -16,13 +16,10 @@ export function PassByFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "pass_by" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof PassByInstructionSchema>>,
   ) {
     const result = typedSafeParse(PassByInstructionSchema, {
-      id,
       type: "pass_by",
       beats: instruction.beats,
       cid: instruction.cid,

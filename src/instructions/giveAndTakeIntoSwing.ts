@@ -93,7 +93,6 @@ export function giveAndTakeIntoSwingAnimator(
   // Build swing plans from post-approach state
   const swingPlans = buildSwingPlans(
     {
-      id: instr.id,
       type: "swing" as const,
       beats: swingDur,
       cid: instr.cid, // TODO: this isn't right, we need to plumb the original `matches` into this somehow

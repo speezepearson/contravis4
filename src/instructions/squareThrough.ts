@@ -76,7 +76,7 @@ export function planSquareThrough(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): (dancer: Dancer) => DancerSegment[] {
-  const { id, nPullBys, firstHand, cid1, cid2 } = instr;
+  const { nPullBys, firstHand, cid1, cid2 } = instr;
   const secondHand = otherHand(firstHand);
 
   const nBalances = nPullBys === 2 ? 1 : nPullBys === 4 ? 2 : 0;
@@ -101,7 +101,6 @@ export function planSquareThrough(
 
   // 1. Face cid1
   const faceInstr1 = {
-    id,
     beats: 0 as const,
     type: "face" as const,
     direction: cidToDirection(cid1),
@@ -110,7 +109,6 @@ export function planSquareThrough(
 
   // 2. Take firstHand hands with cid1
   addTakeHandsPhase({
-    id,
     beats: 0 as const,
     type: "take_hands" as const,
     cid: cid1,
@@ -121,7 +119,7 @@ export function planSquareThrough(
   if (nPullBys === 2 || nPullBys === 4) {
     addPhase((d) =>
       planBalance(
-        { id, beats: balanceBeats, type: "balance" as const, cid: cid1 },
+        { beats: balanceBeats, type: "balance" as const, cid: cid1 },
         d,
       ),
     );
@@ -131,7 +129,6 @@ export function planSquareThrough(
   addPhase((d) =>
     planPullBy(
       {
-        id,
         beats: pullByBeats,
         type: "pull_by" as const,
         cid: cid1,
@@ -145,7 +142,6 @@ export function planSquareThrough(
   addPhase((d) =>
     planFace(
       {
-        id,
         beats: 0 as const,
         type: "face" as const,
         direction: cidToDirection(cid2),
@@ -158,7 +154,6 @@ export function planSquareThrough(
   addPhase((d) =>
     planPullBy(
       {
-        id,
         beats: pullByBeats,
         type: "pull_by" as const,
         cid: cid2,
@@ -173,7 +168,6 @@ export function planSquareThrough(
     addPhase((d) =>
       planFace(
         {
-          id,
           beats: 0 as const,
           type: "face" as const,
           direction: cidToDirection(cid1),
@@ -184,7 +178,6 @@ export function planSquareThrough(
 
     // Take hands again
     addTakeHandsPhase({
-      id,
       beats: 0 as const,
       type: "take_hands" as const,
       cid: cid1,
@@ -195,7 +188,7 @@ export function planSquareThrough(
     if (nPullBys === 4) {
       addPhase((d) =>
         planBalance(
-          { id, beats: balanceBeats, type: "balance" as const, cid: cid1 },
+          { beats: balanceBeats, type: "balance" as const, cid: cid1 },
           d,
         ),
       );
@@ -205,7 +198,6 @@ export function planSquareThrough(
     addPhase((d) =>
       planPullBy(
         {
-          id,
           beats: pullByBeats,
           type: "pull_by" as const,
           cid: cid1,
@@ -220,7 +212,6 @@ export function planSquareThrough(
       addPhase((d) =>
         planFace(
           {
-            id,
             beats: 0 as const,
             type: "face" as const,
             direction: cidToDirection(cid2),
@@ -233,7 +224,6 @@ export function planSquareThrough(
       addPhase((d) =>
         planPullBy(
           {
-            id,
             beats: pullByBeats,
             type: "pull_by" as const,
             cid: cid2,

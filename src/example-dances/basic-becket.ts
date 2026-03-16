@@ -9,57 +9,48 @@ export default typedParse(DanceSchema, {
   initFormation: "becket",
   instructions: [
     {
-      id: "94bce2a9-6664-41f6-80df-8f72dd171188",
       beats: 8,
       type: "long_lines_forward_back",
     },
     {
-      id: "85fc4190-ebd7-44c0-9c02-e5d3fb477e33",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "28c52d4e-08a5-4475-9940-8dd7925210b8",
       beats: 8,
       type: "slice",
       direction: "left",
     },
     {
-      id: "61d270ca-c9e7-4636-9b01-30c8d5826fb8",
       beats: 0,
       type: "greet_new_neighbors",
       cid: { type: "PersonInDirection", dir: "across", onlyRole: "different" },
     },
     {
-      id: "39cee54a-40cc-4839-a335-f8adaaa1b00a",
       beats: 8,
       type: "circle",
       direction: "left",
       nPlaces: 4,
     },
     {
-      id: "9dd56250-78ab-42c1-9103-c948cdbd9346",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "080d1615-d62a-42ee-893e-91292fb550b9",
       beats: 8,
       type: "do_si_do",
       cid: { type: "label", label: "partner" },
       rotations: 1,
     },
     {
-      id: "4cda5502-881b-435f-99ba-4fa1aa26a5f8",
       beats: 8,
       type: "do_si_do",
       cid: { type: "label", label: "neighbor" },
       rotations: 1,
     },
     {
-      id: "4d38121e-ffa2-4206-848e-a1fc66a0ef40",
       beats: 8,
       type: "poussette",
       backer: "robin",
@@ -67,20 +58,17 @@ export default typedParse(DanceSchema, {
       full: false,
     },
     {
-      id: "f7c5c449-43f0-4a61-b363-1fee2a96f127",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "1ceae78f-b328-44a7-b7ab-b6334b7049e0",
       beats: 8,
       type: "do_si_do",
       cid: { type: "label", label: "neighbor" },
       rotations: 1,
     },
     {
-      id: "1da5293a-de43-4746-9b53-f5607ce81209",
       beats: 8,
       type: "poussette",
       backer: "lark",

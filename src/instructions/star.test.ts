@@ -10,7 +10,6 @@ const allProtos = ALL_PROTO_IDS_SET;
 
 function makeInstr(overrides: Partial<StarInstruction> = {}): StarInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 8,
     type: "star",
     direction: "left",

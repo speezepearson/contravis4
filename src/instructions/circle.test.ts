@@ -10,7 +10,6 @@ function makeInstr(
   overrides: Partial<CircleInstruction> = {},
 ): CircleInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 8,
     type: "circle",
     direction: "left",

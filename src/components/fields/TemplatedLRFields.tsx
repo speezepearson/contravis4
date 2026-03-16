@@ -22,14 +22,12 @@ export function TemplatedLRFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "templated_lr" }>;
 }) {
-  const { id } = instruction;
   const template = allLRTemplates[instruction.templateId];
 
   function tryCommit(
     overrides: Partial<z.input<typeof TemplatedLRInstructionSchema>>,
   ) {
     const result = typedSafeParse(TemplatedLRInstructionSchema, {
-      id,
       type: "templated_lr",
       beats: instruction.beats,
       templateId: instruction.templateId,

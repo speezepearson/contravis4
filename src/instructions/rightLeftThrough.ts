@@ -30,12 +30,10 @@ export function rightLeftThroughAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const { id } = instr;
   const pullByBeats = instr.beats / 2;
   const courtesyTurnBeats = instr.beats / 2;
 
   const pullByInstr = {
-    id,
     beats: pullByBeats,
     type: "pull_by" as const,
     cid: personInDir("across", "different"),
@@ -55,7 +53,7 @@ export function rightLeftThroughAnimator(
     const pullBySegs = getPullByPlan(dancer);
     const postPullByDancer = Dancer.get(dancer.protoId, postPullByState);
     const courtesyTurnSegs = planCourtesyTurn(
-      { id, beats: courtesyTurnBeats, type: "courtesy_turn" },
+      { beats: courtesyTurnBeats, type: "courtesy_turn" },
       postPullByDancer,
     );
     return [...pullBySegs, ...courtesyTurnSegs];

@@ -17,13 +17,10 @@ export function CircleFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "circle" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof CircleInstructionSchema>>,
   ) {
     const result = typedSafeParse(CircleInstructionSchema, {
-      id,
       type: "circle",
       beats: instruction.beats,
       direction: instruction.direction,

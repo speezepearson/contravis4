@@ -1,10 +1,6 @@
 import { ALL_PROTO_IDS_SET } from "./contraCore";
 import { animateAtomicInstruction } from "./instructions/_atomic";
-import {
-  chainAnimations,
-  type ContraAnimation,
-  type InstructionId,
-} from "./instructions/_base";
+import { chainAnimations, type ContraAnimation } from "./instructions/_base";
 import { type Instruction, instructionDuration } from "./instructions/index";
 import { robinsChainAnimator } from "./instructions/robinsChain";
 import {
@@ -18,19 +14,19 @@ import { assertNever } from "./utils";
 import type { WorldState } from "./worldState";
 
 export class GenerateError extends Error {
-  public instructionId: InstructionId;
+  public instruction: Instruction;
   public message: string;
   public initState: WorldState;
   public segments: SnazzySegment[];
   constructor(
-    instructionId: InstructionId,
+    instruction: Instruction,
     message: string,
     initState: WorldState,
     cause?: Error,
     segments?: SnazzySegment[],
   ) {
     super(message);
-    this.instructionId = instructionId;
+    this.instruction = instruction;
     this.message = message;
     this.initState = initState;
     this.cause = cause;
@@ -81,7 +77,7 @@ export function generateDanceAnimation(
     } catch (e) {
       errors.push(
         new GenerateError(
-          instr.id,
+          instr,
           e instanceof Error ? e.message : String(e),
           currentState,
           e instanceof Error ? e : undefined,
@@ -102,26 +98,26 @@ export function generateDanceAnimation(
 }
 
 /**
- * Walk the instruction list and sum beats until we find `targetId`.
+ * Walk the instruction list and sum beats until we find `target` (by reference equality).
  * Returns the beat number at which the instruction starts, or null if not found.
  */
 export function findInstructionStartBeat(
   instructions: Instruction[],
-  targetId: InstructionId,
+  target: Instruction,
 ): number | null {
   let beat = 0;
   for (const instr of instructions) {
-    if (instr.id === targetId) return beat;
+    if (instr === target) return beat;
     if (instr.type === "split") {
       const [listA, listB] = splitLists(instr);
       let b = beat;
       for (const sub of listA) {
-        if (sub.id === targetId) return b;
+        if (sub === target) return b;
         b += sub.beats;
       }
       b = beat;
       for (const sub of listB) {
-        if (sub.id === targetId) return b;
+        if (sub === target) return b;
         b += sub.beats;
       }
     }

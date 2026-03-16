@@ -24,7 +24,6 @@ Every atomic instruction has these base fields:
 
 | Field   | Type     | Description                                            |
 | ------- | -------- | ------------------------------------------------------ |
-| `id`    | `string` | UUID unique to this instruction                        |
 | `beats` | `number` | Duration in beats (0 for "instant" setup instructions) |
 | `type`  | `string` | Discriminator — one of the types below                 |
 
@@ -59,7 +58,6 @@ Most instructions are **atomic** — simple self-contained moves. Three instruct
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "allemande",
   "cid": "neighbor",
@@ -72,7 +70,6 @@ Most instructions are **atomic** — simple self-contained moves. Three instruct
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "balance",
   "cid": "partner"
@@ -85,7 +82,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "balance_the_ring"
 }
@@ -95,7 +91,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "bend_the_line"
 }
@@ -105,7 +100,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "box_circulate"
 }
@@ -115,7 +109,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "box_the_gnat",
   "cid": "neighbor"
@@ -126,7 +119,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "california_twirl"
 }
@@ -140,7 +132,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "circle",
   "direction": "left",
@@ -153,7 +144,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "do_si_do",
   "cid": "neighbor",
@@ -165,7 +155,6 @@ Balance in a ring (all four dancers).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "down_the_hall",
   "distance": 1
@@ -178,7 +167,6 @@ Always 0 beats (instant). `which`: `"both"`, `"left"`, `"right"`, or a CalledIde
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "drop_hands",
   "which": "both"
@@ -191,7 +179,6 @@ Always 0 beats (instant). Reorients dancers.
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "face",
   "direction": "across"
@@ -204,7 +191,6 @@ Always 0 beats (instant).
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "form_long_waves"
 }
@@ -216,7 +202,6 @@ Always 0 beats (instant).
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "form_short_waves"
 }
@@ -228,7 +213,6 @@ Always 0 beats (instant).
 
 ```json
 {
-  "id": "...",
   "beats": 16,
   "type": "give_and_take_into_swing",
   "cid": "neighbor",
@@ -246,7 +230,6 @@ Always 0 beats (instant).
 
 ```json
 {
-  "id": "...",
   "beats": 16,
   "type": "hey",
   "full": true,
@@ -261,7 +244,6 @@ Always 0 beats (instant). Updates the `neighbor` label.
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "greet_new_neighbors",
   "cid": "person_on_right"
@@ -274,7 +256,6 @@ Always 0 beats (instant). Sets a shadow label.
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "greet_shadow",
   "label": "shadow",
@@ -288,7 +269,6 @@ One role steps to center to form a long line.
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "long_line_in_center",
   "role": "lark"
@@ -301,7 +281,6 @@ All dancers walk forward toward the center and back.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "long_lines_forward_back"
 }
@@ -313,7 +292,6 @@ All dancers walk forward toward the center and back.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "mad_robin",
   "cid": "neighbor",
@@ -328,7 +306,6 @@ Right shoulder round 1.5x (8 beats) followed by a swing (remaining beats). Equiv
 
 ```json
 {
-  "id": "...",
   "beats": 16,
   "type": "meltdown_swing",
   "cid": "neighbor",
@@ -340,7 +317,6 @@ Right shoulder round 1.5x (8 beats) followed by a swing (remaining beats). Equiv
 
 ```json
 {
-  "id": "...",
   "beats": 2,
   "type": "pass_by",
   "cid": "neighbor",
@@ -354,7 +330,6 @@ Spin to the right into the next position in the ring.
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "petronella"
 }
@@ -368,7 +343,6 @@ Spin to the right into the next position in the ring.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "poussette",
   "backer": "lark",
@@ -381,7 +355,6 @@ Spin to the right into the next position in the ring.
 
 ```json
 {
-  "id": "...",
   "beats": 2,
   "type": "pull_by",
   "cid": "neighbor",
@@ -393,7 +366,6 @@ Spin to the right into the next position in the ring.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "right_left_through"
 }
@@ -409,7 +381,6 @@ The lark who sends each robin is determined by `setcounterclockwise` (the robin 
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "robins_chain",
   "cid": "neighbor"
@@ -423,7 +394,6 @@ The lark who sends each robin is determined by `setcounterclockwise` (the robin 
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "roll_away",
   "roller": "lark",
@@ -437,7 +407,6 @@ Slide sideways (typically from waves).
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "rory_o_more",
   "direction": "right"
@@ -452,7 +421,6 @@ Dancers slide sideways (left or right) while facing across, stepping forward to 
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "slice",
   "direction": "left"
@@ -467,7 +435,6 @@ Also known as "gyre" or "gypsy". Dancers orbit each other without touching.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "shoulder_round",
   "cid": "partner",
@@ -480,7 +447,6 @@ Also known as "gyre" or "gypsy". Dancers orbit each other without touching.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "square_through"
 }
@@ -496,7 +462,6 @@ Like a star, but without hands. Dancers orbit in single file around the ring.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "single_file_promenade",
   "direction": "left",
@@ -514,7 +479,6 @@ Like a circle, but each dancer's facing is rotated 90° (CCW if left, CW if righ
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "star",
   "direction": "left",
@@ -529,7 +493,6 @@ Move in a direction while facing a (possibly different) direction.
 
 ```json
 {
-  "id": "...",
   "beats": 2,
   "type": "step",
   "direction": "across",
@@ -544,7 +507,6 @@ Swings end facing across by default.
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "swing",
   "cid": "partner",
@@ -560,7 +522,6 @@ Always 0 beats (instant).
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "take_hands",
   "cid": "neighbor",
@@ -576,7 +537,6 @@ Always 0 beats (instant). All four dancers join hands in a ring.
 
 ```json
 {
-  "id": "...",
   "beats": 0,
   "type": "take_hands_in_rings",
   "disambiguatingCid": "partner"
@@ -589,7 +549,6 @@ Each dancer turns 180° in place (larks turn left, robins turn right).
 
 ```json
 {
-  "id": "...",
   "beats": 2,
   "type": "turn_alone"
 }
@@ -601,7 +560,6 @@ Both partners turn 180° together (like a california twirl but conceptually as a
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "turn_as_a_couple"
 }
@@ -611,7 +569,6 @@ Both partners turn 180° together (like a california twirl but conceptually as a
 
 ```json
 {
-  "id": "...",
   "beats": 4,
   "type": "up_the_hall",
   "distance": 1
@@ -628,7 +585,6 @@ Couples zig-zag along the set, moving sideways in alternating directions.
 
 ```json
 {
-  "id": "...",
   "beats": 6,
   "type": "zig_zag",
   "leader": "lark",
@@ -647,7 +603,6 @@ A template-driven instruction type. The animation is defined by a set of keyfram
 
 ```json
 {
-  "id": "...",
   "beats": 8,
   "type": "templated_lr",
   "templateId": "specialChain",
@@ -665,7 +620,6 @@ Like `templated_lr`, but keyframes are keyed by ProtoId (all four dancers indepe
 
 ```json
 {
-  "id": "...",
   "beats": 16,
   "type": "templated_llrr",
   "templateId": "specialHey",
@@ -685,12 +639,10 @@ Sub-instructions inside a split can be any atomic instruction, plus `swing` and 
 
 ```json
 {
-  "id": "...",
   "type": "split",
   "by": "role",
   "larks": [
     {
-      "id": "...",
       "beats": 8,
       "type": "allemande",
       "cid": "opposite",
@@ -706,13 +658,11 @@ Sub-instructions inside a split can be any atomic instruction, plus `swing` and 
 
 ```json
 {
-  "id": "...",
   "type": "split",
   "by": "direction",
   "ups": [],
   "downs": [
     {
-      "id": "...",
       "beats": 4,
       "type": "california_twirl"
     }

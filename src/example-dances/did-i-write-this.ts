@@ -9,7 +9,6 @@ export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
-      id: "a6b45cd2-78a4-427c-ad8b-c113de8dd1fb",
       beats: 4,
       type: "balance",
       cid: {
@@ -18,7 +17,6 @@ export default typedParse(DanceSchema, {
       },
     },
     {
-      id: "5d0b1d38-cdea-4b28-b0b5-268d7dd3b3e6",
       beats: 12,
       type: "swing",
       cid: {
@@ -28,26 +26,22 @@ export default typedParse(DanceSchema, {
       endFacing: "across",
     },
     {
-      id: "86b87d2b-59a5-4df2-8471-311d5373ebde",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "7b91e598-4c8d-4aa4-9d2f-afaf0c938e63",
       beats: 8,
       type: "circle",
       direction: "left",
       nPlaces: 3,
     },
     {
-      id: "5e4b6b9a-3916-4e6e-a1ad-8039080c41e8",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "0caf44c2-d342-409f-ad62-a875f04a0d8e",
       beats: 8,
       type: "swing",
       cid: {
@@ -57,24 +51,20 @@ export default typedParse(DanceSchema, {
       endFacing: "across",
     },
     {
-      id: "34908295-de94-4630-91f9-17ec3482b15f",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "ee51a181-02e2-4e8e-8c31-2becc13b6af4",
       beats: 8,
       type: "long_lines_forward_back",
     },
     {
-      id: "50e8702a-e492-456e-be3e-47527bb4a717",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "cfcf01e3-14f4-42ac-9f93-d181fbbd96c8",
       beats: 8,
       type: "robins_chain",
       cid: {
@@ -83,29 +73,24 @@ export default typedParse(DanceSchema, {
       },
     },
     {
-      id: "13870d2d-4db6-46a7-b915-93db0de0d1c5",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "8be9097c-61ae-4325-800d-07168ac67c3a",
       beats: 8,
       type: "long_lines_forward_back",
     },
     {
-      id: "866824a8-bb2e-4bcb-938e-990d6e1dbf92",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "7d28942d-e43d-4151-97ea-2991a1b21bdc",
       type: "split",
       by: "direction",
       ups: [
         {
-          id: "b73b0a99-172d-4aad-bd2f-f66a3f66f087",
           beats: 0,
           type: "face",
           direction: {
@@ -116,7 +101,6 @@ export default typedParse(DanceSchema, {
       ],
       downs: [
         {
-          id: "1b392eb5-64df-4276-a79e-f59d9c564d73",
           beats: 6,
           type: "swing",
           cid: {
@@ -126,13 +110,11 @@ export default typedParse(DanceSchema, {
           endFacing: "down",
         },
         {
-          id: "f6f5ef06-c5f2-4559-9317-e584cfdb1a51",
           beats: 0,
           type: "drop_hands",
           which: "both",
         },
         {
-          id: "61e08a24-bbb4-49c5-a7f9-6ed320cbe191",
           beats: 2,
           type: "step",
           direction: {
@@ -148,7 +130,6 @@ export default typedParse(DanceSchema, {
       ],
     },
     {
-      id: "d8e3f6a1-4b7c-4902-9d5e-c1a8b4f2e703",
       beats: 0,
       type: "greet_new_neighbors",
       cid: {

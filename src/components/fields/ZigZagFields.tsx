@@ -18,13 +18,10 @@ export function ZigZagFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "zig_zag" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof ZigZagInstructionSchema>>,
   ) {
     const result = typedSafeParse(ZigZagInstructionSchema, {
-      id,
       type: "zig_zag",
       beats: instruction.beats,
       dir: instruction.dir,

@@ -22,14 +22,12 @@ export function TemplatedLLRRFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "templated_llrr" }>;
 }) {
-  const { id } = instruction;
   const template = allLLRRTemplates[instruction.templateId];
 
   function tryCommit(
     overrides: Partial<z.input<typeof TemplatedLLRRInstructionSchema>>,
   ) {
     const result = typedSafeParse(TemplatedLLRRInstructionSchema, {
-      id,
       type: "templated_llrr",
       beats: instruction.beats,
       templateId: instruction.templateId,

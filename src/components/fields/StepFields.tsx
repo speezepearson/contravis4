@@ -14,13 +14,10 @@ export function StepFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "step" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof StepInstructionSchema>>,
   ) {
     const result = typedSafeParse(StepInstructionSchema, {
-      id,
       type: "step",
       beats: instruction.beats,
       direction: instruction.direction,

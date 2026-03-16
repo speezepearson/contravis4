@@ -13,13 +13,10 @@ export function FaceFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "face" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof FaceInstructionSchema>>,
   ) {
     const result = typedSafeParse(FaceInstructionSchema, {
-      id,
       type: "face",
       beats: instruction.beats,
       direction: instruction.direction,

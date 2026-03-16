@@ -17,13 +17,10 @@ export function SingleFilePromenadeFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "single_file_promenade" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof SingleFilePromenadeInstructionSchema>>,
   ) {
     const result = typedSafeParse(SingleFilePromenadeInstructionSchema, {
-      id,
       type: "single_file_promenade",
       beats: instruction.beats,
       direction: instruction.direction,

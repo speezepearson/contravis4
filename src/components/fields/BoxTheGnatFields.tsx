@@ -17,13 +17,10 @@ export function BoxTheGnatFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "box_the_gnat" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof BoxTheGnatInstructionSchema>>,
   ) {
     const result = typedSafeParse(BoxTheGnatInstructionSchema, {
-      id,
       type: "box_the_gnat",
       beats: instruction.beats,
       cid: instruction.cid,

@@ -11,7 +11,6 @@ function makeInstr(
   overrides: Partial<TurnAloneInstruction> = {},
 ): TurnAloneInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 2,
     type: "turn_alone",
     ...overrides,

@@ -21,13 +21,10 @@ export function GiveAndTakeIntoSwingFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "give_and_take_into_swing" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof GiveAndTakeIntoSwingInstructionSchema>>,
   ) {
     const result = typedSafeParse(GiveAndTakeIntoSwingInstructionSchema, {
-      id,
       type: "give_and_take_into_swing",
       beats: instruction.beats,
       cid: instruction.cid,

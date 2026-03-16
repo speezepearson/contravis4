@@ -35,11 +35,9 @@ export function meltdownSwingAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const { id } = instr;
   const swingBeats = instr.beats - SHOULDER_ROUND_BEATS;
 
   const shoulderRoundInstr = {
-    id,
     type: "shoulder_round" as const,
     beats: SHOULDER_ROUND_BEATS,
     cid: instr.cid,
@@ -77,7 +75,6 @@ export function meltdownSwingAnimator(
 
   // Build swing plans from post-shoulder-round state
   const swingInstr = {
-    id,
     type: "swing" as const,
     beats: swingBeats,
     cid: instr.cid,

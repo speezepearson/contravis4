@@ -93,9 +93,7 @@ printState(state);
 for (const [i, instr] of dance.instructions.entries()) {
   const dur = instructionDuration(instr);
   const beatRange = dur === 0 ? `beat ${beat}` : `beats ${beat}-${beat + dur}`;
-  console.log(
-    `\n--- #${i}: ${instr.type} (${beatRange}, id=${instr.id.slice(0, 8)}) ---`,
-  );
+  console.log(`\n--- #${i}: ${instr.type} (${beatRange}) ---`);
 
   try {
     const anim = animateInstruction(state, instr);
@@ -123,6 +121,6 @@ if (result.errors.length === 0) {
 } else {
   console.log(`ERRORS: ${result.errors.length} instruction(s) failed:`);
   for (const err of result.errors) {
-    console.log(`  - ${err.instructionId.slice(0, 8)}: ${err.message}`);
+    console.log(`  - ${err.instruction.type}: ${err.message}`);
   }
 }

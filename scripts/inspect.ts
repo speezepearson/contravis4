@@ -46,7 +46,7 @@ const { animation, errors } = generateDanceAnimation(
 
 for (const error of errors) {
   console.error(
-    `Generation error at instruction ${error.instructionId}: ${error.message}`,
+    `Generation error at instruction ${error.instruction.type}: ${error.message}`,
   );
 }
 
@@ -113,7 +113,7 @@ function formatActiveInstruction(active: ActiveInstruction): string {
     instruction.type === "split"
       ? `split by ${instruction.by}`
       : instruction.type;
-  return `Instruction #${index}: ${type} (beats ${startBeat}–${endBeat}, id ${instruction.id})`;
+  return `Instruction #${index}: ${type} (beats ${startBeat}–${endBeat})`;
 }
 
 // --- formatting helpers ---

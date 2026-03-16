@@ -13,7 +13,6 @@ function makeInstr(
   overrides: Partial<RollAwayInstruction> = {},
 ): RollAwayInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 2,
     type: "roll_away",
     roller: "lark",

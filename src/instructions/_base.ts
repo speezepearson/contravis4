@@ -1,5 +1,4 @@
 import { Vector } from "vecti";
-import { z } from "zod";
 
 import {
   type Beats,
@@ -9,11 +8,7 @@ import {
 } from "../contraCore";
 import { Dancer, type WorldState } from "../worldState";
 
-export const InstructionIdSchema = z.string().uuid();
-export type InstructionId = z.infer<typeof InstructionIdSchema>;
-
 export const instructionBaseSchemaFields = {
-  id: InstructionIdSchema,
   beats: BeatsSchema,
 };
 

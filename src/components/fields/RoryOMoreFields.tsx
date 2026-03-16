@@ -15,13 +15,10 @@ export function RoryOMoreFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "rory_o_more" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof RoryOMoreInstructionSchema>>,
   ) {
     const result = typedSafeParse(RoryOMoreInstructionSchema, {
-      id,
       type: "rory_o_more",
       beats: instruction.beats,
       direction: instruction.direction,

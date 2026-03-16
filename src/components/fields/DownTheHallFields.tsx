@@ -13,13 +13,10 @@ export function DownTheHallFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "down_the_hall" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof DownTheHallInstructionSchema>>,
   ) {
     const result = typedSafeParse(DownTheHallInstructionSchema, {
-      id,
       type: "down_the_hall",
       beats: instruction.beats,
       distance: instruction.distance,

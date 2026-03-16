@@ -16,7 +16,6 @@ export function SplitFields({
   function tryCommit(by: Split["by"]) {
     const [listA, listB] = splitLists(instruction);
     const result = typedSafeParse(SplitSchema, {
-      id: instruction.id,
       type: "split",
       ...splitWithLists(by, listA, listB),
     });

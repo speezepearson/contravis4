@@ -12,8 +12,6 @@ import { getSplitDuration, SplitSchema } from "./split";
 import { SwingInstructionSchema } from "./swing";
 import type { LLRRTemplateId, LRTemplateId } from "./templates/index";
 
-export { type InstructionId, InstructionIdSchema } from "./_base";
-
 export const InstructionSchema = z.discriminatedUnion("type", [
   AtomicInstructionSchema,
   RobinsChainInstructionSchema,

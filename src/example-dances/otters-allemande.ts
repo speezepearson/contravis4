@@ -8,56 +8,47 @@ export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
-      id: "a1000000-0000-4000-a000-000000000001",
       beats: 0,
       type: "take_hands",
       cid: { type: "label", label: "neighbor" },
       hand: "right",
     },
     {
-      id: "a1000000-0000-4000-a000-000000000002",
       beats: 4,
       type: "balance",
       cid: { type: "label", label: "neighbor" },
     },
     {
-      id: "a1000000-0000-4000-a000-000000000003",
       beats: 4,
       type: "box_the_gnat",
       cid: { type: "label", label: "neighbor" },
     },
     {
-      id: "a1000000-0000-4000-a000-000000000004",
       beats: 0,
       type: "drop_hands",
       which: { type: "label", label: "neighbor" },
     },
     {
-      id: "a1000000-0000-4000-a000-000000000005",
       beats: 8,
       type: "do_si_do",
       cid: { type: "label", label: "neighbor" },
       rotations: 1.25,
     },
     {
-      id: "a1000000-0000-4000-a000-000000000007",
       beats: 0,
       type: "form_short_waves",
     },
     {
-      id: "a2000000-0000-4000-a000-000000000001",
       beats: 4,
       type: "balance",
       cid: { type: "label", label: "neighbor" },
     },
     {
-      id: "a2000000-0000-4000-a000-000000000002",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "a2000000-0000-4000-a000-000000000003",
       beats: 2,
       type: "allemande",
       cid: { type: "label", label: "neighbor" },
@@ -65,19 +56,16 @@ export default typedParse(DanceSchema, {
       rotations: 0.5,
     },
     {
-      id: "0202ad2b-e18b-4e5a-8a1a-29a28762c658",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "a2000000-0000-4000-a000-000000000004",
       type: "split",
       by: "role",
       larks: [],
       robins: [
         {
-          id: "a2000000-0000-4000-a000-000000000005",
           beats: 2,
           type: "allemande",
           cid: { type: "label", label: "opposite" },
@@ -87,14 +75,12 @@ export default typedParse(DanceSchema, {
       ],
     },
     {
-      id: "a2000000-0000-4000-a000-000000000006",
       beats: 8,
       type: "swing",
       cid: { type: "label", label: "partner" },
       endFacing: "across",
     },
     {
-      id: "b1000000-0000-4000-a000-000000000001",
       beats: 16,
       type: "give_and_take_into_swing",
       cid: { type: "label", label: "neighbor" },
@@ -102,13 +88,11 @@ export default typedParse(DanceSchema, {
       endFacing: "across",
     },
     {
-      id: "96843f7a-73dc-475b-8dd3-f2967f1e7ff4",
       beats: 0,
       type: "drop_hands",
       which: "both",
     },
     {
-      id: "22b579f2-5d01-4c19-876b-0cf3430a6a5d",
       beats: 16,
       type: "square_through",
       nPullBys: 4,
@@ -117,7 +101,6 @@ export default typedParse(DanceSchema, {
       cid2: { type: "label", label: "neighbor" },
     },
     {
-      id: "c7f2a4b8-3d6e-4901-a5c8-e9d1b3f7a205",
       beats: 0,
       type: "greet_new_neighbors",
       cid: {

@@ -18,13 +18,10 @@ export function TakeHandsFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "take_hands" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof TakeHandsInstructionSchema>>,
   ) {
     const result = typedSafeParse(TakeHandsInstructionSchema, {
-      id,
       beats: 0,
       type: "take_hands",
       cid: instruction.cid,

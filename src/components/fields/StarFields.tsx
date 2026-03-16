@@ -17,13 +17,10 @@ export function StarFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "star" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof StarInstructionSchema>>,
   ) {
     const result = typedSafeParse(StarInstructionSchema, {
-      id,
       type: "star",
       beats: instruction.beats,
       direction: instruction.direction,

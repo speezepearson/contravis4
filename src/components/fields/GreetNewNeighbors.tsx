@@ -17,13 +17,10 @@ export function GreetNewNeighborsFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "greet_new_neighbors" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof GreetNewNeighborsInstructionSchema>>,
   ) {
     const result = typedSafeParse(GreetNewNeighborsInstructionSchema, {
-      id,
       beats: 0,
       type: "greet_new_neighbors",
       cid: instruction.cid,

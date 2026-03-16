@@ -29,13 +29,11 @@ export function balanceAndSwingAnimator(
   init: WorldState,
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
-  const { id } = instr;
   const swingBeats = instr.beats - BALANCE_BEATS;
 
   // Build swing plans from init state
   // (positions and facings are unchanged by hand-taking; balance returns to start)
   const swingInstr = {
-    id,
     type: "swing" as const,
     beats: swingBeats,
     cid: instr.cid,
@@ -44,7 +42,6 @@ export function balanceAndSwingAnimator(
   const swingPlans = buildSwingPlans(swingInstr, init, who);
 
   const balanceInstr = {
-    id,
     beats: BALANCE_BEATS,
     type: "balance" as const,
     cid: instr.cid,

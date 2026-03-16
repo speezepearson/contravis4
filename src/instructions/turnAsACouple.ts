@@ -50,7 +50,7 @@ export function planTurnAsACouple(
   dancer: Dancer,
 ): DancerSegment[] {
   return planCaliforniaTwirl(
-    { id: instr.id, beats: instr.beats, type: "california_twirl" },
+    { beats: instr.beats, type: "california_twirl" },
     dancer,
   );
 }

@@ -17,13 +17,10 @@ export function AllemandeFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "allemande" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof AllemandeInstructionSchema>>,
   ) {
     const result = typedSafeParse(AllemandeInstructionSchema, {
-      id,
       type: "allemande",
       beats: instruction.beats,
       cid: instruction.cid,

@@ -15,13 +15,10 @@ export function SliceFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "slice" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof SliceInstructionSchema>>,
   ) {
     const result = typedSafeParse(SliceInstructionSchema, {
-      id,
       type: "slice",
       beats: instruction.beats,
       direction: instruction.direction,

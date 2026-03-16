@@ -18,13 +18,10 @@ export function BalanceAndSwingFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "balance_and_swing" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof BalanceAndSwingInstructionSchema>>,
   ) {
     const result = typedSafeParse(BalanceAndSwingInstructionSchema, {
-      id,
       type: "balance_and_swing",
       beats: instruction.beats,
       cid: instruction.cid,

@@ -14,20 +14,22 @@ export const SECTIONS: readonly {
   { label: "B2", start: 48, end: 64 },
 ];
 
-export interface SectionedInstruction {
-  instruction: Instruction;
+export interface SectionedInstruction<T extends Instruction = Instruction> {
+  instruction: T;
   index: number;
   startBeat: number;
   spillsOver: boolean;
 }
 
-export interface Section {
+export interface Section<T extends Instruction = Instruction> {
   label: SectionLabel;
-  items: SectionedInstruction[];
+  items: SectionedInstruction<T>[];
 }
 
-export function groupIntoSections(instrs: Instruction[]): Section[] {
-  const sections: Section[] = SECTIONS.map((s) => ({
+export function groupIntoSections<T extends Instruction>(
+  instrs: T[],
+): Section<T>[] {
+  const sections: Section<T>[] = SECTIONS.map((s) => ({
     label: s.label,
     items: [],
   }));

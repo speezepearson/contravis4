@@ -13,7 +13,6 @@ function makeInstr(
   overrides: Partial<SingleFilePromenadeInstruction> = {},
 ): SingleFilePromenadeInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 8,
     type: "single_file_promenade",
     direction: "left",

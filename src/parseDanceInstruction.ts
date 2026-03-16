@@ -6,10 +6,7 @@
  * the autocomplete system can share it.
  */
 
-import {
-  makeDefaultInstruction,
-  makeInstructionId,
-} from "./components/fieldUtils";
+import { makeDefaultInstruction } from "./components/fieldUtils";
 import { type Role } from "./contraCore";
 import { type PureDirection } from "./directions";
 import { type CalledIdentifier, labelId, personInDir } from "./identifiers";
@@ -689,8 +686,7 @@ function cidFromChunks(chunks: Chunk[]): CalledIdentifier | null {
  * Creates a default instruction then applies overrides from the chunks.
  */
 function interpretChunks(type: ActionOptionType, chunks: Chunk[]): Instruction {
-  const id = makeInstructionId();
-  const base = makeDefaultInstruction(type, id);
+  const base = makeDefaultInstruction(type);
 
   const overrides: Record<string, unknown> = {};
 
@@ -921,9 +917,7 @@ export function parseDanceInstruction(text: string): Instruction[] {
   }
 
   if (hasProgression) {
-    results.push(
-      makeDefaultInstruction("greet_new_neighbors", makeInstructionId()),
-    );
+    results.push(makeDefaultInstruction("greet_new_neighbors"));
   }
 
   return results;
@@ -947,7 +941,6 @@ function parseClause(trimmed: string): Instruction[] {
     // This is a role-specific instruction → wrap in a split
     const innerInstr = interpretChunks(detectedType, chunks);
     const splitInstr = InstructionSchema.parse({
-      id: makeInstructionId(),
       type: "split",
       by: "role",
       larks: role === "lark" ? [innerInstr] : [],
@@ -981,7 +974,6 @@ function parseSplit(part1: string, part2: string): Instruction[] {
     (role1 === "robin" && role2 === "lark")
   ) {
     const splitInstr = InstructionSchema.parse({
-      id: makeInstructionId(),
       type: "split",
       by: "role",
       larks: role1 === "lark" ? instrs1 : instrs2,
@@ -992,7 +984,6 @@ function parseSplit(part1: string, part2: string): Instruction[] {
 
   // Fallback: assume role split with part1 = larks, part2 = robins
   const splitInstr = InstructionSchema.parse({
-    id: makeInstructionId(),
     type: "split",
     by: "role",
     larks: instrs1,

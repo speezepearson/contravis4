@@ -15,13 +15,10 @@ export function PoussetteFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "poussette" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof PoussetteInstructionSchema>>,
   ) {
     const result = typedSafeParse(PoussetteInstructionSchema, {
-      id,
       type: "poussette",
       beats: instruction.beats,
       backer: instruction.backer,

@@ -11,12 +11,7 @@ import {
 import { assertNever } from "../utils";
 import type { WorldState } from "../worldState";
 import { animateAtomicInstruction, AtomicInstructionSchema } from "./_atomic";
-import {
-  type Animator,
-  chainAnimators,
-  type ContraAnimation,
-  InstructionIdSchema,
-} from "./_base";
+import { type Animator, chainAnimators, type ContraAnimation } from "./_base";
 import {
   robinsChainAnimator,
   RobinsChainInstructionSchema,
@@ -45,14 +40,12 @@ function subInstructionAnimator(instr: SplitSubInstruction): Animator {
 
 export const SplitSchema = z.discriminatedUnion("by", [
   z.object({
-    id: InstructionIdSchema,
     type: z.literal("split"),
     by: z.literal("role"),
     larks: z.array(SplitSubInstructionSchema),
     robins: z.array(SplitSubInstructionSchema),
   }),
   z.object({
-    id: InstructionIdSchema,
     type: z.literal("split"),
     by: z.literal("direction"),
     ups: z.array(SplitSubInstructionSchema),

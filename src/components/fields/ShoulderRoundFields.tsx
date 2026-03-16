@@ -17,13 +17,10 @@ export function ShoulderRoundFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "shoulder_round" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof ShoulderRoundInstructionSchema>>,
   ) {
     const result = typedSafeParse(ShoulderRoundInstructionSchema, {
-      id,
       type: "shoulder_round",
       beats: instruction.beats,
       cid: instruction.cid,

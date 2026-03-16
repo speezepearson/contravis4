@@ -33,15 +33,10 @@ import {
   sortedExampleDances,
 } from "../exampleDances";
 import type { GenerateError } from "../generate";
-import { formatDanceParseError, splitLists, splitWithLists } from "../generate";
+import { formatDanceParseError } from "../generate";
 import { inferProgression } from "../inferProgression";
 import type { ContraAnimation } from "../instructions/_base";
-import { InstructionIdSchema } from "../instructions/_base";
-import type {
-  InitFormation,
-  Instruction,
-  InstructionId,
-} from "../instructions/index";
+import type { InitFormation, Instruction } from "../instructions/index";
 import {
   DanceSchema,
   InitFormationNameSchema,
@@ -116,6 +111,17 @@ import { calledIdentifierToText, makeDefaultInstruction } from "./fieldUtils";
 import { InlineDropdown } from "./InlineDropdown";
 import { InlineNumber } from "./InlineNumber";
 import { InstructionEditContext } from "./InstructionEditContext";
+import {
+  assignId,
+  assignIds,
+  type InstructionId,
+  InstructionIdSchema,
+  type InstructionWithId,
+  makeInstructionId,
+  splitListsWithId,
+  type SplitSubInstructionWithId,
+  type SplitWithId,
+} from "./instructionId";
 import {
   CalledIdentifierHighlightContext,
   DancerHighlightContext,
@@ -349,34 +355,48 @@ function parseContainerId(
 }
 
 function findInstructionById(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   id: InstructionId,
-): Instruction | null {
+): InstructionWithId | null {
   for (const i of instrs) {
     if (i.id === id) return i;
     if (i.type === "split") {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       for (const s of [...listA, ...listB]) {
-        if (s.id === id) return InstructionSchema.parse(s);
+        if (s.id === id) return { ...s, id: s.id };
       }
     }
   }
   return null;
 }
 
-function instructionContainsId(instr: Instruction, id: InstructionId): boolean {
+function instructionContainsId(
+  instr: InstructionWithId,
+  id: InstructionId,
+): boolean {
   if (instr.id === id) return true;
   if (instr.type === "split") {
-    const [listA, listB] = splitLists(instr);
+    const [listA, listB] = splitListsWithId(instr);
     return [...listA, ...listB].some((c) => c.id === id);
   }
   return false;
 }
 
+function rebuildSplit(
+  split: SplitWithId,
+  listA: SplitSubInstructionWithId[],
+  listB: SplitSubInstructionWithId[],
+): SplitWithId {
+  if (split.by === "role") {
+    return { ...split, larks: listA, robins: listB };
+  }
+  return { ...split, ups: listA, downs: listB };
+}
+
 function removeFromTree(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   targetId: InstructionId,
-): [Instruction[], Instruction | null] {
+): [InstructionWithId[], InstructionWithId | null] {
   const topIdx = instrs.findIndex((i) => i.id === targetId);
   if (topIdx !== -1) {
     return [
@@ -384,33 +404,27 @@ function removeFromTree(
       instrs[topIdx],
     ];
   }
-  let removed: Instruction | null = null;
-  const mapped = instrs.map((i) => {
+  let removed: InstructionWithId | null = null;
+  const mapped = instrs.map((i): InstructionWithId => {
     if (removed) return i;
     if (i.type === "split") {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       const aIdx = listA.findIndex((s) => s.id === targetId);
       if (aIdx !== -1) {
-        removed = InstructionSchema.parse(listA[aIdx]);
-        return InstructionSchema.parse({
-          ...i,
-          ...splitWithLists(
-            i.by,
-            [...listA.slice(0, aIdx), ...listA.slice(aIdx + 1)],
-            listB,
-          ),
-        });
+        removed = { ...listA[aIdx], id: listA[aIdx].id };
+        return rebuildSplit(
+          i,
+          [...listA.slice(0, aIdx), ...listA.slice(aIdx + 1)],
+          listB,
+        );
       }
       const bIdx = listB.findIndex((s) => s.id === targetId);
       if (bIdx !== -1) {
-        removed = InstructionSchema.parse(listB[bIdx]);
-        return InstructionSchema.parse({
-          ...i,
-          ...splitWithLists(i.by, listA, [
-            ...listB.slice(0, bIdx),
-            ...listB.slice(bIdx + 1),
-          ]),
-        });
+        removed = { ...listB[bIdx], id: listB[bIdx].id };
+        return rebuildSplit(i, listA, [
+          ...listB.slice(0, bIdx),
+          ...listB.slice(bIdx + 1),
+        ]);
       }
     }
     return i;
@@ -418,40 +432,43 @@ function removeFromTree(
   return [mapped, removed];
 }
 
+function toSubInstruction(item: InstructionWithId): SplitSubInstructionWithId {
+  const sub = SplitSubInstructionSchema.parse(item);
+  return { ...sub, id: item.id };
+}
+
 function insertIntoContainer(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   containerId: string,
-  item: Instruction,
+  item: InstructionWithId,
   index: number,
-): Instruction[] {
+): InstructionWithId[] {
   const parsed = parseContainerId(containerId);
   if (parsed.type === "top") {
     const copy = [...instrs];
     copy.splice(index, 0, item);
     return copy;
   }
-  return instrs.map((i) => {
+  return instrs.map((i): InstructionWithId => {
     if (i.type === "split" && i.id === parsed.splitId) {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       const list = parsed.list === "A" ? listA : listB;
       const copy = [...list];
-      copy.splice(index, 0, SplitSubInstructionSchema.parse(item));
-      const newLists =
-        parsed.list === "A"
-          ? splitWithLists(i.by, copy, listB)
-          : splitWithLists(i.by, listA, copy);
-      return { ...i, ...newLists };
+      copy.splice(index, 0, toSubInstruction(item));
+      return parsed.list === "A"
+        ? rebuildSplit(i, copy, listB)
+        : rebuildSplit(i, listA, copy);
     }
     return i;
   });
 }
 
 function insertManyIntoContainer(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   containerId: string,
-  items: Instruction[],
+  items: InstructionWithId[],
   index: number,
-): Instruction[] {
+): InstructionWithId[] {
   if (items.length === 0) return instrs;
   const parsed = parseContainerId(containerId);
   if (parsed.type === "top") {
@@ -459,98 +476,86 @@ function insertManyIntoContainer(
     copy.splice(index, 0, ...items);
     return copy;
   }
-  return instrs.map((i) => {
+  return instrs.map((i): InstructionWithId => {
     if (i.type === "split" && i.id === parsed.splitId) {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       const list = parsed.list === "A" ? listA : listB;
       const copy = [...list];
-      copy.splice(
-        index,
-        0,
-        ...items.map((item) => SplitSubInstructionSchema.parse(item)),
-      );
-      const newLists =
-        parsed.list === "A"
-          ? splitWithLists(i.by, copy, listB)
-          : splitWithLists(i.by, listA, copy);
-      return { ...i, ...newLists };
+      copy.splice(index, 0, ...items.map(toSubInstruction));
+      return parsed.list === "A"
+        ? rebuildSplit(i, copy, listB)
+        : rebuildSplit(i, listA, copy);
     }
     return i;
   });
 }
 
 function reorderInContainer(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   containerId: string,
   oldIndex: number,
   newIndex: number,
-): Instruction[] {
+): InstructionWithId[] {
   const parsed = parseContainerId(containerId);
   if (parsed.type === "top") return arrayMove(instrs, oldIndex, newIndex);
-  return instrs.map((i) => {
+  return instrs.map((i): InstructionWithId => {
     if (i.type === "split" && i.id === parsed.splitId) {
-      const [listA, listB] = splitLists(i);
-      const newLists =
-        parsed.list === "A"
-          ? splitWithLists(i.by, arrayMove(listA, oldIndex, newIndex), listB)
-          : splitWithLists(i.by, listA, arrayMove(listB, oldIndex, newIndex));
-      return { ...i, ...newLists };
+      const [listA, listB] = splitListsWithId(i);
+      return parsed.list === "A"
+        ? rebuildSplit(i, arrayMove(listA, oldIndex, newIndex), listB)
+        : rebuildSplit(i, listA, arrayMove(listB, oldIndex, newIndex));
     }
     return i;
   });
 }
 
 function getContainerItems(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   containerId: string,
-): Instruction[] | null {
+): InstructionWithId[] | null {
   const parsed = parseContainerId(containerId);
   if (parsed.type === "top") return instrs;
   for (const i of instrs) {
     if (i.type === "split" && i.id === parsed.splitId) {
-      const [listA, listB] = splitLists(i);
-      return z
-        .array(InstructionSchema)
-        .parse(parsed.list === "A" ? listA : listB);
+      const [listA, listB] = splitListsWithId(i);
+      const subs = parsed.list === "A" ? listA : listB;
+      return subs.map((s) => ({ ...s, id: s.id }));
     }
   }
   return null;
 }
 
 function replaceInTree(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   id: InstructionId,
-  replacement: Instruction,
-): Instruction[] {
-  return instrs.map((i) => {
+  replacement: InstructionWithId,
+): InstructionWithId[] {
+  return instrs.map((i): InstructionWithId => {
     if (i.id === id) return replacement;
     if (i.type === "split") {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       if (!listA.some((s) => s.id === id) && !listB.some((s) => s.id === id))
         return i;
-      return InstructionSchema.parse({
-        ...i,
-        ...splitWithLists(
-          i.by,
-          listA.map((sub) =>
-            sub.id === id ? SplitSubInstructionSchema.parse(replacement) : sub,
-          ),
-          listB.map((sub) =>
-            sub.id === id ? SplitSubInstructionSchema.parse(replacement) : sub,
-          ),
+      return rebuildSplit(
+        i,
+        listA.map((sub) =>
+          sub.id === id ? toSubInstruction(replacement) : sub,
         ),
-      });
+        listB.map((sub) =>
+          sub.id === id ? toSubInstruction(replacement) : sub,
+        ),
+      );
     }
     return i;
   });
 }
 
-function flatInstructionIds(instrs: Instruction[]): InstructionId[] {
+function flatInstructionIds(instrs: InstructionWithId[]): InstructionId[] {
   const ids: InstructionId[] = [];
   for (const i of instrs) {
     ids.push(i.id);
     if (i.type === "split") {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       for (const s of listA) ids.push(s.id);
       for (const s of listB) ids.push(s.id);
     }
@@ -559,11 +564,11 @@ function flatInstructionIds(instrs: Instruction[]): InstructionId[] {
 }
 
 function removeMultipleFromTop(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   ids: Set<InstructionId>,
-): [Instruction[], Instruction[]] {
-  const remaining: Instruction[] = [];
-  const removed: Instruction[] = [];
+): [InstructionWithId[], InstructionWithId[]] {
+  const remaining: InstructionWithId[] = [];
+  const removed: InstructionWithId[] = [];
   for (const i of instrs) {
     if (ids.has(i.id)) {
       removed.push(i);
@@ -575,8 +580,8 @@ function removeMultipleFromTop(
 }
 
 interface Props {
-  instructions: Instruction[];
-  setInstructions: (instructions: Instruction[]) => void;
+  instructions: InstructionWithId[];
+  setInstructions: (instructions: InstructionWithId[]) => void;
   initFormation: InitFormation;
   setInitFormation: (formation: InitFormation) => void;
   name: string;
@@ -584,7 +589,7 @@ interface Props {
   author: string;
   setAuthor: (author: string) => void;
   setDanceState: (state: {
-    instructions: Instruction[];
+    instructions: InstructionWithId[];
     initFormation: InitFormation;
     name: string;
     author: string;
@@ -750,7 +755,7 @@ function InlineForm({
 
   function handleActionChange(newAction: ActionOptionType) {
     if (newAction !== actionOptionValue) {
-      onChange(makeDefaultInstruction(newAction, instruction.id));
+      onChange(makeDefaultInstruction(newAction));
       setValid(true);
     }
   }
@@ -931,7 +936,7 @@ function AddInstructionInput({
 }: {
   onCommit: () => void;
   onCancel: () => void;
-  onPreview: (instrs: Instruction[]) => void;
+  onPreview: (instrs: InstructionWithId[]) => void;
 }) {
   const [text, setText] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -953,14 +958,17 @@ function AddInstructionInput({
     ids: InstructionId[];
   }>({ types: [], ids: [] });
 
-  const parsed = useMemo(() => {
+  const parsed: InstructionWithId[] = useMemo(() => {
     const sameShape =
       rawParsed.length === stableIds.types.length &&
       rawParsed.every((instr, i) => instr.type === stableIds.types[i]);
     if (sameShape) {
-      return rawParsed.map((instr, i) => ({ ...instr, id: stableIds.ids[i] }));
+      return rawParsed.map((instr, i) => {
+        const withId = assignId(instr);
+        return { ...withId, id: stableIds.ids[i] };
+      });
     }
-    return rawParsed;
+    return assignIds(rawParsed);
   }, [rawParsed, stableIds]);
 
   // Update stable IDs when the parse shape changes
@@ -970,7 +978,7 @@ function AddInstructionInput({
     setPrevParsedTypes(parsedTypes);
     setStableIds({
       types: rawParsed.map((instr) => instr.type),
-      ids: rawParsed.map((instr) => instr.id),
+      ids: rawParsed.map(() => makeInstructionId()),
     });
   }
 
@@ -1228,7 +1236,7 @@ export default memo(function CommandPane({
         // SWALLOW_EXCEPTION: animation may not cover all beats if there was a generate error; we just skip those instructions
       }
       if (instr.type === "split") {
-        const [listA, listB] = splitLists(instr);
+        const [listA, listB] = splitListsWithId(instr);
         let b = beat;
         for (const sub of listA) {
           try {
@@ -1263,7 +1271,7 @@ export default memo(function CommandPane({
   // Use base (pre-preview) instructions for rendering the list, so that
   // inserting preview instructions doesn't change the DOM tree structure
   // and cause the AddInstructionInput to remount/lose state.
-  const preAddInstructionsRef = useRef<Instruction[] | null>(null);
+  const preAddInstructionsRef = useRef<InstructionWithId[] | null>(null);
   const displayInstructions = preAddInstructionsRef.current ?? instructions;
   const sections = useMemo(
     () => groupIntoSections(displayInstructions),
@@ -1316,15 +1324,21 @@ export default memo(function CommandPane({
   }, [newlyAddedId]);
 
   const errorById = useMemo(() => {
+    const refToId = new Map<Instruction, InstructionId>();
+    for (const instr of instructions) {
+      refToId.set(instr, instr.id);
+    }
     const map = new Map<InstructionId, GenerateError>();
     for (const err of generateErrors) {
-      map.set(err.instructionId, err);
+      const id = refToId.get(err.instruction);
+      if (id !== undefined) map.set(id, err);
     }
     return map;
-  }, [generateErrors]);
+  }, [generateErrors, instructions]);
 
   function handleChange(id: InstructionId, updated: Instruction) {
-    setInstructions(replaceInTree(instructions, id, updated));
+    const withId = assignId(updated);
+    setInstructions(replaceInTree(instructions, id, { ...withId, id }));
   }
 
   const { beginTransient, endTransient } = useUndo();
@@ -1336,7 +1350,7 @@ export default memo(function CommandPane({
   }
 
   const handlePreview = useCallback(
-    (parsed: Instruction[]) => {
+    (parsed: InstructionWithId[]) => {
       const base = preAddInstructionsRef.current;
       if (!pendingAdd || base === null) return;
 
@@ -1515,7 +1529,7 @@ export default memo(function CommandPane({
     setPasteFeedback("");
     setDanceState({
       initFormation: parsed.initFormation,
-      instructions: parsed.instructions,
+      instructions: assignIds(parsed.instructions),
       name: parsed.name ?? "",
       author: parsed.author ?? "",
     });
@@ -1564,7 +1578,7 @@ export default memo(function CommandPane({
   }
 
   function renderInstruction(
-    instr: Instruction,
+    instr: InstructionWithId,
     dragHandleProps: Record<string, unknown>,
     options?: { extraClass?: string; inSplit?: boolean },
   ) {
@@ -1642,7 +1656,7 @@ export default memo(function CommandPane({
     if (!entry) return;
     setDanceState({
       initFormation: entry.dance.initFormation,
-      instructions: entry.dance.instructions,
+      instructions: assignIds(entry.dance.instructions),
       name: entry.dance.name ?? "",
       author: entry.dance.author ?? "",
     });
@@ -1834,8 +1848,8 @@ export default memo(function CommandPane({
     </div>
   );
 
-  function renderSplitBody(split: Extract<Instruction, { type: "split" }>) {
-    const [splitListA, splitListB] = splitLists(split);
+  function renderSplitBody(split: SplitWithId) {
+    const [splitListA, splitListB] = splitListsWithId(split);
     return (
       <div className="split-body">
         {(["A", "B"] as const).map((list) => {
@@ -1854,7 +1868,7 @@ export default memo(function CommandPane({
                   <SortableItem key={sub.id} id={sub.id}>
                     {(dragHandleProps) =>
                       renderInstruction(
-                        InstructionSchema.parse(sub),
+                        { ...sub, id: sub.id },
                         dragHandleProps,
                         { inSplit: true },
                       )

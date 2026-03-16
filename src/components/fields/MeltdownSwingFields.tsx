@@ -18,13 +18,10 @@ export function MeltdownSwingFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "meltdown_swing" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof MeltdownSwingInstructionSchema>>,
   ) {
     const result = typedSafeParse(MeltdownSwingInstructionSchema, {
-      id,
       type: "meltdown_swing",
       beats: instruction.beats,
       cid: instruction.cid,

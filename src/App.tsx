@@ -8,6 +8,12 @@ import {
 } from "./averageFrames";
 import CommandPane from "./components/CommandPane";
 import {
+  assignIds,
+  type InstructionId,
+  type InstructionWithId,
+  splitListsWithId,
+} from "./components/instructionId";
+import {
   CalledIdentifierHighlightContext,
   DancerHighlightContext,
 } from "./components/RelationshipHighlightContext";
@@ -15,25 +21,16 @@ import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "./contraCore";
 import { exampleDances } from "./exampleDances";
 import { exportGif, type GifOptions } from "./exportGif";
-import {
-  findInstructionStartBeat,
-  generateDanceAnimation,
-  splitLists,
-} from "./generate";
+import { findInstructionStartBeat, generateDanceAnimation } from "./generate";
 import { formatDanceParseError } from "./generate";
 import { inferProgression } from "./inferProgression";
 import { type CalledIdentifier } from "./instructions/_base";
-import type {
-  InitFormation,
-  Instruction,
-  InstructionId,
-} from "./instructions/index";
+import type { InitFormation } from "./instructions/index";
 import type { Dance } from "./instructions/index";
 import {
   danceLength,
   DanceSchema,
   instructionDuration,
-  InstructionSchema,
 } from "./instructions/index";
 import { resolveInitFormation } from "./instructions/index";
 import { assignToGlobalThis } from "./typecasts";
@@ -43,7 +40,7 @@ import { isLocalStorageAvailable, try_ } from "./utils";
 import { Dancer, sanityCheckWorldState, type WorldState } from "./worldState";
 
 type DanceState = {
-  instructions: Instruction[];
+  instructions: InstructionWithId[];
   initFormation: InitFormation;
   name: string;
   author: string;
@@ -77,15 +74,15 @@ function loadDanceFromLocalStorage():
 }
 
 function findInstructionById(
-  instrs: Instruction[],
+  instrs: InstructionWithId[],
   id: InstructionId,
-): Instruction | null {
+): InstructionWithId | null {
   for (const i of instrs) {
     if (i.id === id) return i;
     if (i.type === "split") {
-      const [listA, listB] = splitLists(i);
+      const [listA, listB] = splitListsWithId(i);
       for (const s of [...listA, ...listB]) {
-        if (s.id === id) return InstructionSchema.parse(s);
+        if (s.id === id) return { ...s, id: s.id };
       }
     }
   }
@@ -93,7 +90,7 @@ function findInstructionById(
 }
 
 function activeInstructionId(
-  instructions: Instruction[],
+  instructions: InstructionWithId[],
   beat: number,
 ): InstructionId | null {
   let currentBeat = 0;
@@ -102,7 +99,7 @@ function activeInstructionId(
     if (currentBeat > beat + 1e-9) break;
     if (instr.type === "split") {
       const rel = beat - currentBeat;
-      const [listA, listB] = splitLists(instr);
+      const [listA, listB] = splitListsWithId(instr);
       let b = 0;
       for (const sub of listA) {
         if (b > rel + 1e-9) break;
@@ -160,7 +157,7 @@ export default function App() {
   const initialDanceState: DanceState = useMemo(() => {
     if (initialLoadResult && "dance" in initialLoadResult) {
       return {
-        instructions: initialLoadResult.dance.instructions,
+        instructions: assignIds(initialLoadResult.dance.instructions),
         initFormation: initialLoadResult.dance.initFormation,
         name: initialLoadResult.dance.name ?? "",
         author: initialLoadResult.dance.author ?? "",
@@ -171,7 +168,7 @@ export default function App() {
     );
     if (otters) {
       return {
-        instructions: otters.dance.instructions,
+        instructions: assignIds(otters.dance.instructions),
         initFormation: otters.dance.initFormation,
         name: otters.dance.name ?? "",
         author: otters.dance.author ?? "",
@@ -198,7 +195,7 @@ export default function App() {
   const { instructions, initFormation, name, author } = danceState;
 
   const setInstructions = useCallback(
-    (next: Instruction[]) =>
+    (next: InstructionWithId[]) =>
       setDanceState({ instructions: next, initFormation, name, author }),
     [setDanceState, initFormation, name, author],
   );
@@ -276,8 +273,7 @@ export default function App() {
     if (!hoveredInstructionId || !animation) return [];
     const instr = findInstructionById(instructions, hoveredInstructionId);
     if (!instr) return [];
-    const startBeat =
-      findInstructionStartBeat(instructions, hoveredInstructionId) ?? 0;
+    const startBeat = findInstructionStartBeat(instructions, instr) ?? 0;
     const dur = instructionDuration(instr);
     if (dur <= 0) return [];
 
@@ -630,7 +626,9 @@ export default function App() {
 
   const handleEditInstruction = useCallback(
     (id: InstructionId) => {
-      const startBeat = findInstructionStartBeat(instructions, id);
+      const instr = findInstructionById(instructions, id);
+      if (!instr) return;
+      const startBeat = findInstructionStartBeat(instructions, instr);
       if (startBeat !== null) {
         beatRef.current = startBeat;
         nProgressionsRef.current %= 2;
@@ -643,7 +641,9 @@ export default function App() {
 
   const handleSkipToInstruction = useCallback(
     (id: InstructionId) => {
-      const startBeat = findInstructionStartBeat(instructions, id);
+      const instr = findInstructionById(instructions, id);
+      if (!instr) return;
+      const startBeat = findInstructionStartBeat(instructions, instr);
       if (startBeat !== null) {
         beatRef.current = startBeat;
         nProgressionsRef.current %= 2;

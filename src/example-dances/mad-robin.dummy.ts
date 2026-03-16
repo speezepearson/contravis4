@@ -7,7 +7,6 @@ export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
-      id: "e927993b-3243-4c47-820d-be321715a023",
       beats: 8,
       type: "mad_robin",
       cid: { type: "label", label: "neighbor" },
@@ -15,7 +14,6 @@ export default typedParse(DanceSchema, {
       whoInFront: "lark",
     },
     {
-      id: "b65c7cdd-f68d-4db4-9186-95a12213bdd3",
       beats: 8,
       type: "mad_robin",
       cid: { type: "label", label: "next_neighbor" },

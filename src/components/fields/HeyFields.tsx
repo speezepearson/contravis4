@@ -16,11 +16,8 @@ export function HeyFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "hey" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(overrides: Partial<z.input<typeof HeyInstructionSchema>>) {
     const result = typedSafeParse(HeyInstructionSchema, {
-      id,
       type: "hey",
       beats: instruction.beats,
       full: instruction.full,

@@ -16,13 +16,10 @@ export function PullByFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "pull_by" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof PullByInstructionSchema>>,
   ) {
     const result = typedSafeParse(PullByInstructionSchema, {
-      id,
       type: "pull_by",
       beats: instruction.beats,
       cid: instruction.cid,

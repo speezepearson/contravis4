@@ -19,7 +19,6 @@ function makeTurnAsACouple(
   overrides: Partial<TurnAsACoupleInstruction> = {},
 ): TurnAsACoupleInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 4,
     type: "turn_as_a_couple",
     ...overrides,
@@ -30,7 +29,6 @@ function makeCaliforniaTwirl(
   overrides: Partial<CaliforniaTwirlInstruction> = {},
 ): CaliforniaTwirlInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 4,
     type: "california_twirl",
     ...overrides,

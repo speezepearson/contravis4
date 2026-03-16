@@ -13,7 +13,6 @@ function makeInstr(
   overrides: Partial<PoussetteInstruction> = {},
 ): PoussetteInstruction {
   return {
-    id: "00000000-0000-0000-0000-000000000000",
     beats: 8,
     type: "poussette",
     backer: "lark",

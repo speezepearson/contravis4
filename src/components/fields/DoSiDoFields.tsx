@@ -14,13 +14,10 @@ export function DoSiDoFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "do_si_do" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof DoSiDoInstructionSchema>>,
   ) {
     const result = typedSafeParse(DoSiDoInstructionSchema, {
-      id,
       type: "do_si_do",
       beats: instruction.beats,
       cid: instruction.cid,

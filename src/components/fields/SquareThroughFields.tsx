@@ -19,13 +19,10 @@ export function SquareThroughFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "square_through" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof SquareThroughInstructionSchema>>,
   ) {
     const result = typedSafeParse(SquareThroughInstructionSchema, {
-      id,
       type: "square_through",
       beats: instruction.beats,
       nPullBys: instruction.nPullBys,

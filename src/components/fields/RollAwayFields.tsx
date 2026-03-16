@@ -21,13 +21,10 @@ export function RollAwayFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "roll_away" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof RollAwayInstructionSchema>>,
   ) {
     const result = typedSafeParse(RollAwayInstructionSchema, {
-      id,
       type: "roll_away",
       beats: instruction.beats,
       roller: instruction.roller,

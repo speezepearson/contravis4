@@ -17,13 +17,10 @@ export function MadRobinFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "mad_robin" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof MadRobinInstructionSchema>>,
   ) {
     const result = typedSafeParse(MadRobinInstructionSchema, {
-      id,
       type: "mad_robin",
       beats: instruction.beats,
       cid: instruction.cid,

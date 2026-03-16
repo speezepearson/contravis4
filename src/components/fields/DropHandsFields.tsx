@@ -31,13 +31,10 @@ export function DropHandsFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "drop_hands" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof DropHandsInstructionSchema>>,
   ) {
     const result = typedSafeParse(DropHandsInstructionSchema, {
-      id,
       beats: 0,
       type: "drop_hands",
       which: instruction.which,

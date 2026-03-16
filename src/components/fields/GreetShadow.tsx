@@ -19,13 +19,10 @@ export function GreetShadowFields({
 }: SubFormProps & {
   instruction: Extract<AtomicInstruction, { type: "greet_shadow" }>;
 }) {
-  const { id } = instruction;
-
   function tryCommit(
     overrides: Partial<z.input<typeof GreetShadowInstructionSchema>>,
   ) {
     const result = typedSafeParse(GreetShadowInstructionSchema, {
-      id,
       beats: 0,
       type: "greet_shadow",
       label: instruction.label,

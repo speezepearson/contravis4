@@ -7,7 +7,6 @@ export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
-      id: "e927993b-3243-4c47-820d-be321715a023",
       beats: 16,
       type: "square_through",
       nPullBys: 4,

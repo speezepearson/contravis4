@@ -7,18 +7,15 @@ export default typedParse(DanceSchema, {
   initFormation: "improper",
   instructions: [
     {
-      id: "79626d86-2fe9-4aef-9387-a3e2c756c99b",
       beats: 0,
       type: "face",
       direction: { type: "PureDirection", dir: "across" },
     },
     {
-      id: "755cadfe-b22c-4bcd-a1b1-9d497e07ba35",
       beats: 4,
       type: "turn_as_a_couple",
     },
     {
-      id: "6cd402b8-1821-4ecf-9e52-1893c379a607",
       beats: 2,
       type: "pull_by",
       cid: { type: "label", label: "prev_neighbor" },
