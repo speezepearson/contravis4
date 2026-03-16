@@ -15,7 +15,7 @@ import {
   setLabel,
   type WorldState,
 } from "../worldState";
-import type { ContraAnimation } from "./_base";
+import type { AnimationWarning, ContraAnimation } from "./_base";
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -81,8 +81,8 @@ const VELOCITY_CHECK_STEP: Beats = 0.25;
 function checkVelocity(
   animation: ContraAnimation,
   who: ReadonlySet<ProtoId>,
-): SnazzyError[] {
-  const warnings: SnazzyError[] = [];
+): AnimationWarning[] {
+  const warnings: AnimationWarning[] = [];
   if (animation.dur === 0) return warnings;
 
   let prevState = animation.getFrame(0);
@@ -95,12 +95,13 @@ function checkVelocity(
       const dist = state[id].pos.subtract(prevState[id].pos).length();
       const speed = dist / dt;
       if (speed > MAX_SPEED_PER_BEAT) {
-        warnings.push(
-          new SnazzyError([
+        warnings.push({
+          beat: t,
+          warning: new SnazzyError([
             { dancerId: id },
             ` is moving too fast (${speed.toFixed(2)} units/beat, max ${MAX_SPEED_PER_BEAT}) at beat ${t.toFixed(2)}`,
           ]),
-        );
+        });
       }
     }
     prevState = state;

@@ -247,18 +247,30 @@ export default function App({
     >();
     if (!animation || generateErrors.length > 0) return map;
 
-    // Build instruction ref → id mapping for velocity warnings
+    // Build instruction ref → id mapping (including split sub-instructions)
     const refToId = new Map<object, InstructionId>();
     for (const instr of instructions) {
       refToId.set(instr, instr.id);
+      if (instr.type === "split") {
+        const [listA, listB] = splitListsWithId(instr);
+        for (const sub of [...listA, ...listB]) {
+          refToId.set(sub, sub.id);
+        }
+      }
     }
 
     // Collect velocity warnings (keyed by instruction reference → id)
-    for (const [instrRef, warnings] of velocityWarnings) {
+    for (const [instrRef, animWarnings] of velocityWarnings) {
       const id = refToId.get(instrRef);
       if (id !== undefined) {
-        // Velocity warning messages already contain the beat
-        map.set(id, { beat: 0, warnings });
+        // Use the beat from the earliest warning
+        const earliest = animWarnings.reduce((a, b) =>
+          a.beat < b.beat ? a : b,
+        );
+        map.set(id, {
+          beat: earliest.beat,
+          warnings: animWarnings.map((w) => w.warning),
+        });
       }
     }
 
@@ -298,7 +310,8 @@ export default function App({
     for (const span of spans) {
       if (map.has(span.id)) continue; // already has velocity warnings
       const startStep = Math.floor(span.start / STEP);
-      const endStep = Math.min(Math.ceil(span.end / STEP), nSteps);
+      // Exclusive end: don't sample at or beyond the instruction boundary
+      const endStep = Math.min(Math.ceil(span.end / STEP) - 1, nSteps);
       for (let i = startStep; i <= endStep; i++) {
         const t = Math.min(i * STEP, animation.dur);
         try {

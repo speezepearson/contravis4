@@ -1,6 +1,10 @@
 import { ALL_PROTO_IDS_SET } from "./contraCore";
 import { animateAtomicInstruction } from "./instructions/_atomic";
-import { chainAnimations, type ContraAnimation } from "./instructions/_base";
+import {
+  type AnimationWarning,
+  chainAnimations,
+  type ContraAnimation,
+} from "./instructions/_base";
 import { type Instruction, instructionDuration } from "./instructions/index";
 import {
   type Split,
@@ -35,8 +39,8 @@ export class GenerateError extends Error {
 export interface GenerateResult {
   animation: ContraAnimation | null;
   errors: GenerateError[];
-  /** Per-instruction velocity warnings (keyed by instruction reference). */
-  warnings: Map<Instruction, SnazzyError[]>;
+  /** Per-instruction animation warnings (keyed by instruction reference). */
+  warnings: Map<Instruction, AnimationWarning[]>;
 }
 
 /** Animate a single instruction (atomic, split, or plan-based) from `init`. */
@@ -62,7 +66,7 @@ export function generateDanceAnimation(
 ): GenerateResult {
   const segments: ContraAnimation[] = [];
   const errors: GenerateError[] = [];
-  const warnings = new Map<Instruction, SnazzyError[]>();
+  const warnings = new Map<Instruction, AnimationWarning[]>();
 
   let currentState = initState;
 
@@ -71,7 +75,12 @@ export function generateDanceAnimation(
       const anim = animateInstruction(currentState, instr);
       segments.push(anim);
       if (anim.warnings && anim.warnings.length > 0) {
-        warnings.set(instr, anim.warnings);
+        if (instr.type === "split") {
+          // Attribute warnings to sub-instructions by beat
+          attributeSplitWarnings(instr, anim.warnings, warnings);
+        } else {
+          warnings.set(instr, anim.warnings);
+        }
       }
       currentState = anim.getFrame(anim.dur);
     } catch (e) {
@@ -99,6 +108,45 @@ export function generateDanceAnimation(
     errors,
     warnings,
   };
+}
+
+/** Attribute warnings from a split animation to the appropriate sub-instruction by beat. */
+function attributeSplitWarnings(
+  split: Split,
+  animWarnings: AnimationWarning[],
+  out: Map<Instruction, AnimationWarning[]>,
+): void {
+  const [listA, listB] = splitLists(split);
+  for (const list of [listA, listB]) {
+    // Build cumulative beat ranges for sub-instructions
+    const spans: Array<{
+      instr: SplitSubInstruction;
+      start: number;
+      end: number;
+    }> = [];
+    let beat = 0;
+    for (const sub of list) {
+      spans.push({ instr: sub, start: beat, end: beat + sub.beats });
+      beat += sub.beats;
+    }
+    for (const w of animWarnings) {
+      for (const span of spans) {
+        if (w.beat >= span.start && w.beat < span.end) {
+          const existing = out.get(span.instr);
+          const adjusted: AnimationWarning = {
+            beat: w.beat - span.start,
+            warning: w.warning,
+          };
+          if (existing) {
+            existing.push(adjusted);
+          } else {
+            out.set(span.instr, [adjusted]);
+          }
+          break;
+        }
+      }
+    }
+  }
 }
 
 /**

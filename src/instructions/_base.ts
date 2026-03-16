@@ -36,11 +36,13 @@ export function chainAnimators(animators: Animator[]): Animator {
   };
 }
 
+export type AnimationWarning = { beat: Beats; warning: SnazzyError };
+
 /** A continuous function from beat time to world state, used for rendering intermediate frames. */
 export type ContraAnimation = {
   dur: Beats;
   getFrame: (t: Beats) => WorldState;
-  warnings?: SnazzyError[];
+  warnings?: AnimationWarning[];
 };
 
 export function avgDancerPos(dancers: DancerId[], state: WorldState): Vector {
@@ -55,7 +57,14 @@ export function chainAnimations(segments: ContraAnimation[]): ContraAnimation {
   if (segments.length === 0) {
     throw new Error("chainAnimations requires at least one segment");
   }
-  const allWarnings = segments.flatMap((s) => s.warnings ?? []);
+  const allWarnings: AnimationWarning[] = [];
+  let offset = 0;
+  for (const seg of segments) {
+    for (const w of seg.warnings ?? []) {
+      allWarnings.push({ beat: w.beat + offset, warning: w.warning });
+    }
+    offset += seg.dur;
+  }
   return {
     dur: segments.reduce((acc, segment) => acc + segment.dur, 0),
     getFrame(t) {
