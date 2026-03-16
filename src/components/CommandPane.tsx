@@ -1739,43 +1739,49 @@ export default memo(function CommandPane({
               return (
                 <Fragment key={section.label}>
                   <div className="section-header">{section.label}</div>
-                  {section.items.map((item, si) => (
-                    <Fragment key={item.instruction.id}>
-                      {si === 0 && renderAddGap("top", item.index)}
-                      <SortableItem id={item.instruction.id}>
-                        {(dragHandleProps) => (
-                          <>
-                            {item.instruction.type === "split" ? (
-                              <div
-                                className={`split-wrapper${selectedIds.has(item.instruction.id) ? " selected" : ""}`}
-                              >
-                                {renderInstruction(
+                  {section.items.map((item, si) => {
+                    const isLastInSection = si === section.items.length - 1;
+                    const isLastOverall =
+                      item.index === displayInstructions.length - 1;
+                    return (
+                      <Fragment key={item.instruction.id}>
+                        {si === 0 && renderAddGap("top", item.index)}
+                        <SortableItem id={item.instruction.id}>
+                          {(dragHandleProps) => (
+                            <>
+                              {item.instruction.type === "split" ? (
+                                <div
+                                  className={`split-wrapper${selectedIds.has(item.instruction.id) ? " selected" : ""}`}
+                                >
+                                  {renderInstruction(
+                                    item.instruction,
+                                    dragHandleProps,
+                                  )}
+                                  {renderSplitBody(item.instruction)}
+                                </div>
+                              ) : (
+                                renderInstruction(
                                   item.instruction,
                                   dragHandleProps,
-                                )}
-                                {renderSplitBody(item.instruction)}
-                              </div>
-                            ) : (
-                              renderInstruction(
-                                item.instruction,
-                                dragHandleProps,
-                              )
-                            )}
-                          </>
-                        )}
-                      </SortableItem>
-                      {item.spillsOver && (
-                        <div className="instruction-warning">
-                          Spills into{" "}
-                          {spillTargetLabel(
-                            item.startBeat,
-                            instructionDuration(item.instruction),
+                                )
+                              )}
+                            </>
                           )}
-                        </div>
-                      )}
-                      {renderAddGap("top", item.index + 1)}
-                    </Fragment>
-                  ))}
+                        </SortableItem>
+                        {item.spillsOver && (
+                          <div className="instruction-warning">
+                            Spills into{" "}
+                            {spillTargetLabel(
+                              item.startBeat,
+                              instructionDuration(item.instruction),
+                            )}
+                          </div>
+                        )}
+                        {(!isLastInSection || isLastOverall) &&
+                          renderAddGap("top", item.index + 1)}
+                      </Fragment>
+                    );
+                  })}
                 </Fragment>
               );
             })}
