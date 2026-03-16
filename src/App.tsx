@@ -19,6 +19,7 @@ import {
 } from "./components/RelationshipHighlightContext";
 import { UndoContext } from "./components/UndoContext";
 import { ALL_PROTO_IDS, type DancerId, type ProtoId } from "./contraCore";
+import { danceToHash } from "./danceUrl";
 import { exampleDances } from "./exampleDances";
 import { exportGif, type GifOptions } from "./exportGif";
 import { findInstructionStartBeat, generateDanceAnimation } from "./generate";
@@ -120,7 +121,11 @@ function activeInstructionId(
   return activeId;
 }
 
-export default function App() {
+export default function App({
+  hashDanceResult,
+}: {
+  hashDanceResult: { dance: Dance } | { error: string } | null;
+}) {
   const hoveredDancerRef = useRef<ProtoId | null>(null);
   const {
     canvasRef,
@@ -141,13 +146,14 @@ export default function App() {
   const lastTimestampRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
 
-  const [initialLoadResult] = useState(() => loadDanceFromLocalStorage());
+  const [initialLoadResult] = useState(
+    () => hashDanceResult ?? loadDanceFromLocalStorage(),
+  );
   const isFirstVisit = initialLoadResult === null;
-  const [localStorageError, setLocalStorageError] = useState<string | null>(
-    () =>
-      initialLoadResult && "error" in initialLoadResult
-        ? initialLoadResult.error
-        : null,
+  const [loadError, setLoadError] = useState<string | null>(() =>
+    initialLoadResult && "error" in initialLoadResult
+      ? initialLoadResult.error
+      : null,
   );
 
   const [playing, setPlaying] = useState(isFirstVisit);
@@ -228,16 +234,20 @@ export default function App() {
     return try_(() => ({ ...defaults, ...JSON.parse(raw) })) ?? defaults; // DEFAULT_VALUE: fall back to defaults if stored JSON is corrupt
   });
 
-  // Persist dance to localStorage whenever it changes
+  // Persist dance to localStorage and URL hash whenever it changes
   useEffect(() => {
-    if (!isLocalStorageAvailable()) return;
     const dance = {
       initFormation,
       instructions,
       ...(name ? { name } : {}),
       ...(author ? { author } : {}),
     };
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
+    if (isLocalStorageAvailable()) {
+      localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(dance));
+    }
+    void danceToHash(DanceSchema.parse(dance)).then((hash) => {
+      history.replaceState(undefined, "", "#" + hash);
+    });
   }, [instructions, initFormation, name, author]);
 
   // Persist GIF options to localStorage whenever they change
@@ -804,13 +814,11 @@ export default function App() {
       >
         <DancerHighlightContext.Provider value={setHighlightedDancer}>
           <div className="app-layout">
-            {localStorageError && (
+            {loadError && (
               <div className="localstorage-error">
-                <strong>Could not load saved dance from localStorage:</strong>
-                <pre>{localStorageError}</pre>
-                <button onClick={() => setLocalStorageError(null)}>
-                  Dismiss
-                </button>
+                <strong>Could not load saved dance:</strong>
+                <pre>{loadError}</pre>
+                <button onClick={() => setLoadError(null)}>Dismiss</button>
               </div>
             )}
             <div className="vis-column">
