@@ -1735,6 +1735,7 @@ export default memo(function CommandPane({
             strategy={verticalListSortingStrategy}
           >
             {sections.map((section) => {
+              if (section.items.length === 0) return null;
               return (
                 <Fragment key={section.label}>
                   <div className="section-header">{section.label}</div>
