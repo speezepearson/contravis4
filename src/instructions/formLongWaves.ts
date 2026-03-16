@@ -14,11 +14,8 @@ import {
   getDancerSide,
   type WorldState,
 } from "../worldState";
-import {
-  type ContraAnimation,
-  instructionBaseSchemaFields,
-  personInDir,
-} from "./_base";
+import { type ContraAnimation, instructionBaseSchemaFields } from "./_base";
+import { fudgePlansToAlignY, fudgePlansToSpaceEvenlyInY } from "./_fudge";
 import { animatePlans, type DancerSegment } from "./_plan";
 
 export const FormLongWavesInstructionSchema = z.object({
@@ -76,17 +73,27 @@ export function planFormLongWaves(dancer: Dancer): DancerSegment[] {
   );
 
   const out = dancer.facesOut();
-  // Facing out: left = setcounterclockwise, right = setclockwise
-  // Facing in:  left = setclockwise,        right = setcounterclockwise
-  const leftDir = out ? "setcounterclockwise" : "setclockwise";
-  const rightDir = out ? "setclockwise" : "setcounterclockwise";
 
-  const leftPartner = dancer.resolveMatch(personInDir(leftDir, "different"));
-  const rightPartner = dancer.resolveMatch(personInDir(rightDir, "different"));
+  const left = must(
+    dancer.resolveCalledIdentifier({
+      type: "PersonInDirection",
+      dir: out ? "setcounterclockwise" : "setclockwise",
+      onlyRole: "different",
+    }),
+    [{ dancerId: dancer.id }, "has nobody on the left"],
+  );
+  const right = must(
+    dancer.resolveCalledIdentifier({
+      type: "PersonInDirection",
+      dir: out ? "setclockwise" : "setcounterclockwise",
+      onlyRole: "different",
+    }),
+    [{ dancerId: dancer.id }, "has nobody on the right"],
+  );
 
   const hands: Partial<Record<Hand, DancerHandPointer>> = {
-    left: { theirId: leftPartner.id, theirHand: "left" },
-    right: { theirId: rightPartner.id, theirHand: "right" },
+    left: { theirId: left.id, theirHand: "left" },
+    right: { theirId: right.id, theirHand: "right" },
   };
 
   return [
@@ -104,5 +111,12 @@ export function formLongWavesAnimator(
   who: ReadonlySet<ProtoId>,
 ): ContraAnimation {
   validate(init, who);
-  return animatePlans(init, who, (dancer) => planFormLongWaves(dancer));
+  return animatePlans(
+    init,
+    who,
+    fudgePlansToSpaceEvenlyInY(
+      fudgePlansToAlignY((dancer) => planFormLongWaves(dancer), init),
+      init,
+    ),
+  );
 }
