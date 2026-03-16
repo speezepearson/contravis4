@@ -1,15 +1,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-/** Add an instruction via the text-input flow: click +, type text, press Enter. */
-async function addInstruction(page: Page, text = "neighbors balance and swing") {
+/** Add an instruction by clicking the + button (inserts a default balance). */
+async function addInstruction(page: Page) {
   await page.locator(".add-gap-btn").first().click();
-  const input = page.locator(".add-instruction-text-input");
-  await expect(input).toBeVisible();
-  await input.fill(text);
-  await input.press("Enter");
-  // Wait for the input to disappear (instruction committed)
-  await expect(input).not.toBeVisible();
 }
 
 test.describe("undo/redo", () => {
@@ -94,7 +88,7 @@ test.describe("undo/redo", () => {
     await addInstruction(page);
     await page.keyboard.press("Control+z");
 
-    await addInstruction(page, "circle left 3 places");
+    await addInstruction(page);
     // Redo should do nothing since history was cleared
     await page.keyboard.press("Control+Shift+z");
     expect(await page.locator(".instruction-item").count()).toBe(
@@ -106,8 +100,8 @@ test.describe("undo/redo", () => {
     const initial = await page.locator(".instruction-item").count();
 
     // Add two instructions
-    await addInstruction(page, "neighbors balance and swing");
-    await addInstruction(page, "circle left 3 places");
+    await addInstruction(page);
+    await addInstruction(page);
     expect(await page.locator(".instruction-item").count()).toBe(initial + 2);
 
     // Undo twice

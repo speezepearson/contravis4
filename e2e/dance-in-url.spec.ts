@@ -7,23 +7,18 @@ test("dance state round-trips through URL fragment", async ({ page }) => {
   await page.reload();
   await page.waitForSelector(".command-pane");
 
-  // Clear all existing instructions via undo until empty
+  // Clear all existing instructions via delete until empty
   while ((await page.locator(".instruction-item").count()) > 0) {
     await page.locator(".delete-btn").first().click();
   }
   expect(await page.locator(".instruction-item").count()).toBe(0);
 
-  // Enter and commit "neighbors balance and swing"
+  // Click + to add a default balance instruction
   await page.locator(".add-gap-btn").first().click();
-  const input = page.locator(".add-instruction-text-input");
-  await expect(input).toBeVisible();
-  await input.fill("neighbors balance and swing");
-  await input.press("Enter");
-  await expect(input).not.toBeVisible();
 
   // Verify it was added
   const instrItems = page.locator(".instruction-item");
-  await expect(instrItems.first()).toContainText("balance & swing");
+  await expect(instrItems.first()).toContainText("balance");
 
   // Wait for the URL hash to be populated (async compression)
   await expect
@@ -43,8 +38,8 @@ test("dance state round-trips through URL fragment", async ({ page }) => {
   await page.goto(savedUrl);
   await page.waitForSelector(".command-pane");
 
-  // Should see the balance & swing instruction restored from the URL fragment
+  // Should see the balance instruction restored from the URL fragment
   await expect(page.locator(".instruction-item").first()).toContainText(
-    "balance & swing",
+    "balance",
   );
 });
