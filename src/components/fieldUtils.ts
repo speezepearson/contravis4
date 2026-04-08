@@ -166,6 +166,14 @@ export function makeDefaultInstruction(type: ActionOptionType): Instruction {
         return { type: "rory_o_more", beats: 4, direction: "right" };
       case "slice":
         return { type: "slice", beats: 8, direction: "left" };
+      case "orbit":
+        return {
+          type: "orbit",
+          beats: 8,
+          roleInMiddle: "lark",
+          middleMove: "allemande",
+          handedness: "left",
+        };
       case "shoulder_round":
         return {
           type: "shoulder_round",
