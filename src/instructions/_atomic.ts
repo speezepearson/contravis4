@@ -68,6 +68,7 @@ import {
   meltdownSwingAnimator,
   MeltdownSwingInstructionSchema,
 } from "./meltdownSwing";
+import { orbitAnimator, OrbitInstructionSchema } from "./orbit";
 import { passByAnimator, PassByInstructionSchema } from "./passBy";
 import { petronellaAnimator, PetronellaInstructionSchema } from "./petronella";
 import { poussetteAnimator, PoussetteInstructionSchema } from "./poussette";
@@ -135,6 +136,7 @@ export const AtomicInstructionSchema = z.discriminatedUnion("type", [
   LongLinesForwardBackInstructionSchema,
   MadRobinInstructionSchema,
   MeltdownSwingInstructionSchema,
+  OrbitInstructionSchema,
   PassByInstructionSchema,
   PetronellaInstructionSchema,
   PoussetteInstructionSchema,
@@ -207,6 +209,8 @@ export function animateAtomicInstruction(
       return longLinesForwardBackAnimator(instr, init, who);
     case "meltdown_swing":
       return meltdownSwingAnimator(instr, init, who);
+    case "orbit":
+      return orbitAnimator(instr, init, who);
     case "mad_robin":
       return madRobinAnimator(instr, init, who);
     case "petronella":

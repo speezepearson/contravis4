@@ -70,6 +70,7 @@ import { LongLineInCenterFields } from "./fields/LongLineInCenterFields";
 import { LongLinesForwardBackFields } from "./fields/LongLinesForwardBackFields";
 import { MadRobinFields } from "./fields/MadRobinFields";
 import { MeltdownSwingFields } from "./fields/MeltdownSwingFields";
+import { OrbitFields } from "./fields/OrbitFields";
 import { PassByFields } from "./fields/PassByFields";
 import { PetronellaFields } from "./fields/PetronellaFields";
 import { PoussetteFields } from "./fields/PoussetteFields";
@@ -171,6 +172,7 @@ const ActionOptionTypeSchema = z.enum([
   "long_lines_forward_back",
   "mad_robin",
   "meltdown_swing",
+  "orbit",
   "pass_by",
   "petronella",
   "poussette",
@@ -256,6 +258,8 @@ const ACTION_LABELS = buildEnumRecord(ActionOptionTypeSchema, (t) => {
       return "mad robin";
     case "meltdown_swing":
       return "meltdown swing";
+    case "orbit":
+      return "orbit";
     case "pass_by":
       return "pass by";
     case "petronella":
@@ -609,6 +613,7 @@ function doesRequireBeatsInput(
     case "long_lines_forward_back":
     case "mad_robin":
     case "meltdown_swing":
+    case "orbit":
     case "pass_by":
     case "petronella":
     case "poussette":
@@ -795,6 +800,8 @@ function InlineForm({
             return (
               <MeltdownSwingFields {...common} instruction={instruction} />
             );
+          case "orbit":
+            return <OrbitFields {...common} instruction={instruction} />;
           case "pass_by":
             return <PassByFields {...common} instruction={instruction} />;
           case "petronella":

@@ -300,6 +300,24 @@ All dancers walk forward toward the center and back.
 }
 ```
 
+### `orbit`
+
+One role does an allemande or shoulder round 1.5x in the middle while the other role orbits 180° around the group of four's center of mass.
+
+- `roleInMiddle`: which role does the middle move (`"lark"` or `"robin"`)
+- `middleMove`: `"allemande"` or `"shoulder_round"`
+- `handedness`: `"left"` or `"right"` — controls both the middle move's hand and the orbiter direction (left = orbiters CW, right = orbiters CCW)
+
+```json
+{
+  "beats": 8,
+  "type": "orbit",
+  "roleInMiddle": "lark",
+  "middleMove": "allemande",
+  "handedness": "left"
+}
+```
+
 ### `meltdown_swing`
 
 Right shoulder round 1.5x (8 beats) followed by a swing (remaining beats). Equivalent to a shoulder round into swing as a single compound instruction.

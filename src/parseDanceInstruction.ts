@@ -35,6 +35,7 @@ import { LongLineInCenterInstructionSchema } from "./instructions/longLineInCent
 import { LongLinesForwardBackInstructionSchema } from "./instructions/longLinesForwardBack";
 import { MadRobinInstructionSchema } from "./instructions/madRobin";
 import { MeltdownSwingInstructionSchema } from "./instructions/meltdownSwing";
+import { OrbitInstructionSchema } from "./instructions/orbit";
 import { PassByInstructionSchema } from "./instructions/passBy";
 import { PetronellaInstructionSchema } from "./instructions/petronella";
 import { PoussetteInstructionSchema } from "./instructions/poussette";
@@ -298,6 +299,7 @@ const TEXT_KEYWORDS: TextKeywordEntry[] = [
     chunk: "instruction_type",
     value: "shoulder_round",
   },
+  { text: "orbit", chunk: "instruction_type", value: "orbit" },
   { text: "mad robin", chunk: "instruction_type", value: "mad_robin" },
   { text: "roll away", chunk: "instruction_type", value: "roll_away" },
   { text: "rory o more", chunk: "instruction_type", value: "rory_o_more" },
@@ -817,6 +819,14 @@ function interpretChunks(type: ActionOptionType, chunks: Chunk[]): Instruction {
         cid: cidFromChunks(chunks) ?? labelId("partner"),
         rotations: findChunk(chunks, "n_rotations")?.value ?? 1,
         whoInFront: findChunk(chunks, "role")?.value ?? "lark",
+      });
+    case "orbit":
+      return typedParse(OrbitInstructionSchema, {
+        type: "orbit",
+        beats: findChunk(chunks, "beats")?.value ?? 8,
+        roleInMiddle: findChunk(chunks, "role")?.value ?? "lark",
+        middleMove: "allemande",
+        handedness: findChunk(chunks, "handedness")?.value ?? "left",
       });
     case "pass_by":
       return typedParse(PassByInstructionSchema, {
