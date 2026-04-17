@@ -606,7 +606,7 @@ export default function App({
     return () => cancelAnimationFrame(id);
   }, [drawRef, animation, previewFrames]);
 
-  const playMetronomeTick = useCallback(() => {
+  const playMetronomeTick = useCallback((emphasized: boolean) => {
     if (audioCtxRef.current === null) {
       audioCtxRef.current = new AudioContext();
     }
@@ -627,7 +627,8 @@ export default function App({
     filter.frequency.value = 2000;
     filter.Q.value = 3;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.8, ctx.currentTime);
+    const peak = emphasized ? 2.0 : 0.6;
+    gain.gain.setValueAtTime(peak, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
     source.connect(filter).connect(gain).connect(ctx.destination);
     source.start();
@@ -663,7 +664,7 @@ export default function App({
 
       const curBeatFloor = Math.floor(beatRef.current);
       if (curBeatFloor !== lastBeatFloorRef.current) {
-        if (metronomeEnabled) playMetronomeTick();
+        if (metronomeEnabled) playMetronomeTick(curBeatFloor % 4 === 0);
         lastBeatFloorRef.current = curBeatFloor;
       }
 
@@ -784,7 +785,7 @@ export default function App({
             checked={metronomeEnabled}
             onChange={(e) => {
               setMetronomeEnabled(e.target.checked);
-              if (e.target.checked) playMetronomeTick();
+              if (e.target.checked) playMetronomeTick(false);
             }}
           />{" "}
           Metronome
@@ -957,7 +958,7 @@ export default function App({
                     checked={metronomeEnabled}
                     onChange={(e) => {
                       setMetronomeEnabled(e.target.checked);
-                      if (e.target.checked) playMetronomeTick();
+                      if (e.target.checked) playMetronomeTick(false);
                     }}
                   />{" "}
                   Metronome
