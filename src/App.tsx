@@ -612,15 +612,26 @@ export default function App({
     }
     const ctx = audioCtxRef.current;
     if (ctx.state === "suspended") void ctx.resume();
-    const osc = ctx.createOscillator();
+    const duration = 0.04;
+    const buffer = ctx.createBuffer(
+      1,
+      Math.ceil(ctx.sampleRate * duration),
+      ctx.sampleRate,
+    );
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 2000;
+    filter.Q.value = 3;
     const gain = ctx.createGain();
-    osc.type = "square";
-    osc.frequency.value = 1000;
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.8, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    source.connect(filter).connect(gain).connect(ctx.destination);
+    source.start();
+    source.stop(ctx.currentTime + duration);
   }, []);
 
   // Animation loop
