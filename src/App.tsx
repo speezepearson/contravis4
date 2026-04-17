@@ -132,7 +132,7 @@ export default function App({
   const [playing, setPlaying] = useState(true);
   const [looping, setLooping] = useState(true);
   const [metronomeEnabled, setMetronomeEnabled] = useState(false);
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState(90);
   const [beat, setBeat] = useState(0);
   const initialDanceState: DanceState = useMemo(() => {
     if (initialLoadResult && "dance" in initialLoadResult) {

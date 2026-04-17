@@ -50,9 +50,7 @@ export function heyAnimator(
     const group = getGroupOfFour(dancer, { by: tiebreakers });
     const centerY = avgPos(...group).y;
 
-    console.log("a");
     const hSide = getDancerSide(dancer) === "west" ? 1 : -1;
-    console.log("b");
     const vSide = must(
       safeThreshold(
         dancer.pos.y -
