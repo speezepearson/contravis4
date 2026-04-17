@@ -119,6 +119,8 @@ export default function App({
   const beatRef = useRef(0);
   const lastTimestampRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const lastBeatFloorRef = useRef<number>(0);
 
   const initialLoadResult = hashDanceResult;
   const [loadError, setLoadError] = useState<string | null>(() =>
@@ -129,7 +131,8 @@ export default function App({
 
   const [playing, setPlaying] = useState(true);
   const [looping, setLooping] = useState(true);
-  const [bpm, setBpm] = useState(120);
+  const [metronomeEnabled, setMetronomeEnabled] = useState(false);
+  const [bpm, setBpm] = useState(90);
   const [beat, setBeat] = useState(0);
   const initialDanceState: DanceState = useMemo(() => {
     if (initialLoadResult && "dance" in initialLoadResult) {
@@ -603,6 +606,34 @@ export default function App({
     return () => cancelAnimationFrame(id);
   }, [drawRef, animation, previewFrames]);
 
+  const playMetronomeTick = useCallback(() => {
+    if (audioCtxRef.current === null) {
+      audioCtxRef.current = new AudioContext();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === "suspended") void ctx.resume();
+    const duration = 0.04;
+    const buffer = ctx.createBuffer(
+      1,
+      Math.ceil(ctx.sampleRate * duration),
+      ctx.sampleRate,
+    );
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 2000;
+    filter.Q.value = 3;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.8, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    source.connect(filter).connect(gain).connect(ctx.destination);
+    source.start();
+    source.stop(ctx.currentTime + duration);
+  }, []);
+
   // Animation loop
   const animateRef = useRef<(timestamp: number) => void>(undefined);
   useEffect(() => {
@@ -630,6 +661,12 @@ export default function App({
         }
       }
 
+      const curBeatFloor = Math.floor(beatRef.current);
+      if (curBeatFloor !== lastBeatFloorRef.current) {
+        if (metronomeEnabled) playMetronomeTick();
+        lastBeatFloorRef.current = curBeatFloor;
+      }
+
       drawRef.current();
       rafRef.current = requestAnimationFrame((ts) => animateRef.current!(ts));
     };
@@ -639,6 +676,7 @@ export default function App({
   useEffect(() => {
     if (playing) {
       lastTimestampRef.current = null;
+      lastBeatFloorRef.current = Math.floor(beatRef.current);
       rafRef.current = requestAnimationFrame((ts) => animateRef.current!(ts));
     } else {
       cancelAnimationFrame(rafRef.current);
@@ -739,6 +777,17 @@ export default function App({
             onChange={(e) => setLooping(e.target.checked)}
           />{" "}
           Loop
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={metronomeEnabled}
+            onChange={(e) => {
+              setMetronomeEnabled(e.target.checked);
+              if (e.target.checked) playMetronomeTick();
+            }}
+          />{" "}
+          Metronome
         </label>
         <input
           type="range"
@@ -901,6 +950,17 @@ export default function App({
                     onChange={(e) => setLooping(e.target.checked)}
                   />{" "}
                   Loop
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={metronomeEnabled}
+                    onChange={(e) => {
+                      setMetronomeEnabled(e.target.checked);
+                      if (e.target.checked) playMetronomeTick();
+                    }}
+                  />{" "}
+                  Metronome
                 </label>
                 <input
                   type="range"
